@@ -1120,17 +1120,14 @@ const CategoryAccordion = ({ postData, handleChangeInput }) => {
         /* Optimización para pantallas muy pequeñas (Android) */
         @media (max-width: 480px) {
           .category-emoji {
-            font-size: 1.4rem !important;
+            font-size: 1.8rem !important;
             min-width: 28px !important;
           }
           
           .category-name {
-            font-size: 0.9rem !important;
+            font-size: 1.2rem !important;
           }
           
-          .category-body {
-            padding: 0.75rem 0.5rem !important;
-          }
           
           .subcategories-list,
           .operations-list,
@@ -1142,7 +1139,7 @@ const CategoryAccordion = ({ postData, handleChangeInput }) => {
           .subcategory-item,
           .operation-item,
           .property-item {
-            padding: 0.5rem 0.625rem !important;
+            padding: 0.3rem 0.425rem !important;
             margin: 0 0 0.375rem 0 !important;
           }
           

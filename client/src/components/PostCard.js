@@ -32,6 +32,7 @@ const PostCard = ({ post }) => {
           <DescriptionUser post={post} />
         </>
       )}
+       <CardFooter post={post} />
       
       
     </div>

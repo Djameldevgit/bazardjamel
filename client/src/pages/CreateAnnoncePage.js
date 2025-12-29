@@ -441,7 +441,7 @@ const CreateAnnoncePage = () => {
   const completionPercentage = calculateCompletion();
 
   return (
-    <Container className="py-4" dir={isRTL ? 'rtl' : 'ltr'}>
+    <Container className="py-2" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* ALERTA */}
       <AnimatePresence>
         {alert.show && (
@@ -479,7 +479,7 @@ const CreateAnnoncePage = () => {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="mb-3"
+              className="mb-2"
             >
               <div className="badge bg-info fs-6  px-3">
                 <i className="fas fa-edit me"></i>
@@ -532,13 +532,13 @@ const CreateAnnoncePage = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className="border-0 shadow-lg overflow-hidden">
+        <div className="border-0 shadow-lg overflow-hidden">
            
             <AnimatePresence mode="wait">
               {renderCurrentStep()}
             </AnimatePresence>
        
-        </Card>
+        </div>
       </motion.div>
 
       {/* BOTONES DE NAVEGACIÓN - SIMPLES Y CLAROS */}
@@ -547,7 +547,7 @@ const CreateAnnoncePage = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <Row className="g-3">
+        <Row className="g-2">
           {/* Botón Précédent */}
           <Col xs={6}>
             <Button
