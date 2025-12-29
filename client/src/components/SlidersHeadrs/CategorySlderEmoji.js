@@ -117,38 +117,22 @@ const CategorySliderEmoji = () => {
               maxWidth: '110px'
             }}
           >
-            {/* Círculo del emoji - ICONO MÁS GRANDE */}
-            <div
-              style={{
-                width: isMobile ? '64px' : '70px',
-                height: isMobile ? '64px' : '70px',
-                borderRadius: '50%',
-                background: `linear-gradient(135deg, ${category.color} 0%, ${category.color}99 100%)`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-                marginBottom: '6px',
-                padding: '2px'
-              }}
-            >
-              {/* Icono que ocupa todo el espacio */}
-              <span 
-                style={{ 
-                  fontSize: isMobile ? '2.8rem' : '3.2rem', // Icono mucho más grande
-                  lineHeight: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '100%',
-                  height: '100%',
-                  textAlign: 'center'
-                }}
-              >
-                {category.emoji}
-              </span>
-            </div>
+            {/* EMOJI GRANDE - SIN FONDO, SIN CONTENEDOR EXTRA */}
+         {/* EMOJI GRANDE - SIN FONDO */}
+<div
+  style={{
+    fontSize: isMobile ? '5rem' : '6rem', // MÁS GRANDE: 5rem móvil, 6rem desktop
+    lineHeight: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textAlign: 'center',
+    height: isMobile ? '90px' : '110px',
+    marginBottom: '6px'
+  }}
+>
+  {category.emoji}
+</div>
 
             {/* Nombre abreviado */}
             <div style={{
@@ -187,8 +171,8 @@ const CategorySliderEmoji = () => {
         boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
         overflow: 'hidden',
         border: '1px solid rgba(0,0,0,0.06)',
-        marginTop: '0', // Quitar margen superior
-        marginBottom: '0' // Quitar margen inferior
+        marginTop: '0',
+        marginBottom: '0'
       }}>
         {/* Contenido con scroll horizontal en mobile */}
         <div
@@ -196,7 +180,7 @@ const CategorySliderEmoji = () => {
           onScroll={handleScroll}
           style={{
             display: 'block',
-            padding: isMobile ? '8px 0' : '10px 0', // Padding reducido
+            padding: isMobile ? '8px 0' : '10px 0',
             overflowX: isMobile ? 'auto' : 'visible',
             overflowY: 'hidden',
             scrollBehavior: 'smooth',
@@ -311,7 +295,7 @@ const CategorySliderEmoji = () => {
           borderTop: '1px solid rgba(0,0,0,0.04)',
           background: 'rgba(248, 249, 250, 0.4)',
           textAlign: 'center',
-          display: 'none' // Ocultado para ahorrar espacio
+          display: 'none'
         }}>
           <div style={{
             display: 'inline-flex',
@@ -333,11 +317,6 @@ const CategorySliderEmoji = () => {
           display: none;
         }
         
-        /* Solo efecto de press para mobile/touch */
-        .category-grid-container a:active div:first-child {
-          transform: scale(0.95);
-        }
-        
         /* Prevenir zoom en doble tap */
         .category-grid-container * {
           touch-action: manipulation;
@@ -347,6 +326,50 @@ const CategorySliderEmoji = () => {
         /* Mejorar rendimiento */
         .category-grid-container {
           contain: content;
+        }
+        
+        /* EMOJIS MÁS GRANDES PARA DESKTOP */
+        @media (min-width: 768px) {
+          .category-grid-container a {
+            flex: 1 !important;
+            min-width: 0 !important;
+          }
+          
+          .category-grid-container a > div:first-child {
+            font-size: 5.5rem !important;
+            height: 100px !important;
+          }
+        }
+        
+        /* EMOJIS EXTRA GRANDES PARA PANTALLAS GRANDES */
+        @media (min-width: 1200px) {
+          .category-grid-container a > div:first-child {
+            font-size: 6rem !important;
+            height: 110px !important;
+          }
+        }
+        
+        /* Optimización para pantallas pequeñas */
+        @media (max-width: 380px) {
+          .category-grid-container a {
+            width: 75px !important;
+          }
+          
+          .category-grid-container a > div:first-child {
+            font-size: 3.5rem !important;
+            height: 70px !important;
+          }
+          
+          /* Botones más pequeños en pantallas muy pequeñas */
+          .category-grid-container button {
+            width: 28px !important;
+            height: 28px !important;
+          }
+          
+          .category-grid-container button svg {
+            width: 14px !important;
+            height: 14px !important;
+          }
         }
         
         /* Gradientes en los bordes del scroll (solo mobile) */
@@ -373,47 +396,6 @@ const CategorySliderEmoji = () => {
             background: linear-gradient(to left, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 100%);
             pointer-events: none;
             z-index: 15;
-          }
-        }
-        
-        /* Optimización para pantallas muy pequeñas */
-        @media (max-width: 380px) {
-          .category-grid-container a {
-            width: 65px !important;
-          }
-          
-          .category-grid-container a > div:first-child {
-            width: 56px !important;
-            height: 56px !important;
-          }
-          
-          .category-grid-container a > div:first-child span {
-            font-size: 2.2rem !important;
-          }
-          
-          /* Botones más pequeños en pantallas muy pequeñas */
-          .category-grid-container button {
-            width: 28px !important;
-            height: 28px !important;
-          }
-          
-          .category-grid-container button svg {
-            width: 14px !important;
-            height: 14px !important;
-          }
-        }
-        
-        /* Asegurar que los emojis se muestren correctamente */
-        .category-grid-container span[role="img"] {
-          display: inline-block;
-          font-style: normal;
-        }
-        
-        /* Distribución uniforme en desktop */
-        @media (min-width: 768px) {
-          .category-grid-container a {
-            flex: 1 !important;
-            min-width: 0 !important;
           }
         }
       `}</style>

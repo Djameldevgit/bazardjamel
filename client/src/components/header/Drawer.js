@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 const Drawer = ({ 
   show, 
   onHide, 
-  title = "Menú",
+  
   width = 280,
   height = '100vh'
 }) => {

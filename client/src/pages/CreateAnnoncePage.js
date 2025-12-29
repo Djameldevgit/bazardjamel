@@ -335,15 +335,14 @@ const CreateAnnoncePage = () => {
             exit="exit"
             className="step-content"
           >
-            <div className="step-header mb-4">
-              <h2 className="fw-bold">🏷️ Sélectionnez la catégorie</h2>
-              <p className="text-muted">
+            
+              <h3 className="text-center">
                 {isEdit 
                   ? 'Modifiez la catégorie si nécessaire'
-                  : 'Choisissez la catégorie pour votre annonce'
+                  : 'Créer une annonce'
                 }
-              </p>
-            </div>
+              </h3>
+            
             
             <Card className="p-4 shadow-sm border-0">
               <CategoryAccordion
@@ -534,11 +533,11 @@ const CreateAnnoncePage = () => {
         transition={{ duration: 0.3 }}
       >
         <Card className="border-0 shadow-lg overflow-hidden">
-          <Card.Body className="p-4">
+           
             <AnimatePresence mode="wait">
               {renderCurrentStep()}
             </AnimatePresence>
-          </Card.Body>
+       
         </Card>
       </motion.div>
 
