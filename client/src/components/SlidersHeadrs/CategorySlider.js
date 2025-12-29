@@ -23,7 +23,11 @@ const categoriesData = [
   { id: 17, name: 'Services', slug: 'services', emoji: '🔔', color: '#a18cd1' },
 ];
 
-const CategorySliderEmoji = () => {
+ 
+
+ 
+ 
+ const CategorySlider = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -401,6 +405,6 @@ const CategorySliderEmoji = () => {
       `}</style>
     </div>
   );
-};
-
-export default CategorySliderEmoji;
+ }
+ 
+ export default CategorySlider

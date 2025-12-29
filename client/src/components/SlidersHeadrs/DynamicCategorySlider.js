@@ -7,7 +7,8 @@ import SliderPiecesDetachees from './SliderPiecesDetaches';
 import SliderSanteBeaute from './SliderSanteBeaute';
 import SliderMeubles from './SliderMuebles';
 import SliderLoisirs from './SliderLoisir';
-import CategorySliderEmoji from './CategorySlderEmoji';
+ 
+ 
 import SliderSport from './SliderSport';
 import SliderAlimentaires from './SliderAlimentaires';
 import SliderServices from './SliderServices';
@@ -18,6 +19,9 @@ import SliderImmobilerOperations from './SliderImmobilerOperations';
 import SliderImmobilerProperties from './SliderImmobilersProperties';
  
 import SliderStores from './SliderStores';
+ 
+import CategorySlderEmoji from './CategorySlderEmoji';
+
 
 const DynamicCategorySlider = ({ categoryName }) => {
   // Base de datos de coincidencias de categorías - COMPLETA Y ACTUALIZADA
@@ -327,7 +331,7 @@ const DynamicCategorySlider = ({ categoryName }) => {
             Explorando: {categoryName}
           </h5>
         </div>
-        <CategorySliderEmoji />
+        <CategorySlderEmoji/>
       </div>
     );
   }

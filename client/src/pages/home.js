@@ -5,9 +5,10 @@ import { Row, Col, Container, Form, InputGroup } from 'react-bootstrap';
 import { getCategories, getPostsByCategory } from '../redux/actions/postAction';
 import LoadIcon from '../images/loading.gif';
 import HeaderCarousel from '../components/SlidersHeadrs/HeaderCarousel';
-import CategorySlider from '../components/SlidersHeadrs/CategorySlider';
+ 
 import PostCard from '../components/PostCard';
-
+import CategorySlider from '../components/SlidersHeadrs/CategorySlider';
+ 
 const Home = () => {
     const dispatch = useDispatch();
     const { homePosts } = useSelector(state => state);
