@@ -1,0 +1,954 @@
+// components/CATEGORIES/DynamicFieldManager.js - VERSIÓN ACTUALIZADA
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import FieldRenderer from './FieldRenderer';
+
+// 🔥 IMPORTAR CONFIGURACIONES ACTUALIZADAS
+import { getVisibleFields } from './FieldConfig';
+import { getFieldsForStep } from './FieldStepMapper'; // 🔥 NUEVO IMPORT
+
+// 🔥 IMPORTAR FRAMER MOTION PARA ANIMACIONES
+import { motion, AnimatePresence } from 'framer-motion';
+
+const DynamicFieldManager = ({ 
+  postData, 
+  handleChangeInput, 
+  mainCategory, 
+  subCategory, 
+  articleType,
+  onCategoryDataChange,
+  stepFilter = null, // 🔥 NUEVO: 'description', 'price', 'contact', o null para todos
+  showHeader = true, // 🔥 NUEVO: Mostrar cabecera con categoría
+  showProgress = true, // 🔥 NUEVO: Mostrar barra de progreso
+  maxColumns = 2, // 🔥 NUEVO: Columnas por fila (1, 2, o 3)
+  customClassName = '' // 🔥 NUEVO: Clase CSS personalizada
+}) => {
+  const { t, i18n } = useTranslation('dynamicmanager');
+  const isRTL = i18n.language === 'ar';
+  const [visibleFields, setVisibleFields] = useState([]);
+  
+  // 🔥 ESTADOS PARA ANIMACIÓN
+  const [animationDirection, setAnimationDirection] = useState(0);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [showCategoryHeader, setShowCategoryHeader] = useState(false);
+  const [showSubCategoryHeader, setShowSubCategoryHeader] = useState(false);
+  
+  const prevCategoryRef = useRef({ mainCategory: '', subCategory: '', stepFilter: '' });
+  const [categoryData, setCategoryData] = useState({});
+
+  // 🔥 VARIANTES DE ANIMACIÓN PARA SLIDES
+  const slideVariants = {
+    enter: (direction) => ({
+      x: direction > 0 ? 1000 : -1000,
+      opacity: 0
+    }),
+    center: {
+      zIndex: 1,
+      x: 0,
+      opacity: 1
+    },
+    exit: (direction) => ({
+      zIndex: 0,
+      x: direction < 0 ? 1000 : -1000,
+      opacity: 0
+    })
+  };
+
+  // 🔥 VARIANTES PARA ANIMACIONES SUAVES
+  const fadeInUpVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.4, type: "spring", stiffness: 100 }
+    }
+  };
+
+  // 🔥 CALCULAR CLASE DE COLUMNAS
+  const getColumnClass = () => {
+    switch(maxColumns) {
+      case 1: return 'col-12';
+      case 2: return 'col-12 col-md-6';
+      case 3: return 'col-12 col-md-6 col-lg-4';
+      default: return 'col-12 col-md-6';
+    }
+  };
+
+  // 🔥 DIVIDIR CAMPOS EN PASOS (3 pasos internos)
+  const getFieldsForInternalStep = (step) => {
+    if (visibleFields.length === 0) return [];
+    
+    // Si hay stepFilter, NO dividir internamente (ya vienen filtrados)
+    if (stepFilter) {
+      return visibleFields;
+    }
+    
+    // Si NO hay stepFilter, dividir en 3 pasos internos
+    const totalFields = visibleFields.length;
+    const fieldsPerStep = Math.ceil(totalFields / 3);
+    
+    if (step === 1) {
+      return visibleFields.slice(0, fieldsPerStep);
+    } else if (step === 2) {
+      return visibleFields.slice(fieldsPerStep, fieldsPerStep * 2);
+    } else {
+      return visibleFields.slice(fieldsPerStep * 2);
+    }
+  };
+
+  // 🎯 Determinar qué campos mostrar (ACTUALIZADO CON STEPFILTER)
+  useEffect(() => {
+    if (mainCategory && subCategory) {
+      // 1. Obtener TODOS los campos de FieldConfig
+      let fields = getVisibleFields(mainCategory, subCategory, articleType);
+      
+      // 2. 🔥 FILTRAR POR PASO SI SE ESPECIFICA
+      if (stepFilter && stepFilter !== 'all') {
+        fields = getFieldsForStep(fields, stepFilter);
+        console.log(`🎯 Filtrado por paso '${stepFilter}':`, fields);
+      }
+      
+      setVisibleFields(fields);
+      
+      // 🔥 ANIMACIÓN EN CADENA cuando cambia categoría O stepFilter
+      const hasChanged = 
+        prevCategoryRef.current.mainCategory !== mainCategory || 
+        prevCategoryRef.current.subCategory !== subCategory ||
+        prevCategoryRef.current.stepFilter !== stepFilter;
+      
+      if (hasChanged) {
+        // Resetear animaciones
+        setShowCategoryHeader(false);
+        setShowSubCategoryHeader(false);
+        setAnimationDirection(1);
+        setCurrentStep(1);
+        setIsInitialLoad(false);
+        
+        // Animar en secuencia (solo si showHeader es true)
+        if (showHeader) {
+          setTimeout(() => {
+            setShowCategoryHeader(true);
+          }, 100);
+          
+          setTimeout(() => {
+            setShowSubCategoryHeader(true);
+          }, 300);
+        } else {
+          setShowCategoryHeader(true);
+          setShowSubCategoryHeader(true);
+        }
+        
+        setCategoryData({});
+        if (onCategoryDataChange) {
+          onCategoryDataChange({});
+        }
+      } else {
+        // Si es la misma categoría, mostrar todo inmediatamente
+        setShowCategoryHeader(true);
+        setShowSubCategoryHeader(true);
+      }
+      
+      prevCategoryRef.current = { mainCategory, subCategory, stepFilter };
+    } else {
+      setVisibleFields([]);
+      setShowCategoryHeader(false);
+      setShowSubCategoryHeader(false);
+    }
+  }, [mainCategory, subCategory, articleType, stepFilter, showHeader, onCategoryDataChange]);
+
+  // 🔥 Efecto para extraer y enviar datos específicos
+  useEffect(() => {
+    if (visibleFields.length === 0 || !postData) return;
+
+    const specificData = {};
+    
+    visibleFields.forEach(fieldName => {
+      if (postData[fieldName] !== undefined && postData[fieldName] !== null) {
+        specificData[fieldName] = postData[fieldName];
+      }
+    });
+
+    if (Object.keys(specificData).length > 0) {
+      setCategoryData(specificData);
+      
+      if (onCategoryDataChange) {
+        onCategoryDataChange(specificData);
+      }
+    }
+    
+  }, [postData, visibleFields, onCategoryDataChange]);
+
+  // 🔥 Handler para cambios de campos
+  const handleFieldChange = useCallback((e) => {
+    handleChangeInput(e);
+    
+    const { name, value, type, checked } = e.target;
+    const fieldValue = type === 'checkbox' ? checked : value;
+    
+    setCategoryData(prev => ({
+      ...prev,
+      [name]: fieldValue
+    }));
+    
+    if (onCategoryDataChange && visibleFields.includes(name)) {
+      setTimeout(() => {
+        const updatedData = { ...categoryData, [name]: fieldValue };
+        onCategoryDataChange(updatedData);
+      }, 0);
+    }
+    
+  }, [handleChangeInput, onCategoryDataChange, categoryData, visibleFields]);
+
+  // 🔥 MANEJADORES DE PASOS INTERNOS (solo si NO hay stepFilter)
+  const handleNextStep = () => {
+    if (currentStep < 3 && !stepFilter) {
+      setAnimationDirection(1);
+      setCurrentStep(prev => prev + 1);
+    }
+  };
+
+  const handlePrevStep = () => {
+    if (currentStep > 1 && !stepFilter) {
+      setAnimationDirection(-1);
+      setCurrentStep(prev => prev - 1);
+    }
+  };
+
+  // 🔥 OBTENER CAMPOS PARA EL PASO ACTUAL
+  const currentFields = getFieldsForInternalStep(currentStep);
+
+  // 🔥 FUNCIÓN PARA OBTENER ICONO POR CATEGORÍA
+  const getCategoryIcon = () => {
+    const icons = {
+      'immobilier': '🏠',
+      'vehicules': '🚗', 
+      'vetements': '👕',
+      'telephones': '📱',
+      'informatique': '💻',
+      'electromenager': '🔌',
+      'sante_beaute': '💄',
+      'meubles': '🛋️',
+      'loisirs': '🎮',
+      'sport': '⚽',
+      'alimentaires': '🍎',
+      'materiaux': '🧱',
+      'services': '🛠️',
+      'voyages': '✈️',
+      'emploi': '💼',
+      'pieces_detachees': '🔩'
+    };
+    return icons[mainCategory] || '📋';
+  };
+
+  // 🔥 OBTENER NOMBRE DEL PASO FILTRADO
+  const getStepFilterName = () => {
+    const names = {
+      'description': t('step_filter.description', 'Descripción'),
+      'price': t('step_filter.price', 'Precio'),
+      'contact': t('step_filter.contact', 'Contacto'),
+      'all': t('step_filter.all', 'Todos los campos')
+    };
+    return names[stepFilter] || '';
+  };
+
+  // Si no hay categoría o subcategoría
+  if (!mainCategory || !subCategory) {
+    return (
+      <AnimatePresence>
+        <motion.div
+          key="no-category-state"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          className={`text-center py-5 ${isRTL ? 'rtl' : 'ltr'} ${customClassName}`}
+        >
+          <motion.div
+            animate={{ y: [0, -10, 0] }}
+            transition={{ repeat: Infinity, duration: 2 }}
+          >
+            <i className="fas fa-hand-point-up fa-3x text-muted mb-3"></i>
+          </motion.div>
+          <h5 className="text-muted mb-3">
+            {t('select_category_prompt', '👈 Selecciona una categoría para comenzar')}
+          </h5>
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-muted small"
+          >
+            {t('select_category_hint', 'Elige una categoría principal y luego una subcategoría')}
+          </motion.p>
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
+
+  // Si no hay campos visibles
+  if (visibleFields.length === 0) {
+    return (
+      <AnimatePresence>
+        <motion.div
+          key="no-fields-state"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`text-center py-4 ${isRTL ? 'rtl' : 'ltr'} ${customClassName}`}
+        >
+          <div className="text-muted">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            >
+              <i className="fas fa-check-circle fa-2x mb-3"></i>
+            </motion.div>
+            <p>🎯 {t('no_specific_fields', 'Aucun champ spécifique requis pour cette catégorie')}</p>
+            {stepFilter && (
+              <p className="small">
+                {t('step_filter.applied', 'Filtro aplicado:')} <strong>{getStepFilterName()}</strong>
+              </p>
+            )}
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
+
+  // 🎯 RENDERIZAR CON ANIMACIONES COMPLETAS
+  return (
+    <motion.div 
+      className={`dynamic-form-container ${isRTL ? 'rtl' : 'ltr'} ${customClassName}`}
+      initial="hidden"
+      animate="visible"
+    >
+      
+      {/* 🔥 CABECERA CON CATEGORÍA (solo si showHeader = true) */}
+      {showHeader && (
+        <motion.div 
+          variants={fadeInUpVariants}
+          className="category-header-section"
+        >
+          
+          {/* LÍNEA DE TIEMPO ANIMADA */}
+          <div className="timeline-steps">
+            {/* PASO 1: CATEGORÍA */}
+            <AnimatePresence>
+              {showCategoryHeader && (
+                <motion.div
+                  key="category-step"
+                  initial={{ opacity: 0, x: -50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ type: "spring", stiffness: 100 }}
+                  className="timeline-step"
+                >
+                  <div className="step-indicator">
+                    <div className="step-icon">{getCategoryIcon()}</div>
+                    <div className="step-content">
+                      <small className="text-muted">{t('main_category', 'Categoría Principal')}</small>
+                      <div className="category-badge">
+                        {t(`categories.${mainCategory}`, mainCategory)}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            {/* CONECTOR ANIMADO */}
+            <AnimatePresence>
+              {showCategoryHeader && showSubCategoryHeader && (
+                <motion.div
+                  key="connector-1"
+                  initial={{ width: 0 }}
+                  animate={{ width: '40px' }}
+                  transition={{ delay: 0.2, duration: 0.5 }}
+                  className="timeline-connector"
+                >
+                  <div className="connector-line"></div>
+                  <i className="fas fa-arrow-right connector-arrow"></i>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            {/* PASO 2: SUBCATEGORÍA */}
+            <AnimatePresence>
+              {showSubCategoryHeader && (
+                <motion.div
+                  key="subcategory-step"
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ type: "spring", stiffness: 100, delay: 0.1 }}
+                  className="timeline-step"
+                >
+                  <div className="step-indicator">
+                    <div className="step-icon">
+                      <i className="fas fa-list-alt"></i>
+                    </div>
+                    <div className="step-content">
+                      <small className="text-muted">{t('sub_category', 'Subcategoría')}</small>
+                      <div className="subcategory-badge">
+                        {t(`subcategories.${subCategory}`, subCategory)}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            {/* PASO 3: FILTRO APLICADO (si hay stepFilter) */}
+            {stepFilter && (
+              <>
+                <motion.div
+                  key="connector-2"
+                  initial={{ width: 0 }}
+                  animate={{ width: '40px' }}
+                  transition={{ delay: 0.3, duration: 0.5 }}
+                  className="timeline-connector"
+                >
+                  <div className="connector-line"></div>
+                  <i className="fas fa-arrow-right connector-arrow"></i>
+                </motion.div>
+                
+                <motion.div
+                  key="filter-step"
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ type: "spring", delay: 0.2 }}
+                  className="timeline-step"
+                >
+                  <div className="step-indicator">
+                    <div className="step-icon filter-step">
+                      <i className="fas fa-filter"></i>
+                    </div>
+                    <div className="step-content">
+                      <small className="text-muted">{t('step_filter.filter', 'Filtro')}</small>
+                      <div className="filter-badge">
+                        {getStepFilterName()}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </div>
+        </motion.div>
+      )}
+      
+      {/* 🔥 BARRA DE PROGRESO (solo si showProgress = true Y NO hay stepFilter) */}
+      {showProgress && !stepFilter && (
+        <motion.div 
+          variants={fadeInUpVariants}
+          className="progress-bar-section"
+        >
+          <div className="progress-bar">
+            <motion.div 
+              className="progress" 
+              initial={{ width: 0 }}
+              animate={{ width: `${(currentStep / 3) * 100}%` }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+            />
+          </div>
+          
+          <div className="step-indicators">
+            {[1, 2, 3].map(step => (
+              <motion.div 
+                key={step} 
+                className="step-container"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <div className={`step-circle ${currentStep >= step ? 'active' : ''}`}>
+                  {step}
+                </div>
+                <div className="step-label">
+                  {step === 1 ? t('step1', 'Información') : 
+                   step === 2 ? t('step2', 'Detalles') : 
+                   t('step3', 'Extras')}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+      
+      {/* 🔥 CONTENEDOR ANIMADO DE CAMPOS */}
+      <div className="fields-animation-container">
+        <AnimatePresence mode="wait" custom={animationDirection}>
+          <motion.div
+            key={`step-${currentStep}-${mainCategory}-${subCategory}-${stepFilter || 'all'}`}
+            custom={animationDirection}
+            variants={slideVariants}
+            initial={isInitialLoad ? false : "enter"}
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="form-step-content"
+          >
+            <div className={`row g-3 ${stepFilter ? 'step-filtered' : ''}`}>
+              {currentFields.map((fieldName, index) => (
+                <motion.div 
+                  key={`${fieldName}-${index}`} 
+                  className={getColumnClass()}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <FieldRenderer
+                    fieldName={fieldName}
+                    postData={postData}
+                    handleChangeInput={handleFieldChange}
+                    mainCategory={mainCategory}
+                    subCategory={subCategory}
+                    articleType={articleType}
+                    isRTL={isRTL}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+      
+      {/* 🔥 BOTONES DE NAVEGACIÓN (solo si NO hay stepFilter) */}
+      {!stepFilter && (
+        <motion.div 
+          variants={fadeInUpVariants}
+          className="form-navigation-buttons"
+        >
+          <AnimatePresence>
+            {currentStep > 1 && (
+              <motion.button 
+                key="prev-button"
+                type="button" 
+                onClick={handlePrevStep} 
+                className="btn-navigation btn-prev"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                ← {t('back', 'Atrás')}
+              </motion.button>
+            )}
+          </AnimatePresence>
+          
+          <AnimatePresence mode="wait">
+            {currentStep < 3 ? (
+              <motion.button 
+                key="next-button"
+                type="button" 
+                onClick={handleNextStep} 
+                className="btn-navigation btn-next"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                whileHover={{ scale: 1.05, boxShadow: "0 6px 20px rgba(79, 70, 229, 0.4)" }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {t('next', 'Siguiente')} →
+              </motion.button>
+            ) : (
+              <motion.button 
+                key="submit-button"
+                type="button" 
+                className="btn-navigation btn-submit"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ 
+                  scale: 1.05, 
+                  boxShadow: "0 6px 20px rgba(16, 185, 129, 0.4)"
+                }}
+                whileTap={{ scale: 0.95 }}
+              >
+                ✅ {t('complete_step', 'Completar paso')}
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      )}
+      
+      {/* 🔥 INFORMACIÓN ADICIONAL ANIMADA */}
+      <motion.div 
+        variants={fadeInUpVariants}
+        className="fields-info-section"
+      >
+        <motion.small 
+          className="text-muted"
+          animate={{ opacity: [0.7, 1, 0.7] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <i className="fas fa-info-circle me-1"></i>
+          {stepFilter ? (
+            <>
+              {getStepFilterName()} • {currentFields.length} {t('fields', 'campos')}
+            </>
+          ) : (
+            <>
+              {t('fields_info', `Paso ${currentStep} de 3 • ${currentFields.length} campo(s)`)}
+            </>
+          )}
+          
+          {Object.keys(categoryData).length > 0 && (
+            <motion.span 
+              className="ms-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              <i className="fas fa-database me-1"></i>
+              {Object.keys(categoryData).length} {t('data_captured', 'datos capturados')}
+            </motion.span>
+          )}
+        </motion.small>
+      </motion.div>
+      
+      {/* 🔥 ESTILOS CSS INLINE ACTUALIZADOS */}
+      <style jsx>{`
+        .dynamic-form-container {
+          width: 100%;
+          padding: ${showHeader ? '25px' : '20px'};
+          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+          border-radius: 16px;
+          box-shadow: 
+            0 10px 40px rgba(0, 0, 0, 0.08),
+            0 2px 8px rgba(79, 70, 229, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .category-header-section {
+          margin-bottom: ${showHeader ? '30px' : '0'};
+        }
+        
+        .timeline-steps {
+          display: flex;
+          align-items: center;
+          justify-content: ${showHeader ? 'space-between' : 'center'};
+          position: relative;
+          padding: 15px 0;
+        }
+        
+        .timeline-step {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          flex: ${showHeader ? '1' : '0 auto'};
+          position: relative;
+        }
+        
+        .step-indicator {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 18px;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+          border: 2px solid #e2e8f0;
+          min-width: ${showHeader ? '180px' : 'auto'};
+        }
+        
+        .step-icon {
+          width: 45px;
+          height: 45px;
+          background: linear-gradient(135deg, #4f46e5, #7c3aed);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 20px;
+          font-weight: bold;
+          box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+        
+        .step-icon.filter-step {
+          background: linear-gradient(135deg, #f59e0b, #fbbf24);
+        }
+        
+        .step-icon.current-step {
+          background: linear-gradient(135deg, #10b981, #34d399);
+        }
+        
+        .step-content {
+          flex: 1;
+        }
+        
+        .category-badge, .subcategory-badge, .step-badge, .filter-badge {
+          font-weight: 600;
+          color: #1e293b;
+          font-size: 14px;
+          line-height: 1.3;
+        }
+        
+        .filter-badge {
+          color: #92400e;
+          background: #fef3c7;
+          padding: 2px 8px;
+          border-radius: 4px;
+          display: inline-block;
+        }
+        
+        .timeline-connector {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          height: 2px;
+          margin: 0 10px;
+        }
+        
+        .connector-line {
+          position: absolute;
+          width: 100%;
+          height: 2px;
+          background: linear-gradient(90deg, #c7d2fe, #a5b4fc);
+          border-radius: 1px;
+        }
+        
+        .connector-arrow {
+          position: relative;
+          color: #a5b4fc;
+          font-size: 14px;
+          background: white;
+          padding: 2px;
+          border-radius: 50%;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .progress-bar-section {
+          margin-bottom: 30px;
+        }
+        
+        .progress-bar {
+          height: 8px;
+          background: #e2e8f0;
+          border-radius: 4px;
+          margin-bottom: 20px;
+          overflow: hidden;
+          position: relative;
+        }
+        
+        .progress {
+          height: 100%;
+          background: linear-gradient(90deg, #4f46e5, #7c3aed, #a78bfa);
+          border-radius: 4px;
+          position: relative;
+        }
+        
+        .progress::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.4),
+            transparent
+          );
+          animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        
+        .step-indicators {
+          display: flex;
+          justify-content: space-between;
+        }
+        
+        .step-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          cursor: pointer;
+        }
+        
+        .step-circle {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: #e2e8f0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 600;
+          font-size: 16px;
+          color: #64748b;
+          transition: all 0.3s ease;
+          margin-bottom: 8px;
+          border: 3px solid white;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .step-circle.active {
+          background: linear-gradient(135deg, #4f46e5, #7c3aed);
+          color: white;
+          box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+        }
+        
+        .step-label {
+          font-size: 13px;
+          color: #64748b;
+          font-weight: 500;
+          text-align: center;
+        }
+        
+        .fields-animation-container {
+          min-height: ${stepFilter ? '200px' : '320px'};
+          margin-bottom: 30px;
+          position: relative;
+        }
+        
+        .form-step-content {
+          width: 100%;
+        }
+        
+        .row.step-filtered {
+          animation: pulse 2s ease-in-out;
+        }
+        
+        @keyframes pulse {
+          0% { background-color: transparent; }
+          50% { background-color: rgba(249, 250, 251, 0.5); }
+          100% { background-color: transparent; }
+        }
+        
+        .form-navigation-buttons {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 30px;
+          gap: 15px;
+        }
+        
+        .btn-navigation {
+          padding: 14px 32px;
+          border: none;
+          border-radius: 10px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          min-width: 150px;
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .btn-prev {
+          background: white;
+          color: #4b5563;
+          border: 2px solid #e5e7eb;
+        }
+        
+        .btn-prev:hover {
+          background: #f8fafc;
+          border-color: #d1d5db;
+        }
+        
+        .btn-next, .btn-submit {
+          background: linear-gradient(90deg, #4f46e5, #7c3aed);
+          color: white;
+          flex-grow: 1;
+        }
+        
+        .btn-submit {
+          background: linear-gradient(90deg, #10b981, #34d399);
+        }
+        
+        .btn-next::after, .btn-submit::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.2),
+            transparent
+          );
+          transition: left 0.5s;
+        }
+        
+        .btn-next:hover::after, .btn-submit:hover::after {
+          left: 100%;
+        }
+        
+        .fields-info-section {
+          margin-top: 25px;
+          padding-top: 20px;
+          border-top: 1px solid #f1f5f9;
+          text-align: center;
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+          .timeline-steps {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+          }
+          
+          .timeline-connector {
+            display: none;
+          }
+          
+          .step-indicator {
+            min-width: 100%;
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .dynamic-form-container {
+            padding: 15px;
+          }
+          
+          .btn-navigation {
+            padding: 12px 24px;
+            min-width: 130px;
+            font-size: 15px;
+          }
+          
+          .step-circle {
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+          }
+          
+          .step-label {
+            font-size: 12px;
+          }
+        }
+      `}</style>
+    </motion.div>
+  );
+};
+
+// 🔥 Función helper para exportar datos
+DynamicFieldManager.getCategoryData = (postData, mainCategory, subCategory) => {
+  if (!mainCategory || !subCategory || !postData) return {};
+  
+  try {
+    const fields = getVisibleFields(mainCategory, subCategory, postData.articleType || 'vente');
+    const specificData = {};
+    
+    fields.forEach(fieldName => {
+      if (postData[fieldName] !== undefined && postData[fieldName] !== null) {
+        specificData[fieldName] = postData[fieldName];
+      }
+    });
+    
+    return specificData;
+  } catch (error) {
+    console.error('Error obteniendo datos de categoría:', error);
+    return {};
+  }
+};
+
+export default DynamicFieldManager;

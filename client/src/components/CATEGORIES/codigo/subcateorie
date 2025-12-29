@@ -1,0 +1,462 @@
+import React, { useState, useEffect } from 'react';
+import { Form } from 'react-bootstrap';
+import { useTranslation } from 'react-i18next';
+
+const Subcategories = ({ postData, handleChangeInput }) => {
+  const { t, i18n } = useTranslation('subcategories');
+  const isRTL = i18n.language === 'ar';
+  const mainCategory = postData.categorie;
+  const [availableSubcategories, setAvailableSubcategories] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Reset al cambiar categoría principal
+ 
+  const vehiculesCategories = [
+    { id: 'automobiles', name: t('vehicules.categories.voitures'), icon: <span style={{ fontSize: '24px' }}>🚗</span>, color: 'primary' },
+    { id: 'utilitaires', name: t('vehicules.categories.utilitaire'), icon: <span style={{ fontSize: '24px' }}>🚐</span>, color: 'secondary' },
+    { id: 'motos', name: t('vehicules.categories.motos'), icon: <span style={{ fontSize: '24px' }}>🏍️</span>, color: 'success' },
+     ];
+  
+    // emojess
+    const vetementsCategories = [
+      { id: 'vetements_homme', name: t('vetements.categories.vetements_homme'), icon: '👔', color: 'primary' },
+      { id: 'vetements_femme', name: t('vetements.categories.vetements_femme'), icon: '👗', color: 'danger' },
+      { id: 'chaussures_homme', name: t('vetements.categories.chaussures_homme'), icon: '👞', color: 'secondary' },
+      ];
+    // emojess
+    const telephonesCategories = [
+      { id: 'smartphones', name: t('telephones.categories.smartphones'), icon: <span style={{ fontSize: '24px', color: '#007bff' }}>📱</span>, color: 'primary', emoji: '📱' },
+      { id: 'telephones_cellulaires', name: t('telephones.categories.telephones_cellulaires'), icon: <span style={{ fontSize: '24px', color: '#6c757d' }}>📞</span>, color: 'secondary', emoji: '📞' },
+      { id: 'tablettes', name: t('telephones.categories.tablettes'), icon: <span style={{ fontSize: '24px', color: '#28a745' }}>📟</span>, color: 'success', emoji: '📟' },
+         ];
+  
+    // imojess
+    const informatiqueCategories = [
+      { id: 'ordinateurs_portables', name: t('informatique.categories.ordinateurs_portables'), icon: <span style={{ fontSize: '24px', color: '#007bff' }}>💻</span>, color: 'primary', emoji: '💻' },
+      { id: 'ordinateurs_bureau', name: t('informatique.categories.ordinateurs_bureau'), icon: <span style={{ fontSize: '24px', color: '#6c757d' }}>🖥️</span>, color: 'secondary', emoji: '🖥️' },
+      { id: 'serveurs', name: t('informatique.categories.serveurs'), icon: <span style={{ fontSize: '24px', color: '#343a40' }}>🗄️</span>, color: 'dark', emoji: '🗄️' },
+       ];
+  
+    // emojess
+    const electromenagerCategories = [
+      { id: 'televiseurs', name: t('electromenager.categories.televiseurs'), icon: <span style={{ fontSize: '24px', color: '#007bff' }}>📺</span>, color: 'primary', emoji: '📺' },
+      { id: 'demodulateurs_box_tv', name: t('electromenager.categories.demodulateurs_box_tv'), icon: <span style={{ fontSize: '24px', color: '#6c757d' }}>📦</span>, color: 'secondary', emoji: '📦' },
+      { id: 'paraboles_switch_tv', name: t('electromenager.categories.paraboles_switch_tv'), icon: <span style={{ fontSize: '24px', color: '#28a745' }}>🛰️</span>, color: 'success', emoji: '🛰️' },
+         ];
+  
+  // En tu archivo SubCategories.js - AÑADE ESTO:
+  
+  const piecesDetacheesCategories = [
+    { id: 'pieces_automobiles', name: t('pieces_detachees.categories.pieces_automobiles'), icon: <span style={{ fontSize: '24px', color: '#007bff' }}>🚗</span>, color: 'primary', emoji: '🚗' },
+    { id: 'pieces_vehicules', name: t('pieces_detachees.categories.pieces_vehicules'), icon: <span style={{ fontSize: '24px', color: '#6c757d' }}>🚚</span>, color: 'secondary', emoji: '🚚' },
+    { id: 'pieces_moto', name: t('pieces_detachees.categories.pieces_moto'), icon: <span style={{ fontSize: '24px', color: '#dc3545' }}>🏍️</span>, color: 'danger', emoji: '🏍️' },
+     ];
+  
+  
+  // imojes
+  const santeBeauteCategories = [
+    { id: 'cosmetiques_beaute', name: t('sante_beaute.categories.cosmetiques_beaute'), icon: <span style={{ fontSize: '24px', color: '#e83e8c' }}>💄</span>, color: 'pink', emoji: '💄' },
+    { id: 'parfums_deodorants_femme', name: t('sante_beaute.categories.parfums_deodorants_femme'), icon: <span style={{ fontSize: '24px', color: '#dc3545' }}>🌸</span>, color: 'danger', emoji: '🌸' },
+    { id: 'parfums_deodorants_homme', name: t('sante_beaute.categories.parfums_deodorants_homme'), icon: <span style={{ fontSize: '24px', color: '#007bff' }}>🌿</span>, color: 'primary', emoji: '🌿' },
+    { id: 'parapharmacie_sante', name: t('sante_beaute.categories.parapharmacie_sante'), icon: <span style={{ fontSize: '24px', color: '#28a745' }}>💊</span>, color: 'success', emoji: '💊' }
+  ];
+  
+  // IMOJESS
+  const meublesCategories = [
+    { id: 'meubles_maison', name: t('meubles.categories.meubles_maison'), icon: <span style={{ fontSize: '24px', color: '#007bff' }}>🛋️</span>, color: 'primary', emoji: '🛋️' },
+    { id: 'decoration', name: t('meubles.categories.decoration'), icon: <span style={{ fontSize: '24px', color: '#ffc107' }}>🎨</span>, color: 'warning', emoji: '🎨' },
+    { id: 'vaisselle', name: t('meubles.categories.vaisselle'), icon: <span style={{ fontSize: '24px', color: '#17a2b8' }}>🍽️</span>, color: 'info', emoji: '🍽️' },
+      ];
+  
+  // EMOJES
+  const loisirsCategories = [
+    { id: 'animalerie', name: t('loisirs.categories.animalerie'), icon: <span style={{ fontSize: '24px', color: '#28a745' }}>🐾</span>, color: 'success', emoji: '🐾' },
+    { id: 'consoles_jeux_videos', name: t('loisirs.categories.consoles_jeux_videos'), icon: <span style={{ fontSize: '24px', color: '#007bff' }}>🎮</span>, color: 'primary', emoji: '🎮' },
+    { id: 'livres_magazines', name: t('loisirs.categories.livres_magazines'), icon: <span style={{ fontSize: '24px', color: '#17a2b8' }}>📚</span>, color: 'info', emoji: '📚' },
+     ];
+   
+  
+  // imojes
+  const sportCategories = [
+    { id: 'football', name: t('sport.categories.football'), icon: <span style={{ fontSize: '24px' }}>⚽</span>, color: 'success', emoji: '⚽' },
+    { id: 'hand_voley_basket', name: t('sport.categories.hand_voley_basket'), icon: <span style={{ fontSize: '24px' }}>🏀</span>, color: 'primary', emoji: '🏀' },
+     ];
+  
+  // Emojzesss 
+  const alimentairesCategories = [
+       { id: 'fruits_secs', name: t('alimentaires.categories.fruits_secs'), icon: <span style={{ fontSize: '24px', color: '#795548' }}>🥜</span>, color: 'brown', emoji: '🥜' },
+    { id: 'graines_riz_cereales', name: t('alimentaires.categories.graines_riz_cereales'), icon: <span style={{ fontSize: '24px', color: '#ffc107' }}>🌾</span>, color: 'warning', emoji: '🌾' },
+       { id: 'aliments_dietetiques', name: t('alimentaires.categories.aliments_dietetiques'), icon: <span style={{ fontSize: '24px', color: '#28a745' }}>🥗</span>, color: 'success', emoji: '🥗' }
+  ];
+   
+   
+  // EMOJES
+  const servicesCategories = [
+    { id: 'construction_travaux', name: t('services.categories.construction_travaux'), icon: <span style={{ fontSize: '24px' }}>🏗️</span>, color: 'warning', emoji: '🏗️' },
+    { id: 'ecoles_formations', name: t('services.categories.ecoles_formations'), icon: <span style={{ fontSize: '24px' }}>📚</span>, color: 'info', emoji: '📚' },
+          ];
+
+  const materiauxCategories = [
+    { id: 'materiel_professionnel', name: t('materiaux.categories.materiel_professionnel'), icon: <span style={{ fontSize: '24px', color: '#007bff' }}>🏭</span>, color: 'primary', emoji: '🏭', description: t('materiaux.descriptions.materiel_professionnel', 'Équipement professionnel industriel') },
+    { id: 'outillage_professionnel', name: t('materiaux.categories.outillage_professionnel'), icon: <span style={{ fontSize: '24px', color: '#28a745' }}>🔧</span>, color: 'success', emoji: '🔧', description: t('materiaux.descriptions.outillage_professionnel', 'Outils professionnels de qualité') },
+    { id: 'materiaux_construction', name: t('materiaux.categories.materiaux_construction'), icon: <span style={{ fontSize: '24px', color: '#dc3545' }}>🧱</span>, color: 'danger', emoji: '🧱', description: t('materiaux.descriptions.materiaux_construction', 'Matériaux pour construction') },
+    ];
+
+
+
+
+
+  //  emojes
+  const voyagesCategories = [
+    { id: 'voyage_organise', name: t('voyages.categories.voyage_organise'), icon: <span style={{ fontSize: '24px', color: '#007bff' }}>✈️</span>, color: 'primary', emoji: '✈️' },
+    { id: 'location_vacances', name: t('voyages.categories.location_vacances'), icon: <span style={{ fontSize: '24px', color: '#28a745' }}>🏠</span>, color: 'success', emoji: '🏠' },
+    { id: 'hajj_omra', name: t('voyages.categories.hajj_omra'), icon: <span style={{ fontSize: '24px', color: '#17a2b8' }}>🕋</span>, color: 'info', emoji: '🕋' },
+    ];
+  // Data de Immobilier
+  const immobilierOperations = [
+    { id: 'vente', name: t('immobilier.operation.vente') },
+    { id: 'location', name: t('immobilier.operation.location') },
+    { id: 'location_vacances', name: t('immobilier.operation.location_vacances') },
+ 
+  ];
+
+  const immobilierProperties = [
+    { id: 'appartement', name: t('immobilier.property.appartement') },
+    { id: 'villa', name: t('immobilier.property.villa') },
+    { id: 'terrain', name: t('immobilier.property.terrain') },
+    { id: 'local', name: t('immobilier.property.local') },
+ 
+  ];
+  const  emploiCategories = [
+    { id: 'offres_emploi', name: t('offre.property.Offresemploi') },
+    { id: 'demandes_emploi', name: t('offre.property.Demandesemploi') },
+    
+  ];
+
+  useEffect(() => {
+ 
+    if (!postData.categorie) {
+      setAvailableSubcategories([]);
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const subcats = getSubcategoriesByCategory(postData.categorie);
+      
+      setAvailableSubcategories(subcats);
+    } catch (error) {
+      console.error('❌ Error cargando subcategorías:', error);
+      setAvailableSubcategories([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [postData.categorie, postData.articleType]); // Dependencias
+
+  // 🔄 Validar subcategoría actual cuando se cargan las opciones
+  useEffect(() => {
+    if (postData.subCategory && availableSubcategories.length > 0) {
+      const isValid = availableSubcategories.includes(postData.subCategory);
+      
+      if (!isValid && postData.subCategory !== '') {
+        console.warn(`⚠️ Subcategoría "${postData.subCategory}" no es válida para ${postData.categorie}`);
+        
+        // Opcional: Si estás en modo edición, puedes mantenerla
+        // pero para creación nueva, limpiar
+        if (!postData._id) {  
+          handleChangeInput({
+            target: { name: 'subCategory', value: '' }
+          });
+        }
+      }
+    }
+  }, [postData.subCategory, availableSubcategories, postData.categorie, handleChangeInput, postData._id]);
+  // Handlers para cada select
+  const handleOperationChange = (e) => {
+    const value = e.target.value;
+    
+    
+    // Guardar operación
+    handleChangeInput({
+      target: { name: 'articleType', value }
+    });
+    
+    // Limpiar tipo de propiedad al cambiar operación
+    if (value) {
+      handleChangeInput({
+        target: { name: 'subCategory', value: '' }
+      });
+    }
+  };
+
+  const handlePropertyChange = (e) => {
+    const value = e.target.value;
+    console.log('🔄 Propiedad seleccionada:', value);
+    
+    // Guardar tipo de propiedad
+    handleChangeInput({
+      target: { name: 'subCategory', value }
+    });
+  };
+
+  // 🎯 RENDER PARA IMMOBILIER (CON DOS SELECTS)
+  const renderImmobilierContent = () => {
+    return (
+      <div className="mt-2">
+        {/* SELECT 1: TYPE D'OPÉRATION */}
+        <Form.Group className="mb-3">
+          <Form.Label className={`fw-bold ${isRTL ? 'text-end d-block' : ''}`}>
+            📋 {t('type_operation', 'Type d\'opération')}
+          </Form.Label>
+          <Form.Select
+            value={postData.articleType || ''}
+            onChange={handleOperationChange}
+            className="form-select-lg"
+            dir={isRTL ? 'rtl' : 'ltr'}
+          >
+            <option value="">
+              {t('select_operation', 'Sélectionnez une opération...')}
+            </option>
+            {immobilierOperations.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </Form.Select>
+        </Form.Group>
+
+        {/* SELECT 2: TYPE DE BIEN (solo si hay operación seleccionada) */}
+        {postData.articleType && (
+          <Form.Group className="mb-3">
+            <Form.Label className={`fw-bold ${isRTL ? 'text-end d-block' : ''}`}>
+              🏠 {t('type_property', 'Type de bien')}
+            </Form.Label>
+            <Form.Select
+              value={postData.subCategory || ''}
+              onChange={handlePropertyChange}
+              className="form-select-lg"
+              dir={isRTL ? 'rtl' : 'ltr'}
+            >
+              <option value="">
+                {t('select_property', 'Sélectionnez un type de bien...')}
+              </option>
+              {immobilierProperties.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </Form.Select>
+          </Form.Group>
+        )}
+
+        {/* INFO DE LO SELECCIONADO */}
+        {(postData.articleType || postData.subCategory) && (
+          <div className="alert alert-light border">
+            <small>
+              <strong>Résumé de la sélection:</strong>
+              {postData.articleType && (
+                <div className="text-success">
+                  📋 <strong>Opération:</strong> {
+                    immobilierOperations.find(op => op.id === postData.articleType)?.name
+                  }
+                </div>
+              )}
+              {postData.subCategory && (
+                <div className="text-primary">
+                  🏠 <strong>Type de bien:</strong> {
+                    immobilierProperties.find(prop => prop.id === postData.subCategory)?.name
+                  }
+                </div>
+              )}
+            </small>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // 🎯 FUNCIÓN PARA OTRAS CATEGORÍAS (mantén las funciones que te pasé)
+  const getOtherCategories = () => {
+    switch(mainCategory) {
+      case 'voyages':
+        return voyagesCategories;
+      case 'vehicules':
+        return vehiculesCategories;
+      case 'vetements':
+        return vetementsCategories;
+      case 'telephones':
+        return telephonesCategories;
+      case 'informatique':
+        return informatiqueCategories;
+      case 'electromenager':
+        return electromenagerCategories;
+      case 'piecesDetachees':
+        return piecesDetacheesCategories;
+      case 'sante_beaute':
+        return santeBeauteCategories;
+      case 'meubles':
+        return meublesCategories;
+      case 'loisirs':
+        return loisirsCategories;
+      case 'emploi':
+        return emploiCategories;
+      case 'sport':
+        return sportCategories;
+      case 'alimentaires':
+        return alimentairesCategories;
+      case 'materiaux':
+        return materiauxCategories;
+      case 'services':
+        return servicesCategories;
+      default:
+        return [];
+    }
+  };
+
+  // 🎯 Títulos para otras categorías
+  const titles = {
+    'vehicules': t('type_vehicle', 'Type de véhicule'),
+    'vetements': t('type_clothing', 'Type de vêtement'),
+    'telephones': t('type_phone', 'Type de téléphone'),
+    'informatique': t('type_computer', 'Type d\'équipement informatique'),
+    'electromenager': t('type_appliance', 'Type d\'appareil électroménager'),
+    'piecesDetachees': t('type_pieces_detachees', 'Type de pièces détachées'),
+    'sante_beaute': t('type_sante_beautee', 'Type de produit santé & beauté'),
+    'meubles': t('type_meubles', 'Type de meuble & maison'),
+    'loisirs': t('type_loisirs', 'Type de loisirs & divertissements'),
+    'emploi': t('type_emploi', 'Type d\'offre/emploi'),
+    'sport': t('type_sport', 'Type de sport'),
+    'alimentaires': t('type_alimentaires', 'Type de produit alimentaire'),
+    'materiaux': t('type_materiaux', 'Type de matériaux & équipement'),
+    'services': t('type_services', 'Type de service'),
+    'voyages': t('type_voyages', 'Type de voyage')
+  };
+
+  // No renderizar si no hay categoría principal
+  if (!mainCategory) {
+    return (
+      <div className={`alert alert-info ${isRTL ? 'text-end' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
+        ⚠️ {t('select_category_first', 'Veuillez d\'abord sélectionner une catégorie principale')}
+      </div>
+    );
+  }
+
+  // 🎯 Renderizar IMMOBILIER con dos selects
+  if (mainCategory === 'immobilier') {
+    return (
+      <div className={`${isRTL ? 'rtl' : 'ltr'}`}>
+        {renderImmobilierContent()}
+      </div>
+    );
+  }
+
+  // 🎯 Para OTRAS CATEGORÍAS
+  const otherCategories = getOtherCategories();
+  
+  if (otherCategories.length > 0) {
+    return (
+      <div className={`${isRTL ? 'rtl' : 'ltr'}`}>
+        <div className="mt-4">
+          <h6 className={`mb-3 ${isRTL ? 'text-end' : ''}`}>
+            {titles[mainCategory] || t('select_subcategory')}
+          </h6>
+          
+          {/* SELECT ÚNICO para otras categorías */}
+          <Form.Group className="mb-3">
+            <Form.Select
+              value={postData.subCategory || ''}
+              onChange={(e) => {
+                handleChangeInput({
+                  target: { name: 'subCategory', value: e.target.value }
+                });
+              }}
+              className="form-select-lg"
+              dir={isRTL ? 'rtl' : 'ltr'}
+            >
+              <option value="">
+                {t('select_subcategory_option', 'Sélectionnez une sous-catégorie...')}
+              </option>
+              {otherCategories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </Form.Select>
+          </Form.Group>
+        </div>
+      </div>
+    );
+  }
+
+  // Si no hay categorías definidas para esta categoría principal
+  return (
+    <div className={`${isRTL ? 'rtl' : 'ltr'}`}>
+      <div className="mt-4">
+      <Form.Group className="mb-3">
+      <Form.Label>
+        <strong>📂 {t('subcategory', 'Sous-catégorie')}</strong>
+        {postData.subCategory && (
+          <span className="ms-2 text-success">
+            <small>
+              <i className="bi bi-check-circle me-1"></i>
+              {postData.subCategory}
+            </small>
+          </span>
+        )}
+      </Form.Label>
+      
+      {isLoading ? (
+        <div className="text-center py-2">
+          <div className="spinner-border spinner-border-sm" role="status">
+            <span className="visually-hidden">Chargement...</span>
+          </div>
+          <small className="ms-2 text-muted">Chargement des sous-catégories...</small>
+        </div>
+      ) : availableSubcategories.length > 0 ? (
+        <>
+          <Form.Select
+            name="subCategory"
+            value={postData.subCategory || ''}
+            onChange={handleChangeInput}
+            required
+            disabled={isLoading}
+          >
+            <option value="">
+              {t('select_subcategory', 'Sélectionnez une sous-catégorie')}
+            </option>
+            {availableSubcategories.map((subCat) => (
+              <option key={subCat} value={subCat}>
+                {t(subCat, subCat)}
+              </option>
+            ))}
+          </Form.Select>
+          
+          <Form.Text className="text-muted">
+            <small>
+              {availableSubcategories.length} sous-catégorie(s) disponible(s)
+              {postData.categorie === 'immobilier' && postData.articleType && 
+                ` pour ${postData.articleType}`}
+            </small>
+          </Form.Text>
+        </>
+      ) : (
+        <Form.Control
+          type="text"
+          name="subCategory"
+          value={postData.subCategory || ''}
+          onChange={handleChangeInput}
+          placeholder={t('enter_subcategory', 'Entrez la sous-catégorie manuellement')}
+          required
+          disabled={isLoading}
+        />
+      )}
+      
+   
+    </Form.Group>
+      </div>
+    </div>
+  );
+};
+
+export default React.memo(Subcategories);

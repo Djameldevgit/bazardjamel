@@ -1,0 +1,140 @@
+const Store = require('../models/storeModel')
+const Users = require('../models/userModel')
+const Posts = require('../models/postModel')
+const storePlans = require('../config/storePlans') // opcional si ya tienes los planes
+
+const storeCtrl = {
+  // 🏪 Crear tienda
+  createStore: async (req, res) => {
+    try {
+      const { name, description, category, plan } = req.body
+
+      // Validar campos obligatorios
+      if (!name || !category)
+        return res.status(400).json({ msg: 'Nombre y categoría son obligatorios.' })
+
+      // Verificar usuario
+      const user = await Users.findById(req.user._id)
+      if (!user) return res.status(404).json({ msg: 'Usuario no encontrado.' })
+
+      // Verificar si el usuario ya tiene tienda (si solo se permite una)
+      const existingStore = await Store.findOne({ owner: req.user._id })
+      if (existingStore)
+        return res
+          .status(400)
+          .json({ msg: 'Ya tienes una tienda registrada en el sistema.' })
+
+      // Plan seleccionado o por defecto
+      const selectedPlan = storePlans?.[plan] || storePlans?.Free || { maxProducts: 10 }
+
+      // Crear tienda
+      const newStore = new Store({
+        owner: req.user._id,
+        name,
+        description,
+        category,
+        plan: plan || 'Free',
+        planFeatures: selectedPlan
+      })
+
+      await newStore.save()
+
+      res.status(201).json({
+        msg: 'Tienda creada con éxito.',
+        store: await newStore.populate('owner', 'name email role')
+      })
+    } catch (err) {
+      console.error(err)
+      res.status(500).json({ msg: 'Error al crear la tienda.' })
+    }
+  },
+
+  // 📋 Obtener todas las tiendas
+  getAllStores: async (req, res) => {
+    try {
+      const stores = await Store.find()
+        .populate('owner', 'name email')
+        .sort({ createdAt: -1 })
+
+      res.json(stores)
+    } catch (err) {
+      res.status(500).json({ msg: 'Error al obtener tiendas.' })
+    }
+  },
+
+  // 👤 Obtener tiendas por usuario
+  getStoresByUser: async (req, res) => {
+    try {
+      const { id } = req.params
+      const stores = await Store.find({ owner: id })
+        .populate('owner', 'name email')
+        .sort({ createdAt: -1 })
+
+      res.json(stores)
+    } catch (err) {
+      res.status(500).json({ msg: 'Error al obtener tiendas del usuario.' })
+    }
+  },
+
+  // 🏪 Obtener una tienda específica
+  getStoreById: async (req, res) => {
+    try {
+      const { id } = req.params
+      const store = await Store.findById(id)
+        .populate('owner', 'name email')
+        .populate({
+          path: 'products',
+          model: 'Post'
+        })
+
+      if (!store) return res.status(404).json({ msg: 'Tienda no encontrada.' })
+
+      res.json(store)
+    } catch (err) {
+      res.status(500).json({ msg: 'Error al obtener la tienda.' })
+    }
+  },
+
+  // ✏️ Actualizar tienda
+  updateStore: async (req, res) => {
+    try {
+      const { id } = req.params
+      const store = await Store.findById(id)
+
+      if (!store) return res.status(404).json({ msg: 'Tienda no encontrada.' })
+      if (store.owner.toString() !== req.user._id.toString())
+        return res.status(403).json({ msg: 'No tienes permiso para modificar esta tienda.' })
+
+      const updated = await Store.findByIdAndUpdate(id, req.body, {
+        new: true
+      }).populate('owner', 'name email')
+
+      res.json({ msg: 'Tienda actualizada con éxito.', store: updated })
+    } catch (err) {
+      res.status(500).json({ msg: 'Error al actualizar la tienda.' })
+    }
+  },
+
+  // ❌ Eliminar tienda
+  deleteStore: async (req, res) => {
+    try {
+      const { id } = req.params
+      const store = await Store.findById(id)
+
+      if (!store) return res.status(404).json({ msg: 'Tienda no encontrada.' })
+      if (store.owner.toString() !== req.user._id.toString())
+        return res.status(403).json({ msg: 'No tienes permiso para eliminar esta tienda.' })
+
+      // Eliminar todos los posts relacionados
+      await Posts.deleteMany({ store: store._id })
+
+      await Store.findByIdAndDelete(id)
+
+      res.json({ msg: 'Tienda y publicaciones eliminadas correctamente.' })
+    } catch (err) {
+      res.status(500).json({ msg: 'Error al eliminar la tienda.' })
+    }
+  }
+}
+
+module.exports = storeCtrl

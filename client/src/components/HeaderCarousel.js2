@@ -1,0 +1,140 @@
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import Carousel from 'react-bootstrap/Carousel';
+
+function HeaderCarousel() {
+  const { t } = useTranslation('headercarousel');
+
+  const carouselImages = [
+    '/images/banner1.jpg',
+    '/images/banner2.jpg', 
+    '/images/banner0.jpg',
+    '/images/banner4.jpg',
+    '/images/banner5.jpg',
+    '/images/banner7.jpg'
+  ];
+
+  const slides = [
+    {
+      title: t('carousel.title1', 'Nouvelle Collection Printemps'),
+      description: t('carousel.desc1', 'Découvrez les dernières tendances de la saison')
+    },
+    {
+      title: t('carousel.title2', 'Soldes Exceptionnelles'),
+      description: t('carousel.desc2', 'Jusqu\'à -50% sur toute la boutique')
+    },
+    {
+      title: t('carousel.title3', 'Livraison Gratuite'),
+      description: t('carousel.desc3', 'Partout en Algérie à partir de 3000 DZD')
+    },
+    {
+      title: t('carousel.title4', 'Mode Homme & Femme'),
+      description: t('carousel.desc4', 'Des styles uniques pour tous les goûts')
+    },
+    {
+      title: t('carousel.title5', 'Qualité Garantie'),
+      description: t('carousel.desc5', 'Des matériaux premium et une confection soignée')
+    },
+    {
+      title: t('carousel.title6', 'Nouveautés Quotidiennes'),
+      description: t('carousel.desc6', 'Découvrez nos nouvelles arrivées chaque jour')
+    }
+  ];
+
+  // Detectar si es dispositivo móvil
+  const isMobile = () => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth <= 768;
+    }
+    return false;
+  };
+
+  return (
+    <Carousel 
+      data-bs-theme="light" 
+      fade 
+      interval={4000}
+      indicators={true}
+      controls={true}
+      style={{
+        height: 'auto',
+        minHeight: '100px' // Reducido significativamente
+      }}
+    >
+      {carouselImages.map((image, index) => {
+        const slide = slides[index] || {
+          title: t('carousel.defaultTitle', 'Tassili Fashion'),
+          description: t('carousel.defaultDesc', 'Votre destination mode préférée')
+        };
+        
+        return (
+          <Carousel.Item key={index}>
+            <div 
+              className="d-block w-100"
+              style={{
+                // 🔥 ALTURA OPTIMIZADA PARA ANDROID
+                height: isMobile() ? '35vh' : '40vh', // Más bajo en móvil
+                maxHeight: isMobile() ? '180px' : '250px', // Límites más bajos
+                minHeight: '120px', // Mínimo reducido
+                overflow: 'hidden',
+                backgroundColor: '#f8f9fa'
+              }}
+            >
+              <img
+                src={image}
+                alt={slide.title}  
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  objectPosition: isMobile() ? 'center 25%' : 'center' // Ajuste para móvil
+                }}
+                onError={(e) => {
+                  e.target.src = `https://via.placeholder.com/800x200/8b5cf6/ffffff?text=Tassili+${index + 1}`;
+                }}
+              />
+            </div>
+         
+            <Carousel.Caption 
+              style={{
+                backgroundColor: 'rgba(0, 0, 0, 0.4)', // Más oscuro para mejor legibilidad
+                backdropFilter: 'blur(2px)',
+                borderRadius: '8px',
+                padding: isMobile() ? '10px' : '15px',
+                bottom: isMobile() ? '10px' : '20px',
+                left: '5%',
+                right: '5%',
+                textAlign: 'center'
+              }}
+            >
+              <h3 
+                style={{
+                  fontSize: isMobile() ? '1rem' : '1.5rem', // Texto más pequeño
+                  fontWeight: '600',
+                  marginBottom: '5px',
+                  color: '#ffffff',
+                  textShadow: '1px 1px 3px rgba(0, 0, 0, 0.7)'
+                }}
+              >
+                {slide.title}
+              </h3>
+              <p 
+                style={{
+                  fontSize: isMobile() ? '0.8rem' : '1rem', // Texto más pequeño
+                  fontWeight: '400',
+                  color: '#f0f0f0',
+                  marginBottom: '0',
+                  display: isMobile() ? 'none' : 'block' // Ocultar descripción en móvil si quieres más compacto
+                }}
+              >
+                {slide.description}
+              </p>
+            </Carousel.Caption>
+          </Carousel.Item>
+        );
+      })}
+    </Carousel>
+  );
+}
+
+export default HeaderCarousel;

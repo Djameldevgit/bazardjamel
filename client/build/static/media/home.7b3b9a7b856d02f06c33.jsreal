@@ -1,0 +1,342 @@
+// pages/Home.js - MARKETPLACE STYLE
+import React, { useEffect, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { getCategories } from '../redux/actions/postAction';
+import LoadIcon from '../images/loading.gif';
+
+const Home = () => {
+    const dispatch = useDispatch();
+    const { homePosts, auth } = useSelector(state => state);
+    const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    
+    // 📌 Cargar categorías al inicio
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                console.log('🏠 Marketplace Home - Loading categories...');
+                await dispatch(getCategories());
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        
+        loadData();
+    }, [dispatch]);
+    
+    // 📌 Obtener categorías populares (con más anuncios)
+    const popularCategories = homePosts.categories
+        ?.filter(cat => cat.count > 0)
+        .sort((a, b) => b.count - a.count) || [];
+    
+    // 📌 Filtrar categorías por búsqueda
+    const filteredCategories = popularCategories.filter(cat =>
+        cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        cat.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    
+    // 📌 Agrupar categorías por tipo (opcional)
+    const categoryGroups = {
+        populares: popularCategories.slice(0, 8),
+        todas: popularCategories,
+        destacadas: popularCategories.filter(cat => cat.featured).slice(0, 6)
+    };
+    
+    return (
+        <div className="marketplace-home">
+            {/* HERO SECTION */}
+            <div className="hero-section text-center py-5 mb-5">
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                >
+                    <h1 className="display-4 fw-bold mb-3">
+                        <span className="text-primary">Market</span>
+                        <span className="text-secondary">Place</span>
+                    </h1>
+                    <p className="lead mb-4">
+                        Encuentra todo lo que necesitas en un solo lugar
+                    </p>
+                    
+                    {/* BARRA DE BÚSQUEDA */}
+                    <div className="search-bar mx-auto" style={{ maxWidth: '600px' }}>
+                        <div className="input-group input-group-lg shadow">
+                            <span className="input-group-text bg-white border-end-0">
+                                <i className="fas fa-search text-muted"></i>
+                            </span>
+                            <input
+                                type="text"
+                                className="form-control border-start-0"
+                                placeholder="Buscar categorías, productos, servicios..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            <button className="btn btn-primary">
+                                <i className="fas fa-search me-2"></i>
+                                Buscar
+                            </button>
+                        </div>
+                        <div className="d-flex justify-content-center mt-2">
+                            <small className="text-muted">
+                                Ej: Vehículos, Inmuebles, Teléfonos, Ropa, etc.
+                            </small>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+            
+            {/* CONTENIDO PRINCIPAL */}
+            <div className="container">
+                {loading ? (
+                    <div className="text-center py-5">
+                        <img src={LoadIcon} alt="loading" className="d-block mx-auto" />
+                        <p className="mt-2">Cargando categorías...</p>
+                    </div>
+                ) : (
+                    <>
+                        {/* CATEGORÍAS POPULARES */}
+                        <section className="mb-5">
+                            <div className="d-flex justify-content-between align-items-center mb-4">
+                                <h2 className="fw-bold">
+                                    <i className="fas fa-fire text-warning me-2"></i>
+                                    Categorías Populares
+                                </h2>
+                                <Link to="/categories" className="btn btn-outline-primary">
+                                    Ver todas →
+                                </Link>
+                            </div>
+                            
+                            <div className="row g-4">
+                                {categoryGroups.populares.map((category, index) => (
+                                    <motion.div
+                                        key={category.name}
+                                        className="col-6 col-md-4 col-lg-3"
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: index * 0.1 }}
+                                    >
+                                        <CategoryCard category={category} />
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </section>
+                        
+                        {/* TODAS LAS CATEGORÍAS (con búsqueda) */}
+                        <section className="mb-5">
+                            <div className="d-flex justify-content-between align-items-center mb-4">
+                                <h2 className="fw-bold">
+                                    <i className="fas fa-th-large text-primary me-2"></i>
+                                    Explora Todas las Categorías
+                                </h2>
+                                <small className="text-muted">
+                                    {filteredCategories.length} categorías disponibles
+                                </small>
+                            </div>
+                            
+                            {searchQuery && (
+                                <div className="alert alert-info mb-3">
+                                    <i className="fas fa-search me-2"></i>
+                                    Resultados para: <strong>"{searchQuery}"</strong>
+                                </div>
+                            )}
+                            
+                            <div className="row g-3">
+                                {filteredCategories.map((category, index) => (
+                                    <motion.div
+                                        key={category.name}
+                                        className="col-6 col-md-4 col-lg-3"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: index * 0.05 }}
+                                    >
+                                        <CategoryCard category={category} />
+                                    </motion.div>
+                                ))}
+                            </div>
+                            
+                            {filteredCategories.length === 0 && searchQuery && (
+                                <div className="text-center py-5">
+                                    <div className="display-1 mb-3">🔍</div>
+                                    <h4>No se encontraron categorías</h4>
+                                    <p className="text-muted">
+                                        No hay categorías que coincidan con "{searchQuery}"
+                                    </p>
+                                    <button 
+                                        className="btn btn-outline-primary"
+                                        onClick={() => setSearchQuery('')}
+                                    >
+                                        Limpiar búsqueda
+                                    </button>
+                                </div>
+                            )}
+                        </section>
+                        
+                        {/* ESTADÍSTICAS */}
+                        <section className="mb-5">
+                            <div className="row g-4">
+                                <div className="col-md-4">
+                                    <div className="stats-card text-center p-4 rounded-3 bg-primary text-white">
+                                        <div className="stats-icon display-4 mb-3">
+                                            <i className="fas fa-layer-group"></i>
+                                        </div>
+                                        <h3 className="fw-bold">{popularCategories.length}</h3>
+                                        <p className="mb-0">Categorías activas</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="col-md-4">
+                                    <div className="stats-card text-center p-4 rounded-3 bg-success text-white">
+                                        <div className="stats-icon display-4 mb-3">
+                                            <i className="fas fa-store"></i>
+                                        </div>
+                                        <h3 className="fw-bold">
+                                            {popularCategories.reduce((sum, cat) => sum + cat.count, 0)}
+                                        </h3>
+                                        <p className="mb-0">Anuncios totales</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="col-md-4">
+                                    <div className="stats-card text-center p-4 rounded-3 bg-warning text-white">
+                                        <div className="stats-icon display-4 mb-3">
+                                            <i className="fas fa-users"></i>
+                                        </div>
+                                        <h3 className="fw-bold">{auth.user ? 'Comunidad' : 'Únete'}</h3>
+                                        <p className="mb-0">{auth.user ? 'Usuario verificado' : 'Regístrate gratis'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                        
+                        {/* CTA SECTION */}
+                        <section className="text-center py-5 mb-4 bg-light rounded-3">
+                            <h2 className="fw-bold mb-3">¿Listo para publicar?</h2>
+                            <p className="lead mb-4">
+                                Publica tus productos o servicios y llega a miles de compradores
+                            </p>
+                            <div className="d-flex justify-content-center gap-3">
+                                <Link to="/create" className="btn btn-primary btn-lg">
+                                    <i className="fas fa-plus me-2"></i>
+                                    Crear Anuncio
+                                </Link>
+                                <Link to="/how-it-works" className="btn btn-outline-primary btn-lg">
+                                    <i className="fas fa-question-circle me-2"></i>
+                                    ¿Cómo funciona?
+                                </Link>
+                            </div>
+                        </section>
+                    </>
+                )}
+            </div>
+            
+            {/* ESTILOS */}
+            <style jsx>{`
+                .marketplace-home {
+                    min-height: 100vh;
+                }
+                
+                .hero-section {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 80px 20px;
+                }
+                
+                .search-bar {
+                    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+                }
+                
+                .stats-card {
+                    transition: transform 0.3s ease;
+                }
+                
+                .stats-card:hover {
+                    transform: translateY(-5px);
+                }
+                
+                @media (max-width: 768px) {
+                    .hero-section {
+                        padding: 50px 15px;
+                    }
+                    
+                    .hero-section h1 {
+                        font-size: 2.5rem;
+                    }
+                    
+                    .search-bar .input-group {
+                        flex-direction: column;
+                    }
+                    
+                    .search-bar .input-group > * {
+                        width: 100%;
+                        border-radius: 0.375rem !important;
+                        margin-bottom: 10px;
+                    }
+                }
+            `}</style>
+        </div>
+    );
+};
+
+// Componente CategoryCard
+const CategoryCard = ({ category }) => {
+    return (
+        <Link 
+            to={`/category/${category.name}`}
+            className="category-card card text-decoration-none h-100 border-0 shadow-sm"
+        >
+            <div className="card-body text-center p-4">
+                <div className="category-icon mb-3">
+                    <div className="icon-wrapper display-4">
+                        {category.emoji || '📁'}
+                    </div>
+                </div>
+                <h5 className="category-name fw-bold mb-2">
+                    {category.name}
+                </h5>
+                <p className="category-description text-muted small mb-3">
+                    {category.description || `${category.count} anuncios disponibles`}
+                </p>
+                <div className="category-stats">
+                    <span className="badge bg-primary rounded-pill">
+                        {category.count} anuncios
+                    </span>
+                </div>
+            </div>
+            <div className="card-footer bg-transparent border-top-0 text-center">
+                <small className="text-primary">
+                    Ver anuncios <i className="fas fa-arrow-right ms-1"></i>
+                </small>
+            </div>
+            
+            <style jsx>{`
+                .category-card {
+                    transition: all 0.3s ease;
+                    border-radius: 12px;
+                    overflow: hidden;
+                }
+                
+                .category-card:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+                    border-color: #4f46e5;
+                }
+                
+                .icon-wrapper {
+                    color: #4f46e5;
+                }
+                
+                .category-card:hover .icon-wrapper {
+                    transform: scale(1.1);
+                    transition: transform 0.3s ease;
+                }
+            `}</style>
+        </Link>
+    );
+};
+
+export default Home;
