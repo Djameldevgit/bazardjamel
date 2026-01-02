@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import TitleField from '../camposComun/TitleField';
 import ReferenceField from '../camposComun/RefereceField';
 import DescriptionField from '../camposComun/DescriptionField';
-import PriceField from '../camposComun/PrixField';
+import PriceField from '../camposComun/PriceField';
 import EtatField from '../camposComun/EtatField';
 import QuantiteField from '../camposComun/QuantiteField';
 import Livraison from '../camposComun/LivraisonFileld'; // Componente importado

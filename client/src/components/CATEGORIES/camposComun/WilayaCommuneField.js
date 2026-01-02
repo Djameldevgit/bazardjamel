@@ -1,76 +1,77 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Row, Col } from 'react-bootstrap';
+import { Row, Col, Form } from 'react-bootstrap';
+import WilayaField from './WilayaField';
+import CommuneField from './CommuneField';
+import wilayasData from './json/wilayas.json'; // Importa tu JSON
+ 
+const WilayaCommunesField = ({ 
+  postData, 
+  handleChangeInput 
+}) => {
+  const [selectedWilaya, setSelectedWilaya] = useState(null);
+  const [communesList, setCommunesList] = useState([]);
 
-const WilayaCommuneField = ({ postData, handleChangeInput, isRTL, t }) => {
-  // Ejemplo de datos de wilayas y communes (en producción vendría de API)
-  const [communes, setCommunes] = useState([]);
-  
-  const wilayas = [
-    { code: '16', name: 'Alger' },
-    { code: '31', name: 'Oran' },
-    { code: '25', name: 'Constantine' },
-    { code: '19', name: 'Sétif' },
-    // ... agregar más
-  ];
-  
+  // Cuando se selecciona una wilaya, actualizamos las communes
+  const handleWilayaChange = (wilaya) => {
+    if (wilaya) {
+      setSelectedWilaya(wilaya.wilaya);
+      setCommunesList(wilaya.commune || []);
+    } else {
+      setSelectedWilaya(null);
+      setCommunesList([]);
+      // Limpiamos también la commune seleccionada
+      handleChangeInput({
+        target: { name: 'commune', value: '' }
+      });
+    }
+  };
+
+  // Sincronizar cuando cambia postData.wilaya desde otro lugar
   useEffect(() => {
-    // Cuando cambia la wilaya, cargar sus communes
-    if (postData.wilaya) {
-      // Simulación: en producción sería una llamada API
-      const communesByWilaya = {
-        '16': ['Alger-Centre', 'Hussein Dey', 'Sidi M\'hamed'],
-        '31': ['Oran', 'Es-Senia', 'Bir El Djir'],
-        '25': ['Constantine', 'El Khroub', 'Ain Smara'],
-      };
-      
-      setCommunes(communesByWilaya[postData.wilaya] || []);
+    if (postData.wilaya && !selectedWilaya) {
+      const wilaya = wilayasData.find(w => w.wilaya === postData.wilaya);
+      if (wilaya) {
+        setSelectedWilaya(wilaya.wilaya);
+        setCommunesList(wilaya.commune || []);
+      }
     }
   }, [postData.wilaya]);
-  
+
   return (
-    <>
+    <div className="localisation-wrapper">
+      <h6 className="mb-3">📍 Localisation</h6>
+      
       <Row>
         <Col md={6}>
-          <Form.Group>
-            <Form.Label>📍 {t('wilaya', 'Wilaya')}</Form.Label>
-            <Form.Select
-              name="wilaya"
-              value={postData.wilaya || ''}
-              onChange={handleChangeInput}
-              dir={isRTL ? 'rtl' : 'ltr'}
-            >
-              <option value="">{t('select_wilaya', 'Sélectionnez une wilaya')}</option>
-              {wilayas.map(wilaya => (
-                <option key={wilaya.code} value={wilaya.code}>
-                  {wilaya.name}
-                </option>
-              ))}
-            </Form.Select>
-          </Form.Group>
+          <WilayaField
+            postData={postData}
+            handleChangeInput={handleChangeInput}
+            name="wilaya"
+            onWilayaChange={handleWilayaChange}
+          />
         </Col>
         
         <Col md={6}>
-          <Form.Group>
-            <Form.Label>🏘️ {t('commune', 'Commune')}</Form.Label>
-            <Form.Select
-              name="commune"
-              value={postData.commune || ''}
-              onChange={handleChangeInput}
-              dir={isRTL ? 'rtl' : 'ltr'}
-              disabled={!postData.wilaya}
-            >
-              <option value="">{t('select_commune', 'Sélectionnez une commune')}</option>
-              {communes.map(commune => (
-                <option key={commune} value={commune}>
-                  {commune}
-                </option>
-              ))}
-            </Form.Select>
-          </Form.Group>
+          <CommuneField
+            postData={postData}
+            handleChangeInput={handleChangeInput}
+            name="commune"
+            communes={communesList}
+            wilayaSelected={selectedWilaya}
+          />
         </Col>
       </Row>
-    </>
+      
+      {selectedWilaya && (
+        <div className="mt-2">
+          <small className="text-info">
+            <strong>Wilaya sélectionnée:</strong> {selectedWilaya} 
+            {postData.commune && ` • Commune: ${postData.commune}`}
+          </small>
+        </div>
+      )}
+    </div>
   );
 };
 
-export default WilayaCommuneField;
+export default WilayaCommunesField;

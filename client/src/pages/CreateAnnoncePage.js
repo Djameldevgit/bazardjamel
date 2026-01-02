@@ -143,7 +143,7 @@ const CreateAnnoncePage = () => {
         
         setAlert({
           show: true,
-          message: "✅ Catégorie sélectionnée. Passons aux détails!",
+          message: "✅ Une fois publiée, l'annonce est valable six mois.",
           variant: "success"
         });
       }, 600);

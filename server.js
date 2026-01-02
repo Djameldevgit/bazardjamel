@@ -75,6 +75,8 @@ app.use('/api', require('./routes/privacysettingsRouter'));
  
 app.use("/api", require("./routes/settingsRouter"));
 app.use('/api', require('./routes/storeRouter'))
+ 
+
 setInterval(autoUnblockUsers, 5 * 60 * 1000);
 
 // --- MongoDB ---

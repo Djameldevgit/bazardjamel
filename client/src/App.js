@@ -12,7 +12,7 @@ import Alert from './components/alert/Alert'
 
 import { useSelector, useDispatch } from 'react-redux'
 import { refreshToken } from './redux/actions/authAction'
-import { getCategories, getPosts, getPostsByCategory, getSimilarPosts } from './redux/actions/postAction'
+import { getCategories, getPosts, getSimilarPosts } from './redux/actions/postAction'
 
 import { GLOBALTYPES } from './redux/actions/globalTypes'
 import SocketClient from './SocketClient'
@@ -40,14 +40,20 @@ import Navbar2 from './components/header/Navbar2';
 import CreateAnnoncePage from './pages/CreateAnnoncePage';
 import CategoryPage from './pages/categorySubCategory/CategoryPage';
 import SubcategoryPage from './pages/categorySubCategory/SubcategoryPage';
-import PropertyPage from './pages/categorySubCategory/PropertyPage';
+ 
 import ImmobilerOperationPage from './pages/categorySubCategory/ImmobilerOperationPage';
  
-import CreateStorePage from './pages/store/createStorePage';
-import StoreConfirmation from './pages/store/storeConfirmation';
-import StoreDashboard from './pages/store/storeDashborad';
-import StorePage from './pages/store/StorePage';
-import PublicStoresPage from './pages/categorySubCategory/publicStorePage';
+ 
+ 
+import { getStores } from './redux/actions/storeAction';
+import Store from './pages/store/[id]';
+import StoresList from './pages/store/StoreList';
+import CreateStore from './pages/store/CreateStore';
+import EditStore from './pages/store/EditeStore';
+ 
+ 
+ 
+ 
  
 function App() {
   const { auth, status, modal, languageReducer } = useSelector(state => state)
@@ -89,17 +95,20 @@ function App() {
 
 // 📌 HOOK 2: Cargar datos del usuario (solo autenticado)
 useEffect(() => {
+  getStores()
 getPosts()
 getSimilarPosts()
+ 
+
   if (auth.token && auth.user) {
       console.log('🔐 User authenticated, loading user data...');
       dispatch(getPrivacySettings(auth.token));
       dispatch(getUsers(auth.token));
+   
   }
 }, [dispatch, auth.token, auth.user]);
 
-
-  // ✅ MANEJO DE IDIOMA
+ 
   useEffect(() => {
     if (language) {
       i18n.changeLanguage(language);
@@ -175,21 +184,7 @@ getSimilarPosts()
           <Route exact path="/user/reset/:token" component={ResetPassword} />
         
 
-
  
-          <Route exact path="/my-stores" component={StoreDashboard} />
-<Route exact path="/dashboard" component={StoreDashboard} />
-<Route exact path="/store-dashboard" component={StoreDashboard} />
- <Route exact  path="/storedashboard:id" component={StoreDashboard} />
-
-          <Route exact  path="/stores" component={PublicStoresPage } />
-<Route  exact path="/stores/category/:category" component={PublicStoresPage } />
- 
-          <Route exact  path="/creer-boutique" component={CreateStorePage} />
-          <Route exact  path="/store-confirmation" component={StoreConfirmation} />
-         
-       <Route  exact path="/store/:id" component={StorePage} />
-
          
          
           <Route
@@ -203,22 +198,11 @@ getSimilarPosts()
           {/* ===================================== */}
           
           {/* 1. IMMOBILIER - Estructura especial sin prefijo /category/ */}
-          <Route exact path="/immobilier" component={CategoryPage} />
-          <Route exact path="/immobilier/:operationId" component={ImmobilerOperationPage} />
-          <Route exact path="/immobilier/:operationId/:propertyId" component={SubcategoryPage} />
-          
-          {/* 2. OTRAS CATEGORÍAS - Con prefijo /category/ */}
-          <Route exact path="/category/:categoryName" component={CategoryPage} />
-          <Route exact path="/category/:categoryName/:subcategoryId" component={SubcategoryPage} />
-          
-          {/* 3. RUTAS SIN PREFIJO (para compatibilidad con enlaces antiguos) */}
-          {/* IMPORTANTE: Estas rutas deben ir DESPUÉS de las específicas */}
-          <Route exact path="/:categoryName" component={CategoryPage} />
-          <Route exact path="/:categoryName/:subcategoryId" component={SubcategoryPage} />
-  
+       
           {/* ===================================== */}
           {/* RUTAS PRIVADAS */}
           {/* ===================================== */}
+         
           <PrivateRouter exact path="/profile" component={PageRender} />
           <PrivateRouter exact path="/mes-annonces" component={PageRender} />
           <PrivateRouter exact path="/creer-annonce" component={PageRender} />
@@ -233,6 +217,36 @@ getSimilarPosts()
           <PrivateRouter exact path="/users/contactt" component={PageRender} />
           <PrivateRouter exact path="/users/bloqueados" component={PageRender} />
           
+
+
+          <Route path="/stores" component={StoresList} />             {/* Listado de tiendas */}
+        <Route path="/store/create-store" component={CreateStore} />      {/* Crear tienda */}
+        <Route path="/store/edit/:id" component={EditStore} />      {/* Editar tienda */}
+        <Route path="/store/:id" component={Store} />         {/* Detalle tienda */}
+ 
+ 
+
+
+
+         
+          <Route exact path="/immobilier" component={CategoryPage} />
+          <Route exact path="/immobilier/:operationId" component={ImmobilerOperationPage} />
+          <Route exact path="/immobilier/:operationId/:propertyId" component={SubcategoryPage} />
+          
+          {/* 2. OTRAS CATEGORÍAS - Con prefijo /category/ */}
+          <Route exact path="/category/:categoryName" component={CategoryPage} />
+          <Route exact path="/category/:categoryName/:subcategoryId" component={SubcategoryPage} />
+          
+          {/* 3. RUTAS SIN PREFIJO (para compatibilidad con enlaces antiguos) */}
+          {/* IMPORTANTE: Estas rutas deben ir DESPUÉS de las específicas */}
+          <Route exact path="/:categoryName" component={CategoryPage} />
+          <Route exact path="/:categoryName/:subcategoryId" component={SubcategoryPage} />
+  
+
+
+
+
+
           {/* Rutas privadas genéricas */}
           <PrivateRouter exact path="/:page/:id/:tab" component={PageRender} />
           <PrivateRouter exact path="/:page/:id" component={PageRender} />

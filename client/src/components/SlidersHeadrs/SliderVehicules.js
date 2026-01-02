@@ -2,30 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
-// Mapa de colores para cada categoría
-const colorMap = {
-  primary: '#667eea',
-  secondary: '#48c6ef',
-  success: '#37ecba',
-  warning: '#f5576c',
-  info: '#6a11cb',
-  dark: '#2d3748',
-  danger: '#ff9a9e'
-};
-
-// Subcategorías de vehículos
+// Subcategorías de vehículos - Mismo formato que las categorías principales
 const vehiculesData = [
-  { id: 'automobiles', name: 'Voitures', emoji: '🚗', color: 'primary' },
-  { id: 'utilitaires', name: 'Utilitaires', emoji: '🚐', color: 'secondary' },
-  { id: 'motos', name: 'Motos', emoji: '🏍️', color: 'success' },
-  { id: 'quads', name: 'Quads', emoji: '🛵', color: 'warning' },
-  { id: 'fourgons', name: 'Fourgons', emoji: '🚚', color: 'info' },
-  { id: 'camions', name: 'Camions', emoji: '🚛', color: 'dark' },
-  { id: 'bus', name: 'Bus', emoji: '🚌', color: 'danger' },
-  { id: 'engins', name: 'Engins', emoji: '⚙️', color: 'primary' },
-  { id: 'tracteurs', name: 'Tracteurs', emoji: '🚜', color: 'success' },
-  { id: 'remorques', name: 'Remorques', emoji: '🚛', color: 'secondary' },
-  { id: 'bateaux', name: 'Bateaux', emoji: '🚤', color: 'info' }
+  { id: 1, name: 'Voitures', slug: 'automobiles', icon: 'automobile.png', color: '#667eea' },
+  { id: 2, name: 'Utilitaires', slug: 'utilitaires', icon: 'utilitaire.png', color: '#f093fb' },
+  { id: 3, name: 'Motos', slug: 'motos', icon: 'moto.png', color: '#f5576c' },
+  { id: 4, name: 'Quads', slug: 'quads', icon: 'quad.png', color: '#48c6ef' },
+  { id: 5, name: 'Fourgons', slug: 'fourgons', icon: 'fourgon.png', color: '#6a11cb' },
+  { id: 6, name: 'Camions', slug: 'camions', icon: 'camion.png', color: '#37ecba' },
+  { id: 7, name: 'Bus', slug: 'bus', icon: 'bus.png', color: '#ff9a9e' },
+  { id: 8, name: 'Engins', slug: 'engins', icon: 'engin.png', color: '#a18cd1' },
+  { id: 9, name: 'Tracteurs', slug: 'tracteurs', icon: 'tracteur.png', color: '#fbc2eb' },
+  { id: 10, name: 'Remorques', slug: 'remorques', icon: 'remorque.png', color: '#667eea' },
+  { id: 11, name: 'Bateaux', slug: 'bateaux', icon: 'bateau.png', color: '#f093fb' }
 ];
 
 const SliderVehicule = () => {
@@ -37,13 +26,22 @@ const SliderVehicule = () => {
   const scrollRef = useRef(null);
   const rowsContainerRef = useRef(null);
 
-  // Configuración responsive
+  // Calcular distribución en dos filas (50% en cada fila) - EXACTO como el principal
+  const halfIndex = Math.ceil(vehiculesData.length / 2);
+  const firstRow = vehiculesData.slice(0, halfIndex);
+  const secondRow = vehiculesData.slice(halfIndex);
+
+  // Función para obtener la ruta del icono
+  const getIconPath = (iconName) => {
+    return `/icons/vehicules/${iconName}`;
+  };
+
+  // Configuración responsive - EXACTO como el principal
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
       
-      // Reset scroll position en mobile
       if (mobile && scrollRef.current) {
         scrollRef.current.scrollLeft = 0;
         setScrollPosition(0);
@@ -55,11 +53,6 @@ const SliderVehicule = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  // Configuración inicial de filas
-  const itemsPerRow = isMobile ? 4 : 6;
-  const firstRow = vehiculesData.slice(0, itemsPerRow);
-  const secondRow = vehiculesData.slice(itemsPerRow);
 
   // Actualizar estado de botones de scroll
   const updateScrollButtons = () => {
@@ -91,170 +84,154 @@ const SliderVehicule = () => {
     }
   };
 
-  // Renderizar fila de emojis
-  const renderEmojiRow = (row, rowIndex) => {
-    const marginBottom = rowIndex === 0 ? (isMobile ? '8px' : '10px') : '0px';
-    
+  // Renderizar fila de iconos - ESTILOS IDÉNTICOS al componente principal
+  const renderIconRow = (row, rowIndex) => {
     return (
       <div 
         style={{
           display: 'flex',
-          justifyContent: isMobile ? 'flex-start' : 'center',
-          gap: isMobile ? '8px' : '15px',
-          padding: isMobile ? '10px 8px' : '15px 20px',
+          justifyContent: isMobile ? 'flex-start' : 'space-around',
+          gap: isMobile ? '12px' : '5px',
+          padding: isMobile ? '6px 12px' : '8px 5px',
           flexShrink: 0,
           minWidth: isMobile ? 'min-content' : 'auto',
-          marginBottom: marginBottom
+          width: '100%'
         }}
       >
-        {row.map((category) => {
-          const colorHex = colorMap[category.color] || colorMap.primary;
-          
-          return (
-            <Link
-              key={`${category.id}-${rowIndex}`}
-              // ✅ CORRECCIÓN: Cambiado según tu configuración de rutas
-              // Si tu ruta es: /:categoryName/:subcategoryId
-              to={`/vehicules/${category.id}`}
-              // O si es: /category/:categoryName/:subcategoryId
-              // to={`/category/vehicules/${category.id}`}
+        {row.map((category) => (
+          <Link
+            key={`${category.id}-${rowIndex}`}
+            to={`/category/vehicules/${category.slug}`}
+            style={{
+              textDecoration: 'none',
+              color: 'inherit',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              flexShrink: 0,
+              width: isMobile ? '80px' : '95px',
+              flex: '1 1 0%',
+              minWidth: '70px',
+              maxWidth: '110px',
+              padding: '4px 2px',
+              transition: 'transform 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            {/* CONTENEDOR DE ICONO CON FONDO CIRCULAR - IDÉNTICO */}
+            <div
               style={{
-                textDecoration: 'none',
-                color: 'inherit',
+                width: isMobile ? '70px' : '85px',
+                height: isMobile ? '70px' : '85px',
+                borderRadius: '50%',
                 display: 'flex',
-                flexDirection: 'column',
                 alignItems: 'center',
-                flexShrink: 0,
-                width: isMobile ? '85px' : '110px'
+                justifyContent: 'center',
+                marginBottom: '8px',
+                overflow: 'hidden',
+                border: `3px solid ${category.color}20`,
+                background: `linear-gradient(135deg, ${category.color}15, ${category.color}08)`,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                transition: 'all 0.3s ease',
+                padding: '8px'
               }}
+              className="icon-container"
             >
-              {/* Círculo del emoji */}
-              <div
+              {/* ICONO REALISTA */}
+              <img
+                src={getIconPath(category.icon)}
+                alt={category.name}
                 style={{
-                  width: isMobile ? '70px' : '85px',
-                  height: isMobile ? '70px' : '85px',
-                  borderRadius: '50%',
-                  background: `linear-gradient(135deg, ${colorHex}15 0%, ${colorHex}10 100%)`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  position: 'relative',
-                  border: `2px solid ${colorHex}30`,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  marginBottom: '8px',
-                  transition: 'transform 0.2s ease'
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  objectPosition: 'center',
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
+                  transition: 'transform 0.3s ease'
                 }}
-              >
-                <span 
-                  style={{ 
-                    fontSize: isMobile ? '2rem' : '2.3rem',
-                    lineHeight: 1,
-                    filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.15))'
-                  }}
-                >
-                  {category.emoji}
-                </span>
-              </div>
+                onLoad={(e) => {
+                  e.target.style.opacity = '1';
+                }}
+                onError={(e) => {
+                  console.error(`Error loading icon: ${category.icon}`);
+                  e.target.style.display = 'none';
+                  e.target.parentElement.innerHTML = `<span style="font-size: 2rem; color: ${category.color}">${category.name.charAt(0)}</span>`;
+                }}
+              />
+            </div>
 
-              {/* Nombre de la categoría */}
-              <div style={{
-                textAlign: 'center',
-                width: '100%'
+            {/* Nombre de categoría - IDÉNTICO */}
+            <div style={{
+              textAlign: 'center',
+              width: '100%',
+              padding: '0 2px'
+            }}>
+              <span style={{
+                fontSize: isMobile ? '0.75rem' : '0.8rem',
+                fontWeight: '600',
+                color: '#333',
+                display: 'block',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                lineHeight: '1.2'
               }}>
-                <span style={{
-                  fontSize: isMobile ? '0.75rem' : '0.85rem',
-                  fontWeight: '600',
-                  color: '#333',
-                  display: 'block',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  padding: '0 2px',
-                  lineHeight: '1.2'
-                }}>
-                  {category.name}
-                </span>
-              </div>
-            </Link>
-          );
-        })}
+                {category.name}
+              </span>
+            </div>
+          </Link>
+        ))}
       </div>
     );
   };
 
   return (
-    <div ref={containerRef} className="vehicules-slider-container">
-      {/* Card contenedor único */}
+    <div ref={containerRef} className="category-grid-container">
+      {/* Card contenedor - EXACTAMENTE IGUAL */}
       <div style={{
         position: 'relative',
-        maxWidth: '1200px',
+        maxWidth: '1400px',
         margin: '0 auto',
         background: 'white',
         borderRadius: '20px',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
         overflow: 'hidden',
-        border: '1px solid rgba(0,0,0,0.06)'
+        border: '1px solid rgba(0,0,0,0.08)',
+        marginTop: '0',
+        marginBottom: '0'
       }}>
-        {/* Título de la sección */}
-        <div style={{
-          padding: isMobile ? '15px 12px 5px' : '20px 20px 10px',
-          borderBottom: '1px solid rgba(0,0,0,0.04)',
-          background: 'linear-gradient(135deg, #667eea10 0%, #764ba210 100%)'
-        }}>
-          <h3 style={{
-            margin: 0,
-            fontSize: isMobile ? '1.1rem' : '1.3rem',
-            fontWeight: '700',
-            color: '#2d3748',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <span style={{ fontSize: '1.2em' }}>🚗</span>
-            {isMobile ? 'Véhicules' : 'Tous les types de véhicules'}
-          </h3>
-          <p style={{
-            margin: '4px 0 0 0',
-            fontSize: isMobile ? '0.75rem' : '0.85rem',
-            color: '#666'
-          }}>
-            Découvrez nos catégories de véhicules
-          </p>
-        </div>
-
-        {/* Contenido con scroll horizontal en mobile */}
+        {/* Contenido con scroll horizontal - EXACTO */}
         <div
           ref={scrollRef}
           onScroll={handleScroll}
           style={{
             display: 'block',
-            padding: isMobile ? '12px 0' : '20px 0',
+            padding: isMobile ? '12px 0' : '16px 0',
             overflowX: isMobile ? 'auto' : 'visible',
             overflowY: 'hidden',
             scrollBehavior: 'smooth',
             WebkitOverflowScrolling: 'touch',
             msOverflowStyle: 'none',
-            scrollbarWidth: 'none',
-            position: 'relative',
-            minHeight: isMobile ? 'auto' : '180px'
+            scrollbarWidth: 'none'
           }}
         >
           {/* Contenedor de filas */}
-          <div ref={rowsContainerRef} style={{
-            position: 'relative'
-          }}>
+          <div ref={rowsContainerRef}>
             {/* Primera fila */}
-            {firstRow.length > 0 && renderEmojiRow(firstRow, 0)}
-
+            {renderIconRow(firstRow, 0)}
             {/* Segunda fila */}
-            {secondRow.length > 0 && renderEmojiRow(secondRow, 1)}
+            {renderIconRow(secondRow, 1)}
           </div>
         </div>
 
-        {/* Botones de scroll solo en mobile */}
+        {/* Botones de scroll solo en mobile - EXACTAMENTE IGUAL */}
         {isMobile && (
           <>
-            {/* Botón izquierdo */}
             {canScrollLeft && (
               <button
                 onClick={scrollLeft}
@@ -267,22 +244,22 @@ const SliderVehicule = () => {
                   width: '36px',
                   height: '36px',
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  border: 'none',
-                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  border: '1px solid rgba(0,0,0,0.1)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  color: 'white',
+                  color: '#667eea',
+                  backdropFilter: 'blur(4px)',
                   transition: 'all 0.2s ease'
                 }}
               >
-                <FaChevronLeft size={18} color="white" />
+                <FaChevronLeft size={18} />
               </button>
             )}
 
-            {/* Botón derecho */}
             {canScrollRight && (
               <button
                 onClick={scrollRight}
@@ -295,27 +272,28 @@ const SliderVehicule = () => {
                   width: '36px',
                   height: '36px',
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  border: 'none',
-                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  border: '1px solid rgba(0,0,0,0.1)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  color: 'white',
+                  color: '#667eea',
+                  backdropFilter: 'blur(4px)',
                   transition: 'all 0.2s ease'
                 }}
               >
-                <FaChevronRight size={18} color="white" />
+                <FaChevronRight size={18} />
               </button>
             )}
 
-            {/* Indicadores de scroll (dots) */}
+            {/* Indicadores de scroll (dots) - EXACTO */}
             <div style={{
               display: 'flex',
               justifyContent: 'center',
               gap: '6px',
-              padding: '8px 0 12px 0',
+              padding: '4px 0 8px 0',
               position: 'relative',
               zIndex: 10
             }}>
@@ -331,8 +309,7 @@ const SliderVehicule = () => {
                       background: isActive 
                         ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
                         : '#e0e0e0',
-                      transition: 'all 0.3s ease',
-                      transform: isActive ? 'scale(1.1)' : 'scale(1)'
+                      transition: 'all 0.3s ease'
                     }}
                   />
                 );
@@ -341,73 +318,123 @@ const SliderVehicule = () => {
           </>
         )}
 
-        {/* Footer - ACTUALIZADO con la ruta correcta */}
+        {/* Footer minimalista - EXACTO (pero ajustado para vehículos) */}
         <div style={{
-          padding: isMobile ? '8px 12px' : '10px 20px',
+          padding: isMobile ? '6px 12px' : '8px 20px',
           borderTop: '1px solid rgba(0,0,0,0.04)',
           background: 'rgba(248, 249, 250, 0.4)',
-          textAlign: 'center'
+          textAlign: 'center',
+          display: 'none' // Ocultado como en el principal, o puedes mostrar si quieres
         }}>
-          <Link 
-            // ✅ CORRECCIÓN: Usar la misma estructura de rutas
-            to="/category/vehicules"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: isMobile ? '0.75rem' : '0.85rem',
-              color: '#667eea',
-              fontWeight: '600',
-              textDecoration: 'none',
-              padding: '4px 12px',
-              borderRadius: '20px',
-              background: 'rgba(102, 126, 234, 0.1)',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            Voir tous les véhicules
-            <FaChevronRight size={12} />
-          </Link>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: isMobile ? '0.75rem' : '0.85rem',
+            color: '#666',
+            fontWeight: '500'
+          }}>
+            {/* Contenido opcional */}
+          </div>
         </div>
       </div>
 
-      {/* Estilos CSS */}
+      {/* Estilos CSS COPIADOS EXACTAMENTE del componente principal */}
       <style>{`
         /* Ocultar scrollbar pero mantener funcionalidad */
-        .vehicules-slider-container ::-webkit-scrollbar {
+        .category-grid-container ::-webkit-scrollbar {
           display: none;
         }
         
-        /* Solo efecto de press para mobile/touch */
-        .vehicules-slider-container a:active div:first-child {
-          transform: scale(0.95);
-          transition: transform 0.1s ease;
-        }
-        
         /* Prevenir zoom en doble tap */
-        .vehicules-slider-container * {
+        .category-grid-container * {
           touch-action: manipulation;
           -webkit-tap-highlight-color: transparent;
         }
         
         /* Mejorar rendimiento */
-        .vehicules-slider-container {
+        .category-grid-container {
           contain: content;
         }
         
-        /* Optimización para pantallas muy pequeñas */
+        /* Efectos hover - EXACTAMENTE IGUAL */
+        .icon-container:hover {
+          transform: scale(1.05);
+          box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+        }
+        
+        .icon-container:hover img {
+          transform: scale(1.1);
+        }
+        
+        /* EMOJIS MÁS GRANDES PARA DESKTOP - AJUSTADO PARA ICONOS */
+        @media (min-width: 768px) {
+          .category-grid-container a {
+            flex: 1 !important;
+            min-width: 0 !important;
+          }
+          
+          .icon-container {
+            width: 85px !important;
+            height: 85px !important;
+          }
+        }
+        
+        /* ICONOS EXTRA GRANDES PARA PANTALLAS GRANDES */
+        @media (min-width: 1200px) {
+          .icon-container {
+            width: 95px !important;
+            height: 95px !important;
+          }
+        }
+        
+        /* Optimización para pantallas pequeñas */
         @media (max-width: 380px) {
-          .vehicules-slider-container a {
+          .category-grid-container a {
             width: 75px !important;
           }
           
-          .vehicules-slider-container a > div:first-child {
-            width: 58px !important;
-            height: 58px !important;
+          .icon-container {
+            width: 65px !important;
+            height: 65px !important;
           }
           
-          .vehicules-slider-container a > div:first-child span {
-            font-size: 1.8rem !important;
+          /* Botones más pequeños en pantallas muy pequeñas */
+          .category-grid-container button {
+            width: 28px !important;
+            height: 28px !important;
+          }
+          
+          .category-grid-container button svg {
+            width: 14px !important;
+            height: 14px !important;
+          }
+        }
+        
+        /* Gradientes en los bordes del scroll (solo mobile) - EXACTO */
+        @media (max-width: 767px) {
+          .category-grid-container > div > div:first-child::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+            z-index: 15;
+          }
+          
+          .category-grid-container > div > div:first-child::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 20px;
+            height: 100%;
+            background: linear-gradient(to left, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+            z-index: 15;
           }
         }
       `}</style>

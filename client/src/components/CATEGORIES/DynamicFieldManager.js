@@ -3,7 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import FieldRenderer from './FieldRenderer';
 import { getFieldsForStep } from './FieldConfig';
-
+ 
+import FieldRendererUniversal from './FiledRendererUniversal'; // ← DESPUÉS
 const DynamicFieldManager = ({ 
   mainCategory, 
   subCategory, 
@@ -102,15 +103,15 @@ const DynamicFieldManager = ({
             {visibleFields.map((fieldName, index) => (
               <div key={index} className="col-12 col-md-6">
                 <div className="field-wrapper">
-                  <FieldRenderer
-                    fieldName={fieldName}
-                    postData={postData}
-                    handleChangeInput={handleChangeInput}
-                    mainCategory={mainCategory}
-                    subCategory={subCategory}
-                    articleType={articleType}
-                    isRTL={isRTL}
-                  />
+                <FieldRendererUniversal
+  fieldName={fieldName}
+  postData={postData}
+  handleChangeInput={handleChangeInput}
+  mainCategory={mainCategory}
+  subCategory={subCategory}
+  articleType={articleType}
+  isRTL={isRTL}
+/>
                 </div>
               </div>
             ))}

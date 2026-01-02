@@ -1,54 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Form } from 'react-bootstrap';
-import { useTranslation } from 'react-i18next'; // AÑADIR import
 
 const CommuneField = ({ 
   postData, 
   handleChangeInput, 
-  isRTL, 
-  name = 'commune', 
-  label = 'commune',
-  wilayaField = 'wilaya'
+  name = 'commune',
+  communes = [], // Recibe las communes como prop
+  wilayaSelected = null // Para mostrar información
 }) => {
-  const { t } = useTranslation('camposcomunes'); // USAR useTranslation
-  const [communes, setCommunes] = useState([]);
   
-  // Simulación de datos - en producción sería API
-  useEffect(() => {
-    if (postData[wilayaField]) {
-      const communesByWilaya = {
-        '16': ['Alger-Centre', 'Hussein Dey', 'Sidi M\'hamed', 'El Madania', 'El Harrach'],
-        '31': ['Oran', 'Es-Senia', 'Bir El Djir', 'El Ancor', 'Oued Tlelat'],
-        '25': ['Constantine', 'El Khroub', 'Ain Smara', 'Zighoud Youcef', 'Didouche Mourad'],
-        '19': ['Sétif', 'El Eulma', 'Ain Arnat', 'Ain Abessa', 'Bougaâ'],
-      };
-      
-      setCommunes(communesByWilaya[postData[wilayaField]] || []);
-    } else {
-      setCommunes([]);
-    }
-  }, [postData[wilayaField], wilayaField]);
-  
+  // Si no hay wilaya seleccionada, deshabilitamos el campo
+  const isDisabled = !wilayaSelected || communes.length === 0;
+
   return (
     <Form.Group>
-      <Form.Label>🏘️ {t(label)}</Form.Label> {/* USAR t() */}
-      <Form.Select
+      <Form.Label>
+        🏘️ Commune 
+        {wilayaSelected && (
+          <small className="text-muted ml-2">
+            (Wilaya: {wilayaSelected})
+          </small>
+        )}
+      </Form.Label>
+      
+      <Form.Control
+        as="select"
         name={name}
         value={postData[name] || ''}
         onChange={handleChangeInput}
-        dir={isRTL ? 'rtl' : 'ltr'}
-        disabled={!postData[wilayaField]}
+        disabled={isDisabled}
+        required={!isDisabled}
       >
-        <option value="">{t('select_commune')}</option> {/* USAR t() */}
-        {communes.map(commune => (
+        <option value="">
+          {isDisabled 
+            ? "-- Sélectionnez d'abord une wilaya --" 
+            : "-- Sélectionnez une commune --"
+          }
+        </option>
+        
+        {communes.map((commune) => (
           <option key={commune} value={commune}>
             {commune}
           </option>
         ))}
-      </Form.Select>
-      {!postData[wilayaField] && (
-        <Form.Text className="text-muted">
-          {t('select_wilaya_first')} {/* USAR t() */}
+      </Form.Control>
+      
+      {isDisabled && (
+        <Form.Text className="text-warning">
+          Veuillez sélectionner une wilaya d'abord
         </Form.Text>
       )}
     </Form.Group>

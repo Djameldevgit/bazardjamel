@@ -587,7 +587,7 @@ const Navbar2 = () => {
     icon={FaPlusCircle} 
     iconColor="#28a745"
     iconSize={16}
-    to="/creer-boutique"
+    to="/store/create-store"
     className="mb-2 create-store-item"
   >
     <div className="d-flex align-items-center justify-content-between">
@@ -599,15 +599,9 @@ const Navbar2 = () => {
   </MenuItem>
   
   {/* Ver todas las tiendas */}
-  <MenuItem 
-    icon={FaStore} 
-    iconColor="#007bff"
-    iconSize={16}
-    to="/my-stores"
-    className="mb-2"
-  >
+  <MenuItem icon={FaUserCircle} iconColor="#667eea" to={`/store/${auth.user._id}`}>
+ 
     <div className="d-flex align-items-center justify-content-between">
-      <span>Mes boutiques</span>
     
     </div>
   </MenuItem>

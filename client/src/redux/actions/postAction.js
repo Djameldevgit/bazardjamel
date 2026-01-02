@@ -276,7 +276,7 @@ export const getSimilarPosts = (postId, options = {}) => async (dispatch, getSta
         throw err;
     }
 };
-export const getPostsByCategory = (category, page = 1, filters = {}) => async (dispatch, getState) => {
+ export const getPostsByCategory = (category, page = 1, filters = {}) => async (dispatch, getState) => {
     try {
         const { auth } = getState();
         
@@ -362,8 +362,18 @@ export const getPostsByCategory = (category, page = 1, filters = {}) => async (d
         };
     }
 };
- 
-// redux/actions/postAction.js
+  
+
+
+
+
+
+
+
+
+
+
+/*
 export const getPostsBySubcategory = (categoryName, subcategoryId, page = 1, options = {}) => 
     async (dispatch) => {
     try {
@@ -423,7 +433,83 @@ export const getPostsBySubcategory = (categoryName, subcategoryId, page = 1, opt
         dispatch({ type: GLOBALTYPES.LOADING, payload: false });
         throw err;
     }
-};
+};*/
+
+// Busca esta función y verifica que tenga return dispatch
+export const getPostsBySubcategory = (category, subcategory, page = 1, options = {}) => async (dispatch) => {
+    try {
+      // Agrega este console.log para debug
+      console.log('🔍 getPostsBySubcategory called:', { category, subcategory, page });
+      
+      dispatch({ 
+        type: GLOBALTYPES.ALERT, 
+        payload: { loading: true } 
+      });
+      
+      // IMPORTANTE: Si category es 'store', redirige a la lógica de stores
+      if (category === 'store' || category === 'stores') {
+        console.log('🔄 Redirecting to store logic for:', subcategory);
+        
+        // Aquí deberías llamar a getStoreAction en lugar de getPostsBySubcategory
+        dispatch({ 
+          type: GLOBALTYPES.ALERT, 
+          payload: { loading: false } 
+        });
+        
+        // Redirigir a la página de store
+        window.location.href = `/store/${subcategory}`;
+        return;
+      }
+      
+      const limit = options.limit || 12;
+      const res = await getDataAPI(
+        `posts/category/${category}/${subcategory}?page=${page}&limit=${limit}`
+      );
+      
+      console.log('📦 Posts by subcategory response:', res.data);
+      
+      // Asegúrate de que el tipo de acción esté definido
+      const actionType = 'GET_POSTS_BY_SUBCATEGORY'; // O tu constante definida
+      
+      dispatch({
+        type: actionType, // ESTO NO DEBE SER undefined
+        payload: {
+          posts: res.data.posts || [],
+          total: res.data.total || 0,
+          category,
+          subcategory,
+          page
+        }
+      });
+      
+      dispatch({ 
+        type: GLOBALTYPES.ALERT, 
+        payload: { loading: false } 
+      });
+      
+      return res.data;
+      
+    } catch (err) {
+      console.error('❌ ERROR in getPostsBySubcategory:', {
+        category,
+        subcategory,
+        error: err.message,
+        response: err.response?.data
+      });
+      
+      dispatch({ 
+        type: GLOBALTYPES.ALERT, 
+        payload: { 
+          error: err.response?.data?.msg || err.message,
+          loading: false
+        } 
+      });
+      
+      throw err;
+    }
+  };
+
+
 // Acción para crear post (ya la tienes, pero asegurar que guarda categoría)
 // actions/postAction.js - createPost actualizada
  

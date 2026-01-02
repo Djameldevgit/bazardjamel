@@ -1,44 +1,44 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Form } from 'react-bootstrap';
-import { useTranslation } from 'react-i18next';
 
 const WilayaField = ({ 
   postData, 
-  handleChangeInput,
+  handleChangeInput, 
   name = 'wilaya',
-  label = 'Wilaya'
+  onWilayaChange = null,
+  wilayasData = [] // Recibir como prop
 }) => {
-  const { t } = useTranslation('camposcomunes');
-  // 🇩🇿 LISTA DE WILAYAS DE ARGELIA
-  const wilayas = useMemo(() => [
-    'Adrar', 'Chlef', 'Laghouat', 'Oum El Bouaghi', 'Batna', 'Béjaïa', 'Biskra', 'Béchar',
-    'Blida', 'Bouira', 'Tamanrasset', 'Tébessa', 'Tlemcen', 'Tiaret', 'Tizi Ouzou',
-    'Alger', 'Djelfa', 'Jijel', 'Sétif', 'Saïda', 'Skikda', 'Sidi Bel Abbès',
-    'Annaba', 'Guelma', 'Constantine', 'Médéa', 'Mostaganem', 'M\'Sila', 'Mascara',
-    'Ouargla', 'Oran', 'El Bayadh', 'Illizi', 'Bordj Bou Arréridj', 'Boumerdès',
-    'El Tarf', 'Tindouf', 'Tissemsilt', 'El Oued', 'Khenchela', 'Souk Ahras',
-    'Tipaza', 'Mila', 'Aïn Defla', 'Naâma', 'Aïn Témouchent', 'Ghardaïa', 'Relizane'
-  ], []);
   
+  const handleChange = (e) => {
+    handleChangeInput(e);
+    
+    // Si hay función callback, la ejecutamos con la wilaya seleccionada
+    if (onWilayaChange && e.target.value) {
+      const selectedWilaya = wilayasData.find(w => w.wilaya === e.target.value);
+      console.log('🔍 Wilaya encontrada:', selectedWilaya);
+      onWilayaChange(selectedWilaya);
+    } else if (onWilayaChange && !e.target.value) {
+      onWilayaChange(null);
+    }
+  };
+
   return (
-    <Form.Group className="mt-3">
-      <Form.Label>📍 {t(label)}</Form.Label>
-      
-      <Form.Select
+    <Form.Group>
+      <Form.Label>📍 Wilaya</Form.Label>
+      <Form.Control
+        as="select"
         name={name}
         value={postData[name] || ''}
-        onChange={handleChangeInput}
+        onChange={handleChange}
         required
       >
-        <option value="">{t('select_wilaya', 'Sélectionnez une wilaya')}</option>
-        {wilayas.map((wilaya) => (
-          <option key={wilaya} value={wilaya}>{wilaya}</option>
+        <option value="">-- Sélectionnez une wilaya --</option>
+        {wilayasData.map((wilaya, index) => (
+          <option key={`${wilaya.wilaya}-${index}`} value={wilaya.wilaya}>
+            {wilaya.wilaya}
+          </option>
         ))}
-      </Form.Select>
-      
-      <Form.Text className="text-muted">
-        <small>Wilaya où se trouve le produit/le service</small>
-      </Form.Text>
+      </Form.Control>
     </Form.Group>
   );
 };

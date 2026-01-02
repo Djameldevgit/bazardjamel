@@ -1,3 +1,35 @@
+ src/
+  pages/
+    store/
+      CreateStore.jsx       // Página para crear nueva tienda
+      EditStore.jsx         // Página para editar tienda
+      StoreDetail.jsx       // Página para ver tienda específica
+      StoresList.jsx        // Página para listar todas las tiendas
+  components/
+    store/
+      StoreCard.jsx         // Tarjeta individual de tienda
+      StoreForm.jsx         // Formulario reutilizable (crear / editar)
+      StoreInfo.jsx         // Información detallada de la tienda
+  redux/
+    actions/
+      storeAction.js        // Actions para CRUD stores
+    reducers/
+      storeReducer.js       // Reducer para stores
+  utils/
+    fetchData.js            // Ya lo tienes para llamadas API
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
  ESTRUCTURA COMPLETA DEL PROYECTO
 🌐 CLIENT (Frontend React)
 text
@@ -15,7 +47,7 @@ client/
 │   │   │   │       ├── modeleField.js
 │   │   │   │       ├── PriceField.js
 │   │   │   │       ├── QuantiteField.js
-│   │   │   │       └── TailleFiled.js
+│   │   │   │       └── TailleFiled.js  
 │   │   │   │
 │   │   │   └── specificFields/
 │   │   │       ├── BoutiquesField.js
@@ -40,7 +72,7 @@ client/
 │   │   │   ├── dinamicField.js
 │   │   │   ├── dinamicFieldManager.js 
 │   │   │   ├── fieldConfig.js
-│   │   │   ├── FieldManager.js
+│   │   │   ├── FieldRendererUniversalr.js
 │   │   │   └── fieldRenderer.js
 │   │   │
 │   │   ├── dashboard/          # Componentes del dashboard
@@ -57,10 +89,10 @@ client/
 │   │   │   ├── DynamicCategorySlider.js
 │   │   │   └── SliderConfig.js
 │   │   │
-│   │   ├── store/              # Componentes de tienda
-│   │   │   ├── StoreCard.js
-│   │   │   ├── StoreList.js
-│   │   │   └── StoreFilters.js
+│   │   ├             # Componentes de tienda
+│   │   │    
+│   │   │    
+│   │   │    
 │   │   │
 │   │   └── extra/              # Componentes adicionales
 │   │       ├── Header.js
@@ -78,7 +110,7 @@ client/
 │   │   │   ├── publicStorePage.js
 │   │   │   ├── storeCategoryPage.js
 │   │   │   └── subcategoryPage.js
-│   │   │
+│   │   │────── store/  
 │   │   ├── message/           # Mensajería
 │   │   │   ├── Inbox.js
 │   │   │   ├── Chat.js
