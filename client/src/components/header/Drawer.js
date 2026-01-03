@@ -1,3 +1,4 @@
+// src/components/drawer/Drawer.js - VERSIÓN ACTUALIZADA
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useLocation, useHistory } from 'react-router-dom';
@@ -9,13 +10,12 @@ import { Link } from 'react-router-dom';
 const Drawer = ({ 
   show, 
   onHide, 
-  
   width = 280,
   height = '100vh'
 }) => {
   const dispatch = useDispatch();
   const location = useLocation();
-  const history = useHistory(); // Mantenemos useHistory
+  const history = useHistory();
   const { auth } = useSelector(state => state);
   const { languageReducer } = useSelector(state => state);
   const { t, i18n } = useTranslation('global');
@@ -27,17 +27,17 @@ const Drawer = ({
                          location.pathname.includes('/profile') ||
                          location.pathname.startsWith('/mes-');
 
-  // Categorías completas con emojis
+  // ✅ CATEGORÍAS ACTUALIZADAS con nuevas rutas
   const categories = [
     { name: 'Boutiques', emoji: '🏪', slug: 'boutiques', color: '#667eea' },
     { name: 'Immobilier', emoji: '🏠', slug: 'immobilier', color: '#f093fb' },
     { name: 'Automobiles & Véhicules', emoji: '🚗', slug: 'vehicules', color: '#f5576c' },
-    { name: 'Pièces détachées', emoji: '🔧', slug: 'piecesDetachees', color: '#48c6ef' },
+    { name: 'Pièces détachées', emoji: '🔧', slug: 'pieces-detachees', color: '#48c6ef' },
     { name: 'Téléphones & Accessoires', emoji: '📱', slug: 'telephones', color: '#6a11cb' },
     { name: 'Informatique', emoji: '💻', slug: 'informatique', color: '#37ecba' },
     { name: 'Électroménager & Électronique', emoji: '📺', slug: 'electromenager', color: '#ff9a9e' },
     { name: 'Vêtements & Mode', emoji: '👕', slug: 'vetements', color: '#a18cd1' },
-    { name: 'Santé & Beauté', emoji: '💄', slug: 'santebeaute', color: '#fbc2eb' },
+    { name: 'Santé & Beauté', emoji: '💄', slug: 'sante-beaute', color: '#fbc2eb' },
     { name: 'Meubles & Maison', emoji: '🛋️', slug: 'meubles', color: '#667eea' },
     { name: 'Loisirs & Divertissements', emoji: '🎮', slug: 'loisirs', color: '#f093fb' },
     { name: 'Sport', emoji: '⚽', slug: 'sport', color: '#f5576c' },
@@ -45,9 +45,7 @@ const Drawer = ({
     { name: 'Matériaux & Équipement', emoji: '🔨', slug: 'materiaux', color: '#6a11cb' },
     { name: 'Alimentaires', emoji: '🍎', slug: 'alimentaires', color: '#37ecba' },
     { name: 'Services', emoji: '👷', slug: 'services', color: '#ff9a9e' },
-    { name: 'Voyages', emoji: '✈️', slug: 'voyages', color: '#a18cd1' },
-    { name: 'Artisanat', emoji: '🎨', slug: 'artisanat', color: '#667eea' },
-    { name: 'Publicité', emoji: '📢', slug: 'publicite', color: '#f093fb' },
+    { name: 'Voyages', emoji: '✈️', slug: 'voyages', color: '#a18cd1' }
   ];
 
   // Emojis para otras secciones
@@ -88,28 +86,34 @@ const Drawer = ({
     clock: '⏰',
     lock: '🔒',
     unlock: '🔓',
-    menu: '☰'
+    menu: '☰',
+    categories: '📂',
+    all: '📊'
   };
 
-  // Enlaces útiles - MODIFICADO: "Créer une boutique" ahora redirige al formulario
+  // Enlaces útiles - ACTUALIZADOS
   const usefulLinks = [
     { 
       name: 'Créer une boutique', 
-      path: '/creer-boutique', 
+      path: '/store/create-store',  // ✅ Ruta correcta
       emoji: '🏪➕',
       isStoreForm: true
     },
     { 
-      name: 'Acheter une boutique', 
-      path: '/acheter-boutique', 
-      emoji: '🏪🛒',
-      isStoreForm: true
+      name: 'Comment annoncer ?', 
+      path: '/bloginfo',  // ✅ Ruta existente
+      emoji: emojis.question 
     },
-    { name: 'Comment annoncer ?', path: '/comment-annoncer', emoji: emojis.question },
-    { name: 'Contactez-nous', path: '/contact', emoji: emojis.mail },
-    { name: 'Politique de confidentialité', path: '/politique-confidentialite', emoji: emojis.shield },
-    { name: 'Conditions d\'utilisation', path: '/conditions-utilisation', emoji: emojis.document },
-    { name: 'Conditions de vente et paiement', path: '/conditions-vente', emoji: emojis.tag },
+    { 
+      name: 'Contactez-nous', 
+      path: '/users/contactt',  // ✅ Ruta existente
+      emoji: emojis.mail 
+    },
+    { 
+      name: 'Politique de confidentialité', 
+      path: '/bloginfo',  // ✅ Ruta existente
+      emoji: emojis.shield 
+    }
   ];
 
   // Manejar cambio de idioma
@@ -118,7 +122,7 @@ const Drawer = ({
     i18n.changeLanguage(lang);
   };
 
-  // Efecto para sincronizar idioma con Redux
+  // Efecto para sincronizar idioma
   useEffect(() => {
     if (languageReducer.language && languageReducer.language !== currentLang) {
       setCurrentLang(languageReducer.language);
@@ -140,19 +144,17 @@ const Drawer = ({
     document.body.classList.toggle('dark-mode', newDarkMode);
   };
 
-  // Función para manejar clic en "Créer/Acheter une boutique"
-  const handleStoreFormClick = (e, path) => {
-    e.preventDefault();
-    onHide();
-    
-    // Redirigir al formulario de creación de boutique
-    history.push('/creer-boutique', {
-      fromDrawer: true,
-      actionType: path.includes('acheter') ? 'buy' : 'create'
-    });
+  // ✅ FUNCIÓN MEJORADA para generar rutas
+  const getCategoryPath = (categorySlug) => {
+    // Caso especial para boutiques
+    if (categorySlug === 'boutiques') {
+      return '/boutiques/1';
+    }
+    // Todas las demás categorías
+    return `/${categorySlug}/1`;
   };
 
-  // Componente LinkItem mejorado
+  // Componente LinkItem - ACTUALIZADO con nuevas rutas
   const LinkItem = ({ 
     emoji, 
     name, 
@@ -167,11 +169,6 @@ const Drawer = ({
     const isActive = location.pathname === path;
     
     const handleClick = (e) => {
-      if (isStoreForm && path) {
-        handleStoreFormClick(e, path);
-        return;
-      }
-      
       if (onClick) {
         onClick(e);
       }
@@ -267,7 +264,7 @@ const Drawer = ({
       );
     }
 
-    if (path && !onClick && !isStoreForm) {
+    if (path && !onClick) {
       return (
         <Link 
           to={path} 
@@ -285,6 +282,10 @@ const Drawer = ({
       </div>
     );
   };
+
+  // ============================================
+  // CONTENIDOS RENDERIZADOS (ACTUALIZADOS)
+  // ============================================
 
   // CONTENIDO 1: Dashboard del usuario
   const renderDashboardContent = () => (
@@ -346,7 +347,6 @@ const Drawer = ({
       
       <LinkItem emoji={emojis.dashboard} name="Tableau de bord" path="/users/dashboardpage" />
       <LinkItem emoji={emojis.user} name="Paramètres du profil" path="/profile" />
-      <LinkItem emoji={emojis.bell} name="Notifications" path="/notifications" badge={{ text: '3', color: '#ef4444' }} />
 
       {/* Sección: Annonces */}
       <div style={{ margin: '25px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666', textTransform: 'uppercase' }}>
@@ -370,48 +370,24 @@ const Drawer = ({
       <LinkItem 
         emoji="🏪➕" 
         name="Créer une boutique" 
-        path="/creer-boutique"
-        isStoreForm={true}
-        color="#8b5cf6"
-      />
-      <LinkItem 
-        emoji="🏪🛒" 
-        name="Acheter une boutique" 
-        path="/acheter-boutique"
-        isStoreForm={true}
+        path="/store/create-store"
         color="#8b5cf6"
       />
 
-      {/* Sección: Commandes */}
+      {/* Sección: Toutes les catégories */}
       <div style={{ margin: '25px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666', textTransform: 'uppercase' }}>
-        {emojis.cart} Commandes
+        {emojis.categories} Toutes les catégories
       </div>
       
-      <LinkItem emoji={emojis.cart} name="Mes Commandes" path="/mes-commandes" />
-      <LinkItem emoji={emojis.tickets} name="Mes Tickets de livraison" path="/tickets-livraison" />
-
-      {/* Sección: Voyage */}
-      <div style={{ margin: '25px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666', textTransform: 'uppercase' }}>
-        {emojis.plane} Voyage
-      </div>
-      
-      <LinkItem emoji={emojis.plane} name="Mes Demandes de Devis" path="/demandes-devis" />
-
-      {/* Sección: Publicité */}
-      <div style={{ margin: '25px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666', textTransform: 'uppercase' }}>
-        {emojis.megaphone} Publicité
-      </div>
-      
-      <LinkItem emoji={emojis.megaphone} name="Achat Publicité" path="/achat-publicite" />
-      <LinkItem emoji={emojis.chart} name="Statistiques" path="/statistiques" />
-
-      {/* Sección: Transactions */}
-      <div style={{ margin: '25px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666', textTransform: 'uppercase' }}>
-        {emojis.card} Transactions
-      </div>
-      
-      <LinkItem emoji={emojis.card} name="Transactions" path="/transactions" />
-      <LinkItem emoji={emojis.dollar} name="Portefeuille" path="/portefeuille" />
+      {categories.map((category, index) => (
+        <LinkItem 
+          key={index}
+          emoji={category.emoji} 
+          name={category.name} 
+          path={getCategoryPath(category.slug)} // ✅ RUTAS NUEVAS
+          color={category.color}
+        />
+      ))}
 
       {/* Logout */}
       <div style={{ marginTop: '30px', paddingTop: '20px', borderTop: '1px solid #e5e7eb' }}>
@@ -493,25 +469,32 @@ const Drawer = ({
       <LinkItem 
         emoji="🏪➕" 
         name="Créer Boutique" 
-        path="/creer-boutique"
-        isStoreForm={true}
+        path="/store/create-store"
         color="#8b5cf6"
       />
 
-      {/* Categorías */}
+      {/* Categorías PRINCIPALES */}
       <div style={{ margin: '25px 0 8px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555', textTransform: 'uppercase' }}>
-        {emojis.list} Catégories
+        {emojis.categories} Catégories populaires
       </div>
       
-      {categories.map((category, index) => (
+      {categories.slice(0, 6).map((category, index) => (
         <LinkItem 
           key={index}
           emoji={category.emoji} 
           name={category.name} 
-          path={`/category/${category.slug}`}
+          path={getCategoryPath(category.slug)} // ✅ RUTAS NUEVAS
           color={category.color}
         />
       ))}
+      
+      {/* Botón para ver todas las categorías */}
+      <LinkItem 
+        emoji={emojis.all} 
+        name="Voir toutes les catégories" 
+        path="/vehicules/1" // ✅ Ir a una categoría principal
+        color="#6b7280"
+      />
 
       {/* Dark Mode */}
       <div style={{ marginTop: '25px', paddingTop: '20px', borderTop: '1px solid #e5e7eb' }}>
@@ -564,22 +547,14 @@ const Drawer = ({
       <LinkItem 
         emoji="🏪➕" 
         name="Créer une boutique" 
-        path="/creer-boutique"
-        isStoreForm={true}
+        path="/store/create-store"
         color="#8b5cf6"
         badge={{ text: 'Pro', color: '#8b5cf6' }}
       />
-      <LinkItem 
-        emoji="🏪🛒" 
-        name="Acheter une boutique" 
-        path="/acheter-boutique"
-        isStoreForm={true}
-        color="#8b5cf6"
-      />
 
-      {/* Catégories */}
+      {/* Catégories PRINCIPALES */}
       <div style={{ margin: '25px 0 8px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555', textTransform: 'uppercase' }}>
-        {emojis.list} Catégories
+        {emojis.categories} Catégories
       </div>
       
       {categories.slice(0, 8).map((category, index) => (
@@ -587,15 +562,16 @@ const Drawer = ({
           key={index}
           emoji={category.emoji} 
           name={category.name} 
-          path={`/category/${category.slug}`}
+          path={getCategoryPath(category.slug)} // ✅ RUTAS NUEVAS
           color={category.color}
         />
       ))}
       
+      {/* Botón mejorado para ver más */}
       <LinkItem 
-        emoji={emojis.arrow} 
-        name="Voir toutes les catégories" 
-        path="/categories"
+        emoji={emojis.all} 
+        name="Explorer toutes les catégories" 
+        path="/vehicules/1" // ✅ Ir a una categoría existente
         color="#6b7280"
       />
 
@@ -604,7 +580,7 @@ const Drawer = ({
         {emojis.link} Liens utiles
       </div>
     
-      {usefulLinks.slice(2).map((link, index) => (
+      {usefulLinks.map((link, index) => (
         <LinkItem 
           key={index}
           emoji={link.emoji} 
@@ -626,9 +602,6 @@ const Drawer = ({
       return renderLoggedOutContent();
     }
   };
-
-  // Determinar título dinámico
-  
 
   return (
     <Offcanvas 
@@ -656,8 +629,6 @@ const Drawer = ({
           alignItems: 'center', 
           gap: '10px' 
         }}>
-        
-         
           <div style={{ 
             fontWeight: '700', 
             fontSize: '1.1rem', 

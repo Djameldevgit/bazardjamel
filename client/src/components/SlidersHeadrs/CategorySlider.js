@@ -106,8 +106,8 @@ const CategorySlider = () => {
       >
         {row.map((category) => (
           <Link
-            key={`${category.id}-${rowIndex}`}
-            to={`/category/${category.slug}`}
+          key={`${category.id}-${rowIndex}`}
+          to={`/category/${category.slug}`}
             style={{
               textDecoration: 'none',
               color: 'inherit',

@@ -311,53 +311,63 @@ const postReducer = (state = initialState, action) => {
                 categoriesHasMore: action.payload.hasMore
             };
 
-        case POST_TYPES.GET_IMMOBILIER_POSTS:
-            console.log('🏠 Reducer - GET_IMMOBILIER_POSTS:', {
-                operation: action.payload.operation,
-                postsCount: action.payload.posts?.length,
-                page: action.payload.page,
-                total: action.payload.total,
-                propertyType: action.payload.propertyType
-            });
+      // redux/reducers/postReducer.js - AGREGAR ESTOS CASOS:
 
-            const {
-                operation,
-                posts: immoPosts,
-                page: immoPage,
-                total: immoTotal,
-                propertyType
-            } = action.payload;
+case POST_TYPES.GET_IMMOBILIER_POSTS:
+    console.log('🏠 Reducer - GET_IMMOBILIER_POSTS:', {
+        operation: action.payload.operation,
+        propertyType: action.payload.propertyType,
+        postsCount: action.payload.posts?.length,
+        page: action.payload.page,
+        total: action.payload.total
+    });
 
-            // Determinar si hay más páginas
-            const immoHasMore = immoPosts?.length > 0 &&
-                (state.immobilierPage * 12) < immoTotal;
+    const {
+        operation,
+        propertyType,
+        posts: immoPosts,
+        page: immoPage,
+        total: immoTotal
+    } = action.payload;
 
-            // Si es página 1 o operación diferente, reemplazar
-            if (immoPage === 1 || operation !== state.immobilierOperation) {
-                return {
-                    ...state,
-                    immobilierPosts: immoPosts || [],
-                    immobilierOperation: operation,
-                    immobilierPage: immoPage,
-                    immobilierTotal: immoTotal || 0,
-                    immobilierHasMore: immoHasMore,
-                    immobilierPropertyType: propertyType || null,
-                    result: immoTotal || immoPosts?.length || 0,
-                    loading: false
-                };
-            }
+    // Si es página 1 o cambio de operación/propiedad, reemplazar
+    if (immoPage === 1 || 
+        operation !== state.immobilierOperation || 
+        propertyType !== state.immobilierPropertyType) {
+        
+        return {
+            ...state,
+            immobilierPosts: immoPosts || [],
+            immobilierOperation: operation,
+            immobilierPropertyType: propertyType || null,
+            immobilierPage: immoPage,
+            immobilierTotal: immoTotal || 0,
+            immobilierHasMore: (immoPosts?.length || 0) >= 12,
+            result: immoTotal || immoPosts?.length || 0,
+            loading: false
+        };
+    }
 
-            // Si es la misma operación y página > 1, agregar posts
-            return {
-                ...state,
-                immobilierPosts: [...state.immobilierPosts, ...(immoPosts || [])],
-                immobilierPage: immoPage,
-                immobilierHasMore: immoHasMore,
-                result: state.result + (immoPosts?.length || 0),
-                loading: false
-            };
+    // Si es la misma página (paginación), agregar
+    return {
+        ...state,
+        immobilierPosts: [...state.immobilierPosts, ...(immoPosts || [])],
+        immobilierPage: immoPage,
+        immobilierHasMore: (immoPosts?.length || 0) >= 12,
+        result: state.result + (immoPosts?.length || 0),
+        loading: false
+    };
 
-           
+case POST_TYPES.CLEAR_IMMOBILIER_POSTS:
+    return {
+        ...state,
+        immobilierPosts: [],
+        immobilierOperation: null,
+        immobilierPropertyType: null,
+        immobilierPage: 1,
+        immobilierTotal: 0,
+        immobilierHasMore: false
+    };
 
         default:
             return state;

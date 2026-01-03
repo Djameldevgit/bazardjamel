@@ -1,149 +1,67 @@
-import { useEffect, useRef, useState } from 'react'
-import { BrowserRouter as Router, Route, Switch,Redirect } from 'react-router-dom'
-import i18n from './i18n';
-import { io } from 'socket.io-client';
-import PageRender from './customRouter/PageRender'
-import PrivateRouter from './customRouter/PrivateRouter'
+import { useEffect, useState } from 'react'
+import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom'
+import { useSelector, useDispatch } from 'react-redux'
+import { getCategories } from './redux/actions/postAction'
+import { refreshToken } from './redux/actions/authAction'
+import { GLOBALTYPES } from './redux/actions/globalTypes'
+import { io } from 'socket.io-client'
+
+// Componentes de layout
+import Alert from './components/alert/Alert'
+import SocketClient from './SocketClient'
+import Navbar2 from './components/header/Navbar2'
+
+// Páginas estáticas
 import Home from './pages/home'
 import Login from './pages/login'
 import Register from './pages/register'
-import ActivatePage from './auth/ActivatePage';
-import Alert from './components/alert/Alert'
+import ActivatePage from './auth/ActivatePage'
+import ForgotPassword from './auth/ForgotPassword'
+import ResetPassword from './auth/ResetPassword'
+import Video from './pages/video'
+import Bloginfo from './pages/bloginfo'
+import Bloqueos404 from './components/adminitration/Bloqueos404'
+import Appinfo2 from './pages/appinfo2'
+import Appinfo3 from './pages/appinfo3'
+import Map from './pages/Map'
+import PostId from './pages/PostId'
+import Message from './pages/message'
+import CreateAnnoncePage from './pages/CreateAnnoncePage'
 
-import { useSelector, useDispatch } from 'react-redux'
-import { refreshToken } from './redux/actions/authAction'
-import { getCategories, getPosts, getSimilarPosts } from './redux/actions/postAction'
-
-import { GLOBALTYPES } from './redux/actions/globalTypes'
-import SocketClient from './SocketClient'
-
-
-
-import ForgotPassword from './auth/ForgotPassword';
-import ResetPassword from './auth/ResetPassword';
-
-import { getUsers } from './redux/actions/userAction';
-
-
-import Video from './pages/video';
-import { getPrivacySettings } from './redux/actions/privacyAction';
-import Bloginfo from './pages/bloginfo';
-import Bloqueos404 from './components/adminitration/Bloqueos404';
-import Appinfo2 from './pages/appinfo2';
-
-import Appinfo3 from './pages/appinfo3';
-import Map from './pages/Map';
-import PostId from './pages/PostId';
-import Message from './pages/message';
-
-import Navbar2 from './components/header/Navbar2';
-import CreateAnnoncePage from './pages/CreateAnnoncePage';
-import CategoryPage from './pages/categorySubCategory/CategoryPage';
-import SubcategoryPage from './pages/categorySubCategory/SubcategoryPage';
+// Sistema de rutas dinámicas
+import DynamicPage from './pages/DynamicPage'
+import CreateStore from './pages/store/CreateStore'
  
-import ImmobilerOperationPage from './pages/categorySubCategory/ImmobilerOperationPage';
- 
- 
- 
-import { getStores } from './redux/actions/storeAction';
-import Store from './pages/store/[id]';
-import StoresList from './pages/store/StoreList';
-import CreateStore from './pages/store/CreateStore';
-import EditStore from './pages/store/EditeStore';
- 
- 
- 
- 
- 
+import PageRender from './customRouter/PageRender'
+import PrivateRouter from './customRouter/PrivateRouter'
+import EditStore from './pages/store/EditeStore'
+
 function App() {
-  const { auth, status, modal, languageReducer } = useSelector(state => state)
+  const { auth, languageReducer } = useSelector(state => state)
   const dispatch = useDispatch()
   const [loading, setLoading] = useState(true)
-  const language = languageReducer?.language || localStorage.getItem("lang") || "en";
-
-
+  
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // Primero refrescar el token antes de cualquier otra acción
-        await dispatch(refreshToken());
-
-        // Inicializar socket después del token
-        const socket = io();
-        dispatch({ type: GLOBALTYPES.SOCKET, payload: socket });
-
-        setLoading(false);
+        await dispatch(refreshToken())
+        const socket = io()
+        dispatch({ type: GLOBALTYPES.SOCKET, payload: socket })
+        setLoading(false)
       } catch (error) {
-        console.error('Error initializing app:', error);
-        setLoading(false);
+        console.error('Error initializing app:', error)
+        setLoading(false)
       }
-    };
-
-    initializeApp();
-
-    return () => {
-      // Cleanup si es necesario
-    };
-  }, [dispatch]);
-
-  // ✅ EFECTO PARA CARGAR DATOS CUANDO HAY TOKEN
- // App.js - Hook actualizado
- useEffect(() => {
-  // Categorías disponibles para todos
-  dispatch(getCategories());
-}, [dispatch]);
-
-// 📌 HOOK 2: Cargar datos del usuario (solo autenticado)
-useEffect(() => {
-  getStores()
-getPosts()
-getSimilarPosts()
- 
-
-  if (auth.token && auth.user) {
-      console.log('🔐 User authenticated, loading user data...');
-      dispatch(getPrivacySettings(auth.token));
-      dispatch(getUsers(auth.token));
-   
-  }
-}, [dispatch, auth.token, auth.user]);
-
- 
-  useEffect(() => {
-    if (language) {
-      i18n.changeLanguage(language);
-      localStorage.setItem('language', language);
     }
-  }, [language]);
+    initializeApp()
+  }, [dispatch])
 
-  // ✅ NOTIFICACIONES
   useEffect(() => {
-    if (!("Notification" in window)) {
-      console.log("This browser does not support desktop notification");
-    } else if (Notification.permission === "granted") {
-      console.log("Notifications granted");
-    } else if (Notification.permission !== "denied") {
-      Notification.requestPermission().then(function (permission) {
-        if (permission === "granted") {
-          console.log("Notifications permission granted");
-        }
-      });
-    }
-  }, []);
+    dispatch(getCategories())
+  }, [dispatch])
 
-  // ✅ MOSTRAR LOADING MIENTRAS SE INICIALIZA
-  if (loading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-        <span className="ms-2">Loading...</span>
-      </div>
-    );
-  }
+  if (loading) return <div>Chargement...</div>
 
-  // ✅ VERIFICACIÓN DE USUARIO BLOQUEADO (CORREGIDO)
   if (auth.token && auth.user?.esBloqueado) {
     return (
       <Router>
@@ -152,110 +70,71 @@ getSimilarPosts()
           <Route path="*" component={Bloqueos404} />
         </Switch>
       </Router>
-    );
+    )
   }
 
-  // ✅ RENDER PRINCIPAL CON REACT ROUTER v5
   return (
     <Router>
-    <Alert />
-    <input type="checkbox" id="theme" />
-    <div className={`App ${(status || modal) && 'mode'}`}>
-      <div className="main">
+      <Alert />
+      <div className="App">
         <Navbar2 />
         {auth.token && <SocketClient />}
         
         <Switch>
-          {/* Rutas públicas */}
+          {/* ==================== RUTAS ESTÁTICAS ==================== */}
           <Route exact path="/" component={Home} />
           <Route exact path="/register" component={Register} />
           <Route exact path="/login" component={Login} />
           <Route exact path="/bloginfo" component={Bloginfo} />
-          <Route exact path="/infoaplicacionn" component={Appinfo2} />
-          <Route exact path="/infoaplicacionn3" component={Appinfo3} />
           <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
           <Route exact path="/editer-annonce/:id" component={CreateAnnoncePage} />
           <Route exact path="/post/:id" component={PostId} />
           <Route exact path="/message" component={Message} />
-          <Route exact path="/bloqueos404" component={Bloqueos404} />
           <Route exact path="/video/:obraId" component={Video} />
-          <Route exact path="/Map" component={Map} />
           <Route exact path="/forgot_password" component={ForgotPassword} />
           <Route exact path="/user/reset/:token" component={ResetPassword} />
-        
+          <Route exact path="/user/activate/:activation_token" component={ActivatePage} />
 
- 
-         
-         
-          <Route
-            exact
-            path="/user/activate/:activation_token"
-            component={auth.token ? ActivatePage : Login}
-          />
-  
-          {/* ===================================== */}
-          {/* RUTAS PARA CATEGORÍAS Y SUBCATEGORÍAS */}
-          {/* ===================================== */}
-          
-          {/* 1. IMMOBILIER - Estructura especial sin prefijo /category/ */}
-       
-          {/* ===================================== */}
-          {/* RUTAS PRIVADAS */}
-          {/* ===================================== */}
-         
+          {/* ==================== ADMINISTRACIÓN ==================== */}
+          <Route exact path="/store/create-store" component={CreateStore} />
+          <Route exact path="/store/edit/:id" component={EditStore} />
+
+          {/* ==================== RUTAS PRIVADAS ==================== */}
           <PrivateRouter exact path="/profile" component={PageRender} />
           <PrivateRouter exact path="/mes-annonces" component={PageRender} />
-          <PrivateRouter exact path="/creer-annonce" component={PageRender} />
-          <PrivateRouter exact path="/mes-commandes" component={PageRender} />
-          <PrivateRouter exact path="/tickets-livraison" component={PageRender} />
-          <PrivateRouter exact path="/demandes-devis" component={PageRender} />
-          <PrivateRouter exact path="/achat-store" component={PageRender} />
-          <PrivateRouter exact path="/achat-publicite" component={PageRender} />
-          <PrivateRouter exact path="/transactions" component={PageRender} />
-          <PrivateRouter exact path="/users/dashboardpage" component={PageRender} />
-          <PrivateRouter exact path="/users/roles" component={PageRender} />
-          <PrivateRouter exact path="/users/contactt" component={PageRender} />
-          <PrivateRouter exact path="/users/bloqueados" component={PageRender} />
-          
+          {/* ... otras rutas privadas */}
 
+          {/* ==================== REDIRECCIONES LEGACY ==================== */}
+          <Route exact path="/category/:categoryName" 
+            render={({ match }) => <Redirect to={`/${match.params.categoryName}/1`} />} 
+          />
+          <Route exact path="/category/:categoryName/:subcategoryId" 
+            render={({ match }) => <Redirect to={`/${match.params.categoryName}-${match.params.subcategoryId}/1`} />} 
+          />
+          <Route exact path="/immobilier" 
+            render={() => <Redirect to="/immobilier/1" />} 
+          />
+          <Route exact path="/immobilier/:operationId" 
+            render={({ match }) => <Redirect to={`/immobilier-${match.params.operationId}/1`} />} 
+          />
+          <Route exact path="/stores" 
+            render={() => <Redirect to="/boutiques/1" />} 
+          />
 
-          <Route path="/stores" component={StoresList} />             {/* Listado de tiendas */}
-        <Route path="/store/create-store" component={CreateStore} />      {/* Crear tienda */}
-        <Route path="/store/edit/:id" component={EditStore} />      {/* Editar tienda */}
-        <Route path="/store/:id" component={Store} />         {/* Detalle tienda */}
- 
- 
+          {/* ==================== RUTA DINÁMICA PRINCIPAL ==================== */}
+          <Route exact path="/:slug/:page?" component={DynamicPage} />
 
-
-
-         
-          <Route exact path="/immobilier" component={CategoryPage} />
-          <Route exact path="/immobilier/:operationId" component={ImmobilerOperationPage} />
-          <Route exact path="/immobilier/:operationId/:propertyId" component={SubcategoryPage} />
-          
-          {/* 2. OTRAS CATEGORÍAS - Con prefijo /category/ */}
-          <Route exact path="/category/:categoryName" component={CategoryPage} />
-          <Route exact path="/category/:categoryName/:subcategoryId" component={SubcategoryPage} />
-          
-          {/* 3. RUTAS SIN PREFIJO (para compatibilidad con enlaces antiguos) */}
-          {/* IMPORTANTE: Estas rutas deben ir DESPUÉS de las específicas */}
-          <Route exact path="/:categoryName" component={CategoryPage} />
-          <Route exact path="/:categoryName/:subcategoryId" component={SubcategoryPage} />
-  
-
-
-
-
-
-          {/* Rutas privadas genéricas */}
+          {/* ==================== RUTAS PRIVADAS GENÉRICAS ==================== */}
           <PrivateRouter exact path="/:page/:id/:tab" component={PageRender} />
           <PrivateRouter exact path="/:page/:id" component={PageRender} />
           <PrivateRouter exact path="/:page" component={PageRender} />
+
+          {/* ==================== 404 ==================== */}
+          <Route path="*"><Redirect to="/" /></Route>
         </Switch>
       </div>
-    </div>
-  </Router>
-  );
+    </Router>
+  )
 }
 
-export default App;
+export default App

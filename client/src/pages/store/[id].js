@@ -1,39 +1,53 @@
-import React, { useEffect } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
-import { useParams } from 'react-router-dom'
-import { getStore } from '../../redux/actions/storeAction'
-import LoadIcon from '../../images/loading.gif'
-import StoreInfo from '../../components/store/StoreInfo'
-import StoreProducts from '../../components/store/StoreProduct'
+// src/pages/Store/StoreDetail.js
+import React, { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useParams } from 'react-router-dom';
+ import { getStoreBySlug } from '../../redux/actions/postAction';
  
- 
-const Store = () => {
-  const { id } = useParams()
-  const { store, auth } = useSelector(state => state)
-  const dispatch = useDispatch()
+import Posts from '../../components/home/Posts';
 
+const StoreDetail = ({ boutiqueSlug }) => {
+  const dispatch = useDispatch();
+  const { store, loading } = useSelector(state => state.store);
+  
   useEffect(() => {
-    if(!store.details[id]){
-      dispatch(getStore(id, auth.token))
+    if (boutiqueSlug) {
+      dispatch(getStoreBySlug(boutiqueSlug));
     }
-  }, [id, dispatch, store.details, auth.token])
-
-  const data = store.details[id]
-
-  if(store.loading || !data) 
-    return <img src={LoadIcon} alt="loading" className="d-block mx-auto" />
-
+  }, [dispatch, boutiqueSlug]);
+  
+  if (loading) return <div>Loading...</div>;
+  if (!store) return <div>Boutique no encontrada</div>;
+  
   return (
-    <div className="store">
-      <StoreInfo store={data} auth={auth} />
-      <div className="store-products">
-        {data.products?.map(product => (
-          <StoreProducts key={product._id} product={product} />
-        ))}
+    <div className="container py-4">
+      <div className="row mb-4">
+        <div className="col-md-3">
+          <img 
+            src={store.logo} 
+            alt={store.name}
+            className="img-fluid rounded"
+          />
+        </div>
+        <div className="col-md-9">
+          <h1>{store.name}</h1>
+          <p>{store.description}</p>
+          <div className="d-flex gap-2">
+            <button className="btn btn-primary">Contactar</button>
+            <button className="btn btn-outline-secondary">Seguir</button>
+          </div>
+        </div>
+      </div>
+      
+      <div className="mt-5">
+        <h3>Productos de esta boutique</h3>
+        <Posts 
+          selectedCategory="store" 
+          selectedSubcategory={store._id}
+        />
       </div>
     </div>
-  )
-}
+  );
+};
 
-
-export default Store
+export default StoreDetail;

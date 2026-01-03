@@ -276,6 +276,36 @@ export const getSimilarPosts = (postId, options = {}) => async (dispatch, getSta
         throw err;
     }
 };
+
+
+// src/redux/actions/storeAction.js - AGREGAR ESTO:
+export const getStoreBySlug = (slug) => async (dispatch) => {
+    try {
+      dispatch({ type: 'STORE_LOADING', payload: true });
+      
+      const res = await getDataAPI(`stores/slug/${slug}`);
+      
+      dispatch({
+        type: 'GET_STORE_BY_SLUG',
+        payload: res.data.store
+      });
+      
+      dispatch({ type: 'STORE_LOADING', payload: false });
+      
+    } catch (err) {
+      dispatch({
+        type: 'STORE_ERROR',
+        payload: err.response?.data?.msg || 'Error loading store'
+      });
+      dispatch({ type: 'STORE_LOADING', payload: false });
+    }
+  };
+
+
+
+
+
+
  export const getPostsByCategory = (category, page = 1, filters = {}) => async (dispatch, getState) => {
     try {
         const { auth } = getState();
@@ -434,7 +464,42 @@ export const getPostsBySubcategory = (categoryName, subcategoryId, page = 1, opt
         throw err;
     }
 };*/
-
+// redux/actions/postAction.js - AGREGAR ESTA ACCIÓN
+export const ImmobilerHierarchyPage = (operation, property, page = 1, options = {}) => 
+    async (dispatch) => {
+    try {
+        dispatch({ type: GLOBALTYPES.LOADING, payload: true });
+        
+        const limit = options.limit || 12;
+        const skip = (page - 1) * limit;
+        
+        // Nueva API para immobiler con propiedad específica
+        const res = await getDataAPI(
+            `posts/category/immobilier/operation/${operation}/property/${property}?limit=${limit}&skip=${skip}`
+        );
+        
+        dispatch({
+            type: POST_TYPES.GET_IMMOBILIER_POSTS,
+            payload: {
+                posts: res.data.posts,
+                operation: operation,
+                propertyType: property,
+                page: page,
+                total: res.data.total
+            }
+        });
+        
+        dispatch({ type: GLOBALTYPES.LOADING, payload: false });
+        return res.data;
+    } catch (err) {
+        dispatch({
+            type: GLOBALTYPES.ALERT,
+            payload: { error: err.response?.data?.msg || 'Error al cargar posts de immobiler' }
+        });
+        dispatch({ type: GLOBALTYPES.LOADING, payload: false });
+        throw err;
+    }
+};
 // Busca esta función y verifica que tenga return dispatch
 export const getPostsBySubcategory = (category, subcategory, page = 1, options = {}) => async (dispatch) => {
     try {

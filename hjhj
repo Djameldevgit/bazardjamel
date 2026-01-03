@@ -1,0 +1,37 @@
+src/
+├── App.js                              # ✅ Actualizado (rutas nuevas)
+├── utils/
+│   ├── slugUtils.js                    # ✅ NUEVO (funciones para slugs)
+│   └── linkHelper.js                   # ✅ NUEVO (opcional)
+├── pages/
+│   ├── DynamicPage.js                  # ✅ NUEVO (maneja todas las rutas dinámicas)
+│   ├── home/
+│   │   └── Home.js                     # Sin cambios
+│   ├── categorySubCategory/
+│   │   ├── CategoryPage.js             # ✅ Modificado para aceptar 'page'
+│   │   ├── SubcategoryPage.js          # ✅ Modificado para inmuebles con -
+│   │   └── ImmobilerOperationPage.js   # Mantener (legacy)
+│   ├── store/
+│   │   ├── StoreList.js                # ✅ Renombrar a BoutiquesList.js
+│   │   ├── [id].js                     # ✅ Modificar para aceptar slug
+│   │   ├── CreateStore.js              # Sin cambios
+│   │   └── EditStore.js                # Sin cambios
+│   ├── boutique/                       # ✅ NUEVA CARPETA
+│   │   ├── BoutiqueDetail.js           # ✅ NUEVO (para /boutique-*)
+│   │   └── BoutiqueProducts.js         # ✅ NUEVO (opcional)
+│   └── (tus otras páginas existentes)  # Sin cambios
+├── components/
+│   ├── slidersHeaders/
+│   │   └── CategorySlider.js           # ✅ Actualizado (enlaces nuevos)
+│   ├── categoryAccordion/              # Sin cambios
+│   ├── dashboard/                      # Sin cambios
+│   ├── extra/                          # Sin cambios
+│   └── header/
+│       └── Navbar2.js                  # ✅ Actualizar enlaces
+├── redux/
+│   ├── actions/
+│   │   ├── postAction.js               # ✅ Ajustar para slugs con -
+│   │   ├── storeAction.js              # ✅ Agregar getStoreBySlug
+│   │   └── (otras acciones)            # Sin cambios
+│   └── reducers/                       # Sin cambios
+└── customRouter/                       # Sin cambios

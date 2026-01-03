@@ -1,25 +1,51 @@
- src/
-  pages/
-    store/
-      CreateStore.jsx       // Página para crear nueva tienda
-      EditStore.jsx         // Página para editar tienda
-      StoreDetail.jsx       // Página para ver tienda específica
-      StoresList.jsx        // Página para listar todas las tiendas
-  components/
-    store/
-      StoreCard.jsx         // Tarjeta individual de tienda
-      StoreForm.jsx         // Formulario reutilizable (crear / editar)
-      StoreInfo.jsx         // Información detallada de la tienda
-  redux/
-    actions/
-      storeAction.js        // Actions para CRUD stores
-    reducers/
-      storeReducer.js       // Reducer para stores
-  utils/
-    fetchData.js            // Ya lo tienes para llamadas API
-
- 
- 
+src/
+├── App.js                                  # ✅ ACTUALIZADO (configuración de rutas)
+├── pages/
+│   ├── DynamicPage.js                      # ✅ NUEVO (manejador de rutas principal)
+│   ├── home/
+│   │   └── Home.js                         # Sin cambios
+│   ├── categorySubCategory/
+│   │   ├── CategoryPage.js                 # ✅ ACTUALIZADO (acepta 'page')
+│   │   ├── SubcategoryPage.js              # ✅ ACTUALIZADO (maneja slugs con -)
+│   │   ├── ImmobilerHierarchyPage.js       # ✅ NUEVO (jerarquía especial inmuebles)
+│   │   └── ImmobilerOperationPage.js       # ⚠️ Mantener (legacy)
+│   ├── boutique/                           # ✅ NUEVA CARPETA
+│   │   ├── BoutiquesList.js                # ✅ NUEVO (listado de tiendas)
+│   │   └── BoutiqueDetail.js               # ✅ NUEVO (detalle por slug)
+│   ├── store/                              # ✅ Carpeta existente (mantener)
+│   │   ├── StoreList.js                    # ⚠️ Renombrar o mantener
+│   │   ├── StoreDetail.js                  # ✅ ACTUALIZAR (acepta slug)
+│   │   ├── CreateStore.js                  # Sin cambios
+│   │   └── EditStore.js                    # Sin cambios
+│   ├── PostId.js                           # Ya existe
+│   ├── CreateAnnoncePage.js                # Ya existe
+│   └── (otras páginas)                     # Sin cambios
+├── components/
+│   ├── home/
+│   │   └── Posts.js                        # ✅ ACTUALIZADO (mejorado para rutas nuevas)
+│   ├── slidersHeaders/
+│   │   └── CategorySlider.js               # ✅ ACTUALIZADO (enlaces nuevos)
+│   ├── header/
+│   │   └── Navbar2.js                      # ✅ ACTUALIZAR (enlaces nuevos)
+│   ├── extra/
+│   │   └── LoadingSpinner.js               # ✅ NUEVO (crear)
+│   └── (otros componentes)                 # Sin cambios
+├── redux/
+│   ├── actions/
+│   │   ├── postAction.js                   # ✅ ACTUALIZAR (acciones para slugs)
+│   │   ├── storeAction.js                  # ✅ AGREGAR getStoreBySlug
+│   │   └── (otras acciones)                # Sin cambios
+│   ├── reducers/
+│   │   └── postReducer.js                  # ✅ ACTUALIZAR (estados para rutas nuevas)
+│   └── store.js                            # Sin cambios
+├── utils/
+│   ├── slugUtils.js                        # ✅ NUEVO (generar/parsear slugs)
+│   ├── linkHelper.js                       # ✅ NUEVO (opcional - generación de enlaces)
+│   └── (otras utilidades)                  # Sin cambios
+├── customRouter/
+│   ├── PageRender.js                       # Sin cambios
+│   └── PrivateRouter.js                    # Sin cambios
+└── (otros archivos raíz)                   # Sin cambios
  
  
  
