@@ -1,9 +1,11 @@
-// 📁 VehiculesFields.js - VERSIÓN CON marque y modele COMO ESPECÍFICOS
+// 📁 src/components/CATEGORIES/specificFields/VehiculesFields.js
 import React from 'react';
 import { Form, Row, Col } from 'react-bootstrap';
-import { useTranslation } from 'react-i18next';
+
+// Importar campos comunes que necesites
 import MarqueField from '../camposComun/MarqueField';
 import ModeleField from '../camposComun/ModeleField';
+import CouleurField from '../camposComun/CouleurField';
 
 const VehiculesFields = ({ 
   fieldName,
@@ -11,17 +13,16 @@ const VehiculesFields = ({
   subCategory, 
   postData, 
   handleChangeInput,
-  isRTL
+  isRTL,
+  t
 }) => {
-  const { t } = useTranslation();
   
-  // 🔥 CAMPOS ESPECÍFICOS DE VEHÍCULOS (incluye marque y modele como específicos)
+  // 🔥 DEFINIR TODOS LOS CAMPOS MANUALMENTE
   const fields = {
-    // ============ CAMPOS ESPECÍFICOS DE VEHÍCULOS ============
     'marque': (
       <MarqueField
         key="marque"
-        mainCategory={mainCategory}
+        mainCategory="vehicules"
         subCategory={subCategory}
         fieldName="marque"
         postData={postData}
@@ -34,7 +35,7 @@ const VehiculesFields = ({
     'modele': (
       <ModeleField
         key="modele"
-        mainCategory={mainCategory}
+        mainCategory="vehicules"
         subCategory={subCategory}
         postData={postData}
         handleChangeInput={handleChangeInput}
@@ -44,17 +45,17 @@ const VehiculesFields = ({
         t={t}
       />
     ),
-  
+    
     'annee': (
       <Form.Group key="annee" className="mb-3">
-        <Form.Label>📅 {t('year', 'Année')}</Form.Label>
+        <Form.Label>📅 {t?.('year') || 'Année'}</Form.Label>
         <Form.Select
           name="annee"
           value={postData.annee || ''}
           onChange={handleChangeInput}
           dir={isRTL ? 'rtl' : 'ltr'}
         >
-          <option value="">{t('select_year', 'Sélectionnez l\'année')}</option>
+          <option value="">Sélectionnez l'année</option>
           {Array.from({length: 30}, (_, i) => new Date().getFullYear() - i).map(year => (
             <option key={year} value={year}>{year}</option>
           ))}
@@ -64,7 +65,7 @@ const VehiculesFields = ({
     
     'kilometrage': (
       <Form.Group key="kilometrage" className="mb-3">
-        <Form.Label>🛣️ {t('mileage', 'Kilométrage')}</Form.Label>
+        <Form.Label>🛣️ {t?.('mileage') || 'Kilométrage'}</Form.Label>
         <Row>
           <Col>
             <Form.Control
@@ -92,14 +93,14 @@ const VehiculesFields = ({
     
     'carburant': (
       <Form.Group key="carburant" className="mb-3">
-        <Form.Label>⛽ {t('fuel', 'Carburant')}</Form.Label>
+        <Form.Label>⛽ {t?.('fuel') || 'Carburant'}</Form.Label>
         <Form.Select
           name="carburant"
           value={postData.carburant || ''}
           onChange={handleChangeInput}
           dir={isRTL ? 'rtl' : 'ltr'}
         >
-          <option value="">{t('select_fuel', 'Sélectionnez')}</option>
+          <option value="">Sélectionnez</option>
           <option value="essence">Essence</option>
           <option value="diesel">Diesel</option>
           <option value="electrique">Électrique</option>
@@ -111,14 +112,14 @@ const VehiculesFields = ({
     
     'boiteVitesse': (
       <Form.Group key="boiteVitesse" className="mb-3">
-        <Form.Label>⚙️ {t('gearbox', 'Boîte de vitesse')}</Form.Label>
+        <Form.Label>⚙️ {t?.('gearbox') || 'Boîte de vitesse'}</Form.Label>
         <Form.Select
           name="boiteVitesse"
           value={postData.boiteVitesse || ''}
           onChange={handleChangeInput}
           dir={isRTL ? 'rtl' : 'ltr'}
         >
-          <option value="">{t('select_gearbox', 'Sélectionnez')}</option>
+          <option value="">Sélectionnez</option>
           <option value="manuelle">Manuelle</option>
           <option value="automatique">Automatique</option>
           <option value="semi-auto">Semi-automatique</option>
@@ -126,9 +127,20 @@ const VehiculesFields = ({
       </Form.Group>
     ),
     
+    'couleur': (
+      <CouleurField
+        key="couleur"
+        fieldName="couleur"
+        postData={postData}
+        handleChangeInput={handleChangeInput}
+        isRTL={isRTL}
+        t={t}
+      />
+    ),
+    
     'puissance': (
       <Form.Group key="puissance" className="mb-3">
-        <Form.Label>🐎 {t('power', 'Puissance')} (CV)</Form.Label>
+        <Form.Label>🐎 {t?.('power') || 'Puissance'} (CV)</Form.Label>
         <Form.Control
           type="number"
           name="puissance"
@@ -138,20 +150,19 @@ const VehiculesFields = ({
           min="0"
         />
       </Form.Group>
-    ),
-    
-    
-    
+    )
   };
   
-  // 🔥 FUNCIÓN PARA OBTENER CAMPOS POR SUBCATEGORÍA
-  const getSubCategorySpecificFields = () => {
-    const specificFields = {
-      'automobiles': ['marque', 'modele', 'annee', 'kilometrage', 'carburant', 'boiteVitesse', 'puissance'],
-      
+  // 🔥 CAMPOS POR SUBCATEGORÍA
+  const getSubCategoryFields = () => {
+    const config = {
+      'automobiles': ['marque', 'modele', 'annee', 'kilometrage', 'carburant', 'boiteVitesse', 'puissance', 'couleur'],
+      'motos': ['marque', 'modele', 'annee', 'kilometrage', 'typeMoto', 'puissance', 'couleur'],
+      'camions': ['marque', 'modele', 'annee', 'kilometrage', 'typeCamion', 'capacite', 'couleur'],
+      // Agrega más subcategorías
     };
     
-    return specificFields[subCategory] || [];
+    return config[subCategory] || [];
   };
   
   // Si se pide un campo específico
@@ -159,31 +170,27 @@ const VehiculesFields = ({
     const fieldComponent = fields[fieldName];
     
     if (!fieldComponent) {
-      console.warn(`⚠️ Campo "${fieldName}" no encontrado en VehiculesFields`);
-      return null; // Devolver null para que lo maneje el sistema común
+      console.warn(`⚠️ Campo "${fieldName}" no configurado en VehiculesFields.js`);
+      return (
+        <div className="alert alert-warning">
+          Champ "{fieldName}" non disponible. Ajoutez-le dans VehiculesFields.js
+        </div>
+      );
     }
     
     return fieldComponent;
   }
   
-  // Si no hay fieldName, mostrar todos los campos de la subcategoría
-  const fieldsToShow = getSubCategorySpecificFields();
-  
-  if (fieldsToShow.length === 0) {
-    return (
-      <div className="alert alert-info">
-        ℹ️ {t('select_subcategory', 'Sélectionnez une sous-catégorie')}
-      </div>
-    );
-  }
+  // Si no se especifica fieldName, mostrar todos los campos de la subcategoría
+  const fieldsToShow = getSubCategoryFields();
   
   return (
     <>
       {fieldsToShow.map((fieldKey, index) => (
-        <div key={`${fieldKey}-${index}`} className="mb-3">
+        <div key={index}>
           {fields[fieldKey] || (
             <div className="alert alert-warning">
-              ⚠️ {t('field_not_found', 'Champ non trouvé')}: {fieldKey}
+              ⚠️ Champ "{fieldKey}" non configuré
             </div>
           )}
         </div>

@@ -1,5 +1,33 @@
 src/
-├── App.js                                  # ✅ ACTUALIZADO (configuración de rutas)
+├── components 
+    ├── CACTEGORIES/
+        └── campos
+        └── camposComun
+        └── CategoryAccordion
+        └── specificFields/
+                ├── BoutiquesField.js
+                ├── VehiculesField.js
+                ├── VetementsFields.js
+                ├── ImmobiliersFields.js
+                ├── InformatiqueFields.js
+                ├── ServicesField.js
+                ├── SportFields.js
+                ├── VoyagesField.js
+                ├── LoisirsFields.js
+                ├── MateriauxField.js
+                ├── AlimentairesField.js
+                ├── TelephonesField.js
+                ├── SanteBeauteField.js
+                ├── PieceDetache.js
+                ├── MuebleField.js
+                ├── Emploi.js
+                └── Electromenager.js
+        └── DynamicField
+        └── FieldConfig
+        └── FieldRenderer
+        └── DynamicFieldManager
+
+├── App.js                  # ✅ ACTUALIZADO (configuración de rutas)
 ├── pages/
 │   ├── DynamicPage.js                      # ✅ NUEVO (manejador de rutas principal)
 │   ├── home/

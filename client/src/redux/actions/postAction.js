@@ -28,79 +28,118 @@ export const POST_TYPES = {
     LOADING_SIMILAR_POSTS: 'LOADING_SIMILAR_POSTS',
     CLEAR_SIMILAR_POSTS: 'CLEAR_SIMILAR_POSTS'
 }
+
 export const createPost = ({ 
     postData, 
     images, 
     auth, 
     socket 
 }) => async (dispatch) => {
-    let media = []
+    let media = [];
+    
     try {
         dispatch({ 
             type: GLOBALTYPES.ALERT, 
             payload: { 
                 loading: true,
-                text: 'Creating post...' // Mensaje de carga
+                text: 'Création en cours...'
             } 
-        })
+        });
         
-        if(images.length > 0) media = await imageUpload(images)
+        // 1. Subir imágenes si hay
+        if(images.length > 0) {
+            media = await imageUpload(images);
+        }
 
-        // 📌 ENVIAR DATOS ORGANIZADOS
-        const res = await postDataAPI('posts', { 
+        // 2. Preparar datos para backend
+        const postPayload = {
             ...postData,
-            images: media 
-        }, auth.token)
+            images: media,
+            // Asegurar que categorySpecificData sea Map o objeto
+            categorySpecificData: postData.categorySpecificData || {}
+        };
 
-        // ✅ 1. DISPATCH PARA AGREGAR POST AL ESTADO
+        // 3. Enviar al backend
+        const res = await postDataAPI('posts', postPayload, auth.token);
+
+        // 4. Preparar datos del usuario para socket
+        const safeUserData = {
+            _id: auth.user._id,
+            username: auth.user.username || '',
+            fullname: auth.user.fullname || '',
+            avatar: auth.user.avatar || '',
+            // ⭐ CRUCIAL: Asegurar que followers sea array
+            followers: Array.isArray(auth.user.followers) 
+                ? auth.user.followers 
+                : []
+        };
+
+        // 5. Actualizar estado de Redux
         dispatch({ 
             type: POST_TYPES.CREATE_POST, 
             payload: {
-                ...res.data.newPost, 
-                user: auth.user,
+                ...res.data.newPost,
+                user: safeUserData,
                 categorySpecificData: postData.categorySpecificData || {}
             } 
-        })
+        });
 
-        // ✅ 2. ALERT DE ÉXITO (diferentes opciones)
+        // 6. Emitir socket con datos SEGUROS
+        if (socket) {
+            console.log('🔌 Emitiendo socket createPost con user:', {
+                hasFollowers: Array.isArray(safeUserData.followers),
+                followersCount: safeUserData.followers.length
+            });
+            
+            socket.emit('createPost', {
+                ...res.data.newPost,
+                user: safeUserData // ← Datos seguros con followers como array
+            });
+        }
+
+        // 7. Mostrar alerta de éxito
         dispatch({ 
             type: GLOBALTYPES.ALERT, 
             payload: {
-                success: '✅ Post created successfully!'
-               
+                success: '✅ Annonce publiée avec succès!'
             } 
-        })
+        });
 
-        // ✅ 3. OPCIONAL: Alert que se auto-elimina después de 3 segundos
+        // 8. Limpiar alerta después de 3 segundos
         setTimeout(() => {
             dispatch({ 
                 type: GLOBALTYPES.ALERT, 
-                payload: {} // Limpiar alert
-            })
-        }, 3000)
+                payload: {} 
+            });
+        }, 3000);
 
-        // Notify (opcional)
-        const msg = {
-            id: res.data.newPost._id,
-            text: 'added a new post.',
-            recipients: res.data.newPost.user.followers,
-            url: `/post/${res.data.newPost._id}`,
-            content: postData.description, 
-            image: media[0]?.url
+        // 9. Crear notificaciones solo si hay seguidores
+        const hasFollowers = safeUserData.followers && safeUserData.followers.length > 0;
+        if (hasFollowers) {
+            const msg = {
+                id: res.data.newPost._id,
+                text: 'vient de publier une nouvelle annonce.',
+                recipients: safeUserData.followers,
+                url: `/post/${res.data.newPost._id}`,
+                content: postData.description?.substring(0, 100) || 'Nouvelle annonce',
+                image: media[0]?.url
+            };
+            dispatch(createNotify({ msg, auth, socket }));
         }
 
-        dispatch(createNotify({msg, auth, socket}))
-
     } catch (err) {
+        console.error('❌ Error en createPost:', err);
+        
         dispatch({
             type: GLOBALTYPES.ALERT,
             payload: {
-                error: err.response?.data?.msg || err.message || 'Error creating post'
+                error: err.response?.data?.msg || 
+                       err.message || 
+                       'Une erreur est survenue lors de la création'
             }
-        })
+        });
     }
-}
- 
+};
 
  
 export const clearUserPosts = (userId) => (dispatch) => {
@@ -393,78 +432,7 @@ export const getStoreBySlug = (slug) => async (dispatch) => {
     }
 };
   
-
-
-
-
-
-
-
-
-
-
-/*
-export const getPostsBySubcategory = (categoryName, subcategoryId, page = 1, options = {}) => 
-    async (dispatch) => {
-    try {
-        dispatch({ type: GLOBALTYPES.LOADING, payload: true });
-        
-        const limit = options.limit || 9;
-        const skip = (page - 1) * limit;
-        
-        // ✅ CORRECCIÓN: URL correcta según tu backend
-        const encodedCategory = encodeURIComponent(categoryName);
-        const encodedSubcategory = encodeURIComponent(subcategoryId);
-        
-        const res = await getDataAPI(
-            `posts/category/${encodedCategory}/subcategory/${encodedSubcategory}?limit=${limit}&skip=${skip}`
-        );
-        
-        console.log('✅ getPostsBySubcategory SUCCESS:', {
-            category: categoryName,
-            subcategory: subcategoryId,
-            page: page,
-            posts: res.data.posts?.length,
-            total: res.data.total
-        });
-        
-        dispatch({
-            type: POST_TYPES.GET_SUBCATEGORY_POSTS,
-            payload: {
-                posts: res.data.posts,
-                category: categoryName,
-                subcategory: subcategoryId,
-                page: page,
-                total: res.data.total,
-                result: res.data.total || res.data.posts?.length || 0
-            }
-        });
-        
-        dispatch({ type: GLOBALTYPES.LOADING, payload: false });
-        return res.data;
-        
-    } catch (err) {
-        console.error('❌ ERROR in getPostsBySubcategory:', {
-            category: categoryName,
-            subcategory: subcategoryId,
-            error: err.message,
-            response: err.response?.data,
-            status: err.response?.status,
-            url: err.config?.url
-        });
-        
-        dispatch({
-            type: GLOBALTYPES.ALERT,
-            payload: { 
-                error: err.response?.data?.msg || 'Error al cargar posts de subcategoría' 
-            }
-        });
-        
-        dispatch({ type: GLOBALTYPES.LOADING, payload: false });
-        throw err;
-    }
-};*/
-// redux/actions/postAction.js - AGREGAR ESTA ACCIÓN
+ 
 export const ImmobilerHierarchyPage = (operation, property, page = 1, options = {}) => 
     async (dispatch) => {
     try {

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 // Importar campos comunes según tu solicitud
 import TitleField from '../camposComun/TitleField';
-import ReferenceField from '../camposComun/RefereceField';
+import ReferenceField from '../camposComun/ReferenceField';
 import DescriptionField from '../camposComun/DescriptionField';
 import PriceField from '../camposComun/PriceField';
 import EtatField from '../camposComun/EtatField';

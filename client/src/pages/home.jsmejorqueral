@@ -1,3 +1,4 @@
+// Home.js - VERSIÓN OPTIMIZADA
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
@@ -5,8 +6,8 @@ import { Row, Col, Container, Form, InputGroup } from 'react-bootstrap';
 import { getCategories, getPostsByCategory } from '../redux/actions/postAction';
 import LoadIcon from '../images/loading.gif';
 import HeaderCarousel from '../components/SlidersHeadrs/HeaderCarousel';
-import CategorySlider from '../components/SlidersHeadrs/CategorySlider';
 import PostCard from '../components/PostCard';
+import CategorySlider from '../components/SlidersHeadrs/CategorySlider';
 
 const Home = () => {
     const dispatch = useDispatch();
@@ -17,12 +18,12 @@ const Home = () => {
     
     const lastCategoryRef = useRef();
 
-    // 📌 Cargar PRIMERAS 2 categorías al inicio
+    // 📌 Cargar categorías al inicio
     useEffect(() => {
         const loadInitialData = async () => {
             try {
-                console.log('🏠 Home - Cargando primeras 2 categorías...');
-                await dispatch(getCategories(1, 2));
+                console.log('🏠 Home - Cargando categorías...');
+                await dispatch(getCategories(1, 10)); // Cargar 10 categorías
                 setLoading(false);
             } catch (error) {
                 console.error('Error loading categories:', error);
@@ -33,42 +34,39 @@ const Home = () => {
         loadInitialData();
     }, [dispatch]);
 
-    // 📌 Cargar 6 posts para cada categoría cargada
+    // 📌 Cargar posts para cada categoría
     useEffect(() => {
         if (!loading && homePosts.categories && homePosts.categories.length > 0) {
-            console.log('📥 Cargando posts para categorías visibles...');
+            console.log('📥 Cargando posts para categorías...');
             
             homePosts.categories.forEach(async (category, index) => {
                 // Solo cargar si no tiene posts ya
-                if (!homePosts.categoryPosts?.[category.name]) {
-                    setTimeout(async () => {
-                        try {
-                            await dispatch(getPostsByCategory(category.name, 1, { limit: 8 }));
-                        } catch (error) {
-                            console.error(`Error loading posts for ${category.name}:`, error);
-                        }
-                    }, index * 300);
+                const categoryName = category.name || category.slug || category;
+                if (!homePosts.categoryPosts?.[categoryName]) {
+                    try {
+                        await dispatch(getPostsByCategory(categoryName, 1, { limit: 8 }));
+                    } catch (error) {
+                        console.error(`Error loading posts for ${categoryName}:`, error);
+                    }
                 }
             });
         }
     }, [loading, homePosts.categories, dispatch]);
 
-    // 📌 Función para cargar MÁS categorías (scroll infinito)
+    // 📌 Función para cargar más categorías
     const loadMoreCategories = useCallback(async () => {
         if (loadingMore || !homePosts.categoriesHasMore) return;
         
         setLoadingMore(true);
         try {
-            const nextPage = (homePosts.categoriesPage || 0) + 1;
-            console.log(`📥 Cargando página ${nextPage} de categorías...`);
-            
-            await dispatch(getCategories(nextPage, 2));
+            const nextPage = (homePosts.categoriesPage || 1) + 1;
+            await dispatch(getCategories(nextPage, 10));
         } catch (error) {
             console.error('Error loading more categories:', error);
         } finally {
             setLoadingMore(false);
         }
-    }, [dispatch, loadingMore, homePosts.categoriesHasMore, homePosts.categoriesPage]);
+    }, [dispatch, loadingMore, homePosts]);
 
     // 📌 Observer para scroll infinito
     useEffect(() => {
@@ -92,21 +90,22 @@ const Home = () => {
                 observer.unobserve(lastCategoryRef.current);
             }
         };
-    }, [loading, homePosts.categories, homePosts.categoriesHasMore, loadMoreCategories]);
+    }, [loading, homePosts.categoriesHasMore, loadMoreCategories]);
 
-    // 📌 Filtrar categorías por búsqueda
+    // 📌 Filtrar categorías
     const filteredCategories = homePosts.categories
-        ?.filter(cat => 
-            cat.name.toLowerCase().includes(searchQuery.toLowerCase())
-        ) || [];
+        ?.filter(cat => {
+            const categoryName = cat.name || cat.slug || cat;
+            return categoryName.toLowerCase().includes(searchQuery.toLowerCase());
+        }) || [];
 
     return (
         <div className="marketplace-home">
-            <HeaderCarousel/>
-            <CategorySlider/>
+            <HeaderCarousel />
+            <CategorySlider />
             
-            {/* BARRA DE BÚSQUEDA */}
-            <Container className="my-4">
+            {/* Barra de búsqueda */}
+            <Container className='mb-4'>
                 <Row className="justify-content-center">
                     <Col md={6} lg={5}>
                         <InputGroup className="shadow-sm">
@@ -115,7 +114,7 @@ const Home = () => {
                             </InputGroup.Text>
                             <Form.Control
                                 type="text"
-                                placeholder="Buscar categorías..."
+                                placeholder="Rechercher une catégorie..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="border-start-0"
@@ -125,63 +124,66 @@ const Home = () => {
                 </Row>
             </Container>
 
-            {/* CONTENIDO PRINCIPAL */}
+            {/* Contenido principal */}
             <Container>
                 {loading ? (
                     <Row className="justify-content-center py-5">
                         <Col xs="auto" className="text-center">
-                            <img src={LoadIcon} alt="loading" />
-                            <p className="mt-2 text-muted">Cargando categorías...</p>
+                            <img src={LoadIcon} alt="loading" width="50" />
+                            <p className="mt-2 text-muted">Chargement des catégories...</p>
+                        </Col>
+                    </Row>
+                ) : filteredCategories.length === 0 ? (
+                    <Row className="justify-content-center py-5">
+                        <Col md={6} className="text-center">
+                            <div className="alert alert-info">
+                                <i className="fas fa-info-circle me-2"></i>
+                                Aucune catégorie trouvée
+                            </div>
                         </Col>
                     </Row>
                 ) : (
                     <div className="categories-container">
-                        {/* LISTA DE CATEGORÍAS CON PAGINACIÓN */}
                         {filteredCategories.map((category, index) => {
-                            const postsForCategory = homePosts.categoryPosts?.[category.name] || [];
+                            const categoryName = category.name || category.slug || category;
+                            const displayName = category.displayName || categoryName;
+                            const postsForCategory = homePosts.categoryPosts?.[categoryName] || [];
                             const isLastCategory = index === filteredCategories.length - 1;
                             
                             return (
                                 <div 
-                                    key={category.name}
+                                    key={categoryName}
                                     ref={isLastCategory ? lastCategoryRef : null}
                                     className="category-section mb-5"
                                 >
-                                    {/* HEADER DE CATEGORÍA */}
+                                    {/* Header */}
                                     <div className="d-flex justify-content-between align-items-center mb-4">
                                         <div className="d-flex align-items-center">
-                                            <div 
-                                                className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3"
-                                                style={{ 
-                                                    width: '50px', 
-                                                    height: '50px',
-                                                    flexShrink: 0 
-                                                }}
-                                            >
-                                                <span style={{ fontSize: '1.5rem' }}>
+                                            <div className="category-icon me-3">
+                                                <span style={{ fontSize: '2rem' }}>
                                                     {category.emoji || '📁'}
                                                 </span>
                                             </div>
                                             <div>
-                                                <h2 className="h4 fw-bold mb-1 text-capitalize">
-                                                    {category.name}
+                                                <h2 className="h4 fw-bold mb-1">
+                                                    {displayName}
                                                 </h2>
                                                 <small className="text-muted">
-                                                    {category.count} anuncios disponibles
+                                                    {category.count || 0} annonces
                                                 </small>
                                             </div>
                                         </div>
                                         
                                         <Link 
-                                            to={`/category/${category.name}`}
+                                            to={`/category/${categoryName}`}
                                             className="btn btn-outline-primary btn-sm px-3"
                                         >
-                                            Ver todos
+                                            Voir tout
                                             <i className="fas fa-arrow-right ms-2"></i>
                                         </Link>
                                     </div>
 
-                                    {/* POSTS POR CATEGORÍA CON CLASE post_thumb */}
+                                    {/* Posts */}
                                     {postsForCategory.length > 0 ? (
                                         <div className="post_thumb">
                                             {postsForCategory.slice(0, 8).map((post) => (
@@ -194,12 +196,14 @@ const Home = () => {
                                         <Row className="py-4">
                                             <Col className="text-center">
                                                 <div className="spinner-border spinner-border-sm text-primary me-2"></div>
-                                                <span className="text-muted">Cargando anuncios de {category.name}...</span>
+                                                <span className="text-muted">
+                                                    Chargement des annonces...
+                                                </span>
                                             </Col>
                                         </Row>
                                     )}
                                     
-                                    {/* SEPARADOR */}
+                                    {/* Separador */}
                                     {index < filteredCategories.length - 1 && (
                                         <hr className="my-5" />
                                     )}
@@ -207,26 +211,12 @@ const Home = () => {
                             );
                         })}
                         
-                        {/* LOADING MORE INDICATOR */}
+                        {/* Loading indicator */}
                         {loadingMore && (
                             <Row className="justify-content-center py-4">
                                 <Col xs="auto" className="text-center">
                                     <div className="spinner-border spinner-border-sm text-primary me-2"></div>
-                                    <span className="text-muted">Cargando más categorías...</span>
-                                </Col>
-                            </Row>
-                        )}
-                        
-                        {/* NO MORE CATEGORIES MESSAGE */}
-                        {!homePosts.categoriesHasMore && filteredCategories.length > 0 && (
-                            <Row className="justify-content-center py-5">
-                                <Col md={6} className="text-center">
-                                    <div className="alert alert-light border p-3">
-                                        <i className="fas fa-check-circle text-success me-2"></i>
-                                        <span className="text-muted">
-                                            Has visto todas las categorías disponibles
-                                        </span>
-                                    </div>
+                                    <span className="text-muted">Chargement...</span>
                                 </Col>
                             </Row>
                         )}

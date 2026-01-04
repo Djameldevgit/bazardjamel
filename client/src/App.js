@@ -43,7 +43,13 @@ function App() {
   const dispatch = useDispatch()
   const [loading, setLoading] = useState(true)
   const [translateReady, setTranslateReady] = useState(false)
-  
+  useEffect(() => {
+    dispatch(refreshToken())
+
+    const socket = io()
+    dispatch({type: GLOBALTYPES.SOCKET, payload: socket})
+    return () => socket.close()
+  },[dispatch])
   // 🔥 NUEVO: Inicializar Google Translate
   useEffect(() => {
     const initializeGoogleTranslate = () => {

@@ -38,9 +38,12 @@ const CategorySlider = () => {
   const secondRow = categoriesData.slice(halfIndex);
 
   // Función para obtener la ruta del icono
-  const getIconPath = (iconName) => {
-    return `/icons/${iconName}`;
-  };
+ // CategorySlider.js - CORRIGE ESTO:
+const getIconPath = (iconName) => {
+  // Si los iconos están en public/icons/
+  return `/icons/${iconName}`;
+ 
+};
 
   // Configuración responsive
   useEffect(() => {

@@ -16,12 +16,16 @@ router.route('/posts')
     .get( postCtrl.getPost)
     .delete(auth, postCtrl.deletePost)
 // 📌 RUTAS DE CATEGORÍAS (NUEVAS)
-router.get('/posts/category/:category',   postCtrl.getPostsByCategory);
+ router.get('/categories/paginated', postCtrl.getAllCategoriesPaginated);
 
+ 
+// ✅ RUTA ALTERNATIVA (por si estás usando esta)
+router.get('/posts/category/:category', postCtrl.getPostsByCategory);
+
+
+router.get('/category/:category', postCtrl.getPostsByCategory);
 router.get('/posts/similar', postCtrl.getSimilarPosts);
-
-router.get('/categories/all', postCtrl.getAllCategoriesPaginated);
-router.get('/categories/paginated', postCtrl.getAllCategoriesPaginated); // Nueva
+ ; // Nueva
  router.get('/posts/category/:category/subcategory/:subcategory', postCtrl.getPostsBySubcategory);
  router.get('/categories/:category/subcategories', postCtrl.getSubCategoriesByCategory);
  // backend/routes/postRouter.js

@@ -1,7 +1,7 @@
 // 📁 src/components/CATEGORIES/DynamicFieldManager.js
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import FieldRenderer from './FieldRenderer';
+ 
 import { getFieldsForStep } from './FieldConfig';
  
 import FieldRendererUniversal from './FiledRendererUniversal'; // ← DESPUÉS
@@ -111,6 +111,7 @@ const DynamicFieldManager = ({
   subCategory={subCategory}
   articleType={articleType}
   isRTL={isRTL}
+  t={t}
 />
                 </div>
               </div>
