@@ -110,7 +110,7 @@ const UserPosts = ({
                 </div>
             ) : (
                 <>
-                    <div className="user-posts-grid">
+                    <div className="post_thumb">
                         <PostThumb posts={posts} result={result} />
                     </div>
 

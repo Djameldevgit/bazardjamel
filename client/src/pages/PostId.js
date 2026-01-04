@@ -129,12 +129,12 @@ const PostId = () => {
 
       {/* 2. POSTS DEL USUARIO */}
       {post.user && post.user._id && auth.user && (
-        <div className="mb-5">
+        <div className="mb-1">
           {/* Título en francés */}
-          <h4 className="mb-3 px-3">Publications du vendeur</h4>
+          <h4 className="mb-2 px-1">Publications du vendeur</h4>
           
           {/* Grid 2 en 2 sin márgenes/padding extras */}
-          <Row className="g-0"> {/* g-0 elimina todos los gaps */}
+          <Row className=""> {/* g-0 elimina todos los gaps */}
             <UserPosts 
               userId={post.user._id}
               auth={auth}
