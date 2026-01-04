@@ -45,7 +45,7 @@ const CATEGORY_COMPONENTS = {
 import TitleField from './camposComun/TitleField';
 import DescriptionField from './camposComun/DescriptionField';
 import PriceField from './camposComun/PriceField';
-import TelephoneField from './camposComun/TelephoneField';
+import TelephoneField from './camposComun/PhoneField';
 import WilayaField from './camposComun/WilayaField';
 import CommuneField from './camposComun/CommuneField';
 import EtatField from './camposComun/EtatField';
