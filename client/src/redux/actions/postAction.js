@@ -35,112 +35,73 @@ export const createPost = ({
     auth, 
     socket 
 }) => async (dispatch) => {
-    let media = [];
-    
+    let media = []
     try {
         dispatch({ 
             type: GLOBALTYPES.ALERT, 
             payload: { 
                 loading: true,
-                text: 'Création en cours...'
+                text: 'Creating post...' // Mensaje de carga
             } 
-        });
+        })
         
-        // 1. Subir imágenes si hay
-        if(images.length > 0) {
-            media = await imageUpload(images);
-        }
+        if(images.length > 0) media = await imageUpload(images)
 
-        // 2. Preparar datos para backend
-        const postPayload = {
+        // 📌 ENVIAR DATOS ORGANIZADOS
+        const res = await postDataAPI('posts', { 
             ...postData,
-            images: media,
-            // Asegurar que categorySpecificData sea Map o objeto
-            categorySpecificData: postData.categorySpecificData || {}
-        };
+            images: media 
+        }, auth.token)
 
-        // 3. Enviar al backend
-        const res = await postDataAPI('posts', postPayload, auth.token);
-
-        // 4. Preparar datos del usuario para socket
-        const safeUserData = {
-            _id: auth.user._id,
-            username: auth.user.username || '',
-            fullname: auth.user.fullname || '',
-            avatar: auth.user.avatar || '',
-            // ⭐ CRUCIAL: Asegurar que followers sea array
-            followers: Array.isArray(auth.user.followers) 
-                ? auth.user.followers 
-                : []
-        };
-
-        // 5. Actualizar estado de Redux
+        // ✅ 1. DISPATCH PARA AGREGAR POST AL ESTADO
         dispatch({ 
             type: POST_TYPES.CREATE_POST, 
             payload: {
-                ...res.data.newPost,
-                user: safeUserData,
+                ...res.data.newPost, 
+                user: auth.user,
                 categorySpecificData: postData.categorySpecificData || {}
             } 
-        });
+        })
 
-        // 6. Emitir socket con datos SEGUROS
-        if (socket) {
-            console.log('🔌 Emitiendo socket createPost con user:', {
-                hasFollowers: Array.isArray(safeUserData.followers),
-                followersCount: safeUserData.followers.length
-            });
-            
-            socket.emit('createPost', {
-                ...res.data.newPost,
-                user: safeUserData // ← Datos seguros con followers como array
-            });
-        }
-
-        // 7. Mostrar alerta de éxito
+        // ✅ 2. ALERT DE ÉXITO (diferentes opciones)
         dispatch({ 
             type: GLOBALTYPES.ALERT, 
             payload: {
-                success: '✅ Annonce publiée avec succès!'
+                success: '✅ Post created successfully!'
+               
             } 
-        });
+        })
 
-        // 8. Limpiar alerta después de 3 segundos
+        // ✅ 3. OPCIONAL: Alert que se auto-elimina después de 3 segundos
         setTimeout(() => {
             dispatch({ 
                 type: GLOBALTYPES.ALERT, 
-                payload: {} 
-            });
-        }, 3000);
+                payload: {} // Limpiar alert
+            })
+        }, 3000)
 
-        // 9. Crear notificaciones solo si hay seguidores
-        const hasFollowers = safeUserData.followers && safeUserData.followers.length > 0;
-        if (hasFollowers) {
-            const msg = {
-                id: res.data.newPost._id,
-                text: 'vient de publier une nouvelle annonce.',
-                recipients: safeUserData.followers,
-                url: `/post/${res.data.newPost._id}`,
-                content: postData.description?.substring(0, 100) || 'Nouvelle annonce',
-                image: media[0]?.url
-            };
-            dispatch(createNotify({ msg, auth, socket }));
+        // Notify (opcional)
+        const msg = {
+            id: res.data.newPost._id,
+            text: 'added a new post.',
+            recipients: res.data.newPost.user.followers,
+            url: `/post/${res.data.newPost._id}`,
+            content: postData.description, 
+            image: media[0]?.url
         }
 
+        dispatch(createNotify({msg, auth, socket}))
+
     } catch (err) {
-        console.error('❌ Error en createPost:', err);
-        
         dispatch({
             type: GLOBALTYPES.ALERT,
             payload: {
-                error: err.response?.data?.msg || 
-                       err.message || 
-                       'Une erreur est survenue lors de la création'
+                error: err.response?.data?.msg || err.message || 'Error creating post'
             }
-        });
+        })
     }
-};
-
+}
+ 
  
 export const clearUserPosts = (userId) => (dispatch) => {
     dispatch({
