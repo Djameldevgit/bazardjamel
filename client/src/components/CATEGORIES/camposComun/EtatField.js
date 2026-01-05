@@ -14,12 +14,12 @@ const EtatField = ({
   
   // Opciones por defecto (estado general del producto)
   const defaultOptions = [
-    { value: 'new', label: 'neuf' },
-    { value: 'like_new', label: 'comme_neuf' },
-    { value: 'good', label: 'bon_etat' },
-    { value: 'used', label: 'utilise' },
-    { value: 'refurbished', label: 'reconditionne' },
-    { value: 'defective', label: 'defectueux' }
+    { value: 'new', label: 'Neuf' },
+    { value: 'like_new', label: 'Comme neuf' },
+    { value: 'good', label: 'Bon etat' },
+    { value: 'used', label: 'Utilise' },
+    { value: 'refurbished', label: 'Reconditionne' },
+    { value: 'defective', label: 'Defectueux' }
   ];
   
   const displayOptions = options || defaultOptions;

@@ -46,8 +46,8 @@ import TitleField from './camposComun/TitleField';
 import DescriptionField from './camposComun/DescriptionField';
 import PriceField from './camposComun/PriceField';
 import TelephoneField from './camposComun/PhoneField';
-import WilayaField from './camposComun/WilayaField';
-import CommuneField from './camposComun/CommuneField';
+import WilayaField from './camposComun/WilayaCommuneField';
+ 
 import EtatField from './camposComun/EtatField';
 import ReferenceField from './camposComun/ReferenceField';
 
@@ -58,7 +58,7 @@ const COMMON_FIELD_COMPONENTS = {
   'price': PriceField,
   'telephone': TelephoneField,
   'wilaya': WilayaField,
-  'commune': CommuneField,
+   
   'etat': EtatField,
   'reference': ReferenceField
   // Agrega más campos comunes aquí

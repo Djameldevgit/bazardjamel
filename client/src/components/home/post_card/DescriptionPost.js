@@ -1,10 +1,7 @@
 // 📁 src/components/post/DescriptionPost.js
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { 
-  Container, Row, Col, Badge, Button, 
-  Accordion, ListGroup, Card, Alert
-} from 'react-bootstrap';
+import { Container, Row, Col, Badge, Button, Card } from 'react-bootstrap';
 import { useSelector, useDispatch } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import { MESS_TYPES } from '../../../redux/actions/messageAction';
@@ -12,74 +9,101 @@ import { GLOBALTYPES } from '../../../redux/actions/globalTypes';
 
 const DescriptionPost = ({ post }) => {
     const [readMore, setReadMore] = useState(false);
-    const { auth, message, languageReducer } = useSelector(state => state);
+    const { auth, languageReducer } = useSelector(state => state);
     const dispatch = useDispatch();
     const history = useHistory();
     
     const lang = languageReducer.language || 'fr';
-    const { t, i18n } = useTranslation(['descripcion', 'createpost']);
+    const { t, i18n } = useTranslation();
     const isRTL = lang === 'ar';
 
     useEffect(() => {
-        const changeLanguage = async () => {
-            if (i18n.language !== lang) {
-                await i18n.changeLanguage(lang);
-            }
-        };
-        changeLanguage();
+        if (i18n.language !== lang) {
+            i18n.changeLanguage(lang);
+        }
     }, [lang, i18n]);
 
-    // 🎯 OBTENER DATOS DEL POST Y STORE
+    // 🎯 OBTENER Y COMBINAR TODOS LOS DATOS DEL POST
     const getPostData = useMemo(() => {
-        if (!post) return { post: {}, store: {}, user: {} };
+        if (!post) return { post: {}, user: {} };
 
-        // 1. Combinar todos los datos del post
+        // 1. Crear objeto combinado con todos los datos
         const combinedData = { ...post };
         
-        // Agregar datos específicos
-        if (post.categorySpecificData && typeof post.categorySpecificData === 'object') {
-            if (post.categorySpecificData instanceof Map) {
-                post.categorySpecificData.forEach((value, key) => {
-                    if (value !== undefined && value !== null && value !== '') {
-                        combinedData[key] = value;
-                    }
-                });
-            } else {
-                Object.entries(post.categorySpecificData).forEach(([key, value]) => {
+        // 2. Combinar categorySpecificData (puede ser Map o Object)
+        if (post.categorySpecificData) {
+            try {
+                if (post.categorySpecificData instanceof Map) {
+                    post.categorySpecificData.forEach((value, key) => {
+                        if (value !== undefined && value !== null && value !== '') {
+                            combinedData[key] = value;
+                        }
+                    });
+                } else if (typeof post.categorySpecificData === 'object') {
+                    Object.entries(post.categorySpecificData).forEach(([key, value]) => {
+                        if (value !== undefined && value !== null && value !== '') {
+                            combinedData[key] = value;
+                        }
+                    });
+                }
+            } catch (err) {
+                console.warn('Error combinando categorySpecificData:', err);
+            }
+        }
+
+        // 3. Combinar otros campos específicos
+        const detailFields = ['immobilierDetails', 'vehiculeDetails', 'phoneDetails', 'computerDetails'];
+        detailFields.forEach(field => {
+            if (post[field] && typeof post[field] === 'object') {
+                Object.entries(post[field]).forEach(([key, value]) => {
                     if (value !== undefined && value !== null && value !== '') {
                         combinedData[key] = value;
                     }
                 });
             }
-        }
+        });
 
-        // Agregar datos específicos de inmuebles
-        if (post.immobilierDetails) {
-            Object.entries(post.immobilierDetails).forEach(([key, value]) => {
-                if (value !== undefined && value !== null && value !== '') {
-                    combinedData[key] = value;
+        // 4. Agregar campos directos del post (si no existen ya)
+        const directFields = [
+            'title', 'description', 'categorie', 'subCategory', 'articleType',
+            'price', 'loyer', 'prix', 'telephone', 'phone', 'email',
+            'wilaya', 'commune', 'adresse', 'etat', 'reference',
+            'marque', 'modele', 'model', 'brand', 'annee', 'year',
+            'kilometrage', 'km', 'carburant', 'boiteVitesse', 'puissance',
+            'couleur', 'color', 'superficie', 'surface', 'chambres',
+            'sallesBain', 'etage', 'meuble', 'jardin', 'piscine', 'garage',
+            'ram', 'stockage', 'storage', 'processeur', 'ecran', 'screen',
+            'systemeExploitation', 'os', 'capacite', 'capacity', 'taille', 'size',
+            'unite', 'typeOffre', 'echange', 'grossdetail', 'negotiable', 'negociable',
+            'livraison', 'delivery', 'certification', 'origine', 'saison',
+            'typeProduit', 'typeService', 'typeMateriau', 'typePiece',
+            'conditionnement', 'poids', 'weight', 'dlc', 'peremption',
+            'conservation', 'ingredients', 'certificationBio', 'producteur',
+            'typePlat', 'personnes', 'typeViande', 'decoupe', 'typeLaitier',
+            'matiereGrasse', 'typeBoisson', 'contenance', 'alcool',
+            'categorieEpicerie', 'typeBoulangerie', 'fabrication',
+            'typeConserve', 'contenu', 'typeSurgeles', 'conservationTemperature'
+        ];
+
+        directFields.forEach(field => {
+            const value = post[field];
+            if (value !== undefined && value !== null && value !== '') {
+                if (!combinedData[field]) {
+                    combinedData[field] = value;
                 }
-            });
-        }
-
-        // 2. Extraer datos del store si existe
-        const storeData = post.store || {};
-        
-        // 3. Extraer datos del usuario
-        const userData = post.user || {};
+            }
+        });
 
         return {
             post: combinedData,
-            store: storeData,
-            user: userData,
-            rawData: combinedData
+            user: post.user || {}
         };
     }, [post]);
 
-    const { post: postData, store, user, rawData } = getPostData;
+    const { post: postData, user } = getPostData;
 
-    // 🏷️ GENERAR TÍTULO MEJORADO
-    const generateTitleFromFields = () => {
+    // 🏷️ GENERAR TÍTULO AUTOMÁTICO
+    const generateTitle = () => {
         if (postData.title) return postData.title;
         
         const parts = [];
@@ -88,568 +112,398 @@ const DescriptionPost = ({ post }) => {
         if (postData.marque || postData.brand) {
             parts.push(postData.marque || postData.brand);
         }
-        if (postData.model || postData.modele) {
-            parts.push(postData.model || postData.modele);
+        if (postData.modele || postData.model) {
+            parts.push(postData.modele || postData.model);
         }
         
         // Año
-        if (postData.annee) {
-            parts.push(`(${postData.annee})`);
+        if (postData.annee || postData.year) {
+            parts.push(`(${postData.annee || postData.year})`);
         }
         
         // Categoría
         if (postData.categorie) {
-            parts.push(t(`descripcion:${postData.categorie}`, postData.categorie));
+            parts.push(postData.categorie.charAt(0).toUpperCase() + postData.categorie.slice(1));
         }
         
-        // Ubicación
-        if (postData.wilaya) {
-            parts.push(postData.wilaya);
-        }
-        
-        return parts.length > 0 ? parts.join(' • ') : t('descripcion:noTitle');
+        return parts.length > 0 ? parts.join(' • ') : 'Annonce sans titre';
     };
 
-    // 🎨 OBTENER EMOJI POR CAMPO
-    const getEmojiForField = (fieldName, value = '') => {
+    // 🎨 OBTENER EMOJI PARA CAMPO
+    const getFieldEmoji = (fieldName) => {
         const emojiMap = {
             // Información básica
             'title': '🏷️', 'description': '📄', 'categorie': '🏷️',
             'subCategory': '🏷️', 'articleType': '🏷️',
             
             // Vehículos
-            'marque': '🏭', 'modele': '🚗', 'annee': '📅',
-            'kilometrage': '🛣️', 'carburant': '⛽', 'boiteVitesse': '⚙️',
-            'puissance': '⚡', 'couleur': '🎨',
+            'marque': '🏭', 'brand': '🏭', 'modele': '🚗', 'model': '🚗',
+            'annee': '📅', 'year': '📅', 'kilometrage': '🛣️', 'km': '🛣️',
+            'carburant': '⛽', 'boiteVitesse': '⚙️', 'puissance': '⚡',
+            'couleur': '🎨', 'color': '🎨',
             
             // Inmuebles
             'superficie': '📏', 'surface': '📏', 'chambres': '🛏️',
             'sallesBain': '🚿', 'etage': '🏢', 'meuble': '🛋️',
             'jardin': '🌳', 'piscine': '🏊', 'garage': '🚗',
             
-            // Electrónica
-            'ram': '💾', 'stockage': '💿', 'processeur': '⚙️',
-            'ecran': '🖥️', 'systemeExploitation': '💻',
+            // Electrónica/Informática
+            'ram': '💾', 'stockage': '💿', 'storage': '💿',
+            'processeur': '⚙️', 'ecran': '🖥️', 'screen': '🖥️',
+            'systemeExploitation': '💻', 'os': '💻',
             
-            // Contacto
+            // Alimentación
+            'typeProduit': '🥫', 'origine': '🌍', 'saison': '🌞',
+            'conditionnement': '📦', 'poids': '⚖️', 'weight': '⚖️',
+            'dlc': '📅', 'peremption': '⏰', 'conservation': '❄️',
+            'ingredients': '🥗', 'certificationBio': '🌱', 'producteur': '👨‍🌾',
+            'typePlat': '🍽️', 'personnes': '👥', 'typeViande': '🥩',
+            'decoupe': '🔪', 'typeLaitier': '🧀', 'matiereGrasse': '🧈',
+            'typeBoisson': '🥤', 'contenance': '🧴', 'alcool': '🍷',
+            'categorieEpicerie': '🛒', 'typeBoulangerie': '🥐',
+            'fabrication': '👨‍🍳', 'typeConserve': '🥫', 'contenu': '📦',
+            'typeSurgeles': '❄️', 'conservationTemperature': '🌡️',
+            
+            // General
+            'etat': '⭐', 'reference': '🔢', 'capacite': '💾', 'capacity': '💾',
+            'taille': '📏', 'size': '📏',
+            
+            // Precio y condiciones
+            'price': '💰', 'prix': '💰', 'loyer': '💵',
+            'unite': '📏', 'typeOffre': '🏷️', 'echange': '🔄',
+            'grossdetail': '📦', 'negotiable': '🤝', 'negociable': '🤝',
+            'livraison': '🚚', 'delivery': '🚚',
+            
+            // Contacto y ubicación
             'telephone': '📞', 'phone': '📞', 'email': '📧',
             'wilaya': '🏙️', 'commune': '🏘️', 'adresse': '📍',
             
-            // Precio
-            'price': '💰', 'prix': '💰', 'loyer': '💵',
-            'negotiable': '🤝', 'negociable': '🤝',
-            
-            // Store
-            'nomBoutique': '🏪', 'descriptionStore': '📝',
-            'secteurActivite': '🏢', 'surfaceStore': '📏',
-            'horaires': '🕒', 'adresseStore': '📍',
-            
-            // Usuario
-            'fullname': '👤', 'username': '@', 'rating': '⭐',
-            'verified': '✅', 'memberSince': '🗓️'
+            // Otros
+            'certification': '📜', 'typeService': '🛠️',
+            'typeMateriau': '🧱', 'typePiece': '🔩'
         };
         
         return emojiMap[fieldName] || '📋';
     };
 
-    // 📱 COMPONENTE LÍNEA COMPACTA
-    const CompactLine = ({ icon, label, value, badge = null, className = "" }) => {
-        const formatValue = (val) => {
-            if (!val && val !== 0) return '-';
-            
-            if (typeof val === 'boolean') {
-                return val ? t('descripcion:yes') : t('descripcion:no');
+    // 📝 FORMATO DE VALORES
+    const formatValue = (field, value) => {
+        if (value === undefined || value === null || value === '') return '-';
+        
+        // Booleanos
+        if (typeof value === 'boolean') {
+            return value ? 'Oui' : 'Non';
+        }
+        
+        // Arrays
+        if (Array.isArray(value)) {
+            return value.join(', ');
+        }
+        
+        // Números con formato
+        if (typeof value === 'number') {
+            // Precio
+            if (field.includes('price') || field.includes('prix') || field.includes('loyer')) {
+                return new Intl.NumberFormat('fr-FR').format(value) + ' DZD';
             }
-            
-            if (Array.isArray(val)) {
-                return val.join(', ');
+            // Superficie
+            if (field.includes('surface') || field.includes('superficie')) {
+                return new Intl.NumberFormat('fr-FR').format(value) + ' m²';
             }
-            
-            if (typeof val === 'number') {
-                // Formatear según tipo
-                if (label.toLowerCase().includes('prix') || label.toLowerCase().includes('price')) {
-                    return new Intl.NumberFormat('fr-FR').format(val) + ' DZD';
-                }
-                if (label.toLowerCase().includes('surface') || label.toLowerCase().includes('superficie')) {
-                    return new Intl.NumberFormat('fr-FR').format(val) + ' m²';
-                }
-                if (label.toLowerCase().includes('kilometrage')) {
-                    return new Intl.NumberFormat('fr-FR').format(val) + ' km';
-                }
-                return new Intl.NumberFormat('fr-FR').format(val);
+            // Kilometrage
+            if (field.includes('kilometrage') || field.includes('km')) {
+                return new Intl.NumberFormat('fr-FR').format(value) + ' km';
             }
-            
-            return String(val);
+            // Año
+            if (field.includes('annee') || field.includes('year')) {
+                return value.toString();
+            }
+            return new Intl.NumberFormat('fr-FR').format(value);
+        }
+        
+        // Valores específicos
+        if (field === 'grossdetail') {
+            if (value === 'gross') return 'En gros';
+            if (value === 'detail') return 'Au détail';
+            if (value === 'both') return 'Gros et détail';
+        }
+        
+        if (field === 'typeOffre') {
+            if (value === 'vente') return 'Vente';
+            if (value === 'location') return 'Location';
+            if (value === 'echange') return 'Échange';
+        }
+        
+        if (field === 'livraison' || field === 'delivery') {
+            if (value === true || value === 'true') return 'Livraison possible';
+            if (value === false || value === 'false') return 'Sans livraison';
+        }
+        
+        if (field === 'echange') {
+            if (value === true || value === 'true') return 'Échange possible';
+            if (value === false || value === 'false') return 'Pas d\'échange';
+        }
+        
+        if (field === 'negotiable' || field === 'negociable') {
+            if (value === true || value === 'true') return 'Négociable';
+            if (value === false || value === 'false') return 'Prix fixe';
+        }
+        
+        // String normal
+        return String(value).charAt(0).toUpperCase() + String(value).slice(1);
+    };
+
+    // 📱 COMPONENTE LÍNEA SIMPLE
+    const FieldLine = ({ field, value }) => {
+        const fieldLabels = {
+            // Traducciones de campos comunes
+            'title': 'Titre',
+            'description': 'Description',
+            'categorie': 'Catégorie',
+            'subCategory': 'Sous-catégorie',
+            'articleType': 'Type d\'article',
+            'price': 'Prix',
+            'prix': 'Prix',
+            'loyer': 'Loyer',
+            'etat': 'État',
+            'reference': 'Référence',
+            'marque': 'Marque',
+            'brand': 'Marque',
+            'modele': 'Modèle',
+            'model': 'Modèle',
+            'annee': 'Année',
+            'year': 'Année',
+            'kilometrage': 'Kilométrage',
+            'km': 'Kilométrage',
+            'carburant': 'Carburant',
+            'boiteVitesse': 'Boîte de vitesse',
+            'puissance': 'Puissance',
+            'couleur': 'Couleur',
+            'color': 'Couleur',
+            'superficie': 'Superficie',
+            'surface': 'Surface',
+            'chambres': 'Chambres',
+            'sallesBain': 'Salles de bain',
+            'etage': 'Étage',
+            'meuble': 'Meublé',
+            'jardin': 'Jardin',
+            'piscine': 'Piscine',
+            'garage': 'Garage',
+            'ram': 'RAM',
+            'stockage': 'Stockage',
+            'storage': 'Stockage',
+            'processeur': 'Processeur',
+            'ecran': 'Écran',
+            'screen': 'Écran',
+            'systemeExploitation': 'Système d\'exploitation',
+            'os': 'Système d\'exploitation',
+            'capacite': 'Capacité',
+            'capacity': 'Capacité',
+            'taille': 'Taille',
+            'size': 'Taille',
+            'unite': 'Unité',
+            'typeOffre': 'Type d\'offre',
+            'echange': 'Échange',
+            'grossdetail': 'Vente en',
+            'negotiable': 'Négociable',
+            'negociable': 'Négociable',
+            'livraison': 'Livraison',
+            'delivery': 'Livraison',
+            'telephone': 'Téléphone',
+            'phone': 'Téléphone',
+            'email': 'Email',
+            'wilaya': 'Wilaya',
+            'commune': 'Commune',
+            'adresse': 'Adresse',
+            'certification': 'Certification',
+            'origine': 'Origine',
+            'saison': 'Saison',
+            'typeProduit': 'Type de produit',
+            'typeService': 'Type de service',
+            'typeMateriau': 'Type de matériau',
+            'typePiece': 'Type de pièce',
+            'conditionnement': 'Conditionnement',
+            'poids': 'Poids',
+            'weight': 'Poids',
+            'dlc': 'Date limite de consommation',
+            'peremption': 'Péremption',
+            'conservation': 'Conservation',
+            'ingredients': 'Ingrédients',
+            'certificationBio': 'Certification bio',
+            'producteur': 'Producteur',
+            'typePlat': 'Type de plat',
+            'personnes': 'Personnes',
+            'typeViande': 'Type de viande',
+            'decoupe': 'Découpe',
+            'typeLaitier': 'Type laitier',
+            'matiereGrasse': 'Matière grasse',
+            'typeBoisson': 'Type de boisson',
+            'contenance': 'Contenance',
+            'alcool': 'Alcool',
+            'categorieEpicerie': 'Catégorie épicerie',
+            'typeBoulangerie': 'Type boulangerie',
+            'fabrication': 'Fabrication',
+            'typeConserve': 'Type de conserve',
+            'contenu': 'Contenu',
+            'typeSurgeles': 'Type surgelés',
+            'conservationTemperature': 'Température de conservation'
         };
 
+        const label = fieldLabels[field] || field.replace(/([A-Z])/g, ' $1').toLowerCase().replace(/^./, str => str.toUpperCase());
+        const emoji = getFieldEmoji(field);
+        const formattedValue = formatValue(field, value);
+
         return (
-            <div className={`d-flex align-items-center py-2 ${className}`} 
-                 style={{ borderBottom: '1px solid #f0f0f0' }}>
-                <div style={{ width: '32px', flexShrink: 0, fontSize: '18px' }}>
-                    {icon}
+            <div className="d-flex align-items-center py-2 border-bottom">
+                <div className="me-3" style={{ fontSize: '1.2rem', width: '30px' }}>
+                    {emoji}
                 </div>
                 <div style={{ flex: 1 }}>
-                    <div className="fw-semibold" style={{ fontSize: '0.9rem' }}>
+                    <div className="fw-bold" style={{ fontSize: '0.95rem' }}>
                         {label}
                     </div>
                 </div>
                 <div className="text-end">
-                    <div className="text-dark" style={{ fontSize: '0.9rem' }}>
-                        {formatValue(value)}
+                    <div className="fw-semibold text-dark" style={{ fontSize: '0.95rem' }}>
+                        {formattedValue}
                     </div>
-                    {badge && (
-                        <Badge bg={badge.color} className="ms-2" style={{ fontSize: '0.7rem' }}>
-                            {badge.text}
-                        </Badge>
-                    )}
                 </div>
             </div>
         );
     };
 
-    // 🚗 SECCIÓN: INFORMACIÓN PRINCIPAL DEL PRODUCTO
-    const renderProductInfoSection = () => {
-        // Definir qué campos mostrar según categoría
-        let fieldsToShow = [];
+    // 🚗 OBTENER CAMPOS DISPONIBLES
+    const getAvailableFields = () => {
+        if (!postData || typeof postData !== 'object') return [];
         
-        switch(postData.categorie) {
-            case 'vehicules':
-                fieldsToShow = ['marque', 'modele', 'annee', 'kilometrage', 'carburant', 'boiteVitesse', 'puissance', 'couleur'];
-                break;
-            case 'immobilier':
-                fieldsToShow = ['typeImmobilier', 'surface', 'chambres', 'sallesBain', 'etage', 'meuble'];
-                break;
-            case 'telephones':
-                fieldsToShow = ['marque', 'modele', 'couleur', 'capaciteStockage', 'ram', 'systemeExploitation'];
-                break;
-            case 'informatique':
-                fieldsToShow = ['typeProduit', 'marque', 'modele', 'processeur', 'ram', 'stockage'];
-                break;
-            default:
-                // Campos generales para todas las categorías
-                fieldsToShow = ['etat', 'reference', 'couleur', 'taille', 'capacite'];
+        return Object.keys(postData).filter(key => 
+            key !== '_id' && 
+            key !== 'user' && 
+            key !== 'store' && 
+            key !== 'images' && 
+            key !== 'likes' && 
+            key !== 'comments' && 
+            key !== 'createdAt' && 
+            key !== 'updatedAt' &&
+            key !== 'views' &&
+            key !== 'isPromoted' &&
+            key !== 'isUrgent' &&
+            key !== 'isActive' &&
+            key !== '__v' &&
+            postData[key] !== undefined &&
+            postData[key] !== null &&
+            postData[key] !== ''
+        );
+    };
+
+    // 📊 GRUPAR CAMPOS POR CATEGORÍA (VERSIÓN CORREGIDA)
+    const getGroupedFields = () => {
+        const availableFields = getAvailableFields();
+        if (availableFields.length === 0) return {};
+
+        // Definir grupos de campos
+        const fieldGroups = {
+            informaciónPrincipal: ['title', 'description', 'categorie', 'subCategory', 'articleType'],
+            precioCondiciones: ['price', 'prix', 'loyer', 'unite', 'typeOffre', 'grossdetail', 'negotiable', 'negociable', 'echange', 'livraison', 'delivery'],
+            características: ['etat', 'reference', 'marque', 'brand', 'modele', 'model', 'annee', 'year', 'kilometrage', 'km', 'carburant', 'boiteVitesse', 'puissance', 'couleur', 'color', 'superficie', 'surface', 'chambres', 'sallesBain', 'etage', 'meuble', 'jardin', 'piscine', 'garage'],
+            especificaciones: ['ram', 'stockage', 'storage', 'processeur', 'ecran', 'screen', 'systemeExploitation', 'os', 'capacite', 'capacity', 'taille', 'size'],
+            alimentación: ['typeProduit', 'origine', 'saison', 'conditionnement', 'poids', 'weight', 'dlc', 'peremption', 'conservation', 'ingredients', 'certificationBio', 'producteur', 'typePlat', 'personnes', 'typeViande', 'decoupe', 'typeLaitier', 'matiereGrasse', 'typeBoisson', 'contenance', 'alcool', 'categorieEpicerie', 'typeBoulangerie', 'fabrication', 'typeConserve', 'contenu', 'typeSurgeles', 'conservationTemperature'],
+            contacto: ['telephone', 'phone', 'email', 'wilaya', 'commune', 'adresse']
+        };
+
+        // Agrupar campos
+        const grouped = {
+            informaciónPrincipal: [],
+            precioCondiciones: [],
+            características: [],
+            especificaciones: [],
+            alimentación: [],
+            contacto: [],
+            otros: []
+        };
+
+        availableFields.forEach(field => {
+            let added = false;
+            
+            for (const [groupName, groupFields] of Object.entries(fieldGroups)) {
+                if (groupFields.includes(field)) {
+                    grouped[groupName].push(field);
+                    added = true;
+                    break;
+                }
+            }
+            
+            if (!added) {
+                grouped.otros.push(field);
+            }
+        });
+
+        // Filtrar grupos vacíos
+        Object.keys(grouped).forEach(group => {
+            if (grouped[group].length === 0) {
+                delete grouped[group];
+            }
+        });
+
+        return grouped;
+    };
+
+    // 📋 RENDERIZAR GRUPOS DE CAMPOS (VERSIÓN CORREGIDA)
+    const renderFieldGroups = () => {
+        const groupedFields = getGroupedFields();
+        if (!groupedFields || Object.keys(groupedFields).length === 0) {
+            return (
+                <div className="alert alert-info">
+                    Aucune information détaillée disponible pour cette annonce.
+                </div>
+            );
         }
-        
-        // Filtrar campos que existen en los datos
-        const availableFields = fieldsToShow.filter(field => 
-            postData[field] !== undefined && postData[field] !== null && postData[field] !== ''
-        );
-        
-        if (availableFields.length === 0) return null;
-        
-        return (
-            <div className="mb-4">
-                <Card className="border-0 shadow-sm">
-                    <Card.Header className="bg-primary text-white d-flex align-items-center">
-                        <span className="me-2">🚗</span>
-                        <span className="fw-bold">{t('descripcion:productDetails')}</span>
-                    </Card.Header>
-                    <Card.Body className="p-0">
-                        <ListGroup variant="flush">
-                            {availableFields.map((field, index) => (
-                                <ListGroup.Item key={field} className="border-0">
-                                    <CompactLine
-                                        icon={getEmojiForField(field, postData[field])}
-                                        label={t(`descripcion:${field}`, field)}
-                                        value={postData[field]}
-                                        className={index === availableFields.length - 1 ? 'border-0' : ''}
-                                    />
-                                </ListGroup.Item>
-                            ))}
-                        </ListGroup>
-                    </Card.Body>
-                </Card>
-            </div>
-        );
-    };
 
-    // 🏷️ SECCIÓN: PRECIO Y CONDICIONES
-    const renderPriceSection = () => {
-        const price = postData.price || postData.prix || postData.loyer;
-        if (!price) return null;
-        
-        return (
-            <div className="mb-4">
-                <Card className="border-0 shadow-sm">
-                    <Card.Header className="bg-success text-white d-flex align-items-center">
-                        <span className="me-2">💰</span>
-                        <span className="fw-bold">{t('descripcion:priceInfo')}</span>
-                    </Card.Header>
-                    <Card.Body className="p-3">
-                        <div className="d-flex justify-content-between align-items-center mb-3">
-                            <div>
-                                <h2 className="text-success fw-bold mb-1">
-                                    {new Intl.NumberFormat('fr-FR').format(price)} DZD
-                                </h2>
-                                <div className="text-muted small">
-                                    {postData.typeOffre === 'vente' ? 'Prix de vente' : 
-                                     postData.typeOffre === 'location' ? 'Loyer mensuel' : 
-                                     'Prix'}
-                                </div>
-                            </div>
-                            
-                            {(postData.negotiable || postData.echange) && (
-                                <div>
-                                    {postData.negotiable && (
-                                        <Badge bg="warning" className="me-2">
-                                            🤝 {t('descripcion:negotiable')}
-                                        </Badge>
-                                    )}
-                                    {postData.echange && (
-                                        <Badge bg="info">
-                                            🔄 {t('descripcion:echangePossible')}
-                                        </Badge>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                        
-                        {/* Campos adicionales de precio */}
-                        <div className="row g-2">
-                            {postData.unite && (
-                                <div className="col-12 col-md-6">
-                                    <CompactLine
-                                        icon="📏"
-                                        label={t('descripcion:unite')}
-                                        value={postData.unite}
-                                        className="border-0"
-                                    />
-                                </div>
-                            )}
-                            {postData.typeOffre && (
-                                <div className="col-12 col-md-6">
-                                    <CompactLine
-                                        icon="🏷️"
-                                        label={t('descripcion:typeOffre')}
-                                        value={postData.typeOffre}
-                                        className="border-0"
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    </Card.Body>
-                </Card>
-            </div>
-        );
-    };
+        const groupTitles = {
+            'informaciónPrincipal': '📋 Informations principales',
+            'precioCondiciones': '💰 Prix et conditions',
+            'características': '🚗 Caractéristiques',
+            'especificaciones': '💻 Spécifications techniques',
+            'alimentación': '🥫 Détails alimentaires',
+            'contacto': '📍 Contact et localisation',
+            'otros': '📌 Autres informations'
+        };
 
-    // 📍 SECCIÓN: UBICACIÓN Y CONTACTO
-    const renderLocationContactSection = () => {
-        const locationFields = ['wilaya', 'commune', 'adresse'];
-        const contactFields = ['telephone', 'email', 'whatsapp'];
+        const order = ['informaciónPrincipal', 'precioCondiciones', 'características', 'especificaciones', 'alimentación', 'contacto', 'otros'];
         
-        const availableLocation = locationFields.filter(f => postData[f]);
-        const availableContact = contactFields.filter(f => postData[f]);
-        
-        if (availableLocation.length === 0 && availableContact.length === 0) return null;
-        
-        return (
-            <div className="mb-4">
-                <Card className="border-0 shadow-sm">
-                    <Card.Header className="bg-info text-white d-flex align-items-center">
-                        <span className="me-2">📍</span>
-                        <span className="fw-bold">{t('descripcion:locationContact')}</span>
-                    </Card.Header>
-                    <Card.Body className="p-0">
-                        {availableLocation.length > 0 && (
-                            <div className="p-3 border-bottom">
-                                <h6 className="fw-bold mb-3">📍 {t('descripcion:location')}</h6>
-                                <div className="row g-2">
-                                    {availableLocation.map(field => (
-                                        <div key={field} className="col-12 col-md-4">
-                                            <CompactLine
-                                                icon={getEmojiForField(field)}
-                                                label={t(`descripcion:${field}`, field)}
-                                                value={postData[field]}
-                                                className="border-0"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        
-                        {availableContact.length > 0 && (
-                            <div className="p-3">
-                                <h6 className="fw-bold mb-3">📞 {t('descripcion:contact')}</h6>
-                                <div className="row g-2">
-                                    {availableContact.map(field => (
-                                        <div key={field} className="col-12 col-md-4">
-                                            <CompactLine
-                                                icon={getEmojiForField(field)}
-                                                label={t(`descripcion:${field}`, field)}
-                                                value={field === 'telephone' ? `+${postData[field]}` : postData[field]}
-                                                badge={field === 'telephone' ? {
-                                                    color: 'success',
-                                                    text: t('descripcion:clickToCall')
-                                                } : null}
-                                                className="border-0"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                                
-                                {/* Botones de acción */}
-                                <div className="mt-3 d-flex gap-2">
-                                    {postData.telephone && (
-                                        <Button 
-                                            variant="success" 
-                                            size="sm"
-                                            className="d-flex align-items-center gap-1"
-                                            onClick={() => window.location.href = `tel:${postData.telephone}`}
-                                        >
-                                            📞 {t('descripcion:callNow')}
-                                        </Button>
-                                    )}
-                                    {postData.whatsapp && (
-                                        <Button 
-                                            variant="success" 
-                                            size="sm"
-                                            className="d-flex align-items-center gap-1"
-                                            href={`https://wa.me/${postData.whatsapp}`}
-                                            target="_blank"
-                                        >
-                                            💬 WhatsApp
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </Card.Body>
-                </Card>
-            </div>
-        );
-    };
-
-    // 🏪 SECCIÓN: INFORMACIÓN DE LA BOUTIQUE/TIENDA
-    const renderStoreInfoSection = () => {
-        if (!store || Object.keys(store).length === 0) return null;
-        
-        const storeFields = [
-            { key: 'nomBoutique', label: t('descripcion:storeName') },
-            { key: 'description', label: t('descripcion:storeDescription') },
-            { key: 'secteurActivite', label: t('descripcion:businessSector') },
-            { key: 'surface', label: t('descripcion:storeSurface') },
-            { key: 'horaires', label: t('descripcion:openingHours') },
-            { key: 'telephone', label: t('descripcion:storePhone') },
-            { key: 'email', label: t('descripcion:storeEmail') },
-            { key: 'adresse', label: t('descripcion:storeAddress') }
-        ];
-        
-        const availableFields = storeFields.filter(item => store[item.key]);
-        
-        if (availableFields.length === 0) return null;
-        
-        return (
-            <div className="mb-4">
-                <Accordion>
-                    <Accordion.Item eventKey="0">
-                        <Accordion.Header className="py-2">
-                            <div className="d-flex align-items-center gap-2">
-                                <span>🏪</span>
-                                <span className="fw-bold">{t('descripcion:storeInfo')}</span>
-                                <Badge bg="primary" className="ms-2">
-                                    {store.nomBoutique || t('descripcion:store')}
-                                </Badge>
-                            </div>
-                        </Accordion.Header>
-                        <Accordion.Body className="p-3">
-                            <div className="row g-3">
-                                {availableFields.map((item, index) => (
-                                    <div key={item.key} className="col-12 col-md-6">
-                                        <CompactLine
-                                            icon={getEmojiForField(item.key)}
-                                            label={item.label}
-                                            value={store[item.key]}
-                                            className="border-0"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        </Accordion.Body>
-                    </Accordion.Item>
-                </Accordion>
-            </div>
-        );
-    };
-
-    // 👤 SECCIÓN: INFORMACIÓN DEL VENDEDOR/USUARIO
-    const renderUserInfoSection = () => {
-        if (!user || Object.keys(user).length === 0) return null;
-        
-        return (
-            <div className="mb-4">
-                <Card className="border-0 shadow-sm">
-                    <Card.Header className="bg-secondary text-white d-flex align-items-center justify-content-between">
-                        <div className="d-flex align-items-center">
-                            <span className="me-2">👤</span>
-                            <span className="fw-bold">{t('descripcion:sellerInfo')}</span>
-                        </div>
-                        {user.verified && (
-                            <Badge bg="success">
-                                ✅ {t('descripcion:verified')}
-                            </Badge>
-                        )}
-                    </Card.Header>
-                    <Card.Body>
-                        <div className="d-flex align-items-start gap-3 mb-3">
-                            {user.avatar && (
-                                <img 
-                                    src={user.avatar} 
-                                    alt={user.fullname}
-                                    className="rounded-circle"
-                                    style={{ width: '80px', height: '80px', objectFit: 'cover' }}
-                                />
-                            )}
-                            <div className="flex-grow-1">
-                                <h5 className="fw-bold mb-1">
-                                    {user.fullname || user.username}
-                                </h5>
-                                <div className="text-muted small mb-2">
-                                    {user.username && <span>@{user.username}</span>}
-                                    {user.createdAt && (
-                                        <span className="ms-2 d-flex align-items-center gap-1">
-                                            🗓️ Membre depuis {new Date(user.createdAt).getFullYear()}
-                                        </span>
-                                    )}
-                                </div>
-                                
-                                {/* Botón de chat */}
-                                {auth.user && auth.user._id !== user._id && (
-                                    <Button 
-                                        variant="primary" 
-                                        size="sm"
-                                        className="d-flex align-items-center gap-1"
-                                        onClick={handleStartChat}
-                                    >
-                                        💬 {t('descripcion:contactSeller')}
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-                        
-                        {/* Estadísticas del usuario */}
-                        <div className="row g-2">
-                            {user.rating && (
-                                <div className="col-6 col-md-4">
-                                    <CompactLine
-                                        icon="⭐"
-                                        label={t('descripcion:rating')}
-                                        value={`${user.rating.toFixed(1)}/5`}
-                                        className="border-0"
-                                    />
-                                </div>
-                            )}
-                            {user.postCount !== undefined && (
-                                <div className="col-6 col-md-4">
-                                    <CompactLine
-                                        icon="📝"
-                                        label={t('descripcion:totalPosts')}
-                                        value={user.postCount}
-                                        className="border-0"
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    </Card.Body>
-                </Card>
-            </div>
-        );
-    };
-
-    // 📄 SECCIÓN: DESCRIPCIÓN
-    const renderDescriptionSection = () => {
-        const description = postData.description || '';
-        if (!description) return null;
-        
-        return (
-            <div className="mb-4">
-                <Card className="border-0 shadow-sm">
-                    <Card.Header className="bg-dark text-white d-flex align-items-center">
-                        <span className="me-2">📄</span>
-                        <span className="fw-bold">{t('descripcion:description')}</span>
-                    </Card.Header>
-                    <Card.Body>
-                        <div style={{ 
-                            lineHeight: '1.6', 
-                            textAlign: isRTL ? 'right' : 'left',
-                            whiteSpace: 'pre-line'
-                        }}>
-                            {readMore ? description : `${description.substring(0, 300)}...`}
-                        </div>
-                        
-                        {description.length > 300 && (
-                            <Button 
-                                variant="link" 
-                                className="mt-2 p-0 text-decoration-none"
-                                onClick={() => setReadMore(!readMore)}
-                            >
-                                {readMore ? 
-                                    `👆 ${t('descripcion:seeLess')}` : 
-                                    `👇 ${t('descripcion:readMore')}`
-                                }
-                            </Button>
-                        )}
-                    </Card.Body>
-                </Card>
-            </div>
-        );
-    };
-
-    // 📊 SECCIÓN: INFORMACIÓN ADICIONAL
-    const renderAdditionalInfoSection = () => {
-        const additionalFields = [
-            { key: 'createdAt', label: t('descripcion:publishedOn'), format: (val) => new Date(val).toLocaleDateString(lang) },
-            { key: 'views', label: t('descripcion:views'), format: (val) => val.toLocaleString() },
-            { key: 'likes', label: t('descripcion:likes'), format: (val) => val?.length || 0 },
-            { key: 'isPromoted', label: t('descripcion:promoted'), format: (val) => val ? t('descripcion:yes') : t('descripcion:no') },
-            { key: 'isUrgent', label: t('descripcion:urgent'), format: (val) => val ? t('descripcion:yes') : t('descripcion:no') },
-            { key: 'isActive', label: t('descripcion:active'), format: (val) => val ? t('descripcion:yes') : t('descripcion:no') }
-        ];
-        
-        const availableFields = additionalFields.filter(item => 
-            postData[item.key] !== undefined && postData[item.key] !== null
-        );
-        
-        if (availableFields.length === 0) return null;
-        
-        return (
-            <Accordion className="mb-4">
-                <Accordion.Item eventKey="0">
-                    <Accordion.Header className="py-2">
-                        <div className="d-flex align-items-center gap-2">
-                            <span>📊</span>
-                            <span className="fw-semibold">{t('descripcion:additionalInfo')}</span>
-                        </div>
-                    </Accordion.Header>
-                    <Accordion.Body className="p-3">
-                        <div className="row g-2">
-                            {availableFields.map((item, index) => (
-                                <div key={item.key} className="col-12 col-md-6">
-                                    <CompactLine
-                                        icon={getEmojiForField(item.key)}
-                                        label={item.label}
-                                        value={item.format(postData[item.key])}
-                                        className="border-0"
-                                    />
+        return order
+            .filter(group => groupedFields[group] && groupedFields[group].length > 0)
+            .map((group, index) => (
+                <div key={group} className="mb-4">
+                    <h3 className="fw-bold mb-3" style={{ fontSize: '1.3rem', color: '#2c3e50' }}>
+                        {groupTitles[group]}
+                    </h3>
+                    <Card className="border-0 shadow-sm">
+                        <Card.Body className="p-0">
+                            {groupedFields[group].map(field => (
+                                <div key={field} className="px-3">
+                                    <FieldLine field={field} value={postData[field]} />
                                 </div>
                             ))}
-                        </div>
-                    </Accordion.Body>
-                </Accordion.Item>
-            </Accordion>
-        );
+                        </Card.Body>
+                    </Card>
+                </div>
+            ));
     };
 
-    // 💬 MANEJAR INICIO DE CHAT
-    const handleStartChat = () => {
+    // 💬 MANEJAR CONTACTO
+    const handleContact = () => {
         if (!auth.user) {
             dispatch({ 
                 type: GLOBALTYPES.ALERT, 
-                payload: { error: t('descripcion:loginToChat') } 
+                payload: { error: 'Veuillez vous connecter pour contacter le vendeur' } 
             });
             return;
         }
+        
+        if (!user || !user._id) return;
+        
+        if (auth.user._id === user._id) return;
         
         dispatch({
             type: MESS_TYPES.ADD_USER,
@@ -657,7 +511,7 @@ const DescriptionPost = ({ post }) => {
                 ...user, 
                 text: '', 
                 media: [],
-                postTitle: generateTitleFromFields(),
+                postTitle: generateTitle(),
                 postId: post._id,
                 postPrice: postData.price,
                 postImage: post.images?.[0]?.url
@@ -667,119 +521,102 @@ const DescriptionPost = ({ post }) => {
         history.push(`/message/${user._id}`);
     };
 
-    // 🎯 HEADER PRINCIPAL
+    // 🏷️ RENDERIZAR HEADER
     const renderHeader = () => {
-        const title = generateTitleFromFields();
-        const categoryEmoji = getEmojiForField(postData.categorie);
+        const title = generateTitle();
         
         return (
             <div className="mb-4">
-                <div className="d-flex align-items-start gap-3 mb-4">
-                    <div className="text-primary" style={{ fontSize: '48px', flexShrink: 0 }}>
-                        {categoryEmoji}
+                <div className="d-flex align-items-center gap-3 mb-3">
+                    <div style={{ fontSize: '2.5rem' }}>
+                        {getFieldEmoji(postData.categorie || 'default')}
                     </div>
-                    <div className="flex-grow-1">
-                        <h1 className="h2 fw-bold mb-2" style={{ lineHeight: '1.3' }}>
+                    <div>
+                        <h1 className="fw-bold mb-1" style={{ fontSize: '1.8rem', lineHeight: '1.3' }}>
                             {title}
                         </h1>
-                        <div className="d-flex align-items-center gap-2 flex-wrap mb-3">
-                            <Badge bg="primary" className="py-1 px-2">
-                                {t(`descripcion:${postData.categorie}`, postData.categorie)}
-                            </Badge>
-                            {postData.subCategory && (
-                                <Badge bg="secondary" className="py-1 px-2">
-                                    {t(`createpost:options.${postData.subCategory}`, postData.subCategory)}
+                        {postData.categorie && (
+                            <div className="d-flex gap-2">
+                                <Badge bg="primary" className="px-3 py-1" style={{ fontSize: '0.9rem' }}>
+                                    {postData.categorie.charAt(0).toUpperCase() + postData.categorie.slice(1)}
                                 </Badge>
-                            )}
-                            {postData.articleType && (
-                                <Badge bg="info" className="py-1 px-2">
-                                    {postData.articleType}
-                                </Badge>
-                            )}
-                            {store?.nomBoutique && (
-                                <Badge bg="warning" className="py-1 px-2">
-                                    🏪 {store.nomBoutique}
-                                </Badge>
-                            )}
-                        </div>
+                                {postData.subCategory && (
+                                    <Badge bg="secondary" className="px-3 py-1" style={{ fontSize: '0.9rem' }}>
+                                        {postData.subCategory}
+                                    </Badge>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
         );
     };
 
+    // ✅ VERIFICAR SI HAY DATOS
+    if (!post || !postData || Object.keys(postData).length === 0) {
+        return (
+            <Container className="py-4">
+                <div className="alert alert-warning">
+                    Aucune donnée disponible pour cette annonce.
+                </div>
+            </Container>
+        );
+    }
+
     return (
         <Container className="py-4" style={{ 
             direction: isRTL ? 'rtl' : 'ltr', 
-            maxWidth: '1200px' 
+            maxWidth: '1000px' 
         }}>
-            {/* HEADER PRINCIPAL */}
+            {/* HEADER */}
             {renderHeader()}
             
-            {/* DESCRIPCIÓN */}
-            {renderDescriptionSection()}
-            
-            {/* INFORMACIÓN DEL PRODUCTO */}
-            {renderProductInfoSection()}
-            
-            {/* PRECIO */}
-            {renderPriceSection()}
-            
-            {/* UBICACIÓN Y CONTACTO */}
-            {renderLocationContactSection()}
-            
-            {/* INFORMACIÓN DE LA TIENDA */}
-            {renderStoreInfoSection()}
-            
-            {/* INFORMACIÓN DEL VENDEDOR */}
-            {renderUserInfoSection()}
-            
-            {/* INFORMACIÓN ADICIONAL */}
-            {renderAdditionalInfoSection()}
+            {/* TODOS LOS CAMPOS */}
+            {renderFieldGroups()}
             
             {/* BOTONES DE ACCIÓN */}
-            <div className="mt-4 pt-4 border-top">
+            <div className="mt-4 pt-3 border-top">
                 <Row className="g-3">
-                    <Col xs={12} md={6}>
-                        {postData.telephone && (
+                    {postData.telephone && (
+                        <Col xs={12} md={6}>
                             <Button 
                                 variant="success" 
                                 size="lg"
-                                className="w-100 d-flex align-items-center justify-content-center gap-2 py-3"
+                                className="w-100 d-flex align-items-center justify-content-center gap-2 py-2"
+                                style={{ fontSize: '1rem' }}
                                 onClick={() => window.location.href = `tel:${postData.telephone}`}
                             >
-                                📞 {t('descripcion:callNow')}
+                                <span>📞</span>
+                                <span>Appeler maintenant</span>
                             </Button>
-                        )}
-                    </Col>
-                    <Col xs={12} md={6}>
-                        {auth.user && auth.user._id !== user?._id && (
+                        </Col>
+                    )}
+                    
+                    <Col xs={12} md={postData.telephone ? 6 : 12}>
+                        {auth.user && user && user._id && auth.user._id !== user._id && (
                             <Button 
                                 variant="primary" 
                                 size="lg"
-                                className="w-100 d-flex align-items-center justify-content-center gap-2 py-3"
-                                onClick={handleStartChat}
+                                className="w-100 d-flex align-items-center justify-content-center gap-2 py-2"
+                                style={{ fontSize: '1rem' }}
+                                onClick={handleContact}
                             >
-                                💬 {t('descripcion:contactSeller')}
+                                <span>💬</span>
+                                <span>Contacter le vendeur</span>
                             </Button>
                         )}
                     </Col>
                 </Row>
             </div>
             
-            {/* ESTILOS CSS */}
+            {/* ESTILOS */}
             <style jsx>{`
-                .compact-line {
-                    transition: background-color 0.2s;
+                .border-bottom:last-child {
+                    border-bottom: none !important;
                 }
-                .compact-line:hover {
-                    background-color: #f8f9fa;
-                }
-                .badge {
-                    font-size: 0.8rem;
-                }
-                .accordion-button:not(.collapsed) {
-                    background-color: rgba(13, 110, 253, 0.1);
+                .shadow-sm {
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
                 }
             `}</style>
         </Container>

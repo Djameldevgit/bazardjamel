@@ -1,55 +1,40 @@
 import React from 'react';
 import { Form } from 'react-bootstrap';
 
-const CommuneField = ({ 
-  postData, 
-  handleChangeInput, 
-  name = 'commune',
-  communes = [], // Recibe las communes como prop
-  wilayaSelected = null // Para mostrar información
-}) => {
+const CommuneField = ({ postData, handleChangeInput, name = 'commune', communes = [] }) => {
   
-  // Si no hay wilaya seleccionada, deshabilitamos el campo
-  const isDisabled = !wilayaSelected || communes.length === 0;
+  // DEBUG: Ver qué está recibiendo
+  console.log("CommuneField - communes recibido:", communes);
+  console.log("CommuneField - Tipo de communes:", typeof communes);
+  console.log("CommuneField - Es array?", Array.isArray(communes));
+  console.log("CommuneField - Longitud:", communes ? communes.length : 0);
 
   return (
     <Form.Group>
-      <Form.Label>
-        🏘️ Commune 
-        {wilayaSelected && (
-          <small className="text-muted ml-2">
-            (Wilaya: {wilayaSelected})
-          </small>
-        )}
-      </Form.Label>
-      
-      <Form.Control
-        as="select"
+      <Form.Label>Commune</Form.Label>
+      <Form.Select
         name={name}
         value={postData[name] || ''}
         onChange={handleChangeInput}
-        disabled={isDisabled}
-        required={!isDisabled}
+        disabled={!communes || communes.length === 0}
       >
         <option value="">
-          {isDisabled 
-            ? "-- Sélectionnez d'abord une wilaya --" 
-            : "-- Sélectionnez une commune --"
+          {!communes || communes.length === 0 
+            ? 'Sélectionnez d\'abord une wilaya' 
+            : 'Sélectionner une commune'
           }
         </option>
         
-        {communes.map((commune) => (
-          <option key={commune} value={commune}>
-            {commune}
-          </option>
-        ))}
-      </Form.Control>
-      
-      {isDisabled && (
-        <Form.Text className="text-warning">
-          Veuillez sélectionner une wilaya d'abord
-        </Form.Text>
-      )}
+        {Array.isArray(communes) && communes.map((commune, index) => {
+          // Asegurarnos que commune sea una string
+          const communeName = typeof commune === 'string' ? commune : String(commune);
+          return (
+            <option key={index} value={communeName}>
+              {communeName}
+            </option>
+          );
+        })}
+      </Form.Select>
     </Form.Group>
   );
 };

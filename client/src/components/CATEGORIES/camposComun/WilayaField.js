@@ -1,44 +1,39 @@
 import React from 'react';
 import { Form } from 'react-bootstrap';
+import wilayasData from './json/wilayas.json';
 
-const WilayaField = ({ 
-  postData, 
-  handleChangeInput, 
-  name = 'wilaya',
-  onWilayaChange = null,
-  wilayasData = [] // Recibir como prop
-}) => {
+const WilayaField = ({ postData, handleChangeInput, name = 'wilaya', onWilayaChange }) => {
   
   const handleChange = (e) => {
+    const value = e.target.value;
+    
+    // Ejecutar el cambio normal
     handleChangeInput(e);
     
-    // Si hay función callback, la ejecutamos con la wilaya seleccionada
-    if (onWilayaChange && e.target.value) {
-      const selectedWilaya = wilayasData.find(w => w.wilaya === e.target.value);
-      console.log('🔍 Wilaya encontrada:', selectedWilaya);
-      onWilayaChange(selectedWilaya);
-    } else if (onWilayaChange && !e.target.value) {
-      onWilayaChange(null);
+    // Encontrar la wilaya seleccionada
+    const selectedWilaya = wilayasData.find(w => w.wilaya === value);
+    
+    // Notificar al padre
+    if (onWilayaChange) {
+      onWilayaChange(selectedWilaya || null);
     }
   };
 
   return (
     <Form.Group>
-      <Form.Label>📍 Wilaya</Form.Label>
-      <Form.Control
-        as="select"
+      <Form.Label>Wilaya</Form.Label>
+      <Form.Select
         name={name}
         value={postData[name] || ''}
         onChange={handleChange}
-        required
       >
-        <option value="">-- Sélectionnez une wilaya --</option>
+        <option value="">Sélectionner une wilaya</option>
         {wilayasData.map((wilaya, index) => (
-          <option key={`${wilaya.wilaya}-${index}`} value={wilaya.wilaya}>
+          <option key={index} value={wilaya.wilaya}>
             {wilaya.wilaya}
           </option>
         ))}
-      </Form.Control>
+      </Form.Select>
     </Form.Group>
   );
 };

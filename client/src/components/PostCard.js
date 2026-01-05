@@ -27,7 +27,8 @@ const PostCard = ({ post }) => {
       
       {/* ✅ SOLO EN PÁGINA DE DETALLE */}
       {isDetailPage && (
-        <> <DescriptionPost post={post} />
+        <> 
+        <DescriptionPost post={post} />
          
           <DescriptionUser post={post} />
         </>

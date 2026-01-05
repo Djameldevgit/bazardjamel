@@ -11,7 +11,7 @@ import PriceField from '../camposComun/PriceField';
 import TailleField from '../camposComun/TailleField';
 
 // 💰 Componentes de Precio y Negociación (los que acabamos de crear)
-import UnitePrixField from '../camposComun/Unite';
+import UnitePrixField from '../camposComun/UniteField';
 import TypeOffreField from '../camposComun/TypeDeVenteField';
 import EchangeField from '../camposComun/EchangeField';
 
@@ -19,6 +19,7 @@ import EchangeField from '../camposComun/EchangeField';
 import WilayaField from '../camposComun/WilayaField';
 import CommuneField from '../camposComun/CommuneField';
 import LocalisationWrapper from '../camposComun/WilayaCommuneField'
+import WilayaCommunesField from '../camposComun/WilayaCommuneField';
 const TelephonesFields = ({ 
   fieldName,
   mainCategory,
@@ -149,35 +150,17 @@ const TelephonesFields = ({
     ),
     
     // 📍 CAMPOS DE LOCALIZACIÓN
-    'wilaya': (
-      <WilayaField
-        key="wilaya"
-        postData={postData}
-        handleChangeInput={handleChangeInput}
-        name="wilaya"
-        onWilayaChange={handleWilayaChange}
-      />
-    ),
     
-    'commune': (
-      <CommuneField
-        key="commune"
-        postData={postData}
-        handleChangeInput={handleChangeInput}
-        name="commune"
-        communes={communesList}
-        wilayaSelected={selectedWilaya}
-      />
-    ),
-    
-    'localisation': (
-      <div key="localisation" className="mb-4">
-        <LocalisationWrapper
-          postData={postData}
-          handleChangeInput={handleChangeInput}
-        />
-      </div>
-    ),
+    // En tu mapeo de campos, cambia esto:
+'wilaya': (
+  <WilayaCommunesField
+    key="wilaya"
+    postData={postData}
+    handleChangeInput={handleChangeInput}
+  />
+),
+ 
+  
     
     // 📱 CAMPOS ESPECÍFICOS DE TELÉFONOS
     'etat': (

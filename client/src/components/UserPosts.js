@@ -110,7 +110,7 @@ const UserPosts = ({
                 </div>
             ) : (
                 <>
-                    <div className="post_thumb">
+                    <div  >
                         <PostThumb posts={posts} result={result} />
                     </div>
 

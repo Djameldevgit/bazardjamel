@@ -1,75 +1,121 @@
+// components/CATEGORIES/camposComun/WilayaCommunesField.js
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Form } from 'react-bootstrap';
-import WilayaField from './WilayaField';
-import CommuneField from './CommuneField';
-import wilayasData from './json/wilayas.json'; // Importa tu JSON
- 
+import wilayasData from './json/wilayas.json';
+
 const WilayaCommunesField = ({ 
   postData, 
-  handleChangeInput 
+  handleChangeInput,
+  fieldName = "wilaya" // Por compatibilidad
 }) => {
-  const [selectedWilaya, setSelectedWilaya] = useState(null);
-  const [communesList, setCommunesList] = useState([]);
+  const [communes, setCommunes] = useState([]);
+  const [selectedWilaya, setSelectedWilaya] = useState(postData.wilaya || '');
 
-  // Cuando se selecciona una wilaya, actualizamos las communes
-  const handleWilayaChange = (wilaya) => {
-    if (wilaya) {
-      setSelectedWilaya(wilaya.wilaya);
-      setCommunesList(wilaya.commune || []);
-    } else {
-      setSelectedWilaya(null);
-      setCommunesList([]);
-      // Limpiamos también la commune seleccionada
+  // Manejar cambio de wilaya
+  const handleWilayaChange = (e) => {
+    const wilayaName = e.target.value;
+    
+    // Actualizar estado local
+    setSelectedWilaya(wilayaName);
+    
+    // Ejecutar el cambio en el formulario principal
+    handleChangeInput(e);
+    
+    // Buscar y establecer las comunas para esta wilaya
+    if (wilayaName) {
+      const foundWilaya = wilayasData.find(w => w.wilaya === wilayaName);
+      const newCommunes = foundWilaya ? foundWilaya.commune || [] : [];
+      setCommunes(newCommunes);
+      
+      // Limpiar commune automáticamente cuando cambia la wilaya
       handleChangeInput({
         target: { name: 'commune', value: '' }
       });
+    } else {
+      setCommunes([]);
     }
   };
 
-  // Sincronizar cuando cambia postData.wilaya desde otro lugar
+  // Sincronizar cuando postData.wilaya cambia externamente
   useEffect(() => {
-    if (postData.wilaya && !selectedWilaya) {
-      const wilaya = wilayasData.find(w => w.wilaya === postData.wilaya);
-      if (wilaya) {
-        setSelectedWilaya(wilaya.wilaya);
-        setCommunesList(wilaya.commune || []);
+    if (postData.wilaya && postData.wilaya !== selectedWilaya) {
+      setSelectedWilaya(postData.wilaya);
+      
+      const foundWilaya = wilayasData.find(w => w.wilaya === postData.wilaya);
+      if (foundWilaya) {
+        setCommunes(foundWilaya.commune || []);
       }
     }
   }, [postData.wilaya]);
 
   return (
-    <div className="localisation-wrapper">
-      <h6 className="mb-3">📍 Localisation</h6>
-      
+    <div className="wilaya-commune-field">
       <Row>
+        {/* Campo Wilaya */}
         <Col md={6}>
-          <WilayaField
-            postData={postData}
-            handleChangeInput={handleChangeInput}
-            name="wilaya"
-            onWilayaChange={handleWilayaChange}
-          />
+          <Form.Group>
+            <Form.Label>📍 Wilaya</Form.Label>
+            <Form.Select
+              name="wilaya"
+              value={selectedWilaya}
+              onChange={handleWilayaChange}
+              required
+            >
+              <option value="">Sélectionner une wilaya</option>
+              {wilayasData.map((wilaya, index) => (
+                <option key={index} value={wilaya.wilaya}>
+                  {wilaya.wilaya}
+                </option>
+              ))}
+            </Form.Select>
+          </Form.Group>
         </Col>
         
+        {/* Campo Commune - Solo se habilita cuando hay wilaya seleccionada */}
         <Col md={6}>
-          <CommuneField
-            postData={postData}
-            handleChangeInput={handleChangeInput}
-            name="commune"
-            communes={communesList}
-            wilayaSelected={selectedWilaya}
-          />
+          <Form.Group>
+            <Form.Label>🏙️ Commune</Form.Label>
+            <Form.Select
+              name="commune"
+              value={postData.commune || ''}
+              onChange={handleChangeInput}
+              disabled={!selectedWilaya || communes.length === 0}
+              required={!!selectedWilaya}
+            >
+              <option value="">
+                {!selectedWilaya 
+                  ? 'Choisir d\'abord une wilaya' 
+                  : communes.length === 0
+                    ? 'Aucune commune disponible'
+                    : 'Sélectionner une commune'
+                }
+              </option>
+              {communes.map((commune, index) => (
+                <option key={index} value={commune}>
+                  {commune}
+                </option>
+              ))}
+            </Form.Select>
+          </Form.Group>
         </Col>
       </Row>
       
-      {selectedWilaya && (
-        <div className="mt-2">
-          <small className="text-info">
-            <strong>Wilaya sélectionnée:</strong> {selectedWilaya} 
-            {postData.commune && ` • Commune: ${postData.commune}`}
-          </small>
-        </div>
-      )}
+      {/* Información de ayuda */}
+      <div className="mt-2">
+        <small className="text-muted">
+          {selectedWilaya && (
+            <>
+              <span className="text-info">
+                <strong>{selectedWilaya}</strong>
+                {postData.commune && ` • ${postData.commune}`}
+              </span>
+              <span className="ms-2">
+                ({communes.length} communes disponibles)
+              </span>
+            </>
+          )}
+        </small>
+      </div>
     </div>
   );
 };

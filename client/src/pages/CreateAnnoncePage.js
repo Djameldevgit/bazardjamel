@@ -2,19 +2,14 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Container, Button, Alert, Spinner, ProgressBar, Card, Row, Col } from 'react-bootstrap';
+import { Container, Button, Alert, Spinner, Card, Row, Col } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
-
-// 🔷 REDUX
 import { createPost, updatePost } from '../redux/actions/postAction';
-
-// 🔷 COMPONENTES
 import CategoryAccordion from '../components/CATEGORIES/CategoryAccordion';
 import DynamicFieldManager from '../components/CATEGORIES/DynamicFieldManager';
 import ImagesStep from '../components/CATEGORIES/camposComun/ImagesStep';
 
 const CreateAnnoncePage = () => {
-  // 🔷 REDUX Y HOOKS
   const { auth, socket } = useSelector((state) => state);
   const dispatch = useDispatch();
   const history = useHistory();
@@ -25,12 +20,8 @@ const CreateAnnoncePage = () => {
   const isEdit = location.state?.isEdit || false;
   const postToEdit = location.state?.postData || null;
 
-  // 🔷 REF PARA CONTROLAR AVANCE AUTOMÁTICO (SOLO CREACIÓN)
-  const autoAdvanceBlocked = useRef(false);
   const autoAdvanceTimeout = useRef(null);
-
-  // 🔷 ESTADOS DEL FORMULARIO
-  const [currentStep, setCurrentStep] = useState(1); // Por defecto Step 1
+  const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     categorie: '',
     articleType: '',
@@ -43,22 +34,19 @@ const CreateAnnoncePage = () => {
   const [alert, setAlert] = useState({ show: false, message: '', variant: 'info' });
   const [isLoadingEditData, setIsLoadingEditData] = useState(true);
 
-  // 🔷 CARGAR DATOS DE EDICIÓN CON LÓGICA MEJORADA
+  // 🔷 CHARGEMENT DES DONNÉES ÉDITION
   useEffect(() => {
     if (isEdit && postToEdit) {
-      console.log('✏️ Chargement des données d\'édition...');
+      console.log('📥 Chargement données édition...');
       
-      // 1. CARGAR CAMPOS BASE
       const loadedBaseData = {
         categorie: postToEdit.categorie || '',
         subCategory: postToEdit.subCategory || '',
         articleType: postToEdit.articleType || '',
       };
 
-      // 2. CARGAR CAMPOS DINÁMICOS
       const loadedSpecificData = {};
 
-      // Procesar categorySpecificData
       if (postToEdit.categorySpecificData) {
         try {
           if (postToEdit.categorySpecificData instanceof Map) {
@@ -79,7 +67,6 @@ const CreateAnnoncePage = () => {
         }
       }
 
-      // También cargar campos directos del post
       const directFields = ['description', 'price', 'loyer', 'marque', 'modele', 'superficie', 'phone', 'wilaya', 'commune'];
       directFields.forEach(field => {
         if (postToEdit[field]) {
@@ -90,7 +77,6 @@ const CreateAnnoncePage = () => {
       setFormData(loadedBaseData);
       setSpecificData(loadedSpecificData);
 
-      // 3. CARGAR IMÁGENES
       if (postToEdit.images?.length > 0) {
         const loadedImages = postToEdit.images.map(img => ({
           url: img.url || img,
@@ -100,39 +86,32 @@ const CreateAnnoncePage = () => {
         setImages(loadedImages);
       }
 
-      // 🔥 NUEVO: SI ES EDICIÓN, IR DIRECTAMENTE AL STEP 2
       const hasCompleteCategory = loadedBaseData.categorie && loadedBaseData.subCategory;
       const hasArticleTypeIfImmobilier = loadedBaseData.categorie !== 'immobilier' || loadedBaseData.articleType;
       
       if (hasCompleteCategory && hasArticleTypeIfImmobilier) {
-        console.log('✅ Données chargées - Aller directement au Step 2');
-        // Ir directamente al Step 2 sin delay
         setCurrentStep(2);
-      } else {
-        console.log('⚠️ Catégorie incomplète - Rester au Step 1');
-        setCurrentStep(1);
       }
       
       setIsLoadingEditData(false);
       
     } else {
-      // Modo création
       setIsLoadingEditData(false);
     }
   }, [isEdit, postToEdit]);
 
-  // 🔷 AVANCE AUTOMÁTICO AL STEP 2 (SOLO PARA CREACIÓN)
+  // 🔷 AVANCE AUTOMÁTICO AL STEP 2 (FONCTIONNE TOUJOURS)
   useEffect(() => {
-    if (isEdit) return; // ❌ NO aplicar en modo édition
-    
+    // Vérifier si la catégorie est complète
     const hasCategory = formData.categorie;
     const hasSubCategory = formData.subCategory;
     const hasArticleTypeIfImmobilier = formData.categorie !== 'immobilier' || formData.articleType;
     
     const isCategoryComplete = hasCategory && hasSubCategory && hasArticleTypeIfImmobilier;
     
-    if (isCategoryComplete && currentStep === 1 && !autoAdvanceBlocked.current) {
-      console.log('🚀 Avance automatique (Création)');
+    // 🔥 AVANCE AUTO QUAND LA CATÉGORIE EST COMPLÈTE ET ON EST AU STEP 1
+    if (isCategoryComplete && currentStep === 1) {
+      console.log('🚀 Avance automatique vers Step 2');
       
       if (autoAdvanceTimeout.current) {
         clearTimeout(autoAdvanceTimeout.current);
@@ -143,10 +122,10 @@ const CreateAnnoncePage = () => {
         
         setAlert({
           show: true,
-          message: "✅ Une fois publiée, l'annonce est valable six mois.",
+          message: "✅ Catégorie sélectionnée. Complétez les détails.",
           variant: "success"
         });
-      }, 600);
+      }, 500); // 500ms de délai pour une bonne UX
       
       return () => {
         if (autoAdvanceTimeout.current) {
@@ -154,9 +133,9 @@ const CreateAnnoncePage = () => {
         }
       };
     }
-  }, [formData.categorie, formData.subCategory, formData.articleType, currentStep, isEdit]);
+  }, [formData.categorie, formData.subCategory, formData.articleType, currentStep]);
 
-  // 🔷 HANDLER PARA TODOS LOS CAMPOS
+  // 🔷 HANDLER POUR TOUS LES CHAMPS
   const handleInputChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
     const val = type === 'checkbox' ? checked : value;
@@ -170,16 +149,12 @@ const CreateAnnoncePage = () => {
         if (name === 'categorie') {
           newData.articleType = '';
           newData.subCategory = '';
-          setCurrentStep(1);
           setSpecificData({});
-          
-          autoAdvanceBlocked.current = false;
         }
         
         if (name === 'articleType') {
           newData.subCategory = '';
           setSpecificData({});
-          autoAdvanceBlocked.current = false;
         }
         
         return newData;
@@ -195,30 +170,29 @@ const CreateAnnoncePage = () => {
     }
   }, []);
 
-  // 🔷 HANDLER ESPECÍFICO PARA CATEGORÍAS
   const handleCategoryChange = useCallback((e) => {
     handleInputChange(e);
   }, [handleInputChange]);
 
-  // 🔷 FUNCIÓN SIMPLE PARA CAMBIAR DE PASO
+  // 🔷 FONCTION POUR CHANGER D'ÉTAPE - CORRIGÉE
   const handleStepChange = useCallback((newStep) => {
     console.log(`📝 Étape: ${currentStep} → ${newStep}`);
     
-    // Si el usuario retrocede manualmente, bloquear avance auto
-    if (currentStep === 1 && newStep > 1) {
-      autoAdvanceBlocked.current = true;
+    // 🔥 SI ON REVIENT AU STEP 1, ANNULER LE TIMEOUT D'AVANCE AUTO
+    if (newStep === 1 && autoAdvanceTimeout.current) {
+      clearTimeout(autoAdvanceTimeout.current);
     }
     
     setCurrentStep(newStep);
   }, [currentStep]);
 
-  // 🔷 MOSTRAR ALERTA
+  // 🔷 AFFICHER ALERTE
   const showAlertMessage = useCallback((message, variant = 'info') => {
     setAlert({ show: true, message, variant });
-    setTimeout(() => setAlert({ show: false, message: '', variant: 'info' }), 5000);
+    setTimeout(() => setAlert({ show: false, message: '', variant: 'info' }), 4000);
   }, []);
 
-  // 🔷 VALIDACIÓN SIMPLIFICADA
+  // 🔷 VALIDATION
   const canProceedToNextStep = () => {
     const allData = { ...formData, ...specificData };
     
@@ -236,19 +210,44 @@ const CreateAnnoncePage = () => {
     }
   };
 
-  // 🔷 HANDLE SUBMIT FINAL
+  // 🔷 BOUTON POUR REVENIR À LA CATÉGORIE EN ÉDITION
+  const renderCategoryEditButton = () => {
+    if (currentStep > 1 && isEdit) {
+      return (
+        <div className="text-center mb-3">
+          <Button
+            variant="outline-warning"
+            size="sm"
+            onClick={() => handleStepChange(1)}
+            className="px-3"
+          >
+            <i className="fas fa-edit me-1"></i>
+            Modifier la catégorie
+          </Button>
+          <div className="mt-1">
+            <small className="text-muted">
+              Catégorie actuelle: <strong>{formData.categorie}</strong> → <strong>{formData.subCategory}</strong>
+            </small>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // 🔷 SOUMETTRE ANNONCE
   const handleSubmit = useCallback(async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
 
     if (!formData.categorie || !formData.subCategory) {
-      showAlertMessage("Veuillez sélectionner une catégorie et une sous-catégorie.", "danger");
+      showAlertMessage("Sélectionnez une catégorie et sous-catégorie", "danger");
       setIsSubmitting(false);
       return;
     }
 
     if (images.length === 0) {
-      showAlertMessage("Veuillez ajouter au moins une image.", "danger");
+      showAlertMessage("Ajoutez au moins une image", "danger");
       setIsSubmitting(false);
       return;
     }
@@ -285,7 +284,7 @@ const CreateAnnoncePage = () => {
         "success"
       );
 
-      setTimeout(() => history.push('/'), 1500);
+      setTimeout(() => history.push('/'), 1200);
 
     } catch (error) {
       console.error('❌ Erreur:', error);
@@ -301,13 +300,13 @@ const CreateAnnoncePage = () => {
     socket, dispatch, history, isSubmitting, showAlertMessage
   ]);
 
-  // 🔷 RENDERIZAR PASO ACTUAL
+  // 🔷 RENDU ÉTAPE ACTUELLE
   const renderCurrentStep = () => {
     if (isLoadingEditData) {
       return (
-        <div className="text-center py-5">
+        <div className="text-center py-4">
           <Spinner animation="border" variant="primary" />
-          <p className="mt-3">Chargement des données d'édition...</p>
+          <p className="mt-2">Chargement...</p>
         </div>
       );
     }
@@ -319,9 +318,9 @@ const CreateAnnoncePage = () => {
     };
 
     const stepVariants = {
-      enter: { opacity: 0, y: 20 },
-      center: { opacity: 1, y: 0 },
-      exit: { opacity: 0, y: -20 }
+      enter: { opacity: 0, x: 20 },
+      center: { opacity: 1, x: 0 },
+      exit: { opacity: 0, x: -20 }
     };
 
     switch(currentStep) {
@@ -335,20 +334,41 @@ const CreateAnnoncePage = () => {
             exit="exit"
             className="step-content"
           >
-            
-              <h3 className="text-center">
-                {isEdit 
-                  ? 'Modifiez la catégorie si nécessaire'
-                  : 'Créer une annonce'
-                }
-              </h3>
-            
-            
-            <Card className="p-4 shadow-sm border-0">
-              <CategoryAccordion
-                postData={formData}
-                handleChangeInput={handleCategoryChange}
-              />
+            <Card className="border-0 shadow-sm">
+              <Card.Body className="p-3">
+                <h5 className="text-center mb-3">
+                  {isEdit ? '✏️ Modifier la catégorie' : '🏷️ Sélectionnez une catégorie'}
+                </h5>
+                
+                {formData.categorie && formData.subCategory && (
+                  <div className="alert alert-success py-2 mb-3">
+                    <div className="d-flex align-items-center">
+                      <i className="fas fa-check-circle text-success me-2"></i>
+                      <div>
+                        <strong>Catégorie:</strong> {formData.categorie}<br/>
+                        <strong>Sous-catégorie:</strong> {formData.subCategory}
+                        {formData.articleType && <><br/><strong>Type:</strong> {formData.articleType}</>}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <CategoryAccordion
+                  postData={formData}
+                  handleChangeInput={handleCategoryChange}
+                />
+                
+                {formData.categorie && formData.subCategory && !isEdit && (
+                  <div className="mt-3 text-center">
+                    <div className="spinner-border spinner-border-sm text-primary me-2" role="status">
+                      <span className="visually-hidden">Chargement...</span>
+                    </div>
+                    <small className="text-primary">
+                      Avance vers les détails...
+                    </small>
+                  </div>
+                )}
+              </Card.Body>
             </Card>
           </motion.div>
         );
@@ -365,6 +385,8 @@ const CreateAnnoncePage = () => {
             exit="exit"
             className="step-content"
           >
+            {renderCategoryEditButton()}
+            
             <DynamicFieldManager
               mainCategory={formData.categorie}
               subCategory={formData.subCategory}
@@ -394,6 +416,7 @@ const CreateAnnoncePage = () => {
               isRTL={isRTL}
               onComplete={handleSubmit}
               onBack={() => handleStepChange(4)}
+              isEdit={isEdit}
             />
           </motion.div>
         );
@@ -403,194 +426,160 @@ const CreateAnnoncePage = () => {
     }
   };
 
-  // 🔷 TÍTULOS DE PASOS SIMPLIFICADOS
+  // 🔷 TITRES ÉTAPES
   const stepTitles = [
     { title: 'Catégorie', icon: '🏷️', step: 1 },
     { title: 'Détails', icon: '📝', step: 2 },
     { title: 'Spécifications', icon: '🔍', step: 3 },
-    { title: 'Prix & Contact', icon: '💰', step: 4 },
+    { title: 'Contact', icon: '📍', step: 4 },
     { title: 'Photos', icon: '🖼️', step: 5 }
   ];
 
-  // 🔷 CALCULAR PORCENTAJE DE COMPLETADO
-  const calculateCompletion = () => {
-    const allData = { ...formData, ...specificData };
-    let completedFields = 0;
-    let totalFields = 0;
+  // 🔷 VÉRIFIER SI ON PEUT ALLER À UNE ÉTAPE
+  const canGoToStep = (step) => {
+    // Toujours permettre d'aller au step 1
+    if (step === 1) return true;
     
-    const baseFields = ['categorie', 'subCategory'];
-    totalFields += baseFields.length;
-    completedFields += baseFields.filter(field => allData[field]).length;
-    
-    if (allData.categorie === 'immobilier') {
-      totalFields += 1;
-      completedFields += allData.articleType ? 1 : 0;
-    }
-    
-    const importantFields = ['price', 'loyer', 'phone', 'marque', 'modele', 'superficie'];
-    totalFields += 3;
-    const completedImportant = importantFields.filter(field => allData[field]).length;
-    completedFields += Math.min(completedImportant, 3);
-    
-    totalFields += 1;
-    completedFields += images.length > 0 ? 1 : 0;
-    
-    return Math.min(Math.round((completedFields / totalFields) * 100), 100);
+    // Pour les autres steps, seulement si on a déjà passé par le step 1
+    return step <= currentStep + 1;
   };
-
-  const completionPercentage = calculateCompletion();
 
   return (
     <Container className="py-2" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* ALERTA */}
+      {/* ALERTE */}
       <AnimatePresence>
         {alert.show && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            exit={{ opacity: 0, y: -10 }}
           >
             <Alert 
               variant={alert.variant} 
               dismissible 
               onClose={() => setAlert({ ...alert, show: false })}
-              className="mb-4 shadow-sm"
+              className="mb-3 py-2"
             >
               <div className="d-flex align-items-center">
-                <i className={`fas fa-${alert.variant === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2`}></i>
-                <span>{alert.message}</span>
+                <i className={`fas fa-${alert.variant === 'success' ? 'check' : 'exclamation-triangle'} me-2`}></i>
+                <span className="small">{alert.message}</span>
               </div>
             </Alert>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* CABECERA SIMPLIFICADA */}
-      <div className="text-center">
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-         
-          
-          {/* BANNER MINIMAL SOLO EN EDICIÓN */}
-          {isEdit && currentStep > 1 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mb-2"
-            >
-              <div className="badge bg-info fs-6  px-3">
-                <i className="fas fa-edit me"></i>
-                Mode édition
-              </div>
-            </motion.div>
-          )}
-         
-        </motion.div>
+      {/* EN-TÊTE */}
+      <div className="text-center mb-3">
+        <h1 className="fw-bold mb-1" style={{ fontSize: '1.5rem' }}>
+          {isEdit ? '✏️ Modifier une annonce' : '➕ Publier une annonce'}
+        </h1>
+        
+        {isEdit && currentStep > 1 && (
+          <span className="badge bg-warning text-dark px-2 py-1">
+            <i className="fas fa-edit me-1"></i>
+            Mode édition
+          </span>
+        )}
       </div>
 
-      {/* INDICADOR DE PROGRESO */}
-      <div className="mb-1">
-        <div className="d-none d-md-flex justify-content-between align-items-center mb-4 position-relative">
+      {/* INDICATEUR ÉTAPES */}
+      <div className="mb-3">
+        <div className="d-flex justify-content-between align-items-center">
           {stepTitles.map((step, index) => (
             <React.Fragment key={step.step}>
-              <div className="text-center position-relative z-2" style={{ flex: 1 }}>
-                <motion.button
-                  className={`step-indicator-btn ${currentStep === step.step ? 'active' : ''}`}
+              <div className="text-center flex-grow-1">
+                <button
+                  className={`step-indicator ${currentStep === step.step ? 'active' : ''}`}
                   onClick={() => handleStepChange(step.step)}
-                  disabled={!canProceedToNextStep() && currentStep < step.step}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  disabled={!canGoToStep(step.step)}
                 >
-                  <div className={`step-circle ${currentStep >= step.step ? 'current' : ''}`}>
+                  <div className="step-icon-wrapper">
                     <span className="step-icon">{step.icon}</span>
-                    <span className="step-number">{step.step}</span>
+                    {currentStep >= step.step && (
+                      <span className="step-dot"></span>
+                    )}
                   </div>
-                  <div className="step-title mt-2">
-                    <small className="fw-semibold">{step.title}</small>
+                  <div className="step-label mt-1">
+                    <small className={`fw-medium ${currentStep === step.step ? 'text-primary' : 'text-muted'}`}>
+                      {step.title}
+                    </small>
                   </div>
-                </motion.button>
+                </button>
               </div>
               
               {index < stepTitles.length - 1 && (
-                <div className="step-connector">
-                  <div className={`connector-line ${currentStep > step.step ? 'completed' : ''}`}></div>
+                <div className="step-connector flex-grow-1">
+                  <div className={`connector-line ${currentStep > step.step ? 'active' : ''}`}></div>
                 </div>
               )}
             </React.Fragment>
           ))}
         </div>
- 
       </div>
 
-      {/* CONTENIDO DEL PASO ACTUAL */}
+      {/* CONTENU ÉTAPE */}
       <motion.div
         key={currentStep}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.2 }}
       >
-        <div className="border-0 shadow-lg overflow-hidden">
-           
-            <AnimatePresence mode="wait">
-              {renderCurrentStep()}
-            </AnimatePresence>
-       
+        <div className="border-0 shadow-sm overflow-hidden">
+          <AnimatePresence mode="wait">
+            {renderCurrentStep()}
+          </AnimatePresence>
         </div>
       </motion.div>
 
-      {/* BOTONES DE NAVEGACIÓN - SIMPLES Y CLAROS */}
+      {/* NAVIGATION */}
       <motion.div 
-        className="mt-4 pt-3 border-top"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        className="mt-3 pt-2"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
       >
         <Row className="g-2">
-          {/* Botón Précédent */}
           <Col xs={6}>
             <Button
               variant="outline-secondary"
-              size="lg"
+              size="md"
               onClick={() => handleStepChange(currentStep - 1)}
               disabled={currentStep === 1 || isSubmitting}
-              className="w-100 py-2"
+              className="w-100"
             >
-              <i className="fas fa-arrow-left me-2"></i>
-              Précédent
+              <i className="fas fa-arrow-left me-1"></i>
+              Retour
             </Button>
           </Col>
           
-          {/* Botón Suivant/Publier */}
           <Col xs={6}>
             {currentStep < 5 ? (
               <Button
                 variant="primary"
-                size="lg"
+                size="md"
                 onClick={() => handleStepChange(currentStep + 1)}
                 disabled={!canProceedToNextStep() || isSubmitting}
-                className="w-100 py-2"
+                className="w-100"
               >
                 Suivant
-                <i className="fas fa-arrow-right ms-2"></i>
+                <i className="fas fa-arrow-right ms-1"></i>
               </Button>
             ) : (
               <Button
-                variant="success"
-                size="lg"
+                variant={isEdit ? "warning" : "success"}
+                size="md"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="w-100 py-2"
+                className="w-100"
               >
                 {isSubmitting ? (
                   <>
-                    <Spinner size="sm" animation="border" className="me-2" />
-                    Publication...
+                    <Spinner size="sm" animation="border" className="me-1" />
+                    {isEdit ? 'Mise à jour...' : 'Publication...'}
                   </>
                 ) : (
                   <>
-                    <i className="fas fa-rocket me-2"></i>
+                    <i className={`fas ${isEdit ? 'fa-save' : 'fa-rocket'} me-1`}></i>
                     {isEdit ? 'Mettre à jour' : 'Publier'}
                   </>
                 )}
@@ -600,78 +589,108 @@ const CreateAnnoncePage = () => {
         </Row>
       </motion.div>
 
-      {/* INDICADOR SI NO SE PUEDE AVANZAR */}
-      {!canProceedToNextStep() && currentStep < 5 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="mt-3"
-        >
-          <Alert variant="warning" className="py-2">
-            <div className="d-flex align-items-center">
-              <i className="fas fa-info-circle me-2"></i>
-              <small>
-                {currentStep === 1 
-                  ? 'Sélectionnez une catégorie pour continuer.'
-                  : 'Complétez les champs pour continuer.'
-                }
-              </small>
-            </div>
-          </Alert>
-        </motion.div>
-      )}
+      {/* INFORMATIONS */}
+      <div className="mt-2 text-center">
+        <small className="text-muted d-block">
+          <i className="fas fa-clock me-1"></i>
+          Annonce valable 6 mois
+        </small>
+        <small className="text-muted">
+          <i className="fas fa-shield-alt me-1"></i>
+          Sécurisée et vérifiée
+        </small>
+      </div>
 
-      {/* ESTILOS CSS SIMPLIFICADOS */}
+      {/* STYLES */}
       <style jsx>{`
-        .gradient-text {
-          background: linear-gradient(135deg, #4f46e5, #7c3aed);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-        
         .step-content {
-          min-height: 400px;
+          min-height: 350px;
         }
         
-        .step-circle {
-          width: 60px;
-          height: 60px;
+        .step-indicator {
+          background: none;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          opacity: 1;
+        }
+        
+        .step-indicator:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        
+        .step-indicator.active .step-icon-wrapper {
+          background: #4f46e5;
+          color: white;
+          transform: scale(1.1);
+          box-shadow: 0 4px 8px rgba(79, 70, 229, 0.2);
+        }
+        
+        .step-icon-wrapper {
+          width: 40px;
+          height: 40px;
           border-radius: 50%;
           background: #f8f9fa;
-          border: 3px solid white;
-          box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto;
+          position: relative;
+          transition: all 0.2s ease;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
-        .step-indicator-btn.active .step-circle {
-          background: #4f46e5;
-          transform: scale(1.05);
+        .step-icon {
+          font-size: 16px;
         }
         
-        .step-number {
+        .step-dot {
+          position: absolute;
+          bottom: -2px;
+          right: -2px;
+          width: 10px;
+          height: 10px;
           background: #10b981;
-          width: 20px;
-          height: 20px;
-          font-size: 11px;
+          border-radius: 50%;
+          border: 2px solid white;
         }
         
-        .progress-section {
-          background: #f8f9fa;
-          padding: 7px;
-          border-radius: 10px;
+        .step-connector {
+          display: flex;
+          align-items: center;
+          padding: 0 5px;
         }
         
-        @media (max-width: 768px) {
-          .step-circle {
-            width: 50px;
-            height: 50px;
+        .connector-line {
+          height: 2px;
+          background: #e9ecef;
+          width: 100%;
+          transition: all 0.3s ease;
+        }
+        
+        .connector-line.active {
+          background: #4f46e5;
+        }
+        
+        .step-label {
+          font-size: 0.75rem;
+        }
+        
+        @media (max-width: 576px) {
+          .step-icon-wrapper {
+            width: 36px;
+            height: 36px;
           }
           
           .step-icon {
-            font-size: 16px;
+            font-size: 14px;
           }
           
-          h1.display-5 {
-            font-size: 2.5rem;
+          h1 {
+            font-size: 1.3rem !important;
           }
         }
       `}</style>
