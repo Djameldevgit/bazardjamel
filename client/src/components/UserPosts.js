@@ -5,17 +5,15 @@ import LoadIcon from '../images/loading.gif';
 import LoadMoreBtn from './LoadMoreBtn';
 import { getDataAPI } from '../utils/fetchData';
 import { useSelector } from 'react-redux';
- 
 
 const UserPosts = ({ 
     userId, 
-    
     limit = 6, 
     showTitle = true,
     excludePostId = null // Para excluir el post actual en detail
 }) => {
     
-    const { auth } = useSelector(state => state)
+    const { auth } = useSelector(state => state);
     const [posts, setPosts] = useState([]);
     const [result, setResult] = useState(0);
     const [page, setPage] = useState(1);
@@ -83,39 +81,55 @@ const UserPosts = ({
     };
 
     if (!userId) {
-        return <div className="user-posts-empty">Usuario no especificado</div>;
+        return (
+            <div className="text-center py-5">
+                <h5 className="text-muted">Usuario no especificado</h5>
+            </div>
+        );
     }
 
     return (
-        <div className="user-posts-container">
-            {showTitle && posts.length > 0 && (
-                <div className="user-posts-header">
-                    <h4 className="user-posts-title">
-                        <span className="material-icons">grid_view</span>
-                        Más publicaciones de este vendedor
-                    </h4>
-                    <span className="user-posts-count">{result} publicaciones</span>
+        <div className="user-posts-container" style={{ marginTop: '30px' }}>
+            {/* Header con título y contador */}
+            {showTitle && (
+                <div className="user-posts-header mb-4">
+                    <div className="d-flex justify-content-between align-items-center">
+                        <h4 className="user-posts-title fw-bold mb-0">
+                            <i className="fas fa-store me-2 text-primary"></i>
+                            Más publicaciones de este vendedor
+                        </h4>
+                        {result > 0 && (
+                            <span className="user-posts-count badge bg-secondary">
+                                {result} publicación{result !== 1 ? 'es' : ''}
+                            </span>
+                        )}
+                    </div>
+                    <hr className="mt-2 mb-4" />
                 </div>
             )}
 
+            {/* Loading inicial */}
             {loading && page === 1 ? (
-                <div className="user-posts-loading">
-                    <img src={LoadIcon} alt="loading" className="d-block mx-auto" />
-                    <p>Cargando publicaciones...</p>
+                <div className="text-center py-5">
+                    <img src={LoadIcon} alt="loading" className="mb-3" style={{ width: '50px' }} />
+                    <p className="text-muted">Cargando publicaciones...</p>
                 </div>
             ) : posts.length === 0 ? (
-                <div className="user-posts-empty">
-                    <span className="material-icons">inventory_2</span>
-                    <p>No hay más publicaciones de este usuario</p>
+                <div className="text-center py-5">
+                    <i className="fas fa-inbox display-1 text-muted mb-3"></i>
+                    <h5 className="text-muted">No hay más publicaciones de este usuario</h5>
+                    <p className="text-muted small">Este vendedor no tiene otras publicaciones</p>
                 </div>
             ) : (
                 <>
-                    <div  >
+                    {/* Grid de publicaciones */}
+                    <div className="posts-grid-container">
                         <PostThumb posts={posts} result={result} />
                     </div>
 
+                    {/* Botón "Cargar más" */}
                     {hasMore && (
-                        <div className="user-posts-load-more">
+                        <div className="text-center mt-4 pt-3 border-top">
                             <LoadMoreBtn 
                                 result={result} 
                                 page={page}
@@ -126,6 +140,63 @@ const UserPosts = ({
                     )}
                 </>
             )}
+
+            {/* Estilos CSS */}
+            <style jsx>{`
+                .user-posts-container {
+                    background: transparent;
+                    border-radius: 12px;
+                    padding: 20px 0;
+                }
+
+                .user-posts-header {
+                    padding: 0 15px;
+                }
+
+                .user-posts-title {
+                    font-size: 1.25rem;
+                    color: #333;
+                    display: flex;
+                    align-items: center;
+                }
+
+                .user-posts-count {
+                    font-size: 0.9rem;
+                    padding: 5px 12px;
+                    border-radius: 20px;
+                }
+
+                .posts-grid-container {
+                    padding: 10px 0;
+                }
+
+                /* Responsive */
+                @media (max-width: 768px) {
+                    .user-posts-container {
+                        padding: 15px 0;
+                        margin-top: 20px;
+                    }
+
+                    .user-posts-title {
+                        font-size: 1.1rem;
+                    }
+
+                    .user-posts-header {
+                        margin-bottom: 20px;
+                    }
+                }
+
+                @media (max-width: 576px) {
+                    .user-posts-title {
+                        font-size: 1rem;
+                    }
+
+                    .user-posts-count {
+                        font-size: 0.8rem;
+                        padding: 4px 10px;
+                    }
+                }
+            `}</style>
         </div>
     );
 };

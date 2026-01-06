@@ -33,6 +33,17 @@ const CreateAnnoncePage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alert, setAlert] = useState({ show: false, message: '', variant: 'info' });
   const [isLoadingEditData, setIsLoadingEditData] = useState(true);
+  const [hasManuallyGoneBack, setHasManuallyGoneBack] = useState(false);
+
+  // 🔷 CLEANUP EFFECT - Limpiar timeout al desmontar
+  useEffect(() => {
+    return () => {
+      if (autoAdvanceTimeout.current) {
+        clearTimeout(autoAdvanceTimeout.current);
+        autoAdvanceTimeout.current = null;
+      }
+    };
+  }, []);
 
   // 🔷 CHARGEMENT DES DONNÉES ÉDITION
   useEffect(() => {
@@ -91,6 +102,7 @@ const CreateAnnoncePage = () => {
       
       if (hasCompleteCategory && hasArticleTypeIfImmobilier) {
         setCurrentStep(2);
+        setHasManuallyGoneBack(true); // En modo edición, no auto-avanzar
       }
       
       setIsLoadingEditData(false);
@@ -100,8 +112,11 @@ const CreateAnnoncePage = () => {
     }
   }, [isEdit, postToEdit]);
 
-  // 🔷 AVANCE AUTOMÁTICO AL STEP 2 (FONCTIONNE TOUJOURS)
+  // 🔷 AVANCE AUTOMÁTICO AL STEP 2 - VERSIÓN CORREGIDA
   useEffect(() => {
+    // Guardar referencia del step actual para el closure
+    const currentStepWhenScheduled = currentStep;
+    
     // Vérifier si la catégorie est complète
     const hasCategory = formData.categorie;
     const hasSubCategory = formData.subCategory;
@@ -109,31 +124,69 @@ const CreateAnnoncePage = () => {
     
     const isCategoryComplete = hasCategory && hasSubCategory && hasArticleTypeIfImmobilier;
     
-    // 🔥 AVANCE AUTO QUAND LA CATÉGORIE EST COMPLÈTE ET ON EST AU STEP 1
-    if (isCategoryComplete && currentStep === 1) {
-      console.log('🚀 Avance automatique vers Step 2');
-      
+    // 🔥 NO auto-avanzar si:
+    // 1. El usuario ya volvió manualmente
+    // 2. Estamos en modo edición
+    // 3. No estamos en step 1
+    if (hasManuallyGoneBack || isEdit || currentStepWhenScheduled !== 1) {
       if (autoAdvanceTimeout.current) {
         clearTimeout(autoAdvanceTimeout.current);
+        autoAdvanceTimeout.current = null;
+      }
+      return;
+    }
+    
+    // 🔥 AVANCE AUTO QUAND LA CATÉGORIE EST COMPLÈTE
+    if (isCategoryComplete) {
+      console.log('🚀 Programando avance automático hacia Step 2');
+      
+      // Limpiar timeout anterior si existe
+      if (autoAdvanceTimeout.current) {
+        clearTimeout(autoAdvanceTimeout.current);
+        autoAdvanceTimeout.current = null;
       }
       
+      // Programar nuevo timeout con verificación
       autoAdvanceTimeout.current = setTimeout(() => {
-        setCurrentStep(2);
+        // 🔥 VERIFICACIÓN CRÍTICA: ¿Seguimos en las condiciones para avanzar?
+        const stillHasCategory = formData.categorie && formData.subCategory;
+        const stillHasArticleType = formData.categorie !== 'immobilier' || formData.articleType;
+        const stillInStep1 = currentStep === 1;
+        const stillNoManualBack = !hasManuallyGoneBack;
         
-        setAlert({
-          show: true,
-          message: "✅ Catégorie sélectionnée. Complétez les détails.",
-          variant: "success"
-        });
-      }, 500); // 500ms de délai pour une bonne UX
+        if (stillHasCategory && stillHasArticleType && stillInStep1 && stillNoManualBack) {
+          console.log('✅ Ejecutando avance automático a Step 2');
+          setCurrentStep(2);
+          
+          setAlert({
+            show: true,
+            message: "✅ Catégorie sélectionnée. Complétez les détails.",
+            variant: "success"
+          });
+        } else {
+          console.log('⏹️ No se ejecuta auto-avance:', {
+            stillHasCategory,
+            stillHasArticleType,
+            stillInStep1,
+            stillNoManualBack
+          });
+        }
+      }, 500);
       
       return () => {
         if (autoAdvanceTimeout.current) {
           clearTimeout(autoAdvanceTimeout.current);
+          autoAdvanceTimeout.current = null;
         }
       };
+    } else {
+      // Si la categoría no está completa, limpiar timeout
+      if (autoAdvanceTimeout.current) {
+        clearTimeout(autoAdvanceTimeout.current);
+        autoAdvanceTimeout.current = null;
+      }
     }
-  }, [formData.categorie, formData.subCategory, formData.articleType, currentStep]);
+  }, [formData.categorie, formData.subCategory, formData.articleType, currentStep, hasManuallyGoneBack, isEdit]);
 
   // 🔷 HANDLER POUR TOUS LES CHAMPS
   const handleInputChange = useCallback((e) => {
@@ -150,6 +203,10 @@ const CreateAnnoncePage = () => {
           newData.articleType = '';
           newData.subCategory = '';
           setSpecificData({});
+          // Cuando se cambia categoría, resetear el flag de vuelta manual
+          if (currentStep === 1) {
+            setHasManuallyGoneBack(false);
+          }
         }
         
         if (name === 'articleType') {
@@ -168,19 +225,57 @@ const CreateAnnoncePage = () => {
         return { ...prev, [name]: val };
       });
     }
-  }, []);
+  }, [currentStep]);
 
   const handleCategoryChange = useCallback((e) => {
-    handleInputChange(e);
-  }, [handleInputChange]);
-
-  // 🔷 FONCTION POUR CHANGER D'ÉTAPE - CORRIGÉE
-  const handleStepChange = useCallback((newStep) => {
-    console.log(`📝 Étape: ${currentStep} → ${newStep}`);
+    const { name, value } = e.target;
     
-    // 🔥 SI ON REVIENT AU STEP 1, ANNULER LE TIMEOUT D'AVANCE AUTO
-    if (newStep === 1 && autoAdvanceTimeout.current) {
+    // Limpiar timeout si estamos cambiando categoría
+    if (autoAdvanceTimeout.current) {
       clearTimeout(autoAdvanceTimeout.current);
+      autoAdvanceTimeout.current = null;
+    }
+    
+    setFormData(prev => {
+      const newData = { ...prev, [name]: value };
+      
+      if (name === 'categorie') {
+        newData.articleType = '';
+        newData.subCategory = '';
+        setSpecificData({});
+        // Resetear flag cuando se cambia categoría
+        if (currentStep === 1) {
+          setHasManuallyGoneBack(false);
+        }
+      }
+      
+      if (name === 'articleType') {
+        newData.subCategory = '';
+        setSpecificData({});
+      }
+      
+      return newData;
+    });
+  }, [currentStep]);
+
+  // 🔷 FONCTION POUR CHANGER D'ÉTAPE - COMPLETAMENTE CORREGIDA
+  const handleStepChange = useCallback((newStep) => {
+    console.log(`📝 Cambiando paso: ${currentStep} → ${newStep}`);
+    
+    // 🔥 SIEMPRE limpiar timeout cuando cambiamos de paso
+    if (autoAdvanceTimeout.current) {
+      console.log('⏹️ Limpiando timeout de auto-avance');
+      clearTimeout(autoAdvanceTimeout.current);
+      autoAdvanceTimeout.current = null;
+    }
+    
+    // 🔥 Actualizar flag de vuelta manual
+    if (newStep === 1) {
+      console.log('🔄 Usuario volviendo manualmente a categorías');
+      setHasManuallyGoneBack(true);
+    } else if (newStep > currentStep) {
+      // Si avanzamos, resetear el flag
+      setHasManuallyGoneBack(false);
     }
     
     setCurrentStep(newStep);
@@ -227,6 +322,35 @@ const CreateAnnoncePage = () => {
           <div className="mt-1">
             <small className="text-muted">
               Catégorie actuelle: <strong>{formData.categorie}</strong> → <strong>{formData.subCategory}</strong>
+              {formData.articleType && <span> (<strong>{formData.articleType}</strong>)</span>}
+            </small>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // 🔷 BOUTON POUR REVENIR À LA CATÉGORIE (NON ÉDITION)
+  const renderBackToCategoryButton = () => {
+    if (currentStep > 1 && !isEdit && !hasManuallyGoneBack) {
+      return (
+        <div className="text-center mb-3">
+          <Button
+            variant="outline-info"
+            size="sm"
+            onClick={() => {
+              setHasManuallyGoneBack(true);
+              handleStepChange(1);
+            }}
+            className="px-3"
+          >
+            <i className="fas fa-undo me-1"></i>
+            Changer de catégorie
+          </Button>
+          <div className="mt-1">
+            <small className="text-muted">
+              Catégorie: {formData.categorie} → {formData.subCategory}
             </small>
           </div>
         </div>
@@ -340,15 +464,40 @@ const CreateAnnoncePage = () => {
                   {isEdit ? '✏️ Modifier la catégorie' : '🏷️ Sélectionnez une catégorie'}
                 </h5>
                 
-                {formData.categorie && formData.subCategory && (
-                  <div className="alert alert-success py-2 mb-3">
-                    <div className="d-flex align-items-center">
-                      <i className="fas fa-check-circle text-success me-2"></i>
+                {/* Info de categoría actual */}
+                {((formData.categorie && formData.subCategory) || hasManuallyGoneBack) && (
+                  <div className={`alert ${hasManuallyGoneBack ? 'alert-info' : 'alert-success'} py-2 mb-3`}>
+                    <div className="d-flex align-items-center justify-content-between">
                       <div>
-                        <strong>Catégorie:</strong> {formData.categorie}<br/>
-                        <strong>Sous-catégorie:</strong> {formData.subCategory}
-                        {formData.articleType && <><br/><strong>Type:</strong> {formData.articleType}</>}
+                        <i className={`fas fa-${hasManuallyGoneBack ? 'info-circle' : 'check-circle'} me-2`}></i>
+                        <small>
+                          {formData.categorie && <strong>{formData.categorie}</strong>}
+                          {formData.subCategory && <span> → {formData.subCategory}</span>}
+                          {formData.articleType && <span> ({formData.articleType})</span>}
+                        </small>
                       </div>
+                      <Button 
+                        variant="outline-primary" 
+                        size="sm"
+                        onClick={() => {
+                          // Resetear para elegir nueva categoría
+                          setFormData({
+                            categorie: '',
+                            articleType: '',
+                            subCategory: '',
+                          });
+                          setSpecificData({});
+                          setHasManuallyGoneBack(false);
+                          
+                          if (autoAdvanceTimeout.current) {
+                            clearTimeout(autoAdvanceTimeout.current);
+                            autoAdvanceTimeout.current = null;
+                          }
+                        }}
+                      >
+                        <i className="fas fa-sync-alt me-1"></i>
+                        Changer
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -358,14 +507,48 @@ const CreateAnnoncePage = () => {
                   handleChangeInput={handleCategoryChange}
                 />
                 
-                {formData.categorie && formData.subCategory && !isEdit && (
-                  <div className="mt-3 text-center">
-                    <div className="spinner-border spinner-border-sm text-primary me-2" role="status">
-                      <span className="visually-hidden">Chargement...</span>
+                {/* Mensaje de auto-avance */}
+                {formData.categorie && formData.subCategory && !isEdit && !hasManuallyGoneBack && (
+                  <motion.div 
+                    className="mt-3 text-center"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <div className="d-flex align-items-center justify-content-center">
+                      <div className="spinner-border spinner-border-sm text-primary me-2" role="status">
+                        <span className="visually-hidden">Chargement...</span>
+                      </div>
+                      <small className="text-primary me-2">
+                        Avance automatique en 0.5s...
+                      </small>
+                      <Button 
+                        variant="link" 
+                        size="sm" 
+                        className="p-0 text-decoration-none"
+                        onClick={() => {
+                          if (autoAdvanceTimeout.current) {
+                            clearTimeout(autoAdvanceTimeout.current);
+                          }
+                          handleStepChange(2);
+                        }}
+                      >
+                        Avancer maintenant
+                      </Button>
                     </div>
-                    <small className="text-primary">
-                      Avance vers les détails...
-                    </small>
+                  </motion.div>
+                )}
+                
+                {/* Botón manual para avanzar si ya volvió */}
+                {formData.categorie && formData.subCategory && hasManuallyGoneBack && (
+                  <div className="text-center mt-3">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleStepChange(2)}
+                    >
+                      <i className="fas fa-arrow-right me-1"></i>
+                      Continuer avec cette catégorie
+                    </Button>
                   </div>
                 )}
               </Card.Body>
@@ -386,6 +569,7 @@ const CreateAnnoncePage = () => {
             className="step-content"
           >
             {renderCategoryEditButton()}
+            {renderBackToCategoryButton()}
             
             <DynamicFieldManager
               mainCategory={formData.categorie}
@@ -410,6 +594,9 @@ const CreateAnnoncePage = () => {
             exit="exit"
             className="step-content"
           >
+            {renderCategoryEditButton()}
+            {renderBackToCategoryButton()}
+            
             <ImagesStep
               images={images}
               setImages={setImages}
@@ -440,8 +627,18 @@ const CreateAnnoncePage = () => {
     // Toujours permettre d'aller au step 1
     if (step === 1) return true;
     
-    // Pour les autres steps, seulement si on a déjà passé par le step 1
-    return step <= currentStep + 1;
+    // Para steps 2-5, permitir si:
+    // 1. Es el paso actual o anterior (ya visitado)
+    // 2. Es el siguiente paso (si la categoría está completa)
+    if (step <= currentStep) {
+      return true;
+    }
+    
+    if (step === currentStep + 1) {
+      return canProceedToNextStep();
+    }
+    
+    return false;
   };
 
   return (
@@ -491,8 +688,13 @@ const CreateAnnoncePage = () => {
               <div className="text-center flex-grow-1">
                 <button
                   className={`step-indicator ${currentStep === step.step ? 'active' : ''}`}
-                  onClick={() => handleStepChange(step.step)}
+                  onClick={() => {
+                    if (canGoToStep(step.step)) {
+                      handleStepChange(step.step);
+                    }
+                  }}
                   disabled={!canGoToStep(step.step)}
+                  title={!canGoToStep(step.step) ? "Completez l'étape précédente" : ""}
                 >
                   <div className="step-icon-wrapper">
                     <span className="step-icon">{step.icon}</span>

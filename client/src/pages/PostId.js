@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { Container, Row, Col, Spinner, Alert } from 'react-bootstrap';
+import { Container, Row, Col, Spinner, Alert, Card, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { getSimilarPosts, clearSimilarPosts } from '../redux/actions/postAction';
 import PostCard from '../components/PostCard';
@@ -20,7 +20,8 @@ const PostId = () => {
   const {
     homePosts = {},
     detailPost = null,
-    auth = {}
+    auth = {},
+    theme
   } = useSelector(state => state);
 
   // Extraer valores
@@ -96,95 +97,123 @@ const PostId = () => {
     }
   }, [detailPostData, id]);
 
-  // 🎯 COMPONENTE MINIMALISTA PARA POSTS SIMILARES (MANTENIENDO TUS ESTILOS)
-  const SimilarPostCard = ({ post: similarPost }) => {
-    if (!similarPost) return null;
-
-    // Obtener la primera imagen
-    const firstImage = similarPost.images && similarPost.images.length > 0
-      ? similarPost.images[0]
-      : null;
-
-    // Formatear precio
-    const formatPrice = (price) => {
-      if (!price) return '';
-      return new Intl.NumberFormat('fr-FR').format(price) + ' DZD';
-    };
-
-    // Obtener título corto (max 40 chars)
-    const getShortTitle = (title) => {
-      if (!title) return 'Sans titre';
-      return title.length > 40 ? title.substring(0, 40) + '...' : title;
-    };
+  // 🎯 COMPONENTE POSTS SIMILARES CON ESTILOS DE PostThumb
+  const SimilarPostThumb = ({ posts }) => {
+    if (!posts || posts.length === 0) return null;
 
     return (
-      <Link
-        to={`/post/${similarPost._id}`}
-        className="similar-post-card text-decoration-none"
-        style={{ display: 'block' }}
-      >
-        <div className="card h-100 border-0 shadow-sm hover-lift">
-          {/* IMAGEN */}
-          <div className="similar-post-image" style={{
-            height: '120px',
-            overflow: 'hidden',
-            borderTopLeftRadius: '8px',
-            borderTopRightRadius: '8px'
-          }}>
-            {firstImage ? (
-              <img
-                src={firstImage.url || firstImage}
-                alt={similarPost.title || 'Produit'}
-                className="w-100 h-100"
-                style={{ objectFit: 'cover' }}
-              />
-            ) : (
-              <div className="w-100 h-100 d-flex align-items-center justify-content-center bg-light">
-                <span style={{ fontSize: '2rem' }}>📷</span>
-              </div>
-            )}
-          </div>
-
-          {/* CONTENIDO MINIMALISTA */}
-          <div className="card-body p-2">
-            {/* TÍTULO (solo esto) */}
-            <div className="similar-post-title mb-1">
-              <div className="fw-semibold text-dark" style={{
-                fontSize: '0.85rem',
-                lineHeight: '1.3',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-                minHeight: '2.2rem'
+      <div className="similar-posts-thumb">
+        {posts.map(post => {
+          // Extraer datos del post similar
+          const title = post.title || 'Annonce';
+          const price = post.price || post.prix || post.loyer || 0;
+          const categorie = post.categorie || '';
+          const isVideo = post.images?.[0]?.url?.match(/video/i);
+          const imageUrl = post.images?.[0]?.url || '';
+          
+          return (
+            <Link 
+              key={post._id} 
+              to={`/post/${post._id}`}
+              className="text-decoration-none"
+            >
+              <Card className="border-0 shadow-sm h-100" style={{ 
+                transition: 'transform 0.2s',
+                borderRadius: '8px',
+                overflow: 'hidden'
               }}>
-                {getShortTitle(similarPost.title)}
-              </div>
-            </div>
-
-            {/* PRECIO */}
-            {similarPost.price && (
-              <div className="similar-post-price">
-                <span className="fw-bold text-primary" style={{ fontSize: '0.9rem' }}>
-                  {formatPrice(similarPost.price)}
-                </span>
-              </div>
-            )}
-
-            {/* BADGE DE CATEGORÍA (opcional) */}
-            {similarPost.categorie && (
-              <div className="mt-1">
-                <span className="badge bg-light text-dark border" style={{
-                  fontSize: '0.65rem',
-                  padding: '0.2rem 0.4rem'
+                {/* Contenedor de imagen/video */}
+                <div className="similar-post-thumb-display" style={{ 
+                  position: 'relative',
+                  height: '180px',
+                  overflow: 'hidden'
                 }}>
-                  {similarPost.categorie}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      </Link>
+                  {isVideo ? (
+                    <video 
+                      className="w-100 h-100"
+                      style={{ 
+                        objectFit: 'cover',
+                        filter: theme ? 'invert(1)' : 'invert(0)'
+                      }}
+                    >
+                      <source src={imageUrl} type="video/mp4" />
+                    </video>
+                  ) : imageUrl ? (
+                    <img 
+                      src={imageUrl} 
+                      alt={title}
+                      className="w-100 h-100"
+                      style={{ 
+                        objectFit: 'cover',
+                        filter: theme ? 'invert(1)' : 'invert(0)'
+                      }}
+                    />
+                  ) : (
+                    <div className="w-100 h-100 d-flex align-items-center justify-content-center bg-light">
+                      <span style={{ fontSize: '2rem' }}>📷</span>
+                    </div>
+                  )}
+                  
+                  {/* Badge de likes */}
+                  {post.likes && post.likes.length > 0 && (
+                    <div className="position-absolute top-0 end-0 m-2">
+                      <Badge bg="danger" className="d-flex align-items-center gap-1">
+                        <i className="fas fa-heart" style={{ fontSize: '0.8rem' }}></i>
+                        <span>{post.likes.length}</span>
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+                
+                {/* FOOTER CON TÍTULO Y PRECIO */}
+                <Card.Footer className="bg-white border-0 py-2 px-3">
+                  {/* Fila 1: Título */}
+                  <div className="mb-1">
+                    <h6 className="fw-bold text-dark mb-0 text-truncate" style={{ 
+                      fontSize: '0.9rem',
+                      lineHeight: '1.3',
+                      minHeight: '2.2rem',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}>
+                      {title}
+                    </h6>
+                  </div>
+                  
+                  {/* Fila 2: Precio */}
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div className="price-container">
+                      <div className="text-success fw-bold" style={{ fontSize: '1rem' }}>
+                        {new Intl.NumberFormat('fr-FR').format(price)} DA
+                      </div>
+                    </div>
+                    
+                    {/* Badge de categoría */}
+                    {categorie && (
+                      <Badge bg="secondary" className="text-uppercase" style={{ fontSize: '0.65rem' }}>
+                        {categorie.slice(0, 3)}
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  {/* Información adicional opcional */}
+                  <div className="mt-1 d-flex justify-content-between">
+                    <div className="text-muted small">
+                      <i className="far fa-eye me-1"></i>
+                      {post.views || 0}
+                    </div>
+                    <div className="text-muted small">
+                      {post.createdAt && new Date(post.createdAt).toLocaleDateString('fr-FR')}
+                    </div>
+                  </div>
+                </Card.Footer>
+              </Card>
+            </Link>
+          );
+        })}
+      </div>
     );
   };
 
@@ -215,26 +244,22 @@ const PostId = () => {
 
   return (
     <Container className="post-detail-page" style={{ maxWidth: '1200px' }}>
-      {/* 1. POST DETAIL PRINCIPAL (COMPLETO) */}
-      <div className="mb-1">
+      {/* 1. POST DETAIL PRINCIPAL */}
+      <div className="mb-4">
         <PostCard post={post} />
       </div>
 
-      {/* 2. POSTS DEL USUARIO - USANDO EL COMPONENTE UserPosts */}
+      {/* 2. POSTS DEL USUARIO */}
       {post.user && post.user._id && (
-        <div  >
+        <div className="mb-5">
           {/* Encabezado */}
-          
-            <h5 className="fw-bold mb-1" style={{ fontSize: '1.4rem', color: '#2c3e50' }}>
+          <div className="mb-4">
+            <h5 className="fw-bold" style={{ fontSize: '1.4rem', color: '#2c3e50' }}>
               👤 Autres publications du vendeur
             </h5>
-
-
-
-         
-
- 
-      <UserPosts
+          </div>
+          
+          <UserPosts
             userId={post.user._id}
             auth={auth}
             limit={6}
@@ -242,20 +267,27 @@ const PostId = () => {
             showTitle={false}
             gridView={true}
           />
- 
-      
         </div>
       )}
 
-      {/* 3. POSTS SIMILARES - VERSIÓN MINIMALISTA (MANTENIENDO TUS ESTILOS) */}
+      {/* 3. POSTS SIMILARES CON ESTILOS DE PostThumb */}
       {post.categorie && post.subCategory && (
-        <div className="mb-2">
+        <div className="mb-5">
           {/* Encabezado */}
-          <div className="mb-4 px-1">
-            <h5 className="fw-bold mb-2" style={{ fontSize: '1.4rem', color: '#2c3e50' }}>
-              🔍 Publications similaires
-            </h5>
-          
+          <div className="mb-4">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="fw-bold mb-0" style={{ fontSize: '1.4rem', color: '#2c3e50' }}>
+                🔍 Publications similaires
+              </h5>
+              {filteredSimilarPosts.length > 0 && !similarLoading && (
+                <Badge bg="info" className="px-3 py-2">
+                  {filteredSimilarPosts.length} résultat{filteredSimilarPosts.length > 1 ? 's' : ''}
+                </Badge>
+              )}
+            </div>
+            <p className="text-muted mb-4">
+              Découvrez d'autres annonces similaires dans la même catégorie
+            </p>
           </div>
 
           {/* Loading state */}
@@ -277,93 +309,81 @@ const PostId = () => {
               <p className="mb-0 text-muted">Aucune publication similaire trouvée</p>
             </Alert>
           ) : (
-            /* Grid minimalista - SOLO IMAGEN + TÍTULO + PRECIO */
-            <Row className="g-3">
-              {filteredSimilarPosts.map(item => (
-                <Col
-                  key={item._id}
-                  xs={6}      // 2 columnas en móvil
-                  sm={4}      // 3 columnas en tablet
-                  md={3}      // 4 columnas en desktop
-                  lg={2}      // 6 columnas en desktop grande
-                  className="d-flex"
-                >
-                  <SimilarPostCard post={item} />
-                </Col>
-              ))}
-            </Row>
+            /* Grid con los mismos estilos que PostThumb */
+            <SimilarPostThumb posts={filteredSimilarPosts} />
           )}
         </div>
       )}
 
-      {/* ESTILOS CSS MEJORADOS */}
+      {/* ESTILOS CSS - IGUALES QUE POSTTHUMB */}
       <style jsx>{`
         .post-detail-page {
           background: #ffffff;
+          padding-top: 20px;
         }
         
-        .hover-lift {
+        .similar-posts-thumb {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+          gap: 20px;
+          padding: 10px 0;
+        }
+        
+        .similar-post-thumb-display {
+          transition: transform 0.3s ease;
+        }
+        
+        .similar-post-thumb-display:hover {
+          transform: scale(1.02);
+        }
+        
+        /* Hover effect para las cards */
+        .card {
           transition: all 0.3s ease;
-          border-radius: 8px;
         }
         
-        .hover-lift:hover {
+        .card:hover {
           transform: translateY(-4px);
-          box-shadow: 0 6px 12px rgba(0,0,0,0.1) !important;
-        }
-        
-        .similar-post-card .card {
-          border: 1px solid #e9ecef;
-          transition: all 0.2s ease;
-        }
-        
-        .similar-post-card:hover .card {
-          border-color: #4f46e5;
-        }
-        
-        .similar-post-image {
-          position: relative;
-        }
-        
-        .similar-post-image::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(to top, rgba(0,0,0,0.1), transparent);
-          pointer-events: none;
-          border-radius: 8px 8px 0 0;
+          box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important;
         }
         
         /* Responsive */
         @media (max-width: 768px) {
+          .similar-posts-thumb {
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+          }
+          
           .post-detail-page {
             padding-left: 10px;
             padding-right: 10px;
           }
           
-          h3 {
+          h5 {
             font-size: 1.2rem !important;
           }
           
-          .similar-post-image {
-            height: 100px !important;
+          .similar-post-thumb-display {
+            height: 160px !important;
           }
         }
         
         @media (max-width: 576px) {
-          .similar-post-image {
-            height: 90px !important;
+          .similar-posts-thumb {
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
           }
           
-          .similar-post-title div {
-            font-size: 0.8rem !important;
+          .similar-post-thumb-display {
+            height: 140px !important;
           }
           
-          .similar-post-price span {
-            font-size: 0.85rem !important;
+          .price-container div {
+            font-size: 0.9rem !important;
+          }
+          
+          .card-footer {
+            padding: 8px 12px !important;
           }
         }
         
@@ -379,13 +399,28 @@ const PostId = () => {
           }
         }
         
-        .similar-post-card {
+        .similar-posts-thumb > a {
           animation: fadeIn 0.4s ease forwards;
+          animation-delay: calc(var(--index, 0) * 0.05s);
         }
         
-        /* Separación visual */
-        .mb-5:last-child {
-          margin-bottom: 2rem !important;
+        /* Estilos específicos para dark theme */
+        :global(.dark) .card {
+          background-color: #2d3748;
+          border-color: #4a5568;
+        }
+        
+        :global(.dark) .card-footer {
+          background-color: #2d3748;
+          border-top: 1px solid #4a5568;
+        }
+        
+        :global(.dark) .text-dark {
+          color: #e2e8f0 !important;
+        }
+        
+        :global(.dark) .text-muted {
+          color: #a0aec0 !important;
         }
       `}</style>
     </Container>
