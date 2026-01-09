@@ -69,7 +69,7 @@ const ImmobilerHierarchyPage = () => {
           .finally(() => setLoading(false));
       }
     };
-    
+    ImmobilerHierarchyPage
     parseSlug();
   }, [slug, page, dispatch]);
 

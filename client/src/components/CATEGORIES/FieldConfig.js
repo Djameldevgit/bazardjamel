@@ -8,7 +8,34 @@ export const DYNAMIC_FIELDS_CONFIG = {
     step4: ['wilaya', 'telephone', 'email'],
     step5: ['images']
   },
-
+  'boutiques': {
+    // Campos comunes para todas las boutiques
+    step2: [
+      'nom_boutique', 
+      'domaine_boutique', 
+      'slogan_boutique', 
+      'description_boutique',
+      'categories_produits',
+      'couleur_theme'
+    ],
+    step3: [
+      'plan_boutique', 
+      'duree_abonnement',
+      'total_credits',
+      'stockage_max',
+      'inclusions_plan'
+    ],
+    step4: [
+      'proprietaire_nom', 
+      'proprietaire_email', 
+      'proprietaire_telephone',
+      'proprietaire_wilaya',
+      'proprietaire_adresse',
+      'reseaux_sociaux',
+      'accepte_conditions'
+    ],
+    step5: ['images', 'logo_boutique']
+  },
   // ============ VÉHICULES ============
   'vehicules': {
     step2: ['title', 'description', 'etat', 'reference', 'marque', 'modele', 'annee', 'kilometrage', 'carburant', 'boiteVitesse'],
@@ -17,8 +44,8 @@ export const DYNAMIC_FIELDS_CONFIG = {
     step5: ['images'],
     subCategories: {
       'automobiles': {
-        step2: ['title', 'description', 'etat', 'reference', 'marque', 'modele', 'annee', 'kilometrage', 'carburant', 'boiteVitesse', 'portes'],
-        step3: ['price', 'unite', 'typeOffre', 'echange', 'puissance', 'couleur', 'options', 'typeCarrosserie'],
+        step2: [  'marque', 'modele', 'annee', , 'couleur','kilometrage', 'carburant', 'boiteVitesse' , 'optionduvoiture' ],
+        step3: ['price','unite', 'typeOffre', 'echange'],
         step4: ['wilaya', 'adresse', 'telephone', 'email'],
         step5: ['images']
       },
@@ -29,59 +56,59 @@ export const DYNAMIC_FIELDS_CONFIG = {
         step5: ['images']
       },
       'motos': {
-        step2: ['title', 'description', 'etat', 'reference', 'marque', 'modele', 'annee', 'kilometrage', 'typeMoto', 'cylindree'],
-        step3: ['price', 'unite', 'typeOffre', 'echange', 'puissance', 'couleur'],
+        step2: [ 'marqueVehicules', 'modeleVehicules', 'annee', , 'couleur','kilometrage', 'carburant', 'description'],
+        step3: ['price','unite', 'typeOffre', 'echange'],
         step4: ['wilaya', 'adresse', 'telephone', 'email'],
         step5: ['images']
       },
       'quads': {
-        step2: ['title', 'description', 'etat', 'reference', 'marque', 'modele', 'annee', 'kilometrage', 'typeQuad'],
-        step3: ['price', 'unite', 'typeOffre', 'echange', 'puissance', 'couleur'],
+        step2: [  'marqueVehicules', 'modeleVehicules', 'annee', , 'couleur','kilometrage', 'carburant', 'description'],
+        step3: ['price','unite', 'typeOffre', 'echange'],
         step4: ['wilaya', 'adresse', 'telephone', 'email'],
         step5: ['images']
       },
-      'fourgons': {
-        step2: ['title', 'description', 'etat', 'reference', 'marque', 'modele', 'annee', 'kilometrage', 'carburant', 'volume'],
-        step3: ['price', 'unite', 'typeOffre', 'echange', 'puissance', 'couleur'],
+      'fourgons':{
+        step2: [  'marqueVehicules', 'modeleVehicules', 'annee', , 'couleur','kilometrage', 'carburant', 'description'],
+        step3: ['price','unite', 'typeOffre', 'echange'],
         step4: ['wilaya', 'adresse', 'telephone', 'email'],
         step5: ['images']
       },
       'camions': {
-        step2: ['title', 'description', 'etat', 'reference', 'marque', 'modele', 'annee', 'kilometrage', 'poidsTotal'],
-        step3: ['price', 'unite', 'typeOffre', 'echange', 'puissance', 'couleur', 'typeRemorque'],
+        step2: [  'marqueVehicules', 'modeleVehicules', 'annee', , 'couleur','kilometrage', 'carburant', 'description'],
+        step3: ['price','unite', 'typeOffre', 'echange'],
         step4: ['wilaya', 'adresse', 'telephone', 'email'],
         step5: ['images']
       },
-      'bus': {
-        step2: ['title', 'description', 'etat', 'reference', 'marque', 'modele', 'annee', 'kilometrage', 'places'],
-        step3: ['price', 'unite', 'typeOffre', 'echange', 'puissance', 'couleur'],
+      'bus':{
+        step2: [  'marqueVehicules', 'modeleVehicules', 'annee', , 'couleur','kilometrage', 'carburant', 'description'],
+        step3: ['price','unite', 'typeOffre', 'echange'],
         step4: ['wilaya', 'adresse', 'telephone', 'email'],
         step5: ['images']
       },
       'engins': {
-        step2: ['title', 'description', 'etat', 'reference', 'marque', 'modele', 'annee', 'typeEngin'],
-        step3: ['price', 'unite', 'typeOffre', 'echange', 'puissance', 'etatFonctionnel'],
+        step2: [  'marqueVehicules', 'modeleVehicules', 'annee', , 'couleur','kilometrage', 'carburant', 'description'],
+        step3: ['price','unite', 'typeOffre', 'echange'],
         step4: ['wilaya', 'adresse', 'telephone', 'email'],
         step5: ['images']
       },
       'tracteurs': {
-        step2: ['title', 'description', 'etat', 'reference', 'marque', 'modele', 'annee', 'puissance'],
-        step3: ['price', 'unite', 'typeOffre', 'echange', 'typeTracteur', 'equipements'],
+        step2: [  'marqueVehicules', 'modeleVehicules', 'annee', , 'couleur','kilometrage', 'carburant', 'description'],
+        step3: ['price','unite', 'typeOffre', 'echange'],
         step4: ['wilaya', 'adresse', 'telephone', 'email'],
         step5: ['images']
       },
-      'remorques': {
-        step2: ['title', 'description', 'etat', 'reference', 'marque', 'modele', 'annee', 'capacite', 'typeRemorque'],
-        step3: ['price', 'unite', 'typeOffre', 'echange', 'dimensions', 'couleur'],
+      'remorques':{
+        step2: [  'marqueVehicules', 'modeleVehicules', 'annee', , 'couleur','kilometrage', 'carburant', 'description'],
+        step3: ['price','unite', 'typeOffre', 'echange'],
         step4: ['wilaya', 'adresse', 'telephone', 'email'],
         step5: ['images']
       },
       'bateaux': {
-        step2: ['title', 'description', 'etat', 'reference', 'marque', 'modele', 'annee', 'typeBateau', 'longueur'],
-        step3: ['price', 'unite', 'typeOffre', 'echange', 'moteur', 'materiau'],
+        step2: [  'marqueVehicules', 'modeleVehicules', 'annee', , 'couleur','kilometrage', 'carburant', 'description'],
+        step3: ['price','unite', 'typeOffre', 'echange'],
         step4: ['wilaya', 'adresse', 'telephone', 'email'],
         step5: ['images']
-      }
+      },
     }
   },
 

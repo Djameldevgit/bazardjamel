@@ -12,8 +12,8 @@ import UniteField from '../camposComun/UniteField';
 import TypeOffreField from '../camposComun/TypeOffreField';
 import EchangeField from '../camposComun/EchangeField';
 import GrossDetailField from '../camposComun/GrossDetailField';
-import WilayaField from '../camposComun/WilayaField';
-import CommuneField from '../camposComun/CommuneField';
+import WilayaField from '../camposComun/WilayaCommuneField';
+ 
 import TelephoneField from '../camposComun/PhoneField';
 import EmailField from '../camposComun/EmailField';
 import EtatField from '../camposComun/EtatField';

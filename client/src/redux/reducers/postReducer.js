@@ -36,6 +36,11 @@ const initialState = {
 
 const postReducer = (state = initialState, action) => {
     switch (action.type) {
+        case POST_TYPES.LOADING_POST:
+            return {
+                ...state,
+                loading: action.payload
+            };
         // ==================== POSTS POR CATEGORÍA ====================
         case POST_TYPES.GET_POSTS_BY_CATEGORY:
             console.log('🔄 Reducer - GET_POSTS_BY_CATEGORY:', {
@@ -313,50 +318,63 @@ const postReducer = (state = initialState, action) => {
 
       // redux/reducers/postReducer.js - AGREGAR ESTOS CASOS:
 
-case POST_TYPES.GET_IMMOBILIER_POSTS:
-    console.log('🏠 Reducer - GET_IMMOBILIER_POSTS:', {
-        operation: action.payload.operation,
-        propertyType: action.payload.propertyType,
-        postsCount: action.payload.posts?.length,
-        page: action.payload.page,
-        total: action.payload.total
-    });
-
-    const {
-        operation,
-        propertyType,
-        posts: immoPosts,
-        page: immoPage,
-        total: immoTotal
-    } = action.payload;
-
-    // Si es página 1 o cambio de operación/propiedad, reemplazar
-    if (immoPage === 1 || 
-        operation !== state.immobilierOperation || 
-        propertyType !== state.immobilierPropertyType) {
+      case POST_TYPES.GET_SUBCATEGORY_POSTS:
+        console.log('🔄 Reducer - GET_SUBCATEGORY_POSTS:', {
+            category: action.payload.category,
+            subcategory: action.payload.subcategory,
+            postsCount: action.payload.posts?.length,
+            page: action.payload.page
+        });
         
         return {
             ...state,
-            immobilierPosts: immoPosts || [],
-            immobilierOperation: operation,
-            immobilierPropertyType: propertyType || null,
-            immobilierPage: immoPage,
-            immobilierTotal: immoTotal || 0,
-            immobilierHasMore: (immoPosts?.length || 0) >= 12,
-            result: immoTotal || immoPosts?.length || 0,
+            posts: action.payload.page === 1
+                ? action.payload.posts
+                : [...state.posts, ...action.payload.posts],
+            category: action.payload.category,
+            subcategory: action.payload.subcategory,
+            page: action.payload.page,
+            total: action.payload.total || 0,
+            result: action.payload.total || action.payload.posts?.length || 0,
             loading: false
         };
-    }
+        
+        
+    case POST_TYPES.GET_IMMOBILIER_POSTS:
+        console.log('🏠 Reducer - GET_IMMOBILIER_POSTS:', {
+            operation: action.payload.operation,
+            propertyType: action.payload.propertyType,
+            postsCount: action.payload.posts?.length,
+            page: action.payload.page,
+            total: action.payload.total
+        });
 
-    // Si es la misma página (paginación), agregar
-    return {
-        ...state,
-        immobilierPosts: [...state.immobilierPosts, ...(immoPosts || [])],
-        immobilierPage: immoPage,
-        immobilierHasMore: (immoPosts?.length || 0) >= 12,
-        result: state.result + (immoPosts?.length || 0),
-        loading: false
-    };
+        const {
+            operation,
+            propertyType,
+            posts: immoPosts,
+            page: immoPage,
+            total: immoTotal
+        } = action.payload;
+
+        // Si es página 1 o cambio de operación/propiedad, reemplazar
+        if (immoPage === 1 || 
+            operation !== state.immobilierOperation || 
+            propertyType !== state.immobilierPropertyType) {
+            
+            return {
+                ...state,
+                immobilierPosts: immoPosts || [],
+                immobilierOperation: operation,
+                immobilierPropertyType: propertyType || null,
+                immobilierPage: immoPage,
+                immobilierTotal: immoTotal || 0,
+                immobilierHasMore: (immoPosts?.length || 0) >= 12,
+                result: immoTotal || immoPosts?.length || 0,
+                loading: false
+            };
+        }
+
 
 case POST_TYPES.CLEAR_IMMOBILIER_POSTS:
     return {

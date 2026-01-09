@@ -1,7 +1,7 @@
 // 📁 src/components/CATEGORIES/FieldRendererUniversal.js
 import React from 'react';
 
-// 🔥 IMPORTAR TODOS LOS COMPONENTES ESPECÍFICOS
+// 🔥 IMPORTAR TODOS LOS COMPONENTES ESPECÍFICOS DE CATEGORÍA
 import ImmobiliersFields from './specificFields/ImmobiliersFields';
 import VehiculesFields from './specificFields/VehiculesFields';
 import VetementsFields from './specificFields/VetementsFields';
@@ -18,8 +18,7 @@ import AlimentairesFields from './specificFields/AlimentairesFields';
 import ServicesField from './specificFields/ServicesFields';
 import VoyagesFields from './specificFields/VoyagesFields';
 import EmploiFields from './specificFields/EmploiFields';
- 
-
+import BoutiqueFields from './specificFields/BoutiquesField';
 // 🔥 MAPA DE CATEGORÍA → COMPONENTE
 const CATEGORY_COMPONENTS = {
   'immobilier': ImmobiliersFields,
@@ -28,7 +27,7 @@ const CATEGORY_COMPONENTS = {
   'telephones': TelephonesFields,
   'informatique': InformatiqueFields,
   'electromenager': ElectromenagerFields,
-  'pieces_detachees': PieceDetacheFields,
+  'piecesDetachees': PieceDetacheFields,
   'santebeaute': SanteBeauteFields,
   'meubles': MuebleField,
   'loisirs': LoisirsFields,
@@ -38,30 +37,8 @@ const CATEGORY_COMPONENTS = {
   'materiaux': MateriauxFields,
   'voyages': VoyagesFields,
   'emploi': EmploiFields,
-   
-};
+  'boutiques': BoutiqueFields
 
-// 🔥 COMPONENTES DE CAMPOS COMUNES (para reutilizar)
-import TitleField from './camposComun/TitleField';
-import DescriptionField from './camposComun/DescriptionField';
-import PriceField from './camposComun/PriceField';
-import TelephoneField from './camposComun/PhoneField';
-import WilayaField from './camposComun/WilayaCommuneField';
- 
-import EtatField from './camposComun/EtatField';
-import ReferenceField from './camposComun/ReferenceField';
-
-// 🔥 MAPA DE CAMPOS COMUNES
-const COMMON_FIELD_COMPONENTS = {
-  'title': TitleField,
-  'description': DescriptionField,
-  'price': PriceField,
-  'telephone': TelephoneField,
-  'wilaya': WilayaField,
-   
-  'etat': EtatField,
-  'reference': ReferenceField
-  // Agrega más campos comunes aquí
 };
 
 const FieldRendererUniversal = ({
@@ -74,48 +51,31 @@ const FieldRendererUniversal = ({
   isRTL,
   t
 }) => {
-  console.log('🔍 FieldRendererUniversal recibió:', {
+  console.log('🔍 FieldRendererUniversal:', {
     fieldName,
     mainCategory,
-    subCategory,
-    articleType
+    subCategory
   });
 
-  // 1. Primero verificar si es un campo común
-  if (COMMON_FIELD_COMPONENTS[fieldName]) {
-    console.log(`✅ Campo común: ${fieldName}`);
-    const CommonFieldComponent = COMMON_FIELD_COMPONENTS[fieldName];
-    
-    return (
-      <CommonFieldComponent
-        fieldName={fieldName}
-        postData={postData}
-        handleChangeInput={handleChangeInput}
-        isRTL={isRTL}
-        t={t}
-      />
-    );
+  // 1. Validar parámetros
+  if (!fieldName || !mainCategory) {
+    console.warn('⚠️ Parámetros inválidos para FieldRendererUniversal');
+    return null; // ⚠️ IMPORTANTE: Retornar null, no un div vacío
   }
 
-  // 2. Buscar componente específico de categoría
+  // 2. Buscar componente de categoría
   const CategoryComponent = CATEGORY_COMPONENTS[mainCategory];
   
   if (!CategoryComponent) {
     console.error(`❌ No hay componente para la categoría: ${mainCategory}`);
-    console.log('📋 Componentes disponibles:', Object.keys(CATEGORY_COMPONENTS));
-    
-    return (
-      <div className="alert alert-danger">
-        <strong>Erreur:</strong> Catégorie "{mainCategory}" non configurée
-      </div>
-    );
+    return null; // ⚠️ Retornar null, no alerta
   }
 
-  // 3. Renderizar campo específico de la categoría
+  // 3. Renderizar el componente de categoría - ÉL manejará el campo específico
   try {
     return (
       <CategoryComponent
-        fieldName={fieldName}
+        fieldName={fieldName} // Pasar el fieldName específico
         mainCategory={mainCategory}
         subCategory={subCategory}
         articleType={articleType}
@@ -126,16 +86,21 @@ const FieldRendererUniversal = ({
       />
     );
   } catch (error) {
-    console.error(`❌ Error en FieldRendererUniversal para ${fieldName}:`, error);
-    
-    return (
-      <div className="alert alert-warning">
-        <strong>Avertissement:</strong> Champ "{fieldName}" non disponible
-        <br />
-        <small>Ajoutez-le dans {mainCategory}Fields.js</small>
-      </div>
-    );
+    console.error(`❌ Error en FieldRendererUniversal:`, error);
+    return null; // ⚠️ Retornar null en caso de error
   }
+};
+
+// Propiedades por defecto
+FieldRendererUniversal.defaultProps = {
+  fieldName: '',
+  mainCategory: null,
+  subCategory: null,
+  articleType: null,
+  postData: {},
+  handleChangeInput: () => {},
+  isRTL: false,
+  t: null
 };
 
 export default FieldRendererUniversal;

@@ -1,25 +1,41 @@
-// components/camposComun/TitleField.js
+// src/components/CATEGORIES/camposComun/TitleField.js
 import React from 'react';
-import { Form } from 'react-bootstrap';
 
-const TitleField = ({ 
-  postData, 
-  handleChangeInput, 
-  name = 'title'
+const TitleField = ({
+  mainCategory,
+  subCategory,
+  fieldName,
+  postData,
+  handleChangeInput,
+  isRTL,
+  t,
+  ...props
 }) => {
   
   return (
-    <Form.Group>
-      <Form.Label>📝 Titre</Form.Label>
-      <Form.Control
+    <div className="form-field mb-3">
+      <label htmlFor="title" className="form-label fw-bold">
+        {t ? t('title') : 'Titre'} 
+        <span className="text-danger">*</span>
+      </label>
+      <input
         type="text"
-        name={name}
-        value={postData[name] || ''}
+        id="title"
+        name="title"
+        value={postData?.title || ''}
         onChange={handleChangeInput}
-        placeholder="Entrez le titre"
         required
+        placeholder={t ? t('enterTitle') : 'Entrez le titre de l\'annonce'}
+        dir={isRTL ? 'rtl' : 'ltr'}
+        className="form-control form-control-lg"
+        style={{
+          textAlign: isRTL ? 'right' : 'left'
+        }}
       />
-    </Form.Group>
+      <div className="form-text text-muted">
+        {t ? t('titleHelp') : 'Un titre clair et descriptif augmente la visibilité'}
+      </div>
+    </div>
   );
 };
 

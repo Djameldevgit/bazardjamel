@@ -32,7 +32,7 @@ function HeaderCarousel() {
 
   // Imágenes para el carrusel lateral (1/4)
   const sideCarouselImages = [
-    '/images/side1.jpg',
+    '/.jpg',
     '/images/side2.jpg',
     '/images/side3.jpg',
     '/images/side4.jpg',
@@ -112,6 +112,7 @@ function HeaderCarousel() {
           indicators={true}
           controls={true}
           className="mobile-carousel"
+          style={{ padding: '7px' }}
         >
           {mainCarouselImages.map((image, index) => {
             const slide = mainSlides[index] || {
@@ -128,7 +129,8 @@ function HeaderCarousel() {
                     maxHeight: '150px',
                     minHeight: '100px',
                     overflow: 'hidden',
-                    backgroundColor: '#f8f9fa'
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '8px'
                   }}
                 >
                   <img
@@ -138,7 +140,8 @@ function HeaderCarousel() {
                       width: '100%',
                       height: '100%',
                       objectFit: 'cover',
-                      objectPosition: 'center 25%'
+                      objectPosition: 'center 25%',
+                      borderRadius: '8px'
                     }}
                     onError={(e) => {
                       e.target.src = `https://via.placeholder.com/800x150/8b5cf6/ffffff?text=Tassili+${index + 1}`;
@@ -152,7 +155,7 @@ function HeaderCarousel() {
                     backdropFilter: 'blur(2px)',
                     borderRadius: '6px',
                     padding: '8px 12px',
-                    bottom: '8px',
+                    bottom: '15px',
                     left: '5%',
                     right: '5%',
                     textAlign: 'center'
@@ -191,7 +194,7 @@ function HeaderCarousel() {
 
   // Versión desktop: DOS carrousels
   return (
-    <Container fluid className="px-0">
+    <Container fluid style={{ padding: '7px' }}>
       <Row className="g-0">
         {/* CARROUSEL PRINCIPAL - 3/4 ANCHO */}
         <Col lg={9} md={12} className="pe-1">
@@ -219,7 +222,7 @@ function HeaderCarousel() {
                       maxHeight: '350px',
                       minHeight: '250px',
                       overflow: 'hidden',
-                      backgroundColor: '#f8f9fa',
+                      borderRadius: '12px',
                       position: 'relative'
                     }}
                   >
@@ -230,7 +233,8 @@ function HeaderCarousel() {
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover',
-                        transition: 'transform 0.5s ease'
+                        transition: 'transform 0.5s ease',
+                        borderRadius: '12px'
                       }}
                       onError={(e) => {
                         e.target.src = `https://via.placeholder.com/1200x350/8b5cf6/ffffff?text=Main+${index + 1}`;
@@ -309,23 +313,24 @@ function HeaderCarousel() {
                       maxHeight: '350px',
                       minHeight: '250px',
                       overflow: 'hidden',
-                      backgroundColor: slide.color,
                       position: 'relative',
-                      borderRadius: '10px',
+                      borderRadius: '12px',
                       transition: 'all 0.3s ease',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      border: '1px solid #e0e0e0',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-5px)';
-                      e.currentTarget.style.boxShadow = '0 10px 20px rgba(0,0,0,0.2)';
+                      e.currentTarget.style.boxShadow = '0 10px 20px rgba(0,0,0,0.15)';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
                     }}
                     onClick={() => setCurrentIndex(index)}
                   >
-                    {/* Imagen de fondo */}
+                    {/* Imagen de fondo SIN background color */}
                     <img
                       src={image}
                       alt={slide.title}
@@ -333,11 +338,10 @@ function HeaderCarousel() {
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover',
-                        opacity: '0.8',
-                        mixBlendMode: 'overlay'
+                        borderRadius: '12px'
                       }}
                       onError={(e) => {
-                        e.target.style.display = 'none';
+                        e.target.src = `https://via.placeholder.com/400x350/${slide.color.replace('#', '')}/ffffff?text=${slide.title}`;
                       }}
                     />
                     
@@ -356,7 +360,8 @@ function HeaderCarousel() {
                         padding: '15px',
                         color: 'white',
                         textAlign: 'center',
-                        backgroundColor: `${slide.color}90`
+                        background: 'linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7))',
+                        borderRadius: '12px'
                       }}
                     >
                       <div 
@@ -364,7 +369,7 @@ function HeaderCarousel() {
                           fontSize: '1.3rem',
                           fontWeight: '700',
                           marginBottom: '10px',
-                          textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+                          textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
                         }}
                       >
                         {slide.title}

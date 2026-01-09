@@ -39,36 +39,19 @@ const Navbar2 = () => {
   const { auth, cart, notify, settings } = useSelector((state) => state);
   const dispatch = useDispatch();
   const { languageReducer } = useSelector(state => state);
-  const { t, i18n } = useTranslation('navbar2');
-  const lang = languageReducer.language || 'es';
+  const { t } = useTranslation('navbar2');
 
-  // 🔥 NUEVO: Estado para el dropdown de idiomas
-  const [selectedLanguage, setSelectedLanguage] = useState('es');
-  const [useGoogleTranslate, setUseGoogleTranslate] = useState(false);
-
-  // Estados PWA
+  // 🔥 ELIMINADO: Estados de traducción
   const [isPWAInstalled, setIsPWAInstalled] = useState(false);
   const [showInstallButton, setShowInstallButton] = useState(false);
-
-  // Estados del componente
   const [showShareModal, setShowShareModal] = useState(false);
   const [userRole, setUserRole] = useState(auth.user?.role);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showDeactivatedModal, setShowDeactivatedModal] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 700);
   const [showFeaturesModal, setShowFeaturesModal] = useState(false);
-
   const notifyDropdownRef = useRef(null);
   const [showDrawer, setShowDrawer] = useState(false);
-
-  // Configuración de idiomas
-  const languages = [
-    { code: 'es', name: 'Español', flag: '🇪🇸' },
-    { code: 'en', name: 'English', flag: '🇺🇸' },
-    { code: 'fr', name: 'Français', flag: '🇫🇷' },
-    { code: 'ar', name: 'العربية', flag: '🇸🇦' },
-    { code: 'auto', name: 'Traducción automática', flag: '🤖' }
-  ];
 
   // Funciones para manejar el drawer
   const handleDrawerOpen = () => setShowDrawer(true);
@@ -84,81 +67,7 @@ const Navbar2 = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 🔥 INICIALIZAR ESTADO DE IDIOMA
-  useEffect(() => {
-    // Verificar si hay traducción activa
-    const translateActive = localStorage.getItem('useGoogleTranslate') === 'true';
-    const savedLang = localStorage.getItem('appLanguage') || 'es';
-    
-    setSelectedLanguage(savedLang);
-    setUseGoogleTranslate(translateActive);
-
-    // Detectar idioma del navegador
-    const browserLang = navigator.language.split('-')[0];
-    if (!savedLang && languages.some(l => l.code === browserLang)) {
-      setSelectedLanguage(browserLang);
-    }
-
-    // 🔥 OCULTAR LA BARRA DE GOOGLE TRANSLATE SI EXISTE
-    setTimeout(hideGoogleTranslateBanner, 1000);
-  }, []);
-
-  // 🔥 EFECTO PARA OCULTAR LA BARRA PERO MANTENER LA TRADUCCIÓN
-  useEffect(() => {
-    // Observar el DOM para detectar cuando Google inserta su barra
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-          // Esperar un momento para que Google cargue completamente
-          setTimeout(hideGoogleTranslateBanner, 300);
-        }
-      });
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
-  // 🔥 FUNCIÓN PARA OCULTAR SOLO LA BARRA VISIBLE (NO LA TRADUCCIÓN)
-  const hideGoogleTranslateBanner = () => {
-    // Solo ocultar elementos VISIBLES de la barra, no la funcionalidad
-    const visibleBanners = [
-      '.goog-te-banner-frame',
-      '.VIpgJd-ZVi9od-ORHb-OEVmcd', // Barra superior
-      '.VIpgJd-ZVi9od-l4eHX-hSRGPd' // Contenedor de la barra
-    ];
-
-    visibleBanners.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(el => {
-        // Solo ocultar visualmente, no remover del DOM
-        el.style.display = 'none';
-        el.style.visibility = 'hidden';
-        el.style.opacity = '0';
-        el.style.height = '0';
-        el.style.overflow = 'hidden';
-      });
-    });
-
-    // También verificar iframes visibles
-    const iframes = document.querySelectorAll('iframe');
-    iframes.forEach(iframe => {
-      if (iframe.src && iframe.src.includes('translate.google') && 
-          iframe.offsetHeight > 50) { // Solo iframes grandes (la barra)
-        iframe.style.display = 'none';
-        iframe.style.visibility = 'hidden';
-      }
-    });
-
-    // Restaurar posición del body si Google la movió
-    if (document.body.style.top && document.body.style.top !== '0px') {
-      document.body.style.top = '0px';
-    }
-  };
+  // 🔥 ELIMINADO: Todo el código relacionado con Google Translate
 
   // Detección PWA
   useEffect(() => {
@@ -193,117 +102,12 @@ const Navbar2 = () => {
     }
   }, [showInstallButton, isPWAInstalled]);
 
-  // Efectos de idioma y usuario
-  useEffect(() => {
-    if (lang && lang !== i18n.language) {
-      i18n.changeLanguage(lang);
-    }
-  }, [lang, i18n]);
-
+  // Efectos de usuario
   useEffect(() => {
     if (auth.user?.role && auth.user.role !== userRole) {
       setUserRole(auth.user.role);
     }
   }, [auth.user?.role, userRole]);
-
-  // 🔥 HANDLER PARA CAMBIO DE IDIOMA (MANTIENE TRADUCCIÓN)
-  const handleLanguageChange = (langCode) => {
-    setSelectedLanguage(langCode);
-    localStorage.setItem('appLanguage', langCode);
-    
-    if (langCode === 'auto' || ['en', 'fr', 'ar'].includes(langCode)) {
-      // Activar Google Translate (la traducción funcionará)
-      setUseGoogleTranslate(true);
-      localStorage.setItem('useGoogleTranslate', 'true');
-      localStorage.setItem('targetTranslateLang', langCode === 'auto' ? 'auto' : langCode);
-      
-      // 🔥 FORZAR LA TRADUCCIÓN PERO OCULTAR LA BARRA
-      activateTranslationWithHiddenBanner(langCode);
-      
-    } else if (langCode === 'es') {
-      // Desactivar Google Translate
-      disableGoogleTranslation();
-    }
-  };
-
-  // 🔥 ACTIVAR TRADUCCIÓN PERO OCULTANDO LA BARRA
-  const activateTranslationWithHiddenBanner = (langCode) => {
-    // Configurar cookie para Google Translate (ESTO ACTIVA LA TRADUCCIÓN)
-    const domain = window.location.hostname;
-    const cookieValue = langCode === 'auto' ? '/auto/auto' : `/es/${langCode}`;
-    
-    document.cookie = `googtrans=${cookieValue}; path=/; domain=${domain}`;
-    document.cookie = `googtrans=${cookieValue}; path=/`;
-    
-    // Crear elemento DIV oculto para que Google Translate funcione
-    // Esto es necesario para que Google Translate tenga donde inyectar su código
-    if (!document.getElementById('google_translate_container')) {
-      const div = document.createElement('div');
-      div.id = 'google_translate_container';
-      div.style.cssText = `
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        opacity: 0;
-        pointer-events: none;
-      `;
-      document.body.appendChild(div);
-    }
-    
-    // Cargar Google Translate API si no está cargada
-    if (!window.google || !window.google.translate) {
-      const script = document.createElement('script');
-      script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
-      script.async = true;
-      
-      window.googleTranslateElementInit = () => {
-        if (window.google && window.google.translate) {
-          // Inicializar Google Translate en el contenedor oculto
-          new window.google.translate.TranslateElement({
-            pageLanguage: 'es',
-            includedLanguages: 'en,fr,ar',
-            layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
-            autoDisplay: false // 🔥 IMPORTANTE: No mostrar automáticamente
-          }, 'google_translate_container');
-          
-          // Esperar y ocultar cualquier barra que aparezca
-          setTimeout(hideGoogleTranslateBanner, 500);
-        }
-      };
-      
-      document.head.appendChild(script);
-    } else {
-      // Si ya está cargado, solo ocultar la barra
-      setTimeout(hideGoogleTranslateBanner, 500);
-    }
-    
-    // Recargar la página para aplicar traducción completa
-    setTimeout(() => {
-      window.location.reload();
-    }, 800);
-  };
-
-  // 🔥 DESACTIVAR TRADUCCIÓN
-  const disableGoogleTranslation = () => {
-    setUseGoogleTranslate(false);
-    localStorage.removeItem('useGoogleTranslate');
-    localStorage.removeItem('targetTranslateLang');
-    
-    // Limpiar cookies de Google Translate
-    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + window.location.hostname;
-    
-    // No remover el contenedor, solo limpiar cookies
-    // Esto permite que la página se recargue en español
-    
-    // Recargar para ver contenido original
-    setTimeout(() => {
-      window.location.reload();
-    }, 300);
-  };
 
   // Handlers
   const handleLogout = () => {
@@ -382,51 +186,7 @@ const Navbar2 = () => {
 
   const unreadNotifications = notify.data.filter(n => !n.isRead).length;
 
-  // 🔥 COMPONENTE DE ITEM DE IDIOMA
-  const LanguageItem = ({ lang, onSelect, isSelected, isTranslateActive }) => (
-    <div
-      onClick={() => onSelect(lang.code)}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        padding: isMobile ? '8px 12px' : '10px 16px',
-        margin: isMobile ? '2px 4px' : '4px 8px',
-        borderRadius: '8px',
-        background: isSelected 
-          ? (settings.style ? 'rgba(102, 126, 234, 0.2)' : 'rgba(102, 126, 234, 0.1)')
-          : 'transparent',
-        color: settings.style ? '#fff' : '#333',
-        transition: 'all 0.2s ease',
-        width: 'calc(100% - 16px)',
-        boxSizing: 'border-box',
-        fontSize: isMobile ? '0.9rem' : '1rem',
-        cursor: 'pointer'
-      }}
-      className="custom-menu-item"
-    >
-      <span style={{ fontSize: isMobile ? '1.1rem' : '1.2rem', marginRight: '12px', flexShrink: 0 }}>
-        {lang.flag}
-      </span>
-      <span style={{ flex: 1, textAlign: 'left' }}>{lang.name}</span>
-      
-      {lang.code === 'auto' && (
-        <FaRobot size={14} style={{ marginLeft: '8px', color: '#28a745', flexShrink: 0 }} />
-      )}
-      
-      {isSelected && (
-        <span style={{ 
-          marginLeft: '8px', 
-          color: '#667eea', 
-          fontWeight: 'bold',
-          flexShrink: 0
-        }}>
-          {isTranslateActive && lang.code !== 'es' ? '🌐' : '✓'}
-        </span>
-      )}
-    </div>
-  );
-
-  // MenuItem component
+  // MenuItem component (simplificado)
   const MenuItem = ({ icon: Icon, iconColor, to, onClick, children, danger = false }) => (
     <NavDropdown.Item
       as={to ? Link : 'button'}
@@ -700,7 +460,7 @@ const Navbar2 = () => {
               </div>
             )}
 
-            {/* 🔥 DROPDOWN DE USUARIO CON SELECTOR DE IDIOMAS INTEGRADO */}
+            {/* 🔥 DROPDOWN DE USUARIO SIN SELECTOR DE IDIOMAS */}
             <NavDropdown
               align="end"
               title={
@@ -745,25 +505,6 @@ const Navbar2 = () => {
                       <FaUserCircle size={isMobile ? 22 : 26} style={{ color: '#667eea' }} />
                     </div>
                   )}
-                  
-                  {/* 🔥 INDICADOR DE IDIOMA ACTIVO */}
-                  {useGoogleTranslate && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '-3px',
-                      right: '-3px',
-                      background: '#28a745',
-                      width: '12px',
-                      height: '12px',
-                      borderRadius: '50%',
-                      border: '2px solid white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <FaLanguage size={6} color="white" />
-                    </div>
-                  )}
                 </div>
               }
               id="nav-user-dropdown"
@@ -789,28 +530,6 @@ const Navbar2 = () => {
                                   `👤 ${t('user')}`}
                           </div>
                         </div>
-                      </div>
-                    </div>
-
-                    {/* 🔥 SECCIÓN DE IDIOMAS DENTRO DEL DROPDOWN */}
-                    <div className="px-3 pt-2 pb-1">
-                      <div className="d-flex align-items-center mb-2">
-                        <FaLanguage className="me-2" size={16} style={{ color: '#667eea' }} />
-                        <span className="small fw-bold" style={{ color: settings.style ? '#a0aec0' : '#6c757d' }}>
-                          {useGoogleTranslate ? '🌐 Traducción activa' : 'Idioma'}
-                        </span>
-                      </div>
-                      
-                      <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                        {languages.map((lang) => (
-                          <LanguageItem
-                            key={lang.code}
-                            lang={lang}
-                            onSelect={handleLanguageChange}
-                            isSelected={selectedLanguage === lang.code}
-                            isTranslateActive={useGoogleTranslate}
-                          />
-                        ))}
                       </div>
                     </div>
 
@@ -892,30 +611,6 @@ const Navbar2 = () => {
                   </>
                 ) : (
                   <>
-                    {/* 🔥 SECCIÓN DE IDIOMAS PARA USUARIOS NO LOGUEADOS */}
-                    <div className="px-3 pt-3 pb-2">
-                      <div className="d-flex align-items-center mb-2">
-                        <FaLanguage className="me-2" size={16} style={{ color: '#667eea' }} />
-                        <span className="small fw-bold" style={{ color: settings.style ? '#a0aec0' : '#6c757d' }}>
-                          {useGoogleTranslate ? '🌐 Traducción activa' : 'Idioma'}
-                        </span>
-                      </div>
-                      
-                      <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                        {languages.map((lang) => (
-                          <LanguageItem
-                            key={lang.code}
-                            lang={lang}
-                            onSelect={handleLanguageChange}
-                            isSelected={selectedLanguage === lang.code}
-                            isTranslateActive={useGoogleTranslate}
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    <NavDropdown.Divider />
-
                     <MenuItem icon={FaSignInAlt} iconColor="#28a745" to="/login">
                       {t('login')}
                     </MenuItem>
@@ -970,69 +665,8 @@ const Navbar2 = () => {
         minHeight: isMobile ? '56px' : '64px'
       }} />
 
-      {/* 🔥 ESTILOS PARA OCULTAR SOLO LA BARRA DE GOOGLE Y CORREGIR DROPDOWN */}
+      {/* 🔥 ESTILOS CSS SIMPLIFICADOS */}
       <style>{`
-        /* Ocultar solo la barra visible de Google Translate */
-        .goog-te-banner-frame,
-        .VIpgJd-ZVi9od-ORHb-OEVmcd,
-        .VIpgJd-ZVi9od-l4eHX-hSRGPd,
-        .skiptranslate {
-          display: none !important;
-          visibility: hidden !important;
-          opacity: 0 !important;
-          height: 0 !important;
-          overflow: hidden !important;
-        }
-
-        /* Mantener la funcionalidad de traducción pero oculta */
-        .goog-te-menu-frame {
-          /* Mantenerlo funcionando pero fuera de pantalla */
-          position: absolute !important;
-          top: -9999px !important;
-          left: -9999px !important;
-          width: 1px !important;
-          height: 1px !important;
-          overflow: hidden !important;
-        }
-
-        /* Prevenir que el body se mueva */
-        body {
-          top: 0 !important;
-          position: static !important;
-        }
-
-        /* Ocultar el botón flotante de Google si aparece */
-        .VIpgJd-ZVi9od-aZ2wEe-OiiCO,
-        .VIpgJd-ZVi9od-aZ2wEe {
-          display: none !important;
-        }
-
-        /* 🔥 CORRECCIÓN CRÍTICA PARA DROPDOWN DE IDIOMAS EN MÓVILES */
-        @media (max-width: 700px) {
-          #language-dropdown + .dropdown-menu {
-            position: fixed !important;
-            right: 50% !important;
-            left: 50% !important;
-            transform: translateX(50%) !important;
-            top: 60px !important;
-            margin-top: 0 !important;
-            min-width: 280px !important;
-            max-width: calc(100vw - 40px) !important;
-            width: auto !important;
-            z-index: 9999 !important;
-          }
-        }
-
-        @media (max-width: 400px) {
-          #language-dropdown + .dropdown-menu {
-            min-width: 250px !important;
-            max-width: calc(100vw - 20px) !important;
-            right: 50% !important;
-            left: 50% !important;
-            transform: translateX(50%) !important;
-          }
-        }
-
         /* Animación PWA */
         @keyframes pulse {
           0%, 100% { transform: scale(1); }
@@ -1161,23 +795,6 @@ const Navbar2 = () => {
           overflow: hidden !important;
         }
 
-        /* Estilos para el dropdown de idiomas */
-        #language-dropdown + .dropdown-menu {
-          position: absolute !important;
-          right: 0 !important;
-          left: auto !important;
-          top: 100% !important;
-          margin-top: 8px !important;
-          min-width: 220px !important;
-          transform: none !important;
-          border: none !important;
-          border-radius: 12px !important;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
-          background: ${settings.style ? '#2d3748' : '#ffffff'} !important;
-          padding: 8px 0 !important;
-          overflow: hidden !important;
-        }
-
         /* Divider */
         .dropdown-divider {
           border-color: ${settings.style ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'} !important;
@@ -1191,11 +808,6 @@ const Navbar2 = () => {
             width: 280px !important;
             min-width: 280px !important;
             max-width: 280px !important;
-          }
-
-          #language-dropdown + .dropdown-menu {
-            right: 8px !important;
-            min-width: 200px !important;
           }
 
           .user-header {

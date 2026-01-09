@@ -1,21 +1,42 @@
+// src/components/CATEGORIES/camposComun/DescriptionField.js
 import React from 'react';
-import { Form } from 'react-bootstrap';
-import { useTranslation } from 'react-i18next';
-const DescriptionField = ({ postData, handleChangeInput, isRTL, name = 'description', label = 'description', rows = 3 }) => {
-  const { t } = useTranslation('camposcomunes');
+
+const DescriptionField = ({
+  mainCategory,
+  subCategory,
+  postData,
+  handleChangeInput,
+  fieldName,
+  isRTL,
+  t,
+  ...props
+}) => {
   
   return (
-    <Form.Group>
-      <Form.Label>📝 {t(label)}</Form.Label>
-      <Form.Control
-        as="textarea"
-        name={name}
-        value={postData[name] || ''}
+    <div className="form-field mb-3">
+      <label htmlFor="description" className="form-label fw-bold">
+        {t ? t('description') : 'Description'} 
+        <span className="text-danger">*</span>
+      </label>
+      <textarea
+        id="description"
+        name="description"
+        value={postData?.description || ''}
         onChange={handleChangeInput}
-        rows={rows}
+        required
+        placeholder={t ? t('enterDescription') : 'Décrivez votre produit ou service en détail...'}
         dir={isRTL ? 'rtl' : 'ltr'}
+        className="form-control form-control-lg"
+        rows="4"
+        style={{
+          textAlign: isRTL ? 'right' : 'left',
+          resize: 'vertical'
+        }}
       />
-    </Form.Group>
+      <div className="form-text text-muted">
+        {t ? t('descriptionHelp') : 'Décrivez tous les détails importants'}
+      </div>
+    </div>
   );
 };
 

@@ -79,7 +79,8 @@ const SliderImmobilerOperations = () => {
         <Link
           key={operation.id}
           // CORRECTO: Ruta para el primer nivel: /category/immobilier/vente
-          to={`/category/immobilier/${operation.id}`}
+          to={`/immobilier-${operation.id}/1`} // En lugar de /category/immobilier/vente
+      
           style={{
             textDecoration: 'none',
             color: 'inherit',

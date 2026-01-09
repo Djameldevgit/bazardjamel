@@ -6,28 +6,28 @@ import { POST_TYPES_APROVE } from './postAproveAction';
 
 // redux/actions/postAction.js
 export const POST_TYPES = {
-    // ... tus constantes existentes (NO LAS CAMBIES)
     LOADING_POST: 'LOADING_POST',
+
+ 
+
     CREATE_POST: 'CREATE_POST',
     GET_POST: 'GET_POST',
     GET_POSTS: 'GET_POSTS',
     UPDATE_POST: 'UPDATE_POST',
-   
- 
-    GET_POST: 'GET_POST',
     DELETE_POST: 'DELETE_POST',
     GET_POSTS_BY_CATEGORY: 'GET_POSTS_BY_CATEGORY',
     GET_CATEGORIES: 'GET_CATEGORIES',
-    GET_SUBCATEGORY_POSTS:'GET_SUBCATEGORY_POSTS',
+    GET_SUBCATEGORY_POSTS: 'GET_SUBCATEGORY_POSTS', // ✅ SOLO UNA VEZ
     GET_CATEGORIES_PAGINATED: 'GET_CATEGORIES_PAGINATED',
     ERROR_POST: 'ERROR_POST',
     GET_IMMOBILIER_POSTS: 'GET_IMMOBILIER_POSTS',
     CLEAR_IMMOBILIER_POSTS: 'CLEAR_IMMOBILIER_POSTS',
-    // ✅ AÑADE ESTOS NUEVOS TYPES
     GET_SIMILAR_POSTS: 'GET_SIMILAR_POSTS',
     LOADING_SIMILAR_POSTS: 'LOADING_SIMILAR_POSTS',
-    CLEAR_SIMILAR_POSTS: 'CLEAR_SIMILAR_POSTS'
+    CLEAR_SIMILAR_POSTS: 'CLEAR_SIMILAR_POSTS',
+   
 }
+
 
 export const createPost = ({ 
     postData, 
@@ -394,15 +394,14 @@ export const getStoreBySlug = (slug) => async (dispatch) => {
 };
   
  
-export const ImmobilerHierarchyPage = (operation, property, page = 1, options = {}) => 
-    async (dispatch) => {
+export const getImmobilerHierarchyPosts = (operation, property, page = 1, options = {}) => async (dispatch) => {
     try {
-        dispatch({ type: GLOBALTYPES.LOADING, payload: true });
+        // ✅ USAR LA CONSTANTE CORRECTA
+        dispatch({ type: POST_TYPES.LOADING_POST, payload: true });
         
         const limit = options.limit || 12;
         const skip = (page - 1) * limit;
         
-        // Nueva API para immobiler con propiedad específica
         const res = await getDataAPI(
             `posts/category/immobilier/operation/${operation}/property/${property}?limit=${limit}&skip=${skip}`
         );
@@ -418,90 +417,90 @@ export const ImmobilerHierarchyPage = (operation, property, page = 1, options = 
             }
         });
         
-        dispatch({ type: GLOBALTYPES.LOADING, payload: false });
+        dispatch({ type: GLOBALTYPES.LOADING_POST, payload: false });
         return res.data;
     } catch (err) {
         dispatch({
             type: GLOBALTYPES.ALERT,
             payload: { error: err.response?.data?.msg || 'Error al cargar posts de immobiler' }
         });
-        dispatch({ type: GLOBALTYPES.LOADING, payload: false });
+        dispatch({ type: GLOBALTYPES.LOADING_POST, payload: false });
         throw err;
     }
 };
 // Busca esta función y verifica que tenga return dispatch
 export const getPostsBySubcategory = (category, subcategory, page = 1, options = {}) => async (dispatch) => {
     try {
-      // Agrega este console.log para debug
       console.log('🔍 getPostsBySubcategory called:', { category, subcategory, page });
       
+      // ✅ USAR GLOBALTYPES.LOADING_POST EN LUGAR DE GLOBALTYPES.ALERT
       dispatch({ 
-        type: GLOBALTYPES.ALERT, 
-        payload: { loading: true } 
+        type: GLOBALTYPES.LOADING_POST, 
+        payload: true 
       });
       
-      // IMPORTANTE: Si category es 'store', redirige a la lógica de stores
       if (category === 'store' || category === 'stores') {
         console.log('🔄 Redirecting to store logic for:', subcategory);
-        
-        // Aquí deberías llamar a getStoreAction en lugar de getPostsBySubcategory
         dispatch({ 
-          type: GLOBALTYPES.ALERT, 
-          payload: { loading: false } 
+          type: GLOBALTYPES.LOADING_POST, 
+          payload: false 
         });
-        
-        // Redirigir a la página de store
         window.location.href = `/store/${subcategory}`;
         return;
       }
       
       const limit = options.limit || 12;
+      
+      // ✅ ENCODEAR PARÁMETROS
+      const encodedCategory = encodeURIComponent(category);
+      const encodedSubcategory = encodeURIComponent(subcategory);
+      
       const res = await getDataAPI(
-        `posts/category/${category}/${subcategory}?page=${page}&limit=${limit}`
+        `posts/category/${encodedCategory}/${encodedSubcategory}?page=${page}&limit=${limit}`
       );
       
       console.log('📦 Posts by subcategory response:', res.data);
       
-      // Asegúrate de que el tipo de acción esté definido
-      const actionType = 'GET_POSTS_BY_SUBCATEGORY'; // O tu constante definida
-      
+      // ✅ USAR LA CONSTANTE CORRECTA
       dispatch({
-        type: actionType, // ESTO NO DEBE SER undefined
+        type: POST_TYPES.GET_SUBCATEGORY_POSTS,
         payload: {
           posts: res.data.posts || [],
           total: res.data.total || 0,
           category,
           subcategory,
-          page
+          page: page
         }
       });
       
       dispatch({ 
-        type: GLOBALTYPES.ALERT, 
-        payload: { loading: false } 
+        type: GLOBALTYPES.LOADING_POST, 
+        payload: false 
       });
       
       return res.data;
       
     } catch (err) {
-      console.error('❌ ERROR in getPostsBySubcategory:', {
-        category,
-        subcategory,
-        error: err.message,
-        response: err.response?.data
-      });
+      console.error('❌ ERROR in getPostsBySubcategory:', err.message || err);
       
       dispatch({ 
         type: GLOBALTYPES.ALERT, 
         payload: { 
-          error: err.response?.data?.msg || err.message,
+          error: err.response?.data?.msg || err.message || 'Error loading posts',
           loading: false
         } 
       });
       
+      // ✅ AGREGAR DISPATCH DE ERROR PARA MANTENER CONSISTENCIA
+      dispatch({
+        type: POST_TYPES.ERROR_POST,
+        payload: err.response?.data?.msg || err.message
+      });
+      
       throw err;
     }
-  };
+};
+
 
 
 // Acción para crear post (ya la tienes, pero asegurar que guarda categoría)
@@ -555,19 +554,30 @@ export const getPostsBySubcategory = (category, subcategory, page = 1, options =
 };
 */
 // redux/actions/postAction.js
-export const getPostsByImmobilierOperation = (operationId, page = 1, options = {}) => 
-    async (dispatch) => {
+export const getPostsByImmobilierOperation = (operationId, page = 1, options = {}) => async (dispatch) => {
     try {
-        dispatch({ type: GLOBALTYPES.LOADING, payload: true });
+        console.log('🏠 getPostsByImmobilierOperation called:', { operationId, page });
         
-        const limit = options.limit || 9;
+        // ✅ CORREGIDO: Usar la constante correcta
+        dispatch({ 
+            type: 'LOADING_POST', // Usar string directamente para evitar undefined
+            payload: true 
+        });
+        
+        const limit = options.limit || 12;
         const skip = (page - 1) * limit;
         
-        // Nueva API para immobiler
         const res = await getDataAPI(
             `posts/category/immobilier/operation/${operationId}?limit=${limit}&skip=${skip}`
         );
         
+        console.log('✅ Immobilier response:', {
+            operationId,
+            postsCount: res.data.posts?.length,
+            total: res.data.total
+        });
+        
+        // ✅ Dispatch con constante verificada
         dispatch({
             type: POST_TYPES.GET_IMMOBILIER_POSTS,
             payload: {
@@ -578,14 +588,24 @@ export const getPostsByImmobilierOperation = (operationId, page = 1, options = {
             }
         });
         
-        dispatch({ type: GLOBALTYPES.LOADING, payload: false });
+        dispatch({ 
+            type: 'LOADING_POST', 
+            payload: false 
+        });
+        
         return res.data;
     } catch (err) {
+        console.error('❌ ERROR in getPostsByImmobilierOperation:', err);
+        
         dispatch({
-            type: GLOBALTYPES.ALERT,
-            payload: { error: err.response?.data?.msg || 'Error al cargar posts de immobiler' }
+            type: POST_TYPES.ERROR_POST,
+            payload: err.response?.data?.msg || 'Error al cargar posts de immobiler'
         });
-        dispatch({ type: GLOBALTYPES.LOADING, payload: false });
+        
+        dispatch({ 
+            type: 'LOADING_POST', 
+            payload: false 
+        });
         throw err;
     }
 };
@@ -626,7 +646,6 @@ export const updatePost = ({
     const imgOldUrl = images.filter(img => img.isExisting)
 
     try {
-        // ✅ USAR CONSTANTE CORRECTA
         dispatch({ 
             type: GLOBALTYPES.ALERT, 
             payload: { loading: true } 
@@ -648,9 +667,8 @@ export const updatePost = ({
             images: allImages 
         }, auth.token);
 
-        // ✅ AQUÍ ESTÁ EL ERROR - USAR CONSTANTE CORRECTA
         dispatch({ 
-            type: POST_TYPES.UPDATE_POST,  // ← Verifica que esta constante existe
+            type: POST_TYPES.UPDATE_POST,
             payload: res.data.newPost 
         });
         
@@ -664,11 +682,10 @@ export const updatePost = ({
     } catch (err) {
         console.error('❌ Error en updatePost:', err.response?.data || err.message);
         
-        // ✅ Si POST_TYPES.UPDATE_POST_FAIL existe, úsala:
         dispatch({
-            type: POST_TYPES.UPDATE_POST_FAIL || GLOBALTYPES.ALERT,
+            type: GLOBALTYPES.ALERT,
             payload: { 
-                error: err.response?.data?.msg || 'Échec de la mise à jour accion' 
+                error: err.response?.data?.msg || 'Failed to update post' 
             }
         });
     }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { getCategories } from './redux/actions/postAction'
+import { getCategories, getPosts, getPostsByImmobilierOperation, getSubCategories } from './redux/actions/postAction'
 import { refreshToken } from './redux/actions/authAction'
 import { GLOBALTYPES } from './redux/actions/globalTypes'
 import { io } from 'socket.io-client'
@@ -36,10 +36,14 @@ import PrivateRouter from './customRouter/PrivateRouter'
 import EditStore from './pages/store/EditeStore'
 import GoogleTranslateManager  from './components/GoogleTraslateManager'
 
-// 🔥 NUEVO: Componente para manejar Google Translate
-  
+// 🔥 NUEVO: Componente para manejar Google Translate 
+import ImmobilerHierarchyPage from './pages/categorySubCategory/ImmobilerHierarchyPage';
+import { getStores } from './redux/actions/storeAction';
+import { getNotifies } from './redux/actions/notifyAction'
+import DashboardPage from './pages/users/dashboardpage'
+ 
 function App() {
-  const { auth, languageReducer } = useSelector(state => state)
+  const { auth  } = useSelector(state => state)
   const dispatch = useDispatch()
   const [loading, setLoading] = useState(true)
   const [translateReady, setTranslateReady] = useState(false)
@@ -157,21 +161,33 @@ function App() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        await dispatch(refreshToken())
-        const socket = io()
-        dispatch({ type: GLOBALTYPES.SOCKET, payload: socket })
-        setLoading(false)
-      } catch (error) {
-        console.error('Error initializing app:', error)
-        setLoading(false)
-      }
-    }
-    initializeApp()
-  }, [dispatch])
+        // Primero refrescar el token antes de cualquier otra acción
+        await dispatch(refreshToken());
 
-  useEffect(() => {
-    dispatch(getCategories())
-  }, [dispatch])
+        // Inicializar socket después del token
+        const socket = io();
+        dispatch({ type: GLOBALTYPES.SOCKET, payload: socket });
+
+        setLoading(false);
+      } catch (error) {
+        console.error('Error initializing app:', error);
+        setLoading(false);
+      }
+    };
+
+    initializeApp();
+
+    return () => {
+      // Cleanup si es necesario
+    };
+  }, [dispatch]);
+
+  // ✅ EFECTO PARA CARGAR DATOS CUANDO HAY TOKEN
+ // App.js - Hook actualizado
+ useEffect(() => {
+  // Categorías disponibles para todos
+  dispatch(getCategories());
+}, [dispatch]);
 
   if (loading) return <div>Chargement...</div>
 
@@ -199,7 +215,7 @@ function App() {
         {/* 🔥 Contenedor oculto para Google Translate */}
         <div id="google_translate_element" style={{ display: 'none' }}></div>
         
-        <Switch>
+       <Switch>
           {/* ==================== RUTAS ESTÁTICAS ==================== */}
           <Route exact path="/" component={Home} />
           <Route exact path="/register" component={Register} />
@@ -236,7 +252,7 @@ function App() {
           <Route exact path="/immobilier/:operationId" 
             render={({ match }) => <Redirect to={`/immobilier-${match.params.operationId}/1`} />} 
           />
-          <Route exact path="/stores" 
+          <Route exact path="/boutiques" 
             render={() => <Redirect to="/boutiques/1" />} 
           />
 
@@ -247,7 +263,7 @@ function App() {
           <PrivateRouter exact path="/:page/:id/:tab" component={PageRender} />
           <PrivateRouter exact path="/:page/:id" component={PageRender} />
           <PrivateRouter exact path="/:page" component={PageRender} />
-
+          <Route exact path="/users/dashboardpage" component={DashboardPage} />
           {/* ==================== 404 ==================== */}
           <Route path="*"><Redirect to="/" /></Route>
         </Switch>

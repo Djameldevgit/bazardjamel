@@ -99,7 +99,7 @@ const SliderImmobilerProperties = () => {
         <Link
           key={property.id}
           // Ruta de dos niveles: /category/immobilier/vente/villa
-          to={`/category/immobilier/${operationId}/${property.id}`}
+          to={`/immobilier-${operationId}-${property.id}/1`} 
           style={{
             textDecoration: 'none',
             color: 'inherit',

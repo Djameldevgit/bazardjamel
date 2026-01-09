@@ -1,0 +1,66 @@
+const router = require('express').Router()
+const postCtrl = require('../controllers/postCtrl')
+const auth = require('../middleware/auth')
+
+// ==================== RUTAS PÚBLICAS ====================
+
+// 📌 OBTENER TODOS LOS POSTS (con filtros)
+router.route('/posts')
+    .get(postCtrl.getPosts);        // GET /api/posts
+
+// 📌 OBTENER CATEGORÍAS PAGINADAS
+router.get('/categories/paginated', postCtrl.getAllCategoriesPaginated);
+
+// 📌 POSTS POR CATEGORÍA
+router.get('/category/:category', postCtrl.getPostsByCategory);
+
+// 📌 POSTS POR SUBCATEGORÍA
+router.get('/category/:category/subcategory/:subcategory', postCtrl.getPostsBySubcategory);
+
+// 📌 SUBCATEGORÍAS DE UNA CATEGORÍA
+router.get('/categories/:category/subcategories', postCtrl.getSubCategoriesByCategory);
+
+// 📌 POSTS SIMILARES
+router.get('/posts/similar', postCtrl.getSimilarPosts);
+
+// 📌 POSTS POR OPERACIÓN INMOBILIARIA
+router.get('/posts/category/immobilier/operation/:operationId', postCtrl.getPostsByImmobilierOperation);
+
+// 📌 OBTENER UN POST ESPECÍFICO
+router.get('/post/:id', postCtrl.getPost);
+
+// ✅ RUTAS DE BOUTIQUES - PÚBLICAS
+router.get('/boutiques', postCtrl.getBoutiques); // ✅ Obtener boutiques
+
+// ==================== RUTAS PROTEGIDAS (AUTH) ====================
+
+// 📌 CREAR POST (producto normal o boutique)
+router.post('/posts', auth, postCtrl.createPost);
+
+// 📌 ACTUALIZAR POST
+router.patch('/post/:id', auth, postCtrl.updatePost);
+
+// 📌 ELIMINAR POST
+router.delete('/post/:id', auth, postCtrl.deletePost);
+
+// 📌 POSTS DEL USUARIO
+router.get('/user_posts/:id', auth, postCtrl.getUserPosts);
+
+// 📌 POSTS DESCUBRIR (following)
+router.get('/post_discover', auth, postCtrl.getPostsDicover);
+
+// 📌 GUARDAR/QUITAR POST
+router.patch('/savePost/:id', auth, postCtrl.savePost);
+router.patch('/unSavePost/:id', auth, postCtrl.unSavePost);
+
+// 📌 POSTS GUARDADOS
+router.get('/getSavePosts', auth, postCtrl.getSavePosts);
+
+// ✅ RUTAS DE BOUTIQUES - PROTEGIDAS
+router.patch('/boutiques/:boutiqueId/activate', auth, postCtrl.activateBoutique); // ✅ Activar boutique
+
+// ✅ RUTA ALTERNATIVA PARA OBTENER POSTS POR CATEGORÍA
+router.get('/posts/category/:category', postCtrl.getPostsByCategory);
+
+module.exports = router;
+ 
