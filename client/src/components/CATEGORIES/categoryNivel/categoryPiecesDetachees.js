@@ -3,7 +3,7 @@
 const categoryPiecesDetachees = {
     levels: 2,
     level1: 'categorie',
-    level2: 'subcategory',
+    level2: 'subCategory',
     requiresLevel2: false, // Mixto - algunas necesitan, otras no
     
     categories: [

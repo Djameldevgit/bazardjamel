@@ -1,5 +1,5 @@
  Hola maestro , estoy desarollando una app MERN marketPlcae con la seguiente Estructura Actualizada del Proyecto MENR Marketplace
-📂 COMPONENTS/CATEGORIES/ - SISTEMA DE CAMPOS DINÁMICOS
+📂 COMPONENTS/ -  
  
 camposComun/
 ├── TitleField.js              # Input para título del anuncio
@@ -58,6 +58,10 @@ categoryNivel/
 └── FieldRenderer.js  # (alternativa/spelling)
 └── FieldVariantes.js 
  
+├── boutiqueSelector.js               
+├── boutiqueSelectorField.js  
+├── createBoutiqueWizard.js                
+ 
  
 utils/
 ├── slugUtils.js               # ⭐ NUEVO: Genera y parsea slugs para URLs amigables
@@ -68,7 +72,7 @@ text
 redux/
 ├── actions/
 │   ├── postAction.js          # ⭐ ACTUALIZADO: Acciones para posts con slugs
-│   ├── storeAction.js         # ⭐ ACTUALIZADO: Acciones para tiendas con getStoreBySlug
+│   ├── boutiqueAction.js         # ⭐ ACTUALIZADO: Acciones para tiendas con getStoreBySlug
 │   └── (otras acciones)
 ├── reducers/
 │   └── postReducer.js         # ⭐ ACTUALIZADO: Estados para nuevas rutas
@@ -77,20 +81,18 @@ redux/
 ✅ Sistema de Rutas Dinámicas
 text
 pages/
-├── DynamicPage.js             # ⭐ NUEVO: Manejador principal de rutas dinámicas
+├── DynamicPage.js              
 ├── categorySubCategory/
-│   ├── CategoryPage.js        # ⭐ ACTUALIZADO: Página de categoría (acepta parámetros)
-│   ├── SubcategoryPage.js     # ⭐ ACTUALIZADO: Página de subcategoría (maneja slugs con guiones)
-│   ├── ImmobilerHierarchyPage.js  # ⭐ NUEVO: Jerarquía especial para inmuebles
-│   └── ImmobilerOperationPage.js  # Mantenido (legacy)
+│   ├── CategoryPage.js         
+│   ├── SubcategoryPage.js     
+│   ├── ImmobilerHierarchyPage.js   
+│   └── ImmobilerOperationPage.js  
 ├── boutique/
-│   ├── BoutiquesList.js       # ⭐ NUEVO: Listado de tiendas
-│   └── BoutiqueDetail.js      # ⭐ NUEVO: Detalle de tienda por slug
-├── store/
-│   ├── StoreList.js           # Listado de almacenes (mantener/renombrar)
-│   ├── StoreDetail.js         # ⭐ ACTUALIZADO: Detalle de almacén (acepta slug)
-│   ├── CreateStore.js         # Crear almacén
-│   └── EditStore.js           # Editar almacén
+│   ├── BoutiqueDashboradPage.js        
+│   └── BoutiquePage.js 
+    ├── CretateBoutiquePage.js      
+│   └── UserBoutiquePage.js 
+├          # Editar almacén
 ├── CreateAnnoncePage.js       # Página de creación de anuncios
 └── PostId.js                  # Detalle de post individual
 ✅ Componentes de UI

@@ -1,48 +1,41 @@
-const router = require('express').Router()
-const postCtrl = require('../controllers/postCtrl')
-const auth = require('../middleware/auth')
+// 📂 routes/postRoutes.js
+const express = require('express');
+const router = express.Router();
+const postCtrl = require('../controllers/postCtrl');
+const auth = require('../middleware/auth');
 
-// ==================== RUTAS PÚBLICAS ====================
 
-// 📌 POSTS
-router.get('/posts', postCtrl.getPosts);
-router.get('/post/:id', postCtrl.getPost);
-router.get('/category/:category', postCtrl.getPostsByCategory);
-router.get('/category/:category/subcategory/:subcategory', postCtrl.getPostsBySubcategory);
-router.get('/posts/similar', postCtrl.getSimilarPosts);
-
-// 📌 CATEGORÍAS
 router.get('/categories/paginated', postCtrl.getAllCategoriesPaginated);
-router.get('/categories/:category/subcategories', postCtrl.getSubCategoriesByCategory);
-router.get('/posts/category/immobilier/operation/:operationId', postCtrl.getPostsByImmobilierOperation);
 
-// 📌 BOUTIQUES - PÚBLICAS
-router.get('/boutiques', postCtrl.getBoutiques);
-router.get('/boutiques/featured', postCtrl.getActiveBoutiques);
-router.get('/boutiques/search', postCtrl.searchBoutiques);
-router.get('/boutiques/:boutiqueId', postCtrl.getBoutiqueById);
+ 
+ router.get('/posts/category/:category/subcategory/:subcategory', postCtrl.getPostsBySubcategory);
+ 
 
-// ==================== RUTAS PROTEGIDAS ====================
 
-// 📌 POSTS (CRUD)
-router.post('/posts', auth, postCtrl.createPost);
-router.patch('/post/:id', auth, postCtrl.updatePost);
-router.delete('/post/:id', auth, postCtrl.deletePost);
-
-// 📌 USUARIO
-router.get('/user_posts/:id', auth, postCtrl.getUserPosts);
-router.get('/post_discover', auth, postCtrl.getPostsDicover);
-router.patch('/savePost/:id', auth, postCtrl.savePost);
-router.patch('/unSavePost/:id', auth, postCtrl.unSavePost);
-router.get('/getSavePosts', auth, postCtrl.getSavePosts);
-
-// 📌 BOUTIQUES - PROTEGIDAS
-router.patch('/boutiques/:boutiqueId/activate', auth, postCtrl.activateBoutique);
-router.patch('/boutiques/:boutiqueId/suspend', auth, postCtrl.suspendBoutique);
-router.patch('/boutiques/:boutiqueId/renew', auth, postCtrl.renewBoutique);
-router.put('/boutiques/:boutiqueId', auth, postCtrl.updateBoutique);
-
-// ==================== RUTAS ALTERNATIVAS ====================
+// 🔥 RUTAS PÚBLICAS
+router.get('/posts', postCtrl.getPosts);
+router.get('/posts/categories', postCtrl.getAllCategoriesPaginated);
 router.get('/posts/category/:category', postCtrl.getPostsByCategory);
+router.get('/posts/category/:category/subcategories', postCtrl.getSubCategoriesByCategory);
+router.get('/posts/category/:category/:subcategory', postCtrl.getPostsBySubcategory);
+router.get('/posts/immobilier/operation/:operationId', postCtrl.getPostsByImmobilierOperation);
+router.get('/posts/similar', postCtrl.getSimilarPosts);
+router.get('/posts/boutique/:boutiqueId', postCtrl.getPostsByBoutique); // <-- NUEVA
 
+// 🔥 RUTAS CON AUTH
+router.post('/posts', auth, postCtrl.createPost);
+ 
+router.route('/post/:id')
+.patch(auth, postCtrl.updatePost)
+.get( postCtrl.getPost)
+.delete(auth, postCtrl.deletePost)
+router.get('/user/posts/:id', postCtrl.getUserPosts);
+router.get('/posts/dicover', auth, postCtrl.getPostsDicover);
+router.patch('/posts/:id/save', auth, postCtrl.savePost);
+router.patch('/posts/:id/unsave', auth, postCtrl.unSavePost);
+router.get('/posts/save', auth, postCtrl.getSavePosts);
+router.get('/user/boutiques', auth, postCtrl.getUserBoutiques); // <-- NUEVA
+
+// 🔥 RUTAS GENERALES
+ 
 module.exports = router;

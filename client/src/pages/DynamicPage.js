@@ -7,9 +7,9 @@ import CategoryPage from './categorySubCategory/CategoryPage';
 import SubcategoryPage from './categorySubCategory/SubcategoryPage';
 import ImmobilerHierarchyPage from './categorySubCategory/ImmobilerHierarchyPage'; // ✅ AHORA EXISTE
 import PostId from './PostId';
-import StoreList from './store/StoreList';
  
-
+import StoreList from './boutique/BoutiquePage';
+ 
 const DynamicPage = () => {
   const { slug, page = "1" } = useParams();
   const history = useHistory();

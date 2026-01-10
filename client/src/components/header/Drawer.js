@@ -65,7 +65,7 @@ const Drawer = ({
 
   // Enlaces útiles
   const usefulLinks = [
-    { name: 'Créer une boutique', path: '/store/create-store', emoji: '🏪➕' },
+    { name: 'Créer une boutique', path: '/create-boutique', emoji: '🏪➕' },
     { name: 'Comment annoncer ?', path: '/bloginfo', emoji: emojis.question },
     { name: 'Contactez-nous', path: '/users/contactt', emoji: emojis.mail },
     { name: 'Politique de confidentialité', path: '/bloginfo', emoji: emojis.shield }
@@ -261,7 +261,7 @@ const Drawer = ({
         {emojis.store} Boutiques
       </div>
       
-      <LinkItem emoji="🏪➕" name="Créer une boutique" path="/store/create-store" color="#8b5cf6" />
+      <LinkItem emoji="🏪➕" name="Créer une boutique" path="/create-boutique" color="#8b5cf6" />
 
       <div style={{ margin: '25px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666' }}>
         {emojis.categories} Toutes les catégories
@@ -321,7 +321,7 @@ const Drawer = ({
       </div>
       
       <LinkItem emoji={emojis.plus} name="Nouvelle Annonce" path="/creer-annonce" color="#10b981" />
-      <LinkItem emoji="🏪➕" name="Créer Boutique" path="/store/create-store" color="#8b5cf6" />
+      <LinkItem emoji="🏪➕" name="Créer Boutique" path="/create-boutique" color="#8b5cf6" />
 
       <div style={{ margin: '25px 0 8px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
         {emojis.categories} Catégories populaires
@@ -354,7 +354,7 @@ const Drawer = ({
         {emojis.store} Boutiques
       </div>
       
-      <LinkItem emoji="🏪➕" name="Créer une boutique" path="/store/create-store" color="#8b5cf6" />
+      <LinkItem emoji="🏪➕" name="Créer une boutique" path="/create-boutique" color="#8b5cf6" />
 
       <div style={{ margin: '25px 0 8px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
         {emojis.categories} Catégories

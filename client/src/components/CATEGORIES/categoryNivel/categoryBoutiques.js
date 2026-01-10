@@ -1,7 +1,7 @@
 const categoryBoutiques = {
   levels: 2,
   level1: 'categorie',
-  level2: 'subcategory',
+  level2: 'subCategory',
   requiresLevel2: false,// Requiere seleccionar ambos niveles
   
   categories: [

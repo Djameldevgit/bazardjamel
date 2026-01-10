@@ -2,6 +2,8 @@
 import React from 'react';
 
 // 🔥 IMPORTAR TODOS LOS COMPONENTES ESPECÍFICOS DE CATEGORÍA
+
+ 
 import ImmobiliersFields from './specificFields/ImmobiliersFields';
 import VehiculesFields from './specificFields/VehiculesFields';
 import VetementsFields from './specificFields/VetementsFields';
@@ -18,7 +20,9 @@ import AlimentairesFields from './specificFields/AlimentairesFields';
 import ServicesField from './specificFields/ServicesFields';
 import VoyagesFields from './specificFields/VoyagesFields';
 import EmploiFields from './specificFields/EmploiFields';
-import BoutiqueFields from './specificFields/BoutiquesField';
+import BoutiqueSelector from '../boutique/BoutiqueSelectorField';
+ 
+ 
 // 🔥 MAPA DE CATEGORÍA → COMPONENTE
 const CATEGORY_COMPONENTS = {
   'immobilier': ImmobiliersFields,
@@ -37,7 +41,7 @@ const CATEGORY_COMPONENTS = {
   'materiaux': MateriauxFields,
   'voyages': VoyagesFields,
   'emploi': EmploiFields,
-  'boutiques': BoutiqueFields
+  'boutiques': BoutiqueSelector
 
 };
 

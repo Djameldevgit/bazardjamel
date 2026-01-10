@@ -3,7 +3,7 @@
 const categoryInformatique = {
     levels: 2,
     level1: 'categorie',
-    level2: 'sous_categorie',
+    level2: 'subCategory',
     requiresLevel2: false, // Mixto - algunas necesitan, otras no
     
     categories: [

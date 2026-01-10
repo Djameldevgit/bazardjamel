@@ -3,12 +3,12 @@ import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-d
 import { useSelector, useDispatch } from 'react-redux'
 import { getCategories } from './redux/actions/postAction'
 import { refreshToken } from './redux/actions/authAction'
+import io from 'socket.io-client'
 import { GLOBALTYPES } from './redux/actions/globalTypes'
-import { io } from 'socket.io-client'
+import SocketClient from './SocketClient'
 
 // Componentes de layout
 import Alert from './components/alert/Alert'
-import SocketClient from './SocketClient'
 import Navbar2 from './components/header/Navbar2'
 
 // Páginas estáticas
@@ -30,34 +30,79 @@ import CreateAnnoncePage from './pages/CreateAnnoncePage'
 
 // Sistema de rutas dinámicas
 import DynamicPage from './pages/DynamicPage'
-import CreateStore from './pages/store/CreateStore'
+ 
 import PageRender from './customRouter/PageRender'
 import PrivateRouter from './customRouter/PrivateRouter'
-import EditStore from './pages/store/EditeStore'
-import GoogleTranslateManager  from './components/GoogleTraslateManager'
-
-// 🔥 NUEVO: Componente para manejar Google Translate
-  
+ 
+import GoogleTranslateManager from './components/GoogleTraslateManager'
+import CreateBoutiquePage from './pages/boutique/createBoutiquePage'
+import BoutiquePage from './pages/boutique/BoutiquePage'
+import BoutiqueDashboardPage from './pages/boutique/BoutiqueDashboradPage'
+import UserBoutiquesPage from './pages/boutique/UserBoutiquesPage'
+ 
+ 
 function App() {
   const { auth, languageReducer } = useSelector(state => state)
   const dispatch = useDispatch()
   const [loading, setLoading] = useState(true)
   const [translateReady, setTranslateReady] = useState(false)
-  useEffect(() => {
-    dispatch(refreshToken())
+  const [socket, setSocket] = useState(null)
 
-    const socket = io()
-    dispatch({type: GLOBALTYPES.SOCKET, payload: socket})
-    return () => socket.close()
-  },[dispatch])
-  // 🔥 NUEVO: Inicializar Google Translate
+  // 🔥 CORREGIDO: Un solo useEffect para inicializar Socket.IO
+  useEffect(() => {
+    // Inicializar autenticación
+    dispatch(refreshToken())
+    
+    // Inicializar Socket.IO solo si no está ya inicializado
+    if (!socket) {
+      // Asegúrate de que la URL del backend sea correcta
+      const socketServer = process.env.REACT_APP_SOCKET_SERVER || 'http://localhost:5000'
+      const socketInstance = io(socketServer, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000
+      })
+
+      // Verificar que la instancia sea válida
+      if (socketInstance && typeof socketInstance.on === 'function') {
+        setSocket(socketInstance)
+        dispatch({ type: GLOBALTYPES.SOCKET, payload: socketInstance })
+        
+        // Manejar eventos de conexión
+        socketInstance.on('connect', () => {
+          console.log('✅ Socket.IO conectado:', socketInstance.id)
+        })
+
+        socketInstance.on('connect_error', (error) => {
+          console.error('❌ Error de conexión Socket.IO:', error)
+        })
+      } else {
+        console.error('❌ No se pudo crear la instancia de Socket.IO')
+      }
+    }
+
+    // Cleanup
+    return () => {
+      if (socket) {
+        socket.close()
+        setSocket(null)
+      }
+    }
+  }, [dispatch])
+
+  // 🔥 CORREGIDO: Cargar categorías
+  useEffect(() => {
+    dispatch(getCategories())
+  }, [dispatch])
+
+  // 🔥 CORREGIDO: Inicializar Google Translate
   useEffect(() => {
     const initializeGoogleTranslate = () => {
       const useTranslate = localStorage.getItem('useGoogleTranslate') === 'true'
       const targetLang = localStorage.getItem('targetTranslateLang')
       
       if (useTranslate && targetLang) {
-        // Crear función global para Google Translate
         window.googleTranslateElementInit = () => {
           if (window.google && window.google.translate) {
             new window.google.translate.TranslateElement({
@@ -67,7 +112,6 @@ function App() {
               autoDisplay: false
             }, 'google_translate_element')
             
-            // Forzar traducción al idioma guardado
             setTimeout(() => {
               const iframe = document.querySelector('.goog-te-menu-frame')
               if (iframe && iframe.contentWindow) {
@@ -82,7 +126,6 @@ function App() {
           setTranslateReady(true)
         }
 
-        // Cargar Google Translate API
         if (!window.google || !window.google.translate) {
           const script = document.createElement('script')
           script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit'
@@ -99,13 +142,12 @@ function App() {
     initializeGoogleTranslate()
   }, [])
 
-  // Observar cambios en el DOM para traducción dinámica
+  // 🔥 Observar cambios en el DOM para traducción dinámica
   useEffect(() => {
     if (translateReady && localStorage.getItem('useGoogleTranslate') === 'true') {
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-            // Esperar a que React renderice el contenido
             setTimeout(() => {
               translateNewContent()
             }, 300)
@@ -122,16 +164,13 @@ function App() {
     }
   }, [translateReady])
 
-  // 🔥 NUEVA FUNCIÓN: Traducir contenido nuevo dinámicamente
   const translateNewContent = () => {
     if (window.google && window.google.translate && window.google.translate.translate) {
       const targetLang = localStorage.getItem('targetTranslateLang') || 'en'
       
-      // Seleccionar elementos que no han sido traducidos
       const elements = document.querySelectorAll('body *:not(.notranslate):not(script):not(style)')
       
       elements.forEach(element => {
-        // Solo traducir elementos con texto y que no sean hijos de elementos ya traducidos
         if (element.childElementCount === 0 && 
             element.textContent && 
             element.textContent.trim().length > 0 &&
@@ -154,26 +193,16 @@ function App() {
     }
   }
 
+  // 🔥 Actualizar estado de carga
   useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        await dispatch(refreshToken())
-        const socket = io()
-        dispatch({ type: GLOBALTYPES.SOCKET, payload: socket })
-        setLoading(false)
-      } catch (error) {
-        console.error('Error initializing app:', error)
-        setLoading(false)
-      }
-    }
-    initializeApp()
-  }, [dispatch])
+    const timer = setTimeout(() => {
+      setLoading(false)
+    }, 1500)
+    
+    return () => clearTimeout(timer)
+  }, [])
 
-  useEffect(() => {
-    dispatch(getCategories())
-  }, [dispatch])
-
-  if (loading) return <div>Chargement...</div>
+  if (loading) return <div className="loading-screen">Chargement...</div>
 
   if (auth.token && auth.user?.esBloqueado) {
     return (
@@ -188,15 +217,12 @@ function App() {
 
   return (
     <Router>
-      {/* 🔥 NUEVO: Gestor de Google Translate */}
       <GoogleTranslateManager />
-      
       <Alert />
       <div className="App">
         <Navbar2 />
-        {auth.token && <SocketClient />}
+        {auth.token && socket && <SocketClient socket={socket} />}
         
-        {/* 🔥 Contenedor oculto para Google Translate */}
         <div id="google_translate_element" style={{ display: 'none' }}></div>
         
         <Switch>
@@ -215,8 +241,12 @@ function App() {
           <Route exact path="/user/activate/:activation_token" component={ActivatePage} />
 
           {/* ==================== ADMINISTRACIÓN ==================== */}
-          <Route exact path="/store/create-store" component={CreateStore} />
-          <Route exact path="/store/edit/:id" component={EditStore} />
+          <Route exact path="/create-boutique" component={CreateBoutiquePage} />
+          <Route exact path="/edit-boutique/:id" component={CreateBoutiquePage} />
+          <Route exact path="/boutiquedashboard" component={BoutiqueDashboardPage} />
+          <Route exact path="/profile/boutiques" component={UserBoutiquesPage} />
+          <Route exact path="/boutique/:domaine" component={BoutiquePage} />
+
 
           {/* ==================== RUTAS PRIVADAS ==================== */}
           <PrivateRouter exact path="/profile" component={PageRender} />

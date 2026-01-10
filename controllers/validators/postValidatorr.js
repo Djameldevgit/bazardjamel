@@ -10,9 +10,9 @@ const validatePostData = (data) => {
         errors.push("La catégorie est requise.");
     }
 
-    if (!data.subCategory) {
+   /* if (!data.subCategory) {
         errors.push("La sous-catégorie est requise.");
-    }
+    }*/
 
     if (!data.title || data.title.trim().length < 5) {
         errors.push("Le titre doit contenir au moins 5 caractères.");

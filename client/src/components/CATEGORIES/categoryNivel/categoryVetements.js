@@ -1,7 +1,7 @@
  const categoryVetements = {
     levels: 2,
     level1: 'categorie',
-    level2: 'subcategory',
+    level2: 'subCategory',
     requiresLevel2: true, // TODAS las categorías de nivel 1 tienen nivel 2
     
     categories: [

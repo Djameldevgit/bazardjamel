@@ -4,7 +4,7 @@ const categoryAlimentaires = {
     // ⭐ MISMA ESTRUCTURA QUE SERVICES Y VEHICULES
     levels: 2,
     level1: 'categorie',
-    level2: 'subcategory',
+    level2: 'subCategory',
     requiresLevel2: false, // Todas son directas
     
     // 🍎 CATEGORÍAS PRINCIPALES (Nivel 1) - TODAS DIRECTAS

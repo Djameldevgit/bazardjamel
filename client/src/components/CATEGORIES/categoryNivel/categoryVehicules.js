@@ -4,7 +4,7 @@ const categoryVehicules = {
   // ⭐ MISMA ESTRUCTURA QUE VETEMENTS
   levels: 2,
   level1: 'categorie',          // Igual que vetements
-  level2: 'subcategory',        // Igual que vetements
+  level2: 'subCategory',        // Igual que vetements
   requiresLevel2: false,        // ⭐ DIFERENCIA CLAVE: NO requiere nivel 2
   
   // 🚗 CATEGORÍAS PRINCIPALES (Nivel 1)

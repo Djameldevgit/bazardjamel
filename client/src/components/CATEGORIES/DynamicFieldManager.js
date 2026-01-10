@@ -240,7 +240,7 @@ const DynamicFieldManager = ({
       'services': 'ServicesFields',
       'sport': 'SportFields',
       'voyage': 'VoyagesFields',
-      'boutiques': 'BoutiquesField',
+ 
     };
     return componentMap[category] || null;
   };
@@ -582,7 +582,7 @@ const DynamicFieldManager = ({
       'emploi': 'Emploi',
       'sport': 'Sport',
       'voyages': 'Voyages',
-      'boutiques': 'Boutiques'
+      
     };
     return names[category] || category;
   };

@@ -33,7 +33,7 @@ export const CATEGORY_LEVELS = {
   // Template para categorías
   export const CATEGORY_TEMPLATE = {
     levels: 1,
-    level1: 'subcategory',
+    level1: 'subCategory',
     level2: 'detail',
     requiresLevel2: false
   };

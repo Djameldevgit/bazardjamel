@@ -571,7 +571,7 @@ const Navbar2 = () => {
                           <MenuItem 
                             icon={FaPlusCircle} 
                             iconColor="#28a745"
-                            to="/store/create-store"
+                            to="/create-boutique"
                             className="mb-2 create-store-item"
                           >
                             <div className="d-flex align-items-center justify-content-between">

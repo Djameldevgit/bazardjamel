@@ -74,7 +74,7 @@ app.use('/api/forms', require('./routes/formRouter'));
 app.use('/api', require('./routes/privacysettingsRouter'));
  
 app.use("/api", require("./routes/settingsRouter"));
-app.use('/api', require('./routes/storeRouter'))
+ app.use('/api', require('./routes/boutiqueRouter'))
  
 
 setInterval(autoUnblockUsers, 5 * 60 * 1000);

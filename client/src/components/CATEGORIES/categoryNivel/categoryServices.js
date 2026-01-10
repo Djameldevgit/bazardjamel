@@ -4,7 +4,7 @@ const categoryServices = {
     // ⭐ MISMA ESTRUCTURA QUE VEHICULES
     levels: 2,
     level1: 'categorie',
-    level2: 'subcategory',
+    level2: 'subCategory',
     requiresLevel2: false, // Todas son directas
     
     // 🛠️ CATEGORÍAS PRINCIPALES (Nivel 1) - TODAS DIRECTAS
