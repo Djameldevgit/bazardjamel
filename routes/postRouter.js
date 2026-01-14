@@ -1,41 +1,70 @@
-// 📂 routes/postRoutes.js
-const express = require('express');
-const router = express.Router();
-const postCtrl = require('../controllers/postCtrl');
-const auth = require('../middleware/auth');
+// routes/postRouter.js
+const router = require('express').Router()
+const postCtrl = require('../controllers/postCtrl')
+const postCategoryCtrl = require('../controllers/postCategoryCtrl')
+const auth = require('../middleware/auth')
 
+// ==================== RUTAS DE POSTS (OPERACIONES GENERALES) ====================
+// 📌 CREAR Y OBTENER POSTS
+router.route('/posts')
+    .post(auth, postCtrl.createPost)
+    .get(postCtrl.getPosts)
 
-router.get('/categories/paginated', postCtrl.getAllCategoriesPaginated);
-
- 
- router.get('/posts/category/:category/subcategory/:subcategory', postCtrl.getPostsBySubcategory);
- 
-
-
-// 🔥 RUTAS PÚBLICAS
-router.get('/posts', postCtrl.getPosts);
-router.get('/posts/categories', postCtrl.getAllCategoriesPaginated);
-router.get('/posts/category/:category', postCtrl.getPostsByCategory);
-router.get('/posts/category/:category/subcategories', postCtrl.getSubCategoriesByCategory);
-router.get('/posts/category/:category/:subcategory', postCtrl.getPostsBySubcategory);
-router.get('/posts/immobilier/operation/:operationId', postCtrl.getPostsByImmobilierOperation);
-router.get('/posts/similar', postCtrl.getSimilarPosts);
-router.get('/posts/boutique/:boutiqueId', postCtrl.getPostsByBoutique); // <-- NUEVA
-
-// 🔥 RUTAS CON AUTH
-router.post('/posts', auth, postCtrl.createPost);
- 
+// 📌 OPERACIONES SOBRE UN POST ESPECÍFICO
 router.route('/post/:id')
-.patch(auth, postCtrl.updatePost)
-.get( postCtrl.getPost)
-.delete(auth, postCtrl.deletePost)
-router.get('/user/posts/:id', postCtrl.getUserPosts);
-router.get('/posts/dicover', auth, postCtrl.getPostsDicover);
-router.patch('/posts/:id/save', auth, postCtrl.savePost);
-router.patch('/posts/:id/unsave', auth, postCtrl.unSavePost);
-router.get('/posts/save', auth, postCtrl.getSavePosts);
-router.get('/user/boutiques', auth, postCtrl.getUserBoutiques); // <-- NUEVA
+    .patch(auth, postCtrl.updatePost)
+    .get(postCtrl.getPost)
+    .delete(auth, postCtrl.deletePost)
 
-// 🔥 RUTAS GENERALES
- 
-module.exports = router;
+// 📌 POSTS SIMILARES
+router.get('/posts/similar', postCtrl.getSimilarPosts)
+
+// 📌 POSTS DE USUARIO
+router.get('/user_posts/:id', auth, postCtrl.getUserPosts)
+
+// 📌 POSTS PARA DESCUBRIR
+router.get('/post_discover', auth, postCtrl.getPostsDicover)
+
+// 📌 GUARDAR/QUITAR POSTS
+router.patch('/savePost/:id', auth, postCtrl.savePost)
+router.patch('/unSavePost/:id', auth, postCtrl.unSavePost)
+router.get('/getSavePosts', auth, postCtrl.getSavePosts)
+
+// ==================== RUTAS DE CATEGORÍAS ====================
+// 📌 CATEGORÍAS PAGINADAS
+router.get('/categories/paginated', postCategoryCtrl.getAllCategoriesPaginated)
+
+// 📌 CATEGORÍAS JERÁRQUICAS
+router.get('/categories/hierarchy', postCategoryCtrl.getCategoriesHierarchy)
+
+// 📌 POSTS POR CATEGORÍA
+router.get('/posts/category/:category', postCategoryCtrl.getPostsByCategory)
+
+// 📌 POSTS POR SUBCATEGORÍA
+router.get('/posts/category/:category/subcategory/:subcategory', postCategoryCtrl.getPostsBySubcategory)
+
+// 📌 SUBCATEGORÍAS DE UNA CATEGORÍA
+router.get('/categories/:category/subcategories', postCategoryCtrl.getSubCategoriesByCategory)
+
+// 📌 POSTS POR JERARQUÍA (compatible con 2 niveles)
+router.get('/posts/hierarchy/:level1/:level2?', postCategoryCtrl.getPostsByCategoryHierarchy)
+
+// 📌 POSTS POR OPERACIÓN DE INMOBILIARIA
+router.get('/posts/immobilier/operation/:operationId', postCategoryCtrl.getPostsByImmobilierOperation)
+
+// ========== RUTAS ALIAS PARA COMPATIBILIDAD ==========
+router.get('/category/:category', (req, res, next) => {
+    req.params.level1 = req.params.category
+    postCategoryCtrl.getPostsByCategoryHierarchy(req, res, next)
+})
+
+router.get('/category/:category/:subcategory', (req, res, next) => {
+    req.params.level1 = req.params.category
+    req.params.level2 = req.params.subcategory
+    postCategoryCtrl.getPostsByCategoryHierarchy(req, res, next)
+})
+
+// Ruta para sub-subcategorías (si necesitas compatibilidad)
+router.get('/categories/:category/:subcategory/subsubcategories', postCategoryCtrl.getSubSubCategories)
+
+module.exports = router

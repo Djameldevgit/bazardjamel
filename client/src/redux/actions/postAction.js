@@ -1,34 +1,25 @@
+// redux/actions/postAction.js
 import { GLOBALTYPES } from './globalTypes'
 import { imageUpload } from '../../utils/imageUpload'
 import { postDataAPI, getDataAPI, patchDataAPI, deleteDataAPI } from '../../utils/fetchData'
 import { createNotify, removeNotify } from './notifyAction'
-import { POST_TYPES_APROVE } from './postAproveAction';
 
-// redux/actions/postAction.js
 export const POST_TYPES = {
     LOADING_POST: 'LOADING_POST',
-
- 
-
     CREATE_POST: 'CREATE_POST',
     GET_POST: 'GET_POST',
     GET_POSTS: 'GET_POSTS',
     UPDATE_POST: 'UPDATE_POST',
     DELETE_POST: 'DELETE_POST',
-    GET_POSTS_BY_CATEGORY: 'GET_POSTS_BY_CATEGORY',
-    GET_CATEGORIES: 'GET_CATEGORIES',
-    GET_SUBCATEGORY_POSTS: 'GET_SUBCATEGORY_POSTS', // ✅ SOLO UNA VEZ
-    GET_CATEGORIES_PAGINATED: 'GET_CATEGORIES_PAGINATED',
     ERROR_POST: 'ERROR_POST',
-    GET_IMMOBILIER_POSTS: 'GET_IMMOBILIER_POSTS',
-    CLEAR_IMMOBILIER_POSTS: 'CLEAR_IMMOBILIER_POSTS',
+    
+    // Posts similares
     GET_SIMILAR_POSTS: 'GET_SIMILAR_POSTS',
     LOADING_SIMILAR_POSTS: 'LOADING_SIMILAR_POSTS',
     CLEAR_SIMILAR_POSTS: 'CLEAR_SIMILAR_POSTS',
-   
-}
+};
 
-
+// 📌 CREAR POST
 export const createPost = ({ 
     postData, 
     images, 
@@ -41,19 +32,17 @@ export const createPost = ({
             type: GLOBALTYPES.ALERT, 
             payload: { 
                 loading: true,
-                text: 'Creating post...' // Mensaje de carga
+                text: 'Creating post...'
             } 
         })
         
         if(images.length > 0) media = await imageUpload(images)
 
-        // 📌 ENVIAR DATOS ORGANIZADOS
         const res = await postDataAPI('posts', { 
             ...postData,
             images: media 
         }, auth.token)
 
-        // ✅ 1. DISPATCH PARA AGREGAR POST AL ESTADO
         dispatch({ 
             type: POST_TYPES.CREATE_POST, 
             payload: {
@@ -63,24 +52,21 @@ export const createPost = ({
             } 
         })
 
-        // ✅ 2. ALERT DE ÉXITO (diferentes opciones)
         dispatch({ 
             type: GLOBALTYPES.ALERT, 
             payload: {
                 success: '✅ Post created successfully!'
-               
             } 
         })
 
-        // ✅ 3. OPCIONAL: Alert que se auto-elimina después de 3 segundos
         setTimeout(() => {
             dispatch({ 
                 type: GLOBALTYPES.ALERT, 
-                payload: {} // Limpiar alert
+                payload: {}
             })
         }, 3000)
 
-        // Notify (opcional)
+        // Notify
         const msg = {
             id: res.data.newPost._id,
             text: 'added a new post.',
@@ -101,75 +87,41 @@ export const createPost = ({
         })
     }
 }
- 
- 
-export const clearUserPosts = (userId) => (dispatch) => {
-    dispatch({
-        type: POST_TYPES.CLEAR_USER_POSTS,
-        payload: { userId }
-    });
-};
-// En tu action getSimilarPosts
+
+// 📌 OBTENER POSTS SIMILARES
 export const getSimilarPosts = (postId, options = {}) => async (dispatch, getState) => {
     try {
         console.log('🚀 ======= INICIO BÚSQUEDA SIMILARES =======');
-        console.log('📌 Post ID objetivo:', postId);
         
         dispatch({ 
             type: POST_TYPES.LOADING_SIMILAR_POSTS, 
             payload: true 
         });
         
-        // ✅ Obtener el estado completo
         const state = getState();
-        console.log('📊 Estado root keys:', Object.keys(state));
-        
-        // ✅ Acceder a los reducers correctos
         const homePostsState = state.homePosts || {};
         const detailPostState = state.detailPost;
         
-        console.log('📊 homePosts estado:', Object.keys(homePostsState));
-        console.log('📊 detailPost estado:', detailPostState);
-        
-        // Buscar el post en diferentes lugares
         let currentPost = null;
         
-        // 1. En detailPost reducer
+        // Buscar el post en diferentes lugares
         if (detailPostState && detailPostState._id === postId) {
             currentPost = detailPostState;
-            console.log('✅ Post encontrado en detailPost reducer');
         }
         
-        // 2. En posts array de homePosts
         if (!currentPost && homePostsState.posts) {
             currentPost = homePostsState.posts.find(p => p._id === postId);
-            if (currentPost) {
-                console.log('✅ Post encontrado en homePosts.posts');
-            }
         }
         
-        // 3. Si no está, obtener de API
+        // Si no está, obtener de API
         if (!currentPost) {
-            console.log('📥 Post no encontrado en redux, obteniendo de API...');
-            try {
-                const res = await getDataAPI(`post/${postId}`);
-                currentPost = res.data?.post || res.data;
-                
-                // Guardar en detailPost
-                dispatch({
-                    type: 'GET_POST',
-                    payload: currentPost
-                });
-                
-                console.log('📦 Post guardado en detailPost');
-            } catch (err) {
-                console.error('❌ Error obteniendo post:', err);
-                dispatch({ 
-                    type: POST_TYPES.LOADING_SIMILAR_POSTS, 
-                    payload: false 
-                });
-                return;
-            }
+            const res = await getDataAPI(`post/${postId}`);
+            currentPost = res.data?.post || res.data;
+            
+            dispatch({
+                type: 'GET_POST',
+                payload: currentPost
+            });
         }
         
         // Validar que tengamos el post
@@ -181,13 +133,6 @@ export const getSimilarPosts = (postId, options = {}) => async (dispatch, getSta
             });
             return;
         }
-        
-        console.log('✅ Post encontrado para similares:', {
-            id: currentPost._id,
-            categorie: currentPost.categorie,
-            subCategory: currentPost.subCategory,
-            title: currentPost.title
-        });
         
         // Validar categoría y subcategoría
         if (!currentPost.categorie || !currentPost.subCategory) {
@@ -208,19 +153,10 @@ export const getSimilarPosts = (postId, options = {}) => async (dispatch, getSta
             page: options.page || 1
         });
         
-        console.log('🌐 Llamando API:', `/posts/similar?${params}`);
-        
         // Llamada a API
         const res = await getDataAPI(`posts/similar?${params}`);
         
-        console.log('📦 Respuesta API:', {
-            success: res.data.success,
-            postsCount: res.data.posts?.length,
-            data: res.data
-        });
-        
         if (res.data.success) {
-            // ✅ Dispatch al reducer correcto: homePosts
             dispatch({
                 type: POST_TYPES.GET_SIMILAR_POSTS,
                 payload: {
@@ -248,392 +184,13 @@ export const getSimilarPosts = (postId, options = {}) => async (dispatch, getSta
         });
     }
 };
-  export const clearSimilarPosts = () => (dispatch) => {
+
+// 📌 LIMPIAR POSTS SIMILARES
+export const clearSimilarPosts = () => (dispatch) => {
     dispatch({ type: POST_TYPES.CLEAR_SIMILAR_POSTS });
-  };
-  export const getCategories = (page = 1, limit = 2) => async (dispatch, getState) => {
-    try {
-        const { auth } = getState();
-        const res = await getDataAPI(`categories/paginated?page=${page}&limit=${limit}`, auth.token);
-        
-        dispatch({
-            type: POST_TYPES.GET_CATEGORIES_PAGINATED,
-            payload: {
-                categories: res.data.categories,
-                page: res.data.page,
-                total: res.data.total,
-                totalPages: res.data.totalPages,
-                hasMore: res.data.hasMore
-            }
-        });
-        
-        return res.data;
-    } catch (err) {
-        dispatch({
-            type: 'ALERT',
-            payload: { error: err.response?.data?.msg || 'Error al cargar categorías' }
-        });
-        throw err;
-    }
 };
 
-
-// src/redux/actions/storeAction.js - AGREGAR ESTO:
-export const getStoreBySlug = (slug) => async (dispatch) => {
-    try {
-      dispatch({ type: 'STORE_LOADING', payload: true });
-      
-      const res = await getDataAPI(`stores/slug/${slug}`);
-      
-      dispatch({
-        type: 'GET_STORE_BY_SLUG',
-        payload: res.data.store
-      });
-      
-      dispatch({ type: 'STORE_LOADING', payload: false });
-      
-    } catch (err) {
-      dispatch({
-        type: 'STORE_ERROR',
-        payload: err.response?.data?.msg || 'Error loading store'
-      });
-      dispatch({ type: 'STORE_LOADING', payload: false });
-    }
-  };
-
-
-
-
-
-
- export const getPostsByCategory = (category, page = 1, filters = {}) => async (dispatch, getState) => {
-    try {
-        const { auth } = getState();
-        
-        // 📌 DEPURACIÓN
-        console.log('🔍 getPostsByCategory INPUT:', {
-            category,
-            page,
-            filters,
-            categoryType: typeof category
-        });
-        
-        // Construir URL
-        const encodedCategory = encodeURIComponent(category);
-        let url = `posts/category/${encodedCategory}`;
-        
-        // Parámetros
-        const params = new URLSearchParams();
-        params.append('page', page);
-        params.append('limit', filters.limit || 12);
-        
-        url += `?${params.toString()}`;
-        
-        console.log('📡 API URL:', `/api/${url}`);
-        
-        // Hacer petición
-        const res = await getDataAPI(url, auth.token);
-        
-        console.log('✅ API RESPONSE:', {
-            status: res.status,
-            dataKeys: Object.keys(res.data),
-            postsCount: res.data.posts?.length,
-            total: res.data.total,
-            success: res.data.success
-        });
-        
-        // Verificar si hay posts
-        if (!res.data.posts || res.data.posts.length === 0) {
-            console.warn('⚠️ No posts found in response');
-            console.log('📄 Full response:', res.data);
-        }
-        
-        // Extraer posts
-        const posts = res.data.posts || [];
-        
-        dispatch({
-            type: POST_TYPES.GET_POSTS_BY_CATEGORY,
-            payload: {
-                posts: posts,
-                page: page,
-                result: res.data.total || posts.length,
-                category: category,
-                total: res.data.total || 0,
-                totalPages: res.data.totalPages || 1,
-                success: res.data.success
-            }
-        });
-        
-        return {
-            success: true,
-            posts: posts,
-            total: res.data.total || 0
-        };
-        
-    } catch (err) {
-        console.error('❌ ERROR in getPostsByCategory:', {
-            message: err.message,
-            response: err.response?.data,
-            status: err.response?.status,
-            url: err.config?.url
-        });
-        
-        dispatch({
-            type: GLOBALTYPES.ALERT,
-            payload: { 
-                error: err.response?.data?.msg || 
-                      'Error al cargar posts de categoría' 
-            }
-        });
-        
-        return {
-            success: false,
-            error: err.message
-        };
-    }
-};
-  
- 
-export const getImmobilerHierarchyPosts = (operation, property, page = 1, options = {}) => async (dispatch) => {
-    try {
-        // ✅ USAR LA CONSTANTE CORRECTA
-        dispatch({ type: POST_TYPES.LOADING_POST, payload: true });
-        
-        const limit = options.limit || 12;
-        const skip = (page - 1) * limit;
-        
-        const res = await getDataAPI(
-            `posts/category/immobilier/operation/${operation}/property/${property}?limit=${limit}&skip=${skip}`
-        );
-        
-        dispatch({
-            type: POST_TYPES.GET_IMMOBILIER_POSTS,
-            payload: {
-                posts: res.data.posts,
-                operation: operation,
-                propertyType: property,
-                page: page,
-                total: res.data.total
-            }
-        });
-        
-        dispatch({ type: GLOBALTYPES.LOADING_POST, payload: false });
-        return res.data;
-    } catch (err) {
-        dispatch({
-            type: GLOBALTYPES.ALERT,
-            payload: { error: err.response?.data?.msg || 'Error al cargar posts de immobiler' }
-        });
-        dispatch({ type: GLOBALTYPES.LOADING_POST, payload: false });
-        throw err;
-    }
-};
-// Busca esta función y verifica que tenga return dispatch
-export const getPostsBySubcategory = (category, subcategory, page = 1, options = {}) => async (dispatch) => {
-    try {
-      console.log('🔍 getPostsBySubcategory called:', { category, subcategory, page });
-      
-      // ✅ USAR GLOBALTYPES.LOADING_POST EN LUGAR DE GLOBALTYPES.ALERT
-      dispatch({ 
-        type: GLOBALTYPES.LOADING_POST, 
-        payload: true 
-      });
-      
-      if (category === 'store' || category === 'stores') {
-        console.log('🔄 Redirecting to store logic for:', subcategory);
-        dispatch({ 
-          type: GLOBALTYPES.LOADING_POST, 
-          payload: false 
-        });
-        window.location.href = `/store/${subcategory}`;
-        return;
-      }
-      
-      const limit = options.limit || 12;
-      
-      // ✅ ENCODEAR PARÁMETROS
-      const encodedCategory = encodeURIComponent(category);
-      const encodedSubcategory = encodeURIComponent(subcategory);
-      
-      const res = await getDataAPI(
-        `posts/category/${encodedCategory}/${encodedSubcategory}?page=${page}&limit=${limit}`
-      );
-      
-      console.log('📦 Posts by subcategory response:', res.data);
-      
-      // ✅ USAR LA CONSTANTE CORRECTA
-      dispatch({
-        type: POST_TYPES.GET_SUBCATEGORY_POSTS,
-        payload: {
-          posts: res.data.posts || [],
-          total: res.data.total || 0,
-          category,
-          subcategory,
-          page: page
-        }
-      });
-      
-      dispatch({ 
-        type: GLOBALTYPES.LOADING_POST, 
-        payload: false 
-      });
-      
-      return res.data;
-      
-    } catch (err) {
-      console.error('❌ ERROR in getPostsBySubcategory:', err.message || err);
-      
-      dispatch({ 
-        type: GLOBALTYPES.ALERT, 
-        payload: { 
-          error: err.response?.data?.msg || err.message || 'Error loading posts',
-          loading: false
-        } 
-      });
-      
-      // ✅ AGREGAR DISPATCH DE ERROR PARA MANTENER CONSISTENCIA
-      dispatch({
-        type: POST_TYPES.ERROR_POST,
-        payload: err.response?.data?.msg || err.message
-      });
-      
-      throw err;
-    }
-};
-
-
-
-// Acción para crear post (ya la tienes, pero asegurar que guarda categoría)
-// actions/postAction.js - createPost actualizada
- 
-/*export const getPostsBySubcategory = (categoryName, subcategoryId, page = 1, options = {}) => 
-    async (dispatch, getState) => {
-    try {
-        dispatch({ type: GLOBALTYPES.LOADING, payload: true });
-        
-        const { auth } = getState();
-        const limit = options.limit || 9;
-        
-        // URL encode para manejar espacios y caracteres especiales
-        const encodedCategory = encodeURIComponent(categoryName);
-        const encodedSubcategory = encodeURIComponent(subcategoryId);
-        
-        const res = await getDataAPI(
-            `posts/category/${encodedCategory}/subcategory/${encodedSubcategory}?page=${page}&limit=${limit}`,
-            auth.token
-        );
-        
-        console.log(`✅ Subcategoría ${subcategoryId} - Posts cargados:`, res.data.posts?.length);
-        
-        dispatch({
-            type: POST_TYPES.GET_SUBCATEGORY_POSTS,
-            payload: {
-                posts: res.data.posts,
-                category: categoryName,
-                subcategory: subcategoryId,
-                page: page,
-                total: res.data.total,
-                hasMore: res.data.hasMore
-            }
-        });
-        
-        dispatch({ type: GLOBALTYPES.LOADING, payload: false });
-        return res.data;
-        
-    } catch (err) {
-        console.error('❌ Error en getPostsBySubcategory action:', err);
-        dispatch({
-            type: GLOBALTYPES.ALERT,
-            payload: { 
-                error: err.response?.data?.msg || 'Error al cargar subcategoría' 
-            }
-        });
-        dispatch({ type: GLOBALTYPES.LOADING, payload: false });
-        throw err;
-    }
-};
-*/
-// redux/actions/postAction.js
-export const getPostsByImmobilierOperation = (operationId, page = 1, options = {}) => async (dispatch) => {
-    try {
-        console.log('🏠 getPostsByImmobilierOperation called:', { operationId, page });
-        
-        // ✅ CORREGIDO: Usar la constante correcta
-        dispatch({ 
-            type: 'LOADING_POST', // Usar string directamente para evitar undefined
-            payload: true 
-        });
-        
-        const limit = options.limit || 12;
-        const skip = (page - 1) * limit;
-        
-        const res = await getDataAPI(
-            `posts/category/immobilier/operation/${operationId}?limit=${limit}&skip=${skip}`
-        );
-        
-        console.log('✅ Immobilier response:', {
-            operationId,
-            postsCount: res.data.posts?.length,
-            total: res.data.total
-        });
-        
-        // ✅ Dispatch con constante verificada
-        dispatch({
-            type: POST_TYPES.GET_IMMOBILIER_POSTS,
-            payload: {
-                posts: res.data.posts,
-                operation: operationId,
-                page: page,
-                total: res.data.total
-            }
-        });
-        
-        dispatch({ 
-            type: 'LOADING_POST', 
-            payload: false 
-        });
-        
-        return res.data;
-    } catch (err) {
-        console.error('❌ ERROR in getPostsByImmobilierOperation:', err);
-        
-        dispatch({
-            type: POST_TYPES.ERROR_POST,
-            payload: err.response?.data?.msg || 'Error al cargar posts de immobiler'
-        });
-        
-        dispatch({ 
-            type: 'LOADING_POST', 
-            payload: false 
-        });
-        throw err;
-    }
-};
-export const getSubCategories = (categoryName) => async (dispatch, getState) => {
-    try {
-        const { auth } = getState();
-        const encodedCategory = encodeURIComponent(categoryName);
-        
-        const res = await getDataAPI(
-            `categories/${encodedCategory}/subcategories`,
-            auth.token
-        );
-        
-        dispatch({
-            type: 'GET_SUBCATEGORIES',
-            payload: {
-                category: categoryName,
-                subcategories: res.data.subcategories
-            }
-        });
-        
-        return res.data;
-        
-    } catch (err) {
-        console.error('Error obteniendo subcategorías:', err);
-        throw err;
-    }
-};
+// 📌 ACTUALIZAR POST
 export const updatePost = ({
     id,
     postData,
@@ -685,11 +242,13 @@ export const updatePost = ({
         dispatch({
             type: GLOBALTYPES.ALERT,
             payload: { 
-                error: err.response?.data?.msg || 'Failed to update post' 
+                error: err.response?.data?.msg || 'Échec de la mise à jour accion' 
             }
         });
     }
 }
+
+// 📌 OBTENER TODOS LOS POSTS
 export const getPosts = () => async (dispatch) => {
     try {
         dispatch({ type: POST_TYPES.LOADING_POST, payload: true })
@@ -709,7 +268,7 @@ export const getPosts = () => async (dispatch) => {
     }
 }
 
-
+// 📌 OBTENER UN POST ESPECÍFICO
 export const getPost = ({detailPost, id }) => async (dispatch) => {
     if(detailPost.every(post => post._id !== id)){
         try {
@@ -724,7 +283,7 @@ export const getPost = ({detailPost, id }) => async (dispatch) => {
     }
 }
 
-
+// 📌 ELIMINAR POST
 export const deletePost = ({post, auth, socket}) => async (dispatch) => {
     dispatch({ type: POST_TYPES.DELETE_POST, payload: post })
 
@@ -748,6 +307,7 @@ export const deletePost = ({post, auth, socket}) => async (dispatch) => {
     }
 }
 
+// 📌 LIKE POST
 export const likePost = ({post, auth, socket}) => async (dispatch) => {
     const newPost = {...post, likes: [...post.likes, auth.user]}
     dispatch({ type: POST_TYPES.UPDATE_POST, payload: newPost})
@@ -776,7 +336,8 @@ export const likePost = ({post, auth, socket}) => async (dispatch) => {
         })
     }
 }
- 
+
+// 📌 UNLIKE POST
 export const unLikePost = ({post, auth, socket}) => async (dispatch) => {
     const newPost = {...post, likes: post.likes.filter(like => like._id !== auth.user._id)}
     dispatch({ type: POST_TYPES.UPDATE_POST, payload: newPost})
@@ -803,9 +364,7 @@ export const unLikePost = ({post, auth, socket}) => async (dispatch) => {
     }
 }
 
- 
- 
-
+// 📌 GUARDAR POST
 export const savePost = ({post, auth}) => async (dispatch) => {
     const newUser = {...auth.user, saved: [...auth.user.saved, post._id]}
     dispatch({ type: GLOBALTYPES.AUTH, payload: {...auth, user: newUser}})
@@ -820,6 +379,7 @@ export const savePost = ({post, auth}) => async (dispatch) => {
     }
 }
 
+// 📌 QUITAR POST GUARDADO
 export const unSavePost = ({post, auth}) => async (dispatch) => {
     const newUser = {...auth.user, saved: auth.user.saved.filter(id => id !== post._id) }
     dispatch({ type: GLOBALTYPES.AUTH, payload: {...auth, user: newUser}})
@@ -833,3 +393,11 @@ export const unSavePost = ({post, auth}) => async (dispatch) => {
         })
     }
 }
+
+// 📌 LIMPIAR POSTS DE USUARIO (si lo necesitas)
+export const clearUserPosts = (userId) => (dispatch) => {
+    dispatch({
+        type: 'CLEAR_USER_POSTS',
+        payload: { userId }
+    });
+};

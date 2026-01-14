@@ -2,15 +2,19 @@
 const mongoose = require('mongoose');
 
 const postSchema = new mongoose.Schema({
-  // ========== CAMPOS PRINCIPALES ==========
-  categorie: { 
+  // ========== CAMPOS PRINCIPALES (NIVELES JERÁRQUICOS) ==========
+  category: { 
     type: String, 
-    required: [true, 'La catégorie est requise'], 
+ 
     index: true 
   },
   subCategory: { 
     type: String, 
     required: [true, 'La sous-catégorie est requise'], 
+    index: true 
+  },
+  subSubCategory: { 
+    type: String, 
     index: true 
   },
   articleType: { 
@@ -32,6 +36,14 @@ const postSchema = new mongoose.Schema({
     default: new Map()
   },
   
+  // ========== METADATOS PARA FILTRADO JERÁRQUICO ==========
+  categoryLevels: {
+    level1: { type: String, index: true }, // Ej: "vehicules"
+    level2: { type: String, index: true }, // Ej: "motos"
+    level3: { type: String, index: true }, // Ej: "125cc"
+    fullPath: { type: String, index: true } // Ej: "vehicules/motos/125cc"
+  },
+  
   // ========== METADATOS ==========
   searchKeywords: [{ type: String, index: true }],
   images: [{ url: String, public_id: String }],
@@ -50,7 +62,7 @@ const postSchema = new mongoose.Schema({
   views: { type: Number, default: 0 },
   
   // ========== INFORMACIÓN BÁSICA ==========
-  //title: { type: String, required: true, index: true },
+  title: { type: String,   index: true },
   description: { type: String },
   price: { type: Number, default: 0 },
   etat: { type: String, default: 'occasion' },
@@ -68,10 +80,46 @@ const postSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
+// ========== MIDDLEWARE PARA AUTOMATIZAR CATEGORY_LEVELS ==========
+postSchema.pre('save', function(next) {
+  // Auto-llenar categoryLevels basado en category/subCategory/subSubCategory
+  this.categoryLevels = {
+    level1: this.category,
+    level2: this.subCategory,
+    level3: this.subSubCategory || null,
+    fullPath: this.subSubCategory 
+      ? `${this.category}/${this.subCategory}/${this.subSubCategory}`
+      : `${this.category}/${this.subCategory}`
+  };
+  
+  // Asegurar que searchKeywords tenga al menos las categorías
+  if (!this.searchKeywords) {
+    this.searchKeywords = [];
+  }
+  
+  // Añadir categorías como keywords
+  const categoryKeywords = [
+    this.category,
+    this.subCategory,
+    this.subSubCategory,
+    this.title
+  ].filter(Boolean);
+  
+  categoryKeywords.forEach(keyword => {
+    if (!this.searchKeywords.includes(keyword)) {
+      this.searchKeywords.push(keyword);
+    }
+  });
+  
+  next();
+});
+
 // ========== ÍNDICES ==========
-postSchema.index({ categorie: 1, subCategory: 1, isActive: 1 });
+postSchema.index({ categorie: 1, subCategory: 1, subSubCategory: 1, isActive: 1 });
+postSchema.index({ 'categoryLevels.level1': 1, 'categoryLevels.level2': 1, 'categoryLevels.level3': 1 });
+postSchema.index({ 'categoryLevels.fullPath': 1 });
 postSchema.index({ categorie: 1, price: 1, isActive: 1 });
-//postSchema.index({ title: 'text', description: 'text' });
+postSchema.index({ title: 'text', description: 'text', searchKeywords: 'text' });
 postSchema.index({ 'categorySpecificData.marque': 1 });
 postSchema.index({ 'categorySpecificData.etat': 1 });
 postSchema.index({ price: 1 });
@@ -83,5 +131,15 @@ postSchema.index({ boutique: 1, isActive: 1 });
 postSchema.virtual('hasBoutique').get(function() {
   return this.boutique !== null && this.boutique !== undefined;
 });
+
+// ========== MÉTODO PARA OBTENER JERARQUÍA ==========
+postSchema.methods.getHierarchy = function() {
+  return {
+    level1: this.category,
+    level2: this.subCategory,
+    level3: this.subSubCategory,
+    path: this.categoryLevels.fullPath
+  };
+};
 
 module.exports = mongoose.model('post', postSchema);

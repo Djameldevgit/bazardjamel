@@ -387,7 +387,7 @@ const Navbar2 = () => {
             )}
 
             {/* Botón Agregar Post */}
-            {(userRole === "Super-utilisateur" || userRole === "admin") && (
+            {(userRole === "Super-utilisateur" || userRole === "admin"|| userRole === "user") && (
               <Link
                 to="/creer-annonce"
                 className="icon-button"

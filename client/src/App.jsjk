@@ -1,0 +1,79 @@
+// App.js - VERSIÓN CORREGIDA (ELIMINA LAS LLAMADAS SIN PARÁMETROS)
+import React,{useEffect} from 'react';
+import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
+import CategoryLevel1 from './pages/categories/CategoryLevel1';
+import CategoryLevel2 from './pages/categories/CategoryLevel2';
+import CategoryLevel3 from './pages/categories/CategoryLever3';
+import Home from './pages/home'
+import Login from './pages/login'
+import Register from './pages/register'
+import ActivatePage from './auth/ActivatePage'
+import ForgotPassword from './auth/ForgotPassword'
+import ResetPassword from './auth/ResetPassword'
+import Video from './pages/video'
+import Bloginfo from './pages/bloginfo'
+import Bloqueos404 from './components/adminitration/Bloqueos404'
+import Appinfo2 from './pages/appinfo2'
+import Appinfo3 from './pages/appinfo3'
+import Map from './pages/Map'
+import PostId from './pages/PostId'
+import Message from './pages/message'
+import CreateAnnoncePage from './pages/CreateAnnoncePage'
+import Navbar2 from './components/header/Navbar2';
+import { useDispatch } from 'react-redux';
+import { getCategories, getPosts, getPostsByCategory, getPostsBySubcategory } from './redux/actions/postAction';
+ 
+function App() {
+  const dispatch = useDispatch()
+  // ⚠️ ELIMINA TODAS ESTAS LLAMADAS SIN PARÁMETROS
+   useEffect(() => {
+   dispatch(getPosts())           // Esta SÍ puede ir sin parámetros
+    dispatch(getCategories())      // Esta SÍ puede ir sin parámetros
+    dispatch(getPostsByCategory()) // ⛔ ERROR: Sin categorySlug
+    dispatch(getPostsBySubcategory()) // ⛔ ERROR: Sin parámetros
+  }, [dispatch])
+
+  return (
+    <Router>
+      <Navbar2 />
+      <Switch>
+        {/* Home */}
+    
+        <Route exact path="/" component={Home} />
+          <Route exact path="/register" component={Register} />
+          <Route exact path="/login" component={Login} />
+          <Route exact path="/bloginfo" component={Bloginfo} />
+          <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
+          <Route exact path="/editer-annonce/:id" component={CreateAnnoncePage} />
+          <Route exact path="/post/:id" component={PostId} />
+          <Route exact path="/message" component={Message} />
+          <Route exact path="/video/:obraId" component={Video} />
+          <Route exact path="/forgot_password" component={ForgotPassword} />
+          <Route exact path="/user/reset/:token" component={ResetPassword} />
+          <Route exact path="/user/activate/:activation_token" component={ActivatePage} />
+
+          {/* ==================== ADMINISTRACIÓN ==================== */}
+          <Route exact path="/create-boutique" component={CreateBoutiquePage} />
+          <Route exact path="/edit-boutique/:id" component={CreateBoutiquePage} />
+          <Route exact path="/boutiquedashboard" component={BoutiqueDashboardPage} />
+          <Route exact path="/profile/boutiques" component={UserBoutiquesPage} />
+          <Route exact path="/boutique/:domaine" component={BoutiquePage} />
+
+
+          {/* ==================== RUTAS PRIVADAS ==================== */}
+          <PrivateRouter exact path="/profile" component={PageRender} />
+          <PrivateRouter exact path="/mes-annonces" component={PageRender} />
+        {/* ========= RUTAS DE CATEGORÍAS JERÁRQUICAS ========= */}
+        <Route exact path="/:categorySlug/:page?" component={CategoryLevel1} />
+        <Route exact path="/:categorySlug-:subcategory1Slug/:page?" component={CategoryLevel2} />
+        <Route exact path="/:categorySlug-:subcategory1Slug-:subcategory2Slug/:page?" component={CategoryLevel3} />
+        
+        {/* Redirección de rutas antiguas */}
+       
+       
+      </Switch>
+    </Router>
+  );
+}
+
+export default App;

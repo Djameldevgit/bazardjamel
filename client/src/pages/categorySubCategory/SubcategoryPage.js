@@ -1,94 +1,107 @@
-// src/pages/categorySubCategory/SubcategoryPage.js - VERSIÓN ACTUALIZADA
-import React, { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { useHistory } from 'react-router-dom';
-import { 
-  getPostsBySubcategory, 
-  getPostsByImmobilierOperation 
-} from '../../redux/actions/postAction';
+// 📂 src/pages/categorySubCategory/SubcategoryPage.js
+import React, { useEffect, useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { useParams } from 'react-router-dom';
+import { Container, Row, Col, Breadcrumb } from 'react-bootstrap';
+import { getPostsByCategoryHierarchy } from '../../redux/actions/postCategoryAction';
 import Posts from '../../components/home/Posts';
 
-const SubcategoryPage = ({ categoryName, subcategoryId, page = "1" }) => {
+const SubcategoryPage = () => {
+  const { categorySlug, subcategorySlug, page = "1" } = useParams();
   const dispatch = useDispatch();
-  const history = useHistory();
   
-  const { loading } = useSelector(state => state.homePosts || {});
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    console.log('📂 SubcategoryPage:', {
-      categoryName,
-      subcategoryId,  // Puede ser "voitures" o "vente-appartement"
-      page
-    });
+    const loadData = async () => {
+      if (categorySlug && subcategorySlug) {
+        setLoading(true);
+        console.log(`📂 Nivel 2 - Cargando: ${categorySlug}/${subcategorySlug}`);
+        
+        try {
+          await dispatch(getPostsByCategoryHierarchy(
+            categorySlug, 
+            subcategorySlug, 
+            null, // No hay subsubcategoría
+            parseInt(page)
+          ));
+        } catch (err) {
+          console.error('Error cargando subcategoría:', err);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
     
-    // 🏠 CASO ESPECIAL: Inmuebles con jerarquía
-    if (categoryName === "immobilier" && subcategoryId.includes('-')) {
-      const parts = subcategoryId.split('-');
-      const operation = parts[0]; // "vente", "location"
-      const property = parts.slice(1).join(' '); // "appartement", "maison moderne"
-      
-      console.log('🏠 Inmueble con jerarquía:', { operation, property });
-      
-      // Para inmuebles, usar la acción específica
-      dispatch(getPostsByImmobilierOperation(operation, parseInt(page)));
-      
-    } else {
-      // 📂 CASO NORMAL: Subcategoría simple
-      dispatch(getPostsBySubcategory(categoryName, subcategoryId, parseInt(page)));
-    }
-  }, [categoryName, subcategoryId, page, dispatch]);
-  
-  // Formatear título para mostrar
-  const getDisplayTitle = () => {
-    if (categoryName === "immobilier" && subcategoryId.includes('-')) {
-      const parts = subcategoryId.split('-');
-      return `${parts[0]} - ${parts.slice(1).join(' ')}`;
-    }
-    return subcategoryId.replace('-', ' ');
+    loadData();
+  }, [categorySlug, subcategorySlug, page, dispatch]);
+
+  // Formatear slug para mostrar
+  const formatSlug = (slug) => {
+    if (!slug) return '';
+    return slug
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   };
-  
+
+  if (loading) {
+    return (
+      <Container className="py-5">
+        <Row className="justify-content-center">
+          <Col xs="auto" className="text-center">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <p className="mt-2">Chargement des annonces...</p>
+          </Col>
+        </Row>
+      </Container>
+    );
+  }
+
   return (
-    <div className="container py-4">
+    <Container className="py-4">
+      {/* Breadcrumb */}
+      <Row className="mb-4">
+        <Col>
+          <Breadcrumb>
+            <Breadcrumb.Item href="/">Accueil</Breadcrumb.Item>
+            <Breadcrumb.Item href={`/${categorySlug}/1`}>
+              {formatSlug(categorySlug)}
+            </Breadcrumb.Item>
+            <Breadcrumb.Item active>
+              {formatSlug(subcategorySlug)}
+            </Breadcrumb.Item>
+          </Breadcrumb>
+        </Col>
+      </Row>
+
       {/* Header */}
-      <div className="row mb-4">
-        <div className="col-md-12">
-          <nav aria-label="breadcrumb">
-            <ol className="breadcrumb">
-              <li className="breadcrumb-item">
-                <a 
-                  href={`/${categoryName}/1`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    history.push(`/${categoryName}/1`);
-                  }}
-                >
-                  {categoryName}
-                </a>
-              </li>
-              <li className="breadcrumb-item active" aria-current="page">
-                {getDisplayTitle()}
-              </li>
-            </ol>
-          </nav>
-          
-          <h1 className="display-5 fw-bold">
-            {categoryName} - {getDisplayTitle()}
+      <Row className="mb-4">
+        <Col>
+          <h1 className="display-5 fw-bold mb-2">
+            {formatSlug(categorySlug)} › {formatSlug(subcategorySlug)}
           </h1>
-        </div>
-      </div>
-      
-      {/* Posts filtrados por subcategoría */}
-      <div className="row">
-        <div className="col-12">
-          <Posts 
+          <p className="text-muted">
+            Sous-catégorie: {formatSlug(subcategorySlug)}
+          </p>
+        </Col>
+      </Row>
+
+      {/* Posts de la subcategoría */}
+      <Row>
+        <Col>
+          <Posts
             fromSubcategoryPage={true}
-            selectedCategory={categoryName}
-            selectedSubcategory={subcategoryId}
+            selectedCategory={categorySlug}
+            selectedSubcategory={subcategorySlug}
+            selectedSubSubcategory={null}
             page={parseInt(page)}
           />
-        </div>
-      </div>
-    </div>
+        </Col>
+      </Row>
+    </Container>
   );
 };
 
