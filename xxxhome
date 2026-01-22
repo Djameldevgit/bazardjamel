@@ -1,0 +1,669 @@
+Estructura general de Home.jsx
+Home.jsx
+├─ Header
+├─ MainCategorySlider  ← slider principal con todas las categorías
+├─ CategorySection (repite para cada categoría)
+│   ├─ Título de la categoría
+│   ├─ Grid de 6 posts
+│   ├─ Botón “Ver más posts” → redirige a /category/:slug
+│
+├─ Infinite scroll  ← para cargar más categorías (paginación)
+└─ Footer
+
+⚙️ Acción principal que ejecuta Home.jsx
+Acción: getAllCategoriesWithPosts(page)
+
+Llama al backend:
+
+GET /api/categories?page=1&limit=8
+
+
+El backend devuelve algo así:
+
+[
+  {
+    _id: "1",
+    name: "Immobilier",
+    icon: "/icons/nivel1/immobilier.png",
+    posts: [ ...6 primeros posts... ]
+  },
+  {
+    _id: "2",
+    name: "Boutiques",
+    icon: "/icons/nivel1/boutiques.png",
+    posts: [ ...6 primeros posts... ]
+  }
+  ...
+]
+
+🧩 Lógica dentro de Home
+
+Cuando se monta el componente (useEffect), se llama a getAllCategoriesWithPosts(1).
+
+Se renderiza:
+
+El slider principal con todas las categorías (MainCategorySlider).
+
+Luego, cada categoría con sus primeros 6 posts (CategorySection).
+
+Al hacer scroll, se llama otra vez a getAllCategoriesWithPosts(page + 1) para cargar más categorías.
+
+El botón “Ver más” redirige a /category/:slug.
+
+<button onClick={() => navigate(`/category/${cat.slug}`)}>
+  Ver más posts de {cat.name}
+</button>
+
+
+✅ Así tienes:
+
+Todas las categorías visibles,
+
+6 posts por categoría,
+
+scroll infinito para traer más categorías,
+
+y un slider general arriba con los íconos de las 15 categorías.
+
+🧭 2️⃣ Página dinámica: CategoryPage.jsx
+
+Objetivo: mostrar los posts de una categoría específica, con sliders dinámicos (para subniveles), y paginación por scroll para los posts.
+
+🧱 Estructura general de CategoryPage.jsx
+CategoryPage.jsx
+├─ Header
+├─ Breadcrumb
+├─ DynamicSlider (SubCategorySlider o ArticleSlider según nivel)
+├─ PostList (12 primeros posts)
+│   ├─ Infinite scroll para más posts
+└─ Footer
+
+⚙️ Acción principal que ejecuta CategoryPage.jsx
+Acción: getCategoryPosts(slug, subSlug?, articleSlug?, page)
+
+Llama al backend:
+
+GET /api/posts/filter?category=immobilier&sub=vente&article=villa&page=1
+
+
+El backend devuelve:
+
+{
+  category: { name: "Vente", level: 2, parent: "Immobilier" },
+  children: [ { name: "Villa" }, { name: "Appartement" } ], // hijos para el slider
+  posts: [ ...12 primeros posts... ]
+}
+
+🧩 Lógica dentro de CategoryPage.jsx
+
+useParams() detecta qué slug estás viendo:
+
+const { slug, subSlug, articleSlug } = useParams()
+
+
+Determina el nivel (1, 2 o 3) según los slugs presentes.
+
+Ejecuta la acción getCategoryPosts() para obtener:
+
+Los posts filtrados de esa categoría o subnivel.
+
+Los hijos (si existen) para renderizar el slider dinámico.
+
+Renderiza:
+
+SubCategorySlider si estás en nivel 1.
+
+ArticleSlider si estás en nivel 2.
+
+Solo posts si estás en nivel 3 (artículos).
+
+Usa scroll infinito para traer más posts de esa misma categoría.
+
+🔄 Flujo dinámico entre niveles
+Nivel	URL	Slider que se muestra	Acción
+Nivel 1	/category/immobilier	Subcategorías (vente, achat, etc.)	getCategoryPosts(slug)
+Nivel 2	/category/immobilier/vente	Artículos (villa, appartement, etc.)	getCategoryPosts(slug, subSlug)
+Nivel 3	/category/immobilier/vente/villa	No slider	getCategoryPosts(slug, subSlug, articleSlug)
+
+✅ Todo se maneja desde una sola página con useParams() y una sola acción,
+sin necesidad de tener varias páginas distintas.
+
+🔁 Conexión entre las dos páginas
+Desde	Hacia	Qué pasa
+Home	CategoryPage	Clic en “Ver más” o icono del slider principal redirige a /category/:slug
+CategoryPage	(mismo componente)	Clic en una subcategoría actualiza la URL (usa navigate()) y recarga los posts dinámicamente
+CategoryPage	PostDetail	Clic en un post individual abre /post/:id
+💡 En resumen maestro
+Página	Qué hace	Qué acción ejecuta	Paginación
+Home.jsx	Muestra todas las categorías con 6 posts + slider principal	getAllCategoriesWithPosts(page)	Scroll infinito para más categorías
+CategoryPage.jsx	Muestra posts de una categoría + sliders dinámicos	getCategoryPosts(slug, subSlug?, articleSlug?, page)	Scroll infinito para más posts
+🧱 Arquitectura limpia y real
+/src/pages
+ ├── Home.jsx
+ ├── CategoryPage.jsx
+ └── PostDetail.jsx
+
+/src/components
+ ├── Sliders
+ │    ├── MainCategorySlider.jsx
+ │    ├── SubCategorySlider.jsx
+ │    └── ArticleSlider.jsx
+ ├── CategorySection.jsx
+ ├── PostCard.jsx
+ ├── Breadcrumb.jsx
+ └── Footer.jsx
+
+
+🔥 Conclusión:
+Tu idea está perfecta:
+
+Home.jsx obtiene categorías con paginación.
+
+CategoryPage.jsx es inteligente y dinámica, maneja los 3 niveles, sliders, scroll y posts en una sola estructura.
+
+No hay páginas duplicadas, solo acciones y componentes reutilizables.
+
+
+
+
+
+
+
+
+Las dos páginas principales (Home.jsx y CategoryPage.jsx)
+
+Las acciones que ejecutan (getAllCategoriesWithPosts, getCategoryPosts)
+
+Las URLs del frontend y las peticiones al backend
+
+Cómo se conectan entre sí
+
+Dónde entra el scroll, el botón “Ver más”, y los sliders dinámicos
+
+🧭 DIAGRAMA VISUAL DEL FLUJO COMPLETO DEL MARKETPLACE
+┌───────────────────────────────┐
+│          FRONTEND             │
+└───────────────────────────────┘
+
+       ↓ Inicia la app
+
+┌───────────────────────────────┐
+│          Home.jsx             │
+│-------------------------------│
+│ ✅ Acción: getAllCategoriesWithPosts(page)     
+│    → URL backend: /api/categories?page=1&limit=8
+│
+│ 🧱 Renderiza:
+│   • MainCategorySlider (categorías nivel 1)
+│   • Secciones con 6 posts por categoría
+│   • Botón "Ver más posts"
+│   • Scroll infinito para más categorías
+│
+│ 🔁 Scroll → getAllCategoriesWithPosts(page + 1)
+│
+│ 👆 Clic en categoría o "Ver más posts"
+│     ↓
+│ Navegar a → /category/:slug
+└───────────────────────────────┘
+                  │
+                  │
+                  ▼
+┌───────────────────────────────┐
+│       CategoryPage.jsx        │
+│-------------------------------│
+│ ✅ Acción: getCategoryPosts(slug, subSlug?, articleSlug?, page)
+│    → URL backend: 
+│      /api/posts/filter?category=immobilier&page=1
+│      /api/posts/filter?category=immobilier&sub=vente&page=1
+│      /api/posts/filter?category=immobilier&sub=vente&article=villa&page=1
+│
+│ 🧱 Renderiza dinámicamente:
+│   • Breadcrumb (Immobilier → Vente → Villa)
+│   • Slider dinámico (SubCategorySlider o ArticleSlider)
+│   • Grid de posts (12 primeros)
+│   • Scroll infinito → más posts
+│
+│ 🔁 Scroll → getCategoryPosts(..., page + 1)
+│
+│ 👆 Clic en subcategoría
+│     ↓
+│ Navegar a → /category/:slug/:subSlug
+│
+│ 👆 Clic en artículo
+│     ↓
+│ Navegar a → /category/:slug/:subSlug/:articleSlug
+│
+│ 👆 Clic en un post
+│     ↓
+│ Navegar a → /post/:id
+└───────────────────────────────┘
+                  │
+                  │
+                  ▼
+┌───────────────────────────────┐
+│          BACKEND (API)        │
+│-------------------------------│
+│ /api/categories?page=1&limit=8
+│   → Devuelve categorías principales + 6 posts cada una
+│
+│ /api/posts/filter?category=...&page=...
+│   → Devuelve categoría actual, subniveles e hijos (para sliders)
+│   → Devuelve posts paginados filtrados por categoría
+└───────────────────────────────┘
+
+🔁 Resumen del flujo entre páginas
+Desde	Hacia	Qué ocurre	Acción
+Home.jsx	CategoryPage.jsx	Usuario hace clic en categoría o “Ver más”	getAllCategoriesWithPosts → getCategoryPosts
+CategoryPage.jsx	CategoryPage.jsx (mismo componente, distinto nivel)	Usuario hace clic en subcategoría o artículo	getCategoryPosts con nuevos parámetros
+CategoryPage.jsx	PostDetail.jsx	Usuario hace clic en post	obtiene post individual
+Ambas páginas	Backend	Scroll infinito o cambio de categoría	llaman a /api/categories o /api/posts/filter
+💡 En palabras simples
+
+Home.jsx llama a getAllCategoriesWithPosts
+👉 Trae todas las categorías principales (nivel 1) + sus primeros 6 posts.
+👉 Scroll = más categorías.
+👉 Clic = navega a /category/:slug.
+
+CategoryPage.jsx llama a getCategoryPosts
+👉 Filtra posts según el slug, subSlug o articleSlug.
+👉 Muestra sliders dinámicos según el nivel actual.
+👉 Scroll = más posts de esa categoría.
+
+El backend responde a esas dos acciones con datos de categorías, subniveles y posts.
+
+Maestro, ¿quieres que haga una versión aún más visual (tipo mapa de flujo vertical con flechas y bloques) mostrando exactamente cómo fluyen los datos desde Home hasta Backend y de vuelta al navegador, para que veas cada paso como una línea de conexión?
+Sería como un “mapa del viaje del dato” 🔄.
+
+
+
+
+
+
+MAPA VISUAL COMPLETO DEL MARKETPLACE (HOME → CATEGORYPAGE → BACKEND)
+🧍 Usuario
+   │
+   │ Entra a la app
+   ▼
+┌──────────────────────────────────────────────┐
+│                🏠 Home.jsx                   │
+│----------------------------------------------│
+│ 🔹 Acción ejecutada: getAllCategoriesWithPosts(page) 
+│    → Llama a: /api/categories?page=1&limit=8
+│
+│ 🔹 Renderiza:
+│     • MainCategorySlider (todas las categorías nivel 1)
+│     • 6 primeros posts por categoría
+│     • Botón "Ver más posts" → /category/:slug
+│     • Scroll infinito → carga más categorías (page + 1)
+│
+│ 🔹 Al hacer clic:
+│     → Navegar a /category/:slug
+└──────────────────────────────────────────────┘
+                    │
+                    │  (por ejemplo clic en Immobilier)
+                    ▼
+┌──────────────────────────────────────────────┐
+│           📄 CategoryPage.jsx                │
+│----------------------------------------------│
+│ 🔹 Detecta slugs con useParams():            │
+│     slug = "immobilier"                      │
+│     subSlug = undefined                      │
+│     articleSlug = undefined                  │
+│
+│ 🔹 Acción ejecutada: getCategoryPosts(slug, subSlug?, articleSlug?, page)
+│    → Llama a: /api/posts/filter?category=immobilier&page=1
+│
+│ 🔹 Renderiza dinámicamente:
+│     • Breadcrumb: Immobilier
+│     • SubCategorySlider: [Vente, Achat, Location]
+│     • Grid de 12 posts
+│     • Scroll infinito → más posts (page + 1)
+│
+│ 🔹 Al hacer clic en “Vente”
+│     → Navegar a /category/immobilier/vente
+└──────────────────────────────────────────────┘
+                    │
+                    ▼
+┌──────────────────────────────────────────────┐
+│           📄 CategoryPage.jsx                │
+│        (misma página, nivel 2)               │
+│----------------------------------------------│
+│ 🔹 useParams() detecta:                      │
+│     slug = "immobilier"                      │
+│     subSlug = "vente"                        │
+│
+│ 🔹 Acción ejecutada: getCategoryPosts(slug, subSlug)
+│    → Llama a: /api/posts/filter?category=immobilier&sub=vente&page=1
+│
+│ 🔹 Renderiza:
+│     • Breadcrumb: Immobilier → Vente
+│     • ArticleSlider: [Villa, Appartement, Local]
+│     • Grid de 12 posts
+│
+│ 🔹 Al hacer clic en “Villa”
+│     → Navegar a /category/immobilier/vente/villa
+└──────────────────────────────────────────────┘
+                    │
+                    ▼
+┌──────────────────────────────────────────────┐
+│           📄 CategoryPage.jsx                │
+│        (misma página, nivel 3)               │
+│----------------------------------------------│
+│ 🔹 useParams() detecta:                      │
+│     slug = "immobilier"                      │
+│     subSlug = "vente"                        │
+│     articleSlug = "villa"                    │
+│
+│ 🔹 Acción ejecutada: getCategoryPosts(slug, subSlug, articleSlug)
+│    → Llama a: /api/posts/filter?category=immobilier&sub=vente&article=villa&page=1
+│
+│ 🔹 Renderiza:
+│     • Breadcrumb: Immobilier → Vente → Villa
+│     • ❌ No slider (nivel más profundo)
+│     • Grid de posts filtrados (solo Villas)
+└──────────────────────────────────────────────┘
+                    │
+                    ▼
+┌──────────────────────────────────────────────┐
+│           🧠 BACKEND (Express / MongoDB)     │
+│----------------------------------------------│
+│ 📍 /api/categories?page=1&limit=8             │
+│    → Devuelve categorías principales + 6 posts cada una
+│
+│ 📍 /api/posts/filter?...                      │
+│    → Devuelve categoría actual (con parent)
+│    → Devuelve subcategorías o artículos (para sliders)
+│    → Devuelve posts filtrados (12 por página)
+│
+│ 🔁 Soporta paginación con scroll (page + 1)
+└──────────────────────────────────────────────┘
+                    │
+                    ▼
+🧍 Usuario ve resultados actualizados
+
+🧠 CLAVES DEL MAPA
+Página	Acción ejecutada	URL backend	Qué muestra
+Home.jsx	getAllCategoriesWithPosts	/api/categories?page=1&limit=8	Categorías principales + 6 posts cada una
+CategoryPage.jsx nivel 1	getCategoryPosts(slug)	/api/posts/filter?category=immobilier	Subcategorías + posts
+CategoryPage.jsx nivel 2	getCategoryPosts(slug, subSlug)	/api/posts/filter?category=immobilier&sub=vente	Artículos + posts
+CategoryPage.jsx nivel 3	getCategoryPosts(slug, subSlug, articleSlug)	/api/posts/filter?category=immobilier&sub=vente&article=villa	Solo posts finales (sin slider)
+🧩 Extra (scroll infinito)
+
+Cada página tiene su propio scroll:
+
+Home.jsx → carga más categorías
+
+CategoryPage.jsx → carga más posts de la misma categoría
+
+👉 Ambas acciones aceptan el parámetro page.
+
+💬 En resumen maestro
+
+✅ Home.jsx muestra todas las categorías (nivel 1) con sus primeros 6 posts
+✅ CategoryPage.jsx muestra una categoría específica, con subniveles dinámicos y posts paginados
+✅ Solo existen dos acciones globales:
+
+getAllCategoriesWithPosts
+
+getCategoryPosts
+
+✅ Todo el sistema de sliders y jerarquías se maneja desde una sola CategoryPage,
+sin necesidad de crear más páginas.
+
+
+
+
+🗺️ MAPA VISUAL COMPLETO DEL MARKETPLACE (HOME → CATEGORYPAGE → BACKEND)
+🧍 Usuario
+   │
+   │ Entra a la app
+   ▼
+┌──────────────────────────────────────────────┐
+│                🏠 Home.jsx                   │
+│----------------------------------------------│
+│ 🔹 Acción ejecutada: getAllCategoriesWithPosts(page) 
+│    → Llama a: /api/categories?page=1&limit=8
+│
+│ 🔹 Renderiza:
+│     • MainCategorySlider (todas las categorías nivel 1)
+│     • 6 primeros posts por categoría
+│     • Botón "Ver más posts" → /category/:slug
+│     • Scroll infinito → carga más categorías (page + 1)
+│
+│ 🔹 Al hacer clic:
+│     → Navegar a /category/:slug
+└──────────────────────────────────────────────┘
+                    │
+                    │  (por ejemplo clic en Immobilier)
+                    ▼
+┌──────────────────────────────────────────────┐
+│           📄 CategoryPage.jsx                │
+│----------------------------------------------│
+│ 🔹 Detecta slugs con useParams():            │
+│     slug = "immobilier"                      │
+│     subSlug = undefined                      │
+│     articleSlug = undefined                  │
+│
+│ 🔹 Acción ejecutada: getCategoryPosts(slug, subSlug?, articleSlug?, page)
+│    → Llama a: /api/posts/filter?category=immobilier&page=1
+│
+│ 🔹 Renderiza dinámicamente:
+│     • Breadcrumb: Immobilier
+│     • SubCategorySlider: [Vente, Achat, Location]
+│     • Grid de 12 posts
+│     • Scroll infinito → más posts (page + 1)
+│
+│ 🔹 Al hacer clic en “Vente”
+│     → Navegar a /category/immobilier/vente
+└──────────────────────────────────────────────┘
+                    │
+                    ▼
+┌──────────────────────────────────────────────┐
+│           📄 CategoryPage.jsx                │
+│        (misma página, nivel 2)               │
+│----------------------------------------------│
+│ 🔹 useParams() detecta:                      │
+│     slug = "immobilier"                      │
+│     subSlug = "vente"                        │
+│
+│ 🔹 Acción ejecutada: getCategoryPosts(slug, subSlug)
+│    → Llama a: /api/posts/filter?category=immobilier&sub=vente&page=1
+│
+│ 🔹 Renderiza:
+│     • Breadcrumb: Immobilier → Vente
+│     • ArticleSlider: [Villa, Appartement, Local]
+│     • Grid de 12 posts
+│
+│ 🔹 Al hacer clic en “Villa”
+│     → Navegar a /category/immobilier/vente/villa
+└──────────────────────────────────────────────┘
+                    │
+                    ▼
+┌──────────────────────────────────────────────┐
+│           📄 CategoryPage.jsx                │
+│        (misma página, nivel 3)               │
+│----------------------------------------------│
+│ 🔹 useParams() detecta:                      │
+│     slug = "immobilier"                      │
+│     subSlug = "vente"                        │
+│     articleSlug = "villa"                    │
+│
+│ 🔹 Acción ejecutada: getCategoryPosts(slug, subSlug, articleSlug)
+│    → Llama a: /api/posts/filter?category=immobilier&sub=vente&article=villa&page=1
+│
+│ 🔹 Renderiza:
+│     • Breadcrumb: Immobilier → Vente → Villa
+│     • ❌ No slider (nivel más profundo)
+│     • Grid de posts filtrados (solo Villas)
+└──────────────────────────────────────────────┘
+                    │
+                    ▼
+┌──────────────────────────────────────────────┐
+│           🧠 BACKEND (Express / MongoDB)     │
+│----------------------------------------------│
+│ 📍 /api/categories?page=1&limit=8             │
+│    → Devuelve categorías principales + 6 posts cada una
+│
+│ 📍 /api/posts/filter?...                      │
+│    → Devuelve categoría actual (con parent)
+│    → Devuelve subcategorías o artículos (para sliders)
+│    → Devuelve posts filtrados (12 por página)
+│
+│ 🔁 Soporta paginación con scroll (page + 1)
+└──────────────────────────────────────────────┘
+                    │
+                    ▼
+🧍 Usuario ve resultados actualizados
+
+🧠 CLAVES DEL MAPA
+Página	Acción ejecutada	URL backend	Qué muestra
+Home.jsx	getAllCategoriesWithPosts	/api/categories?page=1&limit=8	Categorías principales + 6 posts cada una
+CategoryPage.jsx nivel 1	getCategoryPosts(slug)	/api/posts/filter?category=immobilier	Subcategorías + posts
+CategoryPage.jsx nivel 2	getCategoryPosts(slug, subSlug)	/api/posts/filter?category=immobilier&sub=vente	Artículos + posts
+CategoryPage.jsx nivel 3	getCategoryPosts(slug, subSlug, articleSlug)	/api/posts/filter?category=immobilier&sub=vente&article=villa	Solo posts finales (sin slider)
+🧩 Extra (scroll infinito)
+
+Cada página tiene su propio scroll:
+
+Home.jsx → carga más categorías
+
+CategoryPage.jsx → carga más posts de la misma categoría
+
+👉 Ambas acciones aceptan el parámetro page.
+
+💬 En resumen maestro
+
+✅ Home.jsx muestra todas las categorías (nivel 1) con sus primeros 6 posts
+✅ CategoryPage.jsx muestra una categoría específica, con subniveles dinámicos y posts paginados
+✅ Solo existen dos acciones globales:
+
+getAllCategoriesWithPosts
+
+getCategoryPosts
+
+✅ Todo el sistema de sliders y jerarquías se maneja desde una sola CategoryPage,
+sin necesidad de crear más páginas.
+
+Si quieres, maestro, puedo hacerte ahora un segundo mapa más compacto, donde se vea solo el flujo de acciones y URLs (sin los textos largos),
+ideal para pegarlo como referencia visual en tu documentación del proyecto. ¿Deseas que te lo prepare?
+
+si por favor
+
+¡Excelente maestro! 😎✨
+Aquí tienes la versión compacta del mapa visual, enfocada únicamente en el flujo de acciones, rutas y URLs — perfecta para usar como referencia técnica o documentación en tu proyecto MERN Marketplace.
+
+Todo está reducido a lo esencial:
+👉 páginas → acciones → rutas → peticiones backend → datos devueltos.
+
+⚙️ MAPA COMPACTO DE FLUJO — HOME & CATEGORYPAGE
+🧍 Usuario
+   │
+   ▼
+──────────────────────────────────────────────
+🏠 Home.jsx
+──────────────────────────────────────────────
+   ↓
+🟢 Acción → getAllCategoriesWithPosts(page)
+   ↓
+🌐 URL Backend → /api/categories?page=1&limit=8
+   ↓
+📦 Respuesta → [
+   { category: "Immobilier", posts: [6 posts] },
+   { category: "Boutiques", posts: [6 posts] },
+   ...
+]
+   ↓
+🎨 Renderiza:
+   - MainCategorySlider (nivel 1)
+   - Secciones (categoría + 6 posts)
+   - Scroll infinito → page + 1
+   - Botón “Ver más posts”
+   ↓
+👆 Clic → Navegar a /category/:slug
+──────────────────────────────────────────────
+   │
+   ▼
+──────────────────────────────────────────────
+📄 CategoryPage.jsx
+──────────────────────────────────────────────
+   ↓
+🟢 Acción → getCategoryPosts(slug, subSlug?, articleSlug?, page)
+   ↓
+🌐 URL Backend →
+   Nivel 1 → /api/posts/filter?category=immobilier&page=1
+   Nivel 2 → /api/posts/filter?category=immobilier&sub=vente&page=1
+   Nivel 3 → /api/posts/filter?category=immobilier&sub=vente&article=villa&page=1
+   ↓
+📦 Respuesta → {
+   category: { name, level, parent },
+   children: [subcategorías o artículos],
+   posts: [12 posts paginados]
+}
+   ↓
+🎨 Renderiza:
+   - Breadcrumb (jerarquía)
+   - Slider dinámico (según nivel)
+   - Grid de posts
+   - Scroll infinito → page + 1
+   ↓
+👆 Clic subcategoría → /category/:slug/:subSlug
+👆 Clic artículo → /category/:slug/:subSlug/:articleSlug
+👆 Clic post → /post/:id
+──────────────────────────────────────────────
+   │
+   ▼
+──────────────────────────────────────────────
+🧠 Backend (Express + MongoDB)
+──────────────────────────────────────────────
+   • /api/categories → devuelve categorías principales + 6 posts
+   • /api/posts/filter → devuelve jerarquía + posts filtrados
+   • Soporta paginación (?page=N)
+──────────────────────────────────────────────
+
+🧩 Flujo resumido en una línea
+Home.jsx
+  → getAllCategoriesWithPosts()
+  → /api/categories?page=N
+  → muestra 6 posts por categoría
+  → clic → /category/:slug
+     ↓
+CategoryPage.jsx
+  → getCategoryPosts(slug, subSlug?, articleSlug?, page)
+  → /api/posts/filter?...page=N
+  → muestra posts + sliders + jerarquía
+
+💡 Clave final del maestro
+
+Solo dos páginas (Home, CategoryPage)
+Solo dos acciones principales (getAllCategoriesWithPosts, getCategoryPosts)
+Todo el sistema de sliders, jerarquías, posts y scroll infinito se maneja desde estas dos piezas.
+💥 Simplicidad y escalabilidad total.
+
+¿Quieres que te prepare este mismo mapa en formato visual gráfico (bloques y flechas horizontales, como un diagrama que puedas guardar o imprimir)?
+Así lo tendrías como una “hoja guía” para planificar tus acciones y endpoints.
+
+si quiero
+Imagen creada
+•
+Flujo de datos en aplicación de marketplace
+
+
+
+
+
+
+src/components/
+├── Breadcrumb/
+│   └── Breadcrumb.jsx
+├── Sliders/
+│   ├── MainCategorySlider.jsx
+│   ├── SubCategorySlider.jsx
+│   └── ArticleSlider.jsx
+├── CategorySection/
+│   └── CategorySection.jsx
+├── PostCard/
+│   └── PostCard.jsx
+├── Header/
+│   └── Header.jsx
+└── Footer/
+    └── Footer.jsx

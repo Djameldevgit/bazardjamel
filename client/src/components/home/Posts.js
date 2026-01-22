@@ -1,4 +1,3 @@
-// components/home/Posts.js - VERSIÓN COMPLETA CON IMMOBILIER
 import React, { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
@@ -9,8 +8,9 @@ const Posts = ({
     selectedSubcategory,
     fromCategoryPage = false,
     fromSubcategoryPage = false,
-    fromImmobilerPage = false, // 🆕 NUEVO: Para páginas de immobiler
-    displayMode = 'grid'
+    fromImmobilerPage = false,
+    displayMode = 'grid',
+    page = 1
 }) => {
     const location = useLocation();
     const { homePosts } = useSelector(state => state);
@@ -20,124 +20,154 @@ const Posts = ({
         selectedSubcategory,
         fromCategoryPage,
         fromSubcategoryPage,
-        fromImmobilerPage, // 🆕
+        fromImmobilerPage,
+        page,
         path: location.pathname,
-        // Posts normales
-        postsInState: homePosts.posts?.length,
-        currentCategory: homePosts.category,
-        currentSubcategory: homePosts.subcategory,
-        // Posts de immobiler
-        immobilierPosts: homePosts.immobilierPosts?.length,
-        immobilierOperation: homePosts.immobilierOperation,
-        immobilierTotal: homePosts.immobilierTotal
+        search: location.search
     });
     
-    // 📌 LÓGICA MEJORADA DE FILTRADO CON IMMOBILIER
+    // Leer parámetros de filtro de la URL
+    const queryParams = useMemo(() => {
+        return new URLSearchParams(location.search);
+    }, [location.search]);
+    
+    const filterFromUrl = queryParams.get('filter');
+    const filterLabelFromUrl = queryParams.get('filterLabel');
+    
+    // 📌 LÓGICA MEJORADA DE FILTRADO CON FILTROS DE URL
     const displayPosts = useMemo(() => {
         let postsToShow = [];
         
-        // 🏠 CASO 1: Página de IMMOBILIER (nivel 1: operaciones como vente, location)
-        if (fromImmobilerPage) {
-            console.log('🏠 ImmobilerPage - Mostrando posts de immobiler:', {
-                operation: selectedSubcategory, // operationId llega como selectedSubcategory
-                postsInImmobilier: homePosts.immobilierPosts?.length,
-                operationInState: homePosts.immobilierOperation
-            });
+        console.log('🔄 Calculando posts a mostrar...', {
+            filterFromUrl,
+            filterLabelFromUrl,
+            postsInHome: homePosts?.posts?.length,
+            categorySpecificPosts: homePosts?.categorySpecificPosts?.length,
+            categoryPosts: homePosts?.categoryPosts ? Object.keys(homePosts.categoryPosts) : []
+        });
+        
+        // 🎯 CASO 1: Filtro desde URL (CategoryPage con filtro local)
+        if (filterFromUrl && selectedCategory && fromCategoryPage) {
+            console.log(`🎯 Aplicando filtro desde URL: ${filterFromUrl} (${filterLabelFromUrl})`);
             
-            // Usar posts específicos de immobiler
+            // Intentar obtener posts de categorySpecificPosts primero
+            if (homePosts.categorySpecificPosts && homePosts.categorySpecificPosts.length > 0) {
+                console.log(`📦 Filtrando ${homePosts.categorySpecificPosts.length} posts de categorySpecificPosts`);
+                postsToShow = homePosts.categorySpecificPosts.filter(post => {
+                    const matches = post.subCategory === filterFromUrl || 
+                                   post.title?.toLowerCase().includes(filterFromUrl.toLowerCase());
+                    return matches;
+                });
+                console.log(`✅ Encontrados ${postsToShow.length} posts después del filtro`);
+            }
+            
+            // Si no hay resultados, intentar con categoryPosts
+            if (postsToShow.length === 0 && homePosts.categoryPosts && homePosts.categoryPosts[selectedCategory]) {
+                console.log(`📦 Intentando con categoryPosts para ${selectedCategory}`);
+                const categoryPosts = homePosts.categoryPosts[selectedCategory] || [];
+                postsToShow = categoryPosts.filter(post => 
+                    post.subCategory === filterFromUrl
+                );
+                console.log(`✅ Encontrados ${postsToShow.length} posts en categoryPosts`);
+            }
+            
+            // Si todavía no hay resultados, intentar con posts generales
+            if (postsToShow.length === 0 && homePosts.posts && homePosts.posts.length > 0) {
+                console.log(`📦 Intentando con posts generales`);
+                postsToShow = homePosts.posts.filter(post => 
+                    post.categorie === selectedCategory && 
+                    post.subCategory === filterFromUrl
+                );
+                console.log(`✅ Encontrados ${postsToShow.length} posts en posts generales`);
+            }
+        }
+        
+        // 🏠 CASO 2: Página de IMMOBILIER
+        else if (fromImmobilerPage) {
+            console.log('🏠 ImmobilerPage - Mostrando posts de immobiler');
+            
             if (homePosts.immobilierPosts && homePosts.immobilierPosts.length > 0) {
                 postsToShow = homePosts.immobilierPosts;
                 
-                // 🆕 Filtrar por propertyType si estamos en nivel 2
+                // Filtrar por propertyType si estamos en nivel 2
                 if (selectedSubcategory && location.pathname.includes('/immobilier/')) {
                     const pathParts = location.pathname.split('/').filter(p => p);
                     if (pathParts.length === 4 && pathParts[1] === 'immobilier') {
-                        // Es /immobilier/vente/villa (nivel 2)
                         const propertyId = pathParts[3];
                         console.log(`🏠 Nivel 2 de immobiler - Filtrando por propiedad: ${propertyId}`);
                         
                         postsToShow = postsToShow.filter(post => 
                             post.propertyType === propertyId || 
-                            post.subCategory?.includes(propertyId) ||
-                            post.title?.toLowerCase().includes(propertyId.toLowerCase())
+                            post.subCategory?.includes(propertyId)
                         );
                     }
                 }
-            } else {
-                // Si no hay posts de immobiler, intentar usar posts normales filtrados
-                console.log('⚠️ No hay posts en immobilierPosts, intentando filtrar desde posts normales');
-                if (homePosts.posts && homePosts.posts.length > 0) {
-                    postsToShow = homePosts.posts.filter(post => 
-                        post.categorie === 'immobilier'
-                    );
-                    
-                    // Filtrar por operación si se especifica
-                    if (selectedSubcategory) {
-                        postsToShow = postsToShow.filter(post => {
-                            // Buscar operationId en varios campos posibles
-                            return post.operationType === selectedSubcategory ||
-                                   post.subCategory === selectedSubcategory ||
-                                   post.title?.toLowerCase().includes(selectedSubcategory.toLowerCase());
-                        });
-                    }
+            } else if (homePosts.posts && homePosts.posts.length > 0) {
+                postsToShow = homePosts.posts.filter(post => 
+                    post.categorie === 'immobilier'
+                );
+                
+                if (selectedSubcategory) {
+                    postsToShow = postsToShow.filter(post => {
+                        return post.operationType === selectedSubcategory ||
+                               post.subCategory === selectedSubcategory;
+                    });
                 }
             }
         }
         
-        // 📂 CASO 2: Página de SUBCATEGORÍA normal
+        // 📂 CASO 3: Página de SUBCATEGORÍA normal
         else if (fromSubcategoryPage || (selectedSubcategory && selectedCategory)) {
-            console.log('📂 SubcategoryPage - Filtrando por subcategoría:', {
-                category: selectedCategory,
-                subcategory: selectedSubcategory
-            });
+            console.log('📂 SubcategoryPage - Filtrando por subcategoría');
             
-            // Opción A: Usar posts del estado que ya deberían estar filtrados
             if (homePosts.posts && homePosts.posts.length > 0) {
                 postsToShow = homePosts.posts.filter(post => {
                     const matchesCategory = !selectedCategory || post.categorie === selectedCategory;
                     const matchesSubcategory = !selectedSubcategory || post.subCategory === selectedSubcategory;
                     return matchesCategory && matchesSubcategory;
                 });
-                
-                console.log(`✅ Filtrados ${postsToShow.length} posts de ${homePosts.posts.length}`);
-            }
-            // Opción B: Filtrar desde categorySpecificPosts
-            else if (homePosts.categorySpecificPosts && homePosts.categorySpecificPosts.length > 0) {
+            } else if (homePosts.categorySpecificPosts && homePosts.categorySpecificPosts.length > 0) {
                 postsToShow = homePosts.categorySpecificPosts.filter(post => 
                     post.subCategory === selectedSubcategory
                 );
-                console.log(`✅ Desde categorySpecificPosts: ${postsToShow.length}`);
             }
         }
         
-        // 🏘️ CASO 3: Página de CATEGORÍA específica (incluyendo /category/immobilier)
+        // 🏘️ CASO 4: Página de CATEGORÍA específica (sin filtro)
         else if (fromCategoryPage || location.pathname.startsWith('/category/')) {
-            console.log('📂 CategoryPage - Usando categorySpecificPosts');
-            postsToShow = homePosts.categorySpecificPosts || [];
+            console.log('📂 CategoryPage - Usando posts de categoría');
             
-            // Si es immobiler y no hay categorySpecificPosts, buscar manualmente
-            if (selectedCategory === 'immobilier' && postsToShow.length === 0 && homePosts.posts) {
+            // Prioridad 1: categorySpecificPosts
+            if (homePosts.categorySpecificPosts && homePosts.categorySpecificPosts.length > 0) {
+                postsToShow = homePosts.categorySpecificPosts;
+            }
+            // Prioridad 2: categoryPosts
+            else if (homePosts.categoryPosts && homePosts.categoryPosts[selectedCategory]) {
+                postsToShow = homePosts.categoryPosts[selectedCategory] || [];
+            }
+            // Prioridad 3: filtrar manualmente
+            else if (homePosts.posts && homePosts.posts.length > 0) {
                 postsToShow = homePosts.posts.filter(post => 
-                    post.categorie === 'immobilier'
+                    post.categorie === selectedCategory
                 );
             }
         }
         
-        // 🏠 CASO 4: Home con categoría "all"
-        else if (selectedCategory === 'all') {
+        // 🏠 CASO 5: Home con categoría específica
+        else if (homePosts.categoryPosts && homePosts.categoryPosts[selectedCategory]) {
+            console.log(`🏠 Home - Mostrando categoría ${selectedCategory}`);
+            postsToShow = homePosts.categoryPosts[selectedCategory] || [];
+        }
+        
+        // 🏠 CASO 6: Home con todas las categorías
+        else if (selectedCategory === 'all' || !selectedCategory) {
             console.log('🏠 Home - Mostrando TODOS los posts');
             postsToShow = homePosts.posts || [];
         }
         
-        // 🏠 CASO 5: Home con categoría específica (filtro en Home)
-        else if (homePosts.categoryPosts && homePosts.categoryPosts[selectedCategory]) {
-            console.log(`🏠 Home - Filtrado para ${selectedCategory}`);
-            postsToShow = homePosts.categoryPosts[selectedCategory] || [];
-        }
-        
-        // 🔍 CASO 6: Filtro adicional por categoría (si solo hay categoría)
-        else if (selectedCategory && !selectedSubcategory) {
-            console.log(`🔍 Filtrando solo por categoría: ${selectedCategory}`);
+        // 🔍 CASO 7: Filtro simple por categoría
+        else if (selectedCategory && !selectedSubcategory && !fromCategoryPage) {
+            console.log(`🔍 Filtrando por categoría: ${selectedCategory}`);
             if (homePosts.posts && homePosts.posts.length > 0) {
                 postsToShow = homePosts.posts.filter(post => 
                     post.categorie === selectedCategory
@@ -145,18 +175,23 @@ const Posts = ({
             }
         }
         
-        console.log(`📊 Posts a mostrar: ${postsToShow.length}`);
-        
-        // 🆕 DEPURACIÓN: Mostrar detalles de los posts
+        // 📊 DEPURACIÓN: Información sobre los posts encontrados
+        console.log(`📊 Resultado final: ${postsToShow.length} posts a mostrar`);
         if (postsToShow.length > 0) {
-            console.log('🔍 Primeros 2 posts para verificar:', postsToShow.slice(0, 2).map(post => ({
-                id: post._id,
+            console.log('🔍 Ejemplo de posts:', postsToShow.slice(0, 2).map(post => ({
+                id: post._id?.substring(0, 8),
                 categorie: post.categorie,
                 subCategory: post.subCategory,
-                operationType: post.operationType,
-                propertyType: post.propertyType,
-                title: post.title?.substring(0, 30)
+                title: post.title?.substring(0, 40)
             })));
+        }
+        
+        // 🔄 Paginación simple (si es necesario)
+        if (page > 1 && postsToShow.length > 20) {
+            const itemsPerPage = 20;
+            const startIndex = (page - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            postsToShow = postsToShow.slice(startIndex, endIndex);
         }
         
         return postsToShow;
@@ -168,13 +203,20 @@ const Posts = ({
         fromCategoryPage, 
         fromSubcategoryPage, 
         fromImmobilerPage, 
-        location.pathname
+        location.pathname,
+        filterFromUrl,
+        filterLabelFromUrl,
+        page
     ]);
     
-    // 📌 DETERMINAR EL MENSAJE DE "NO HAY POSTS" SEGÚN EL CONTEXTO
+    // 📌 MENSAJE CUANDO NO HAY POSTS
     const getEmptyMessage = () => {
+        // Caso de filtro desde URL
+        if (filterFromUrl && filterLabelFromUrl) {
+            return `Aucune annonce disponible pour "${filterLabelFromUrl}"`;
+        }
+        
         if (fromImmobilerPage && selectedSubcategory) {
-            // Para immobiler con operación específica
             const operationNames = {
                 'vente': 'Vente',
                 'location': 'Location',
@@ -182,7 +224,6 @@ const Posts = ({
                 'cherche_location': 'Cherche Location',
                 'cherche_achat': 'Cherche Achat'
             };
-            
             const operationName = operationNames[selectedSubcategory] || selectedSubcategory;
             return `Aucune annonce disponible pour "${operationName}"`;
         }
@@ -192,44 +233,41 @@ const Posts = ({
         }
         
         if (selectedSubcategory) {
-            return `No hay anuncios en "${selectedSubcategory}"`;
+            return `Aucune annonce dans "${selectedSubcategory}"`;
         }
         
         if (selectedCategory && selectedCategory !== 'all') {
-            return `No hay anuncios en "${selectedCategory}"`;
+            return `Aucune annonce dans "${selectedCategory}"`;
         }
         
-        return 'No hay anuncios publicados aún';
+        return 'Aucune annonce publiée pour le moment';
     };
     
-    // 📌 DETERMINAR EL EMOJI PARA EL ESTADO VACÍO
+    // 📌 EMOJI PARA ESTADO VACÍO
     const getEmptyEmoji = () => {
+        if (filterFromUrl) return '🔍';
         if (fromImmobilerPage) return '🏠';
-        if (selectedSubcategory) return '🔍';
-        if (selectedCategory === 'immobilier') return '🏘️';
+        if (selectedSubcategory) return '📂';
         return '📭';
     };
     
-    // 📌 ESTILOS DIFERENTES SEGÚN MODO DE VISUALIZACIÓN
+    // 📌 RENDERIZAR POSTS EN MODO HORIZONTAL O GRID
     const renderPosts = () => {
         if (displayMode === 'horizontal') {
             return (
-                <div style={{ 
-                    display: 'inline-flex', 
-                    gap: '20px', 
-                    padding: '0 10px',
-                    flexWrap: 'nowrap'
-                }}>
-                    {displayPosts.map(post => (
-                        <div key={post._id} style={{ minWidth: '280px' }}>
-                            <PostCard post={post} />
-                        </div>
-                    ))}
+                <div className="horizontal-posts-container">
+                    <div className="horizontal-posts-scroll">
+                        {displayPosts.map(post => (
+                            <div key={post._id} className="horizontal-post-item">
+                                <PostCard post={post} />
+                            </div>
+                        ))}
+                    </div>
                 </div>
             );
         }
         
-        // Modo grid (por defecto)
+        // Modo grid por defecto
         return (
             <div className="post_thumb">
                 {displayPosts.map(post => (
@@ -241,8 +279,8 @@ const Posts = ({
         );
     };
     
-    // 📌 MENSAJES DE ESTADO VACÍO MEJORADOS
-    if (!displayPosts || displayPosts.length === 0) {
+    // 📌 RENDERIZAR ESTADO VACÍO
+    const renderEmptyState = () => {
         return (
             <div className="text-center py-5">
                 <div className="display-1 mb-3" style={{ opacity: 0.5 }}>
@@ -252,37 +290,27 @@ const Posts = ({
                     {getEmptyMessage()}
                 </h4>
                 
-                {/* Mensajes contextuales adicionales */}
-                {selectedSubcategory && selectedCategory && !fromImmobilerPage && (
+                {/* Mensajes contextuales */}
+                {filterFromUrl && (
                     <p className="text-muted mb-4">
-                        Prueba a buscar en toda la categoría "{selectedCategory}"
-                    </p>
-                )}
-                
-                {fromImmobilerPage && selectedSubcategory && (
-                    <p className="text-muted mb-4">
-                        Vous pouvez essayer d'autres types d'opérations immobilières
+                        Essayez de supprimer le filtre ou de chercher dans d'autres catégories
                     </p>
                 )}
                 
                 {/* Botones de acción */}
                 <div className="mt-4">
-                    {fromImmobilerPage ? (
-                        <a 
-                            href="/category/immobilier" 
+                    {filterFromUrl ? (
+                        <button 
+                            onClick={() => {
+                                // Limpiar filtro de la URL
+                                const newUrl = `${location.pathname}`;
+                                window.location.href = newUrl;
+                            }}
                             className="btn btn-primary me-2"
                         >
-                            <i className="fas fa-arrow-left me-2"></i>
-                            Retour à Immobilier
-                        </a>
-                    ) : selectedCategory && selectedCategory !== 'all' ? (
-                        <a 
-                            href="/" 
-                            className="btn btn-primary me-2"
-                        >
-                            <i className="fas fa-home me-2"></i>
-                            Ver todas las categorías
-                        </a>
+                            <i className="fas fa-times me-2"></i>
+                            Supprimer le filtre
+                        </button>
                     ) : null}
                     
                     <a href="/" className="btn btn-outline-secondary">
@@ -292,9 +320,81 @@ const Posts = ({
                 </div>
             </div>
         );
+    };
+    
+    // 📌 ESTADOS DE CARGA
+    if (!homePosts) {
+        return (
+            <div className="text-center py-5">
+                <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                </div>
+                <p className="mt-2">Chargement des annonces...</p>
+            </div>
+        );
     }
     
-    return renderPosts();
+    // 📌 VERIFICAR SI HAY POSTS PARA MOSTRAR
+    if (!displayPosts || displayPosts.length === 0) {
+        return renderEmptyState();
+    }
+    
+    // 📌 RENDERIZAR LOS POSTS
+    return (
+        <div className="posts-container">
+            {/* Información sobre los posts mostrados */}
+            {filterFromUrl && (
+                <div className="mb-4 p-3 bg-light rounded">
+                    <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span className="text-muted">Filtre actif:</span>
+                            <span className="ms-2 badge bg-primary">
+                                {filterLabelFromUrl || filterFromUrl}
+                            </span>
+                            <span className="ms-3 text-muted">
+                                ({displayPosts.length} annonce{displayPosts.length !== 1 ? 's' : ''})
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* Posts */}
+            {renderPosts()}
+            
+            {/* Paginación simple (si es necesario) */}
+            {displayPosts.length >= 20 && (
+                <div className="mt-4 text-center">
+                    <div className="btn-group" role="group">
+                        <button 
+                            className="btn btn-outline-primary"
+                            disabled={page <= 1}
+                            onClick={() => {
+                                const newPage = page - 1;
+                                window.location.href = `${location.pathname}?page=${newPage}`;
+                            }}
+                        >
+                            <i className="fas fa-chevron-left me-1"></i>
+                            Précédent
+                        </button>
+                        <span className="btn btn-light">
+                            Page {page}
+                        </span>
+                        <button 
+                            className="btn btn-outline-primary"
+                            onClick={() => {
+                                const newPage = page + 1;
+                                window.location.href = `${location.pathname}?page=${newPage}`;
+                            }}
+                        >
+                            Suivant
+                            <i className="fas fa-chevron-right ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 };
 
 export default Posts;

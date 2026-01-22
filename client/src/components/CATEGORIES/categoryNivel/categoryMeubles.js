@@ -104,3 +104,5 @@ const categoryMeubles = {
   };
   
   export default categoryMeubles;
+
+  

@@ -1,0 +1,16 @@
+// routes/categoryRouter.js
+const express = require('express');
+const router = express.Router();
+const categoryCtrl  = require('../controllers/categoryCtrl');  
+
+ 
+router.get('/all-hierarchical', categoryCtrl.getAllCategoriesHierarchical);
+ 
+router.get('/main', categoryCtrl.getMainCategories); // GET /api/categories/main
+router.get('/leaves', categoryCtrl.getLeafCategories); // GET /api/categories/leaves
+router.get('/:slug/with-posts', categoryCtrl.getCategoryWithPosts); // GET /api/categories/:slug/with-posts
+router.get('/:slug/children', categoryCtrl.getCategoryChildren); // GET /api/categories/:slug/children
+router.get('/:slug/tree', categoryCtrl.getCategoryTree); // GET /api/categories/:slug/tree
+router.get('/path/:path', categoryCtrl.getCategoryByPath); // GET /api/categories/path/:path
+
+module.exports = router;

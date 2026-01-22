@@ -1,0 +1,34 @@
+[
+    {
+      "id": "1",
+      "slug": "immobilier",
+      "name": "Immobilier",
+      "emoji": "🏠",
+      "subcategories": [
+        {
+          "slug": "villa",
+          "name": "Villa",
+          "articleTypes": [
+            { "slug": "vente", "name": "Vente" },
+            { "slug": "location", "name": "Location" }
+          ]
+        },
+        {
+          "slug": "appartement",
+          "name": "Appartement",
+          "articleTypes": [
+            { "slug": "vente", "name": "Vente" },
+            { "slug": "location", "name": "Location" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "slug": "vehicules",
+      "name": "Véhicules",
+      "emoji": "🚗",
+      "subcategories": []
+    }
+  ]
+  

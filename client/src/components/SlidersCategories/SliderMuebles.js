@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { Link, useParams, useHistory } from 'react-router-dom';
+import { FaChevronLeft, FaChevronRight, FaArrowLeft } from 'react-icons/fa';
+import categoryMeubles from '../CATEGORIES/categoryNivel/categoryMeubles';
 
-// Mapa de colores para cada categoría
+// Mapa de colores
 const colorMap = {
   primary: '#667eea',
   secondary: '#48c6ef',
@@ -16,38 +17,55 @@ const colorMap = {
   green: '#28a745'
 };
 
-// Subcategorías de meubles
-const meublesData = [
-  { id: 'meubles_maison', name: 'Meubles Maison', emoji: '🛋️', color: 'primary' },
-  { id: 'decoration', name: 'Décoration', emoji: '🎨', color: 'warning' },
-  { id: 'vaisselle', name: 'Vaisselle', emoji: '🍽️', color: 'info' },
-  { id: 'meubles_bureau', name: 'Meubles Bureau', emoji: '💼', color: 'dark' },
-  { id: 'rideaux', name: 'Rideaux', emoji: '🪟', color: 'success' },
-  { id: 'literie_linge', name: 'Literie & Linge', emoji: '🛏️', color: 'secondary' },
-  { id: 'puericulture', name: 'Puériculture', emoji: '👶', color: 'pink' },
-  { id: 'tapis_moquettes', name: 'Tapis & Moquettes', emoji: '🧶', color: 'brown' },
-  { id: 'meubles_exterieur', name: 'Meubles Extérieur', emoji: '🌳', color: 'green' },
-  { id: 'fournitures_scolaires', name: 'Fournitures Scolaires', emoji: '📚', color: 'info' },
-  { id: 'luminaire', name: 'Luminaire', emoji: '💡', color: 'warning' },
-  { id: 'autre', name: 'Autre', emoji: '📦', color: 'secondary' }
-];
-
 const SliderMeubles = () => {
+  const { subcategorySlug, subsubcategorySlug } = useParams();
+  const history = useHistory();
+  
   const [isMobile, setIsMobile] = useState(false);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+  const [currentLevel, setCurrentLevel] = useState(1); // 1: subcategorías, 2: sub-subcategorías
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  
   const containerRef = useRef(null);
   const scrollRef = useRef(null);
   const rowsContainerRef = useRef(null);
 
-  // Configuración responsive
+  // Determinar nivel inicial basado en URL
   useEffect(() => {
+    if (subsubcategorySlug && subsubcategorySlug !== 'undefined') {
+      // Estamos en nivel 3: sub-subcategoría
+      const parentCategory = categoryMeubles.categories.find(
+        cat => categoryMeubles.subcategories[cat.id]?.some(
+          sub => sub.id === subsubcategorySlug
+        )
+      );
+      
+      if (parentCategory) {
+        setSelectedCategory(parentCategory);
+        setCurrentLevel(2);
+      }
+    } else if (subcategorySlug && subcategorySlug !== 'undefined') {
+      // Estamos en nivel 2: subcategoría
+      const category = categoryMeubles.categories.find(
+        cat => cat.id === subcategorySlug
+      );
+      
+      if (category) {
+        if (category.hasSublevel) {
+          setSelectedCategory(category);
+          setCurrentLevel(2);
+        }
+        // Si no tiene subniveles, quedamos en nivel 1
+      }
+    }
+    
+    // Configuración responsive
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
       
-      // Reset scroll position en mobile
       if (mobile && scrollRef.current) {
         scrollRef.current.scrollLeft = 0;
         setScrollPosition(0);
@@ -58,12 +76,32 @@ const SliderMeubles = () => {
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [subcategorySlug, subsubcategorySlug]);
 
-  // Configuración inicial de filas
-  const itemsPerRow = isMobile ? 4 : 6;
-  const firstRow = meublesData.slice(0, itemsPerRow);
-  const secondRow = meublesData.slice(itemsPerRow);
+  // Obtener datos según nivel actual
+  const getCurrentData = () => {
+    if (currentLevel === 1) {
+      return categoryMeubles.categories || [];
+    } else if (currentLevel === 2 && selectedCategory) {
+      return categoryMeubles.subcategories[selectedCategory.id] || [];
+    }
+    return [];
+  };
+
+  // Calcular distribución en dos filas - EXACTO como SliderElectromenager
+  const currentData = getCurrentData();
+  const halfIndex = Math.ceil(currentData.length / 2);
+  const firstRow = currentData.slice(0, halfIndex);
+  const secondRow = currentData.slice(halfIndex);
+
+  // Función para obtener la ruta del icono
+  const getIconPath = (iconName) => {
+    if (currentLevel === 1) {
+      return `/icons/meubles/${iconName}`;
+    } else {
+      return `/icons/meubles/${selectedCategory?.id || 'default'}/${iconName}`;
+    }
+  };
 
   // Actualizar estado de botones de scroll
   const updateScrollButtons = () => {
@@ -95,29 +133,67 @@ const SliderMeubles = () => {
     }
   };
 
-  // Renderizar fila de emojis - SIN HOVER
-  const renderEmojiRow = (row, rowIndex) => {
-    const marginBottom = rowIndex === 0 ? (isMobile ? '8px' : '10px') : '0px';
-    
+  // Manejar clic en un ítem
+  const handleItemClick = (item) => {
+    if (currentLevel === 1) {
+      if (item.hasSublevel) {
+        // Tiene sub-subcategorías: mostrar nivel 2
+        setSelectedCategory(item);
+        setCurrentLevel(2);
+        // Resetear scroll
+        if (scrollRef.current) {
+          scrollRef.current.scrollLeft = 0;
+          setScrollPosition(0);
+          updateScrollButtons();
+        }
+      } else {
+        // No tiene subniveles: navegar a página de subcategoría
+        history.push(`/meubles/${item.id}/1`);
+      }
+    } else if (currentLevel === 2) {
+      // En nivel 2: navegar a página de sub-subcategoría
+      history.push(`/meubles/${selectedCategory.id}/${item.id}/1`);
+    }
+  };
+
+  // Volver al nivel anterior
+  const handleBackClick = () => {
+    if (currentLevel === 2) {
+      setCurrentLevel(1);
+      setSelectedCategory(null);
+      // Resetear scroll
+      if (scrollRef.current) {
+        scrollRef.current.scrollLeft = 0;
+        setScrollPosition(0);
+        updateScrollButtons();
+      }
+      // Navegar de vuelta a categoría principal
+      history.push('/meubles/1');
+    }
+  };
+
+  // Renderizar fila de iconos - IDÉNTICO a SliderElectromenager
+  const renderIconRow = (row, rowIndex) => {
     return (
       <div 
         style={{
           display: 'flex',
-          justifyContent: isMobile ? 'flex-start' : 'center',
-          gap: isMobile ? '8px' : '15px',
-          padding: isMobile ? '10px 8px' : '15px 20px',
+          justifyContent: isMobile ? 'flex-start' : 'space-around',
+          gap: isMobile ? '12px' : '5px',
+          padding: isMobile ? '6px 12px' : '8px 5px',
           flexShrink: 0,
           minWidth: isMobile ? 'min-content' : 'auto',
-          marginBottom: marginBottom
+          width: '100%'
         }}
       >
-        {row.map((category) => {
-          const colorHex = colorMap[category.color] || colorMap.primary;
+        {row.map((item) => {
+          const colorHex = colorMap[item.color] || colorMap.primary;
+          const hasSubcats = currentLevel === 1 ? item.hasSublevel : false;
           
           return (
-            <Link
-              key={`${category.id}-${rowIndex}`}
-              to={`/meubles/${category.id}`}
+            <div
+              key={`${item.id}-${rowIndex}`}
+              onClick={() => handleItemClick(item)}
               style={{
                 textDecoration: 'none',
                 color: 'inherit',
@@ -125,59 +201,134 @@ const SliderMeubles = () => {
                 flexDirection: 'column',
                 alignItems: 'center',
                 flexShrink: 0,
-                width: isMobile ? '85px' : '110px'
+                width: isMobile ? '80px' : '95px',
+                flex: '1 1 0%',
+                minWidth: '70px',
+                maxWidth: '110px',
+                padding: '4px 2px',
+                transition: 'transform 0.2s ease',
+                cursor: 'pointer'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
-              {/* Círculo del emoji - SIN HOVER EFFECTS */}
+              {/* CONTENEDOR DE ICONO - EXACTO como SliderElectromenager */}
               <div
                 style={{
                   width: isMobile ? '70px' : '85px',
                   height: isMobile ? '70px' : '85px',
                   borderRadius: '50%',
-                  background: `linear-gradient(135deg, ${colorHex}15 0%, ${colorHex}10 100%)`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  position: 'relative',
-                  border: `2px solid ${colorHex}30`,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                   marginBottom: '8px',
-                  transition: 'transform 0.2s ease'
+                  overflow: 'hidden',
+                  border: `3px solid ${colorHex}20`,
+                  background: `linear-gradient(135deg, ${colorHex}15, ${colorHex}08)`,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  transition: 'all 0.3s ease',
+                  padding: '8px',
+                  position: 'relative'
                 }}
+                className="icon-container"
               >
-                <span 
-                  style={{ 
-                    fontSize: isMobile ? '2rem' : '2.3rem',
-                    lineHeight: 1,
-                    filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.15))'
-                  }}
-                >
-                  {category.emoji}
-                </span>
+                {/* Emoji o icono */}
+                {item.emoji ? (
+                  <span 
+                    style={{ 
+                      fontSize: isMobile ? '2rem' : '2.3rem',
+                      lineHeight: 1,
+                      filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.15))'
+                    }}
+                  >
+                    {item.emoji}
+                  </span>
+                ) : (
+                  <img
+                    src={getIconPath(item.icon || 'default.png')}
+                    alt={item.name}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      objectPosition: 'center',
+                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
+                      transition: 'transform 0.3s ease'
+                    }}
+                    onLoad={(e) => {
+                      e.target.style.opacity = '1';
+                    }}
+                    onError={(e) => {
+                      console.error(`Error loading icon: ${item.icon}`);
+                      e.target.style.display = 'none';
+                      e.target.parentElement.innerHTML = `
+                        <span style="font-size: 2rem; color: ${colorHex}">
+                          ${item.name.charAt(0)}
+                        </span>`;
+                    }}
+                  />
+                )}
+                
+                {/* Indicador de subcategorías (solo nivel 1) */}
+                {currentLevel === 1 && hasSubcats && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '-5px',
+                    right: '-5px',
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    background: colorHex,
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                  }}>
+                    +
+                  </div>
+                )}
               </div>
 
-              {/* Nombre de la categoría */}
+              {/* Nombre - EXACTO como SliderElectromenager */}
               <div style={{
                 textAlign: 'center',
-                width: '100%'
+                width: '100%',
+                padding: '0 2px'
               }}>
                 <span style={{
-                  fontSize: isMobile ? '0.75rem' : '0.85rem',
+                  fontSize: isMobile ? '0.75rem' : '0.8rem',
                   fontWeight: '600',
                   color: '#333',
                   display: 'block',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  padding: '0 2px',
                   lineHeight: '1.2'
                 }}>
-                  {isMobile && category.name.length > 12 
-                    ? `${category.name.substring(0, 10)}...` 
-                    : category.name}
+                  {item.name}
                 </span>
+                
+                {/* Badge de subcategorías */}
+                {currentLevel === 1 && hasSubcats && (
+                  <span style={{
+                    fontSize: '0.65rem',
+                    color: colorHex,
+                    fontWeight: '500',
+                    display: 'block',
+                    marginTop: '2px'
+                  }}>
+                    + sous-catégories
+                  </span>
+                )}
               </div>
-            </Link>
+            </div>
           );
         })}
       </div>
@@ -185,78 +336,121 @@ const SliderMeubles = () => {
   };
 
   return (
-    <div ref={containerRef} className="meubles-slider-container">
-      {/* Card contenedor - Misma estructura */}
+    <div ref={containerRef} className="category-grid-container">
+      {/* Card contenedor - EXACTO como SliderElectromenager */}
       <div style={{
         position: 'relative',
-        maxWidth: '1200px',
+        maxWidth: '1400px',
         margin: '0 auto',
         background: 'white',
         borderRadius: '20px',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
         overflow: 'hidden',
-        border: '1px solid rgba(0,0,0,0.06)'
+        border: '1px solid rgba(0,0,0,0.08)',
+        marginTop: '0',
+        marginBottom: '0'
       }}>
-        {/* Título de la sección */}
+        {/* Encabezado con navegación */}
         <div style={{
-          padding: isMobile ? '15px 12px 5px' : '20px 20px 10px',
+          padding: isMobile ? '12px 12px 4px' : '16px 20px 8px',
           borderBottom: '1px solid rgba(0,0,0,0.04)',
-          background: 'linear-gradient(135deg, #667eea10 0%, #764ba210 100%)'
+          background: 'linear-gradient(135deg, #667eea10 0%, #764ba210 100%)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
         }}>
-          <h3 style={{
-            margin: 0,
-            fontSize: isMobile ? '1.1rem' : '1.3rem',
-            fontWeight: '700',
-            color: '#2d3748',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <span style={{ fontSize: '1.2em' }}>🛋️</span>
-            {isMobile ? 'Meubles & Maison' : 'Tous les meubles et articles maison'}
-          </h3>
-          <p style={{
-            margin: '4px 0 0 0',
-            fontSize: isMobile ? '0.75rem' : '0.85rem',
-            color: '#666'
-          }}>
-            Découvrez nos catégories de meubles et décoration
-          </p>
+          <div>
+            <h3 style={{
+              margin: 0,
+              fontSize: isMobile ? '1.1rem' : '1.3rem',
+              fontWeight: '700',
+              color: '#2d3748',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              {currentLevel === 1 ? (
+                <>
+                  <span style={{ fontSize: '1.2em' }}>🛋️</span>
+                  {isMobile ? 'Meubles & Maison' : 'Tous les meubles et articles maison'}
+                </>
+              ) : (
+                <>
+                  <span style={{ fontSize: '1.2em' }}>{selectedCategory?.emoji}</span>
+                  {selectedCategory?.name}
+                </>
+              )}
+            </h3>
+            <p style={{
+              margin: '4px 0 0 0',
+              fontSize: isMobile ? '0.75rem' : '0.85rem',
+              color: '#666'
+            }}>
+              {currentLevel === 1 
+                ? 'Découvrez nos catégories de meubles et articles maison' 
+                : `Explorez les sous-catégories de ${selectedCategory?.name}`}
+            </p>
+          </div>
+          
+          {/* Botón para volver atrás (solo en nivel 2) */}
+          {currentLevel === 2 && (
+            <button
+              onClick={handleBackClick}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#667eea',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: isMobile ? '0.8rem' : '0.9rem',
+                fontWeight: '600',
+                padding: '6px 12px',
+                borderRadius: '20px',
+                background: 'rgba(102, 126, 234, 0.1)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(102, 126, 234, 0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(102, 126, 234, 0.1)';
+              }}
+            >
+              <FaArrowLeft size={14} />
+              Retour
+            </button>
+          )}
         </div>
 
-        {/* Contenido con scroll horizontal en mobile */}
+        {/* Contenido con scroll horizontal - EXACTO */}
         <div
           ref={scrollRef}
           onScroll={handleScroll}
           style={{
             display: 'block',
-            padding: isMobile ? '12px 0' : '20px 0',
+            padding: isMobile ? '12px 0' : '16px 0',
             overflowX: isMobile ? 'auto' : 'visible',
             overflowY: 'hidden',
             scrollBehavior: 'smooth',
             WebkitOverflowScrolling: 'touch',
             msOverflowStyle: 'none',
-            scrollbarWidth: 'none',
-            position: 'relative',
-            minHeight: isMobile ? 'auto' : '180px'
+            scrollbarWidth: 'none'
           }}
         >
           {/* Contenedor de filas */}
-          <div ref={rowsContainerRef} style={{
-            position: 'relative'
-          }}>
+          <div ref={rowsContainerRef}>
             {/* Primera fila */}
-            {firstRow.length > 0 && renderEmojiRow(firstRow, 0)}
-
+            {firstRow.length > 0 && renderIconRow(firstRow, 0)}
             {/* Segunda fila */}
-            {secondRow.length > 0 && renderEmojiRow(secondRow, 1)}
+            {secondRow.length > 0 && renderIconRow(secondRow, 1)}
           </div>
         </div>
 
-        {/* Botones de scroll solo en mobile */}
+        {/* Botones de scroll solo en mobile - EXACTO */}
         {isMobile && (
           <>
-            {/* Botón izquierdo */}
             {canScrollLeft && (
               <button
                 onClick={scrollLeft}
@@ -269,22 +463,22 @@ const SliderMeubles = () => {
                   width: '36px',
                   height: '36px',
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  border: 'none',
-                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  border: '1px solid rgba(0,0,0,0.1)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  color: 'white',
+                  color: '#667eea',
+                  backdropFilter: 'blur(4px)',
                   transition: 'all 0.2s ease'
                 }}
               >
-                <FaChevronLeft size={18} color="white" />
+                <FaChevronLeft size={18} />
               </button>
             )}
 
-            {/* Botón derecho */}
             {canScrollRight && (
               <button
                 onClick={scrollRight}
@@ -297,27 +491,28 @@ const SliderMeubles = () => {
                   width: '36px',
                   height: '36px',
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  border: 'none',
-                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  border: '1px solid rgba(0,0,0,0.1)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  color: 'white',
+                  color: '#667eea',
+                  backdropFilter: 'blur(4px)',
                   transition: 'all 0.2s ease'
                 }}
               >
-                <FaChevronRight size={18} color="white" />
+                <FaChevronRight size={18} />
               </button>
             )}
 
-            {/* Indicadores de scroll (dots) */}
+            {/* Indicadores de scroll (dots) - EXACTO */}
             <div style={{
               display: 'flex',
               justifyContent: 'center',
               gap: '6px',
-              padding: '8px 0 12px 0',
+              padding: '4px 0 8px 0',
               position: 'relative',
               zIndex: 10
             }}>
@@ -333,8 +528,7 @@ const SliderMeubles = () => {
                       background: isActive 
                         ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
                         : '#e0e0e0',
-                      transition: 'all 0.3s ease',
-                      transform: isActive ? 'scale(1.1)' : 'scale(1)'
+                      transition: 'all 0.3s ease'
                     }}
                   />
                 );
@@ -343,12 +537,13 @@ const SliderMeubles = () => {
           </>
         )}
 
-        {/* Footer minimalista */}
+        {/* Footer minimalista - EXACTO */}
         <div style={{
-          padding: isMobile ? '8px 12px' : '10px 20px',
+          padding: isMobile ? '6px 12px' : '8px 20px',
           borderTop: '1px solid rgba(0,0,0,0.04)',
           background: 'rgba(248, 249, 250, 0.4)',
-          textAlign: 'center'
+          textAlign: 'center',
+          display: currentLevel === 1 ? 'block' : 'none' // Mostrar solo en nivel 1
         }}>
           <Link 
             to="/meubles"
@@ -365,6 +560,12 @@ const SliderMeubles = () => {
               background: 'rgba(102, 126, 234, 0.1)',
               transition: 'all 0.2s ease'
             }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(102, 126, 234, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(102, 126, 234, 0.1)';
+            }}
           >
             Voir tous les meubles et articles maison
             <FaChevronRight size={12} />
@@ -372,33 +573,83 @@ const SliderMeubles = () => {
         </div>
       </div>
 
-      {/* Estilos CSS - SIN HOVER EFFECTS */}
+      {/* Estilos CSS COPIADOS EXACTAMENTE de SliderElectromenager */}
       <style>{`
         /* Ocultar scrollbar pero mantener funcionalidad */
-        .meubles-slider-container ::-webkit-scrollbar {
+        .category-grid-container ::-webkit-scrollbar {
           display: none;
         }
         
-        /* Solo efecto de press para mobile/touch */
-        .meubles-slider-container a:active div:first-child {
-          transform: scale(0.95);
-          transition: transform 0.1s ease;
-        }
-        
         /* Prevenir zoom en doble tap */
-        .meubles-slider-container * {
+        .category-grid-container * {
           touch-action: manipulation;
           -webkit-tap-highlight-color: transparent;
         }
         
         /* Mejorar rendimiento */
-        .meubles-slider-container {
+        .category-grid-container {
           contain: content;
         }
         
-        /* Gradientes en los bordes del scroll (solo mobile) */
+        /* Efectos hover - EXACTAMENTE IGUAL */
+        .icon-container:hover {
+          transform: scale(1.05);
+          box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+        }
+        
+        .icon-container:hover img {
+          transform: scale(1.1);
+        }
+        
+        /* EMOJIS MÁS GRANDES PARA DESKTOP - AJUSTADO */
+        @media (min-width: 768px) {
+          .category-grid-container a,
+          .category-grid-container div[onClick] {
+            flex: 1 !important;
+            min-width: 0 !important;
+          }
+          
+          .icon-container {
+            width: 85px !important;
+            height: 85px !important;
+          }
+        }
+        
+        /* ICONOS EXTRA GRANDES PARA PANTALLAS GRANDES */
+        @media (min-width: 1200px) {
+          .icon-container {
+            width: 95px !important;
+            height: 95px !important;
+          }
+        }
+        
+        /* Optimización para pantallas pequeñas */
+        @media (max-width: 380px) {
+          .category-grid-container a,
+          .category-grid-container div[onClick] {
+            width: 75px !important;
+          }
+          
+          .icon-container {
+            width: 65px !important;
+            height: 65px !important;
+          }
+          
+          /* Botones más pequeños en pantallas muy pequeñas */
+          .category-grid-container button {
+            width: 28px !important;
+            height: 28px !important;
+          }
+          
+          .category-grid-container button svg {
+            width: 14px !important;
+            height: 14px !important;
+          }
+        }
+        
+        /* Gradientes en los bordes del scroll (solo mobile) - EXACTO */
         @media (max-width: 767px) {
-          .meubles-slider-container > div > div:nth-child(2)::before {
+          .category-grid-container > div > div:nth-child(2)::before {
             content: '';
             position: absolute;
             top: 0;
@@ -410,7 +661,7 @@ const SliderMeubles = () => {
             z-index: 15;
           }
           
-          .meubles-slider-container > div > div:nth-child(2)::after {
+          .category-grid-container > div > div:nth-child(2)::after {
             content: '';
             position: absolute;
             top: 0;
@@ -423,72 +674,13 @@ const SliderMeubles = () => {
           }
         }
         
-        /* Optimización para pantallas muy pequeñas */
-        @media (max-width: 380px) {
-          .meubles-slider-container a {
-            width: 75px !important;
-          }
-          
-          .meubles-slider-container a > div:first-child {
-            width: 58px !important;
-            height: 58px !important;
-          }
-          
-          .meubles-slider-container a > div:first-child span {
-            font-size: 1.8rem !important;
-          }
-          
-          /* Botones más pequeños en pantallas muy pequeñas */
-          .meubles-slider-container button {
-            width: 32px !important;
-            height: 32px !important;
-          }
-          
-          .meubles-slider-container button svg {
-            width: 16px !important;
-            height: 16px !important;
-          }
-        }
-        
-        /* Smooth transitions solo para elementos necesarios */
-        .meubles-slider-container button,
-        .meubles-slider-container a:active div:first-child {
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        /* Mejor visualización en PCs grandes */
-        @media (min-width: 1200px) {
-          .meubles-slider-container > div {
-            max-width: 1200px !important;
-          }
-        }
-        
-        /* SIN EFECTOS HOVER PARA PCs */
-        @media (hover: hover) and (pointer: fine) {
-          .meubles-slider-container a div:first-child,
-          .meubles-slider-container a span,
-          .meubles-slider-container a {
-            transition: none !important;
-          }
-          
-          .meubles-slider-container a div:first-child:hover,
-          .meubles-slider-container a:hover {
-            transform: none !important;
-          }
-          
-          .meubles-slider-container a:hover {
-            opacity: 1 !important;
-          }
-        }
-        
-        /* Asegurar que los emojis se muestren correctamente */
-        .meubles-slider-container span[role="img"] {
-          display: inline-block;
-          font-style: normal;
+        /* Transición suave entre niveles */
+        .category-grid-container > div {
+          transition: all 0.3s ease;
         }
       `}</style>
     </div>
   );
 };
 
-export default  SliderMeubles;
+export default SliderMeubles;

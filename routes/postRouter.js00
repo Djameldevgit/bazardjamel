@@ -1,48 +1,148 @@
-const router = require('express').Router()
-const postCtrl = require('../controllers/postCtrl')
-const auth = require('../middleware/auth')
+// 📂 backend/routes/post.js - Agregar estas rutas de debug
+const express = require('express');
+const router = express.Router();
+const Post = require('../models/Post');
+const Category = require('../models/Category');
 
-// ==================== RUTAS PÚBLICAS ====================
+// ✅ RUTA DE DIAGNÓSTICO (sin auth)
+router.post('/debug-create', async (req, res) => {
+  try {
+    console.log('🔧 ======= DEBUG CREATE POST =======');
+    console.log('📦 Request body:', JSON.stringify(req.body, null, 2));
+    console.log('📨 Headers:', req.headers);
+    
+    // Datos mínimos para prueba
+    const { title, description, price, categorie, subCategory } = req.body;
+    
+    if (!title || !description || !price) {
+      return res.status(400).json({
+        success: false,
+        msg: 'Faltan campos requeridos'
+      });
+    }
+    
+    // Buscar cualquier categoría disponible
+    const randomCategory = await Category.findOne({ isActive: true });
+    
+    if (!randomCategory) {
+      return res.status(404).json({
+        success: false,
+        msg: 'No hay categorías en la base de datos'
+      });
+    }
+    
+    console.log('✅ Categoría encontrada:', randomCategory.name);
+    
+    // Crear post simple
+    const postData = {
+      title: title.substring(0, 100), // Limitar longitud
+      description: description.substring(0, 500),
+      price: parseFloat(price) || 0,
+      category: randomCategory._id,
+      user: req.body.user || '65d8f1a2e4b0c4a9c8f1a2b3', // ID temporal
+      images: req.body.images || [],
+      status: 'active'
+    };
+    
+    console.log('📤 Datos para crear post:', postData);
+    
+    const post = new Post(postData);
+    const savedPost = await post.save();
+    
+    console.log('✅ Post creado exitosamente:', savedPost._id);
+    
+    res.status(201).json({
+      success: true,
+      msg: 'Post creado en modo debug',
+      post: savedPost
+    });
+    
+  } catch (error) {
+    console.error('❌ ERROR en debug-create:', {
+      message: error.message,
+      name: error.name,
+      code: error.code,
+      stack: error.stack
+    });
+    
+    // Si es error de validación de Mongoose
+    if (error.name === 'ValidationError') {
+      const errors = {};
+      Object.keys(error.errors).forEach(key => {
+        errors[key] = error.errors[key].message;
+      });
+      
+      return res.status(400).json({
+        success: false,
+        msg: 'Error de validación',
+        errors
+      });
+    }
+    
+    // Si es error de MongoDB
+    if (error.name === 'MongoError' || error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        msg: 'Error de base de datos',
+        error: error.message
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      msg: 'Error interno del servidor',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
 
-// 📌 POSTS
-router.get('/posts', postCtrl.getPosts);
-router.get('/post/:id', postCtrl.getPost);
-router.get('/category/:category', postCtrl.getPostsByCategory);
-router.get('/category/:category/subcategory/:subcategory', postCtrl.getPostsBySubcategory);
-router.get('/posts/similar', postCtrl.getSimilarPosts);
+// ✅ RUTA PARA VER ESTADO DEL SERVIDOR
+router.get('/health', (req, res) => {
+  console.log('🩺 Health check ejecutado');
+  res.json({
+    success: true,
+    msg: 'Servidor funcionando',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
 
-// 📌 CATEGORÍAS
-router.get('/categories/paginated', postCtrl.getAllCategoriesPaginated);
-router.get('/categories/:category/subcategories', postCtrl.getSubCategoriesByCategory);
-router.get('/posts/category/immobilier/operation/:operationId', postCtrl.getPostsByImmobilierOperation);
-
-// 📌 BOUTIQUES - PÚBLICAS
-router.get('/boutiques', postCtrl.getBoutiques);
-router.get('/boutiques/featured', postCtrl.getActiveBoutiques);
-router.get('/boutiques/search', postCtrl.searchBoutiques);
-router.get('/boutiques/:boutiqueId', postCtrl.getBoutiqueById);
-
-// ==================== RUTAS PROTEGIDAS ====================
-
-// 📌 POSTS (CRUD)
-router.post('/posts', auth, postCtrl.createPost);
-router.patch('/post/:id', auth, postCtrl.updatePost);
-router.delete('/post/:id', auth, postCtrl.deletePost);
-
-// 📌 USUARIO
-router.get('/user_posts/:id', auth, postCtrl.getUserPosts);
-router.get('/post_discover', auth, postCtrl.getPostsDicover);
-router.patch('/savePost/:id', auth, postCtrl.savePost);
-router.patch('/unSavePost/:id', auth, postCtrl.unSavePost);
-router.get('/getSavePosts', auth, postCtrl.getSavePosts);
-
-// 📌 BOUTIQUES - PROTEGIDAS
-router.patch('/boutiques/:boutiqueId/activate', auth, postCtrl.activateBoutique);
-router.patch('/boutiques/:boutiqueId/suspend', auth, postCtrl.suspendBoutique);
-router.patch('/boutiques/:boutiqueId/renew', auth, postCtrl.renewBoutique);
-router.put('/boutiques/:boutiqueId', auth, postCtrl.updateBoutique);
-
-// ==================== RUTAS ALTERNATIVAS ====================
-router.get('/posts/category/:category', postCtrl.getPostsByCategory);
+// ✅ RUTA PARA VER MODELO POST
+router.get('/model-info', (req, res) => {
+  try {
+    const schemaPaths = Post.schema.paths;
+    const requiredFields = [];
+    const fields = [];
+    
+    Object.keys(schemaPaths).forEach(key => {
+      const path = schemaPaths[key];
+      fields.push({
+        field: key,
+        type: path.instance,
+        required: path.isRequired || false,
+        default: path.defaultValue
+      });
+      
+      if (path.isRequired) {
+        requiredFields.push(key);
+      }
+    });
+    
+    res.json({
+      success: true,
+      model: 'Post',
+      requiredFields,
+      totalFields: fields.length,
+      fields
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      msg: 'Error obteniendo info del modelo',
+      error: error.message
+    });
+  }
+});
 
 module.exports = router;

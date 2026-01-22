@@ -1,312 +1,296 @@
+// src/pages/Home.jsx - CORRECCIÓN DE SELECTORES
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { Link } from 'react-router-dom';
-import { Row, Col, Container, Form, InputGroup } from 'react-bootstrap';
-import { getCategories, getPostsByCategory } from '../redux/actions/postCategoryAction';
-import LoadIcon from '../images/loading.gif';
-import HeaderCarousel from '../components/SlidersCategories/HeaderCarousel';
-import PostCard from '../components/PostCard';
-import CategorySlider from '../components/SlidersCategories/CategorySlider';
+import { useDispatch, useSelector } from 'react-redux';
+import { useHistory } from 'react-router-dom';
+import { getAllCategoriesWithPosts, loadMoreCategories } from '../redux/actions/categoryAction';
+import { 
+  Container, 
+  Spinner, 
+  Alert,
+  Button
+} from 'react-bootstrap';
+import InfiniteScroll from 'react-infinite-scroll-component';
+import CategorySection from '../components/SlidersCategories/CategorySection';
+import MainCategorySlider from '../components/SlidersCategories/CategorySlider';
+import Header from '../components/SlidersCategories/HeaderCarousel';
 
 const Home = () => {
-    const dispatch = useDispatch();
+  const dispatch = useDispatch();
+  const history = useHistory();
+  
+  const [page, setPage] = useState(1);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const hasLoadedRef = useRef(false);
+  
+  // ⭐ SELECTOR CORRECTO - Acceder directamente a state.category
+  const {
+    categories = [],
+    loading,
+    error,
+    hasMoreCategories,
+    currentPage
+  } = useSelector((state) => {
+    // Debug completo del estado
+    console.log('🏠 Home - Estado completo de Redux:', state.category);
     
-    // ✅ ACCESO CORRECTO AL ESTADO
-    const homePosts = useSelector(state => state.homePosts || {});
-    const postState = useSelector(state => state.post || {});
+    const catState = state.category || {};
     
-    const [searchQuery, setSearchQuery] = useState('');
-    const [loading, setLoading] = useState(true);
-    const [loadingMore, setLoadingMore] = useState(false);
-    const [error, setError] = useState(null);
-    
-    const lastCategoryRef = useRef();
-
-    // 📌 Cargar categorías iniciales
-    useEffect(() => {
-        const loadInitialCategories = async () => {
-            try {
-                console.log('🏠 Home - Cargando categorías iniciales...');
-                setLoading(true);
-                
-                const result = await dispatch(getCategories(1, 2));
-                
-                if (result && result.categories && result.categories.length > 0) {
-                    console.log('✅ Categorías cargadas:', result.categories.length);
-                } else {
-                    console.warn('⚠️ No se recibieron categorías');
-                }
-                
-            } catch (error) {
-                console.error('❌ Error cargando categorías:', error);
-                setError(error.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-        
-        loadInitialCategories();
-    }, [dispatch]);
-
-    // 📌 Cargar posts para cada categoría visible
-    useEffect(() => {
-        if (!loading && homePosts.categories && homePosts.categories.length > 0) {
-            console.log('📥 Cargando posts para', homePosts.categories.length, 'categorías');
-            
-            homePosts.categories.forEach(async (category, index) => {
-                // Esperar para no sobrecargar
-                await new Promise(resolve => setTimeout(resolve, index * 300));
-                
-                if (category.name) {
-                    try {
-                        console.log(`📡 Cargando posts para: ${category.name}`);
-                        await dispatch(getPostsByCategory(category.name, 1, { limit: 8 }));
-                    } catch (error) {
-                        console.error(`❌ Error cargando posts para ${category.name}:`, error);
-                    }
-                }
-            });
-        }
-    }, [loading, homePosts.categories, dispatch]);
-
-    // 📌 Función segura para obtener posts de categoría
-    const getPostsForCategory = useCallback((categoryName) => {
-        if (!categoryName) return [];
-        
-        // 1. Buscar en categoryPosts de homePosts
-        if (homePosts.categoryPosts && homePosts.categoryPosts[categoryName]) {
-            return homePosts.categoryPosts[categoryName];
-        }
-        
-        // 2. Buscar en categoryPosts de postState
-        if (postState.categoryPosts && postState.categoryPosts[categoryName]) {
-            return postState.categoryPosts[categoryName];
-        }
-        
-        // 3. Buscar en posts de homePosts
-        if (homePosts.posts && Array.isArray(homePosts.posts)) {
-            return homePosts.posts.filter(p => p.categorie === categoryName);
-        }
-        
-        return [];
-    }, [homePosts, postState]);
-
-    // 📌 Función para cargar más categorías
-    const loadMoreCategories = useCallback(async () => {
-        if (loadingMore || !homePosts.categoriesHasMore) return;
-        
-        setLoadingMore(true);
-        try {
-            const nextPage = (homePosts.categoriesPage || 0) + 1;
-            console.log(`📥 Cargando página ${nextPage} de categorías...`);
-            
-            await dispatch(getCategories(nextPage, 2));
-        } catch (error) {
-            console.error('Error cargando más categorías:', error);
-        } finally {
-            setLoadingMore(false);
-        }
-    }, [dispatch, loadingMore, homePosts.categoriesHasMore, homePosts.categoriesPage]);
-
-    // 📌 Observer para scroll infinito
-    useEffect(() => {
-        if (loading || loadingMore || !homePosts.categoriesHasMore) return;
-        
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting && homePosts.categoriesHasMore) {
-                    loadMoreCategories();
-                }
-            },
-            { threshold: 0.5 }
-        );
-        
-        const currentRef = lastCategoryRef.current;
-        if (currentRef) {
-            observer.observe(currentRef);
-        }
-        
-        return () => {
-            if (currentRef) {
-                observer.unobserve(currentRef);
-            }
-        };
-    }, [loading, loadingMore, homePosts.categoriesHasMore, loadMoreCategories]);
-
-    // 📌 Filtrar categorías por búsqueda
-    const filteredCategories = homePosts.categories
-        ?.filter(cat => {
-            if (!cat || !cat.name) {
-                console.warn('⚠️ Categoría inválida ignorada:', cat);
-                return false;
-            }
-            
-            const catName = String(cat.name).toLowerCase();
-            const query = String(searchQuery).toLowerCase();
-            
-            return catName.includes(query);
-        }) || [];
-
-    // 📌 DEBUG: Ver estado
-    useEffect(() => {
-        console.log('🔍 DEBUG ESTADO HOME:', {
-            homePosts: {
-                categoriesCount: homePosts.categories?.length || 0,
-                categoriesNames: homePosts.categories?.map(c => c.name),
-                categoriesPage: homePosts.categoriesPage,
-                categoriesHasMore: homePosts.categoriesHasMore,
-                categoryPostsKeys: homePosts.categoryPosts ? Object.keys(homePosts.categoryPosts) : []
-            },
-            postState: {
-                categoryPostsKeys: postState.categoryPosts ? Object.keys(postState.categoryPosts) : []
-            }
+    // Verificar estructura de cada categoría
+    if (catState.categories && catState.categories.length > 0) {
+      console.log(`📊 Home: ${catState.categories.length} categorías encontradas`);
+      
+      catState.categories.forEach((cat, index) => {
+        console.log(`📁 Categoría ${index + 1}: "${cat.name}"`, {
+          id: cat._id,
+          slug: cat.slug,
+          postsPropiedad: 'posts' in cat,
+          postsValor: cat.posts,
+          esArray: Array.isArray(cat.posts),
+          cantidadPosts: cat.posts ? cat.posts.length : 0,
+          primerPost: cat.posts && cat.posts[0] ? {
+            id: cat.posts[0]._id,
+            title: cat.posts[0].title,
+            price: cat.posts[0].price
+          } : null
         });
-    }, [homePosts, postState]);
+      });
+    } else {
+      console.log('⚠️ Home: No hay categorías en el estado');
+    }
+    
+    return {
+      categories: catState.categories || [],
+      loading: catState.loading || false,
+      error: catState.error || null,
+      hasMoreCategories: catState.hasMoreCategories || true,
+      currentPage: catState.currentPage || 1
+    };
+  });
 
+  // ⭐ Cargar categorías SOLO UNA VEZ
+  useEffect(() => {
+    if (hasLoadedRef.current || loading) {
+      return;
+    }
+    
+    console.log('🏠 Home: Disparando acción getAllCategoriesWithPosts...');
+    hasLoadedRef.current = true;
+    
+    // ⭐ Asegúrate de pasar el parámetro posts=true
+    dispatch(getAllCategoriesWithPosts(1, 8));
+    
+    const timer = setTimeout(() => {
+      setInitialLoadDone(true);
+      console.log('✅ Home: Timer de carga inicial completado');
+    }, 1500);
+    
+    return () => clearTimeout(timer);
+  }, [dispatch, loading]);
+
+  // ⭐ Debug adicional cuando cambian las categorías
+  useEffect(() => {
+    if (initialLoadDone && categories.length > 0) {
+      console.log('🔍 Home - Análisis final de datos:');
+      
+      let totalPostsEnTodasCategorias = 0;
+      let categoriasConPosts = 0;
+      
+      categories.forEach((cat, index) => {
+        const tienePosts = cat.posts && Array.isArray(cat.posts) && cat.posts.length > 0;
+        const cantidadPosts = cat.posts ? cat.posts.length : 0;
+        
+        totalPostsEnTodasCategorias += cantidadPosts;
+        if (tienePosts) categoriasConPosts++;
+        
+        console.log(`${index + 1}. ${cat.name}:`, {
+          tienePosts,
+          cantidadPosts,
+          tipoDePosts: typeof cat.posts
+        });
+      });
+      
+      console.log(`📈 Resumen: ${categoriasConPosts}/${categories.length} categorías tienen posts`);
+      console.log(`📈 Total de posts en home: ${totalPostsEnTodasCategorias}`);
+      
+      // Si no hay posts, hacer una prueba directa
+      if (totalPostsEnTodasCategorias === 0) {
+        console.log('⚠️ ALERTA: No hay posts en NINGUNA categoría');
+        console.log('Prueba endpoint manualmente: /api/categories/main?posts=true&limit=2');
+      }
+    }
+  }, [categories, initialLoadDone]);
+
+  // Manejar scroll infinito
+  const fetchMoreData = useCallback(() => {
+    if (hasMoreCategories && !loading && initialLoadDone) {
+      const nextPage = currentPage + 1;
+      console.log(`📥 Home: Cargando página ${nextPage}...`);
+      setPage(nextPage);
+      dispatch(loadMoreCategories(nextPage));
+    }
+  }, [dispatch, hasMoreCategories, loading, currentPage, initialLoadDone]);
+
+  const handleCategoryClick = (slug) => {
+    console.log(`🔗 Home: Click en categoría ${slug}`);
+    history.push(`/category/${slug}`);
+  };
+
+  const handleViewMore = (slug) => {
+    console.log(`🔗 Home: Ver más de categoría ${slug}`);
+    history.push(`/category/${slug}`);
+  };
+
+  const handlePostClick = (postId) => {
+    console.log(`🔗 Home: Click en post ${postId}`);
+    history.push(`/post/${postId}`);
+  };
+
+  // Render condicional
+  const showLoading = loading && categories.length === 0 && !initialLoadDone;
+  const showError = error && categories.length === 0 && initialLoadDone;
+  const showEmptyState = !loading && categories.length === 0 && initialLoadDone;
+
+  if (showLoading) {
     return (
-        <div className="marketplace-home">
-            <HeaderCarousel/>
-            <CategorySlider/>
-            
-            {/* BARRA DE BÚSQUEDA */}
-            <Container className='mb-3'>
-                <Row className="justify-content-center">
-                    <Col md={6} lg={5}>
-                        <InputGroup className="shadow-sm">
-                            <InputGroup.Text className="bg-white border-end-0">
-                                <i className="fas fa-search text-muted"></i>
-                            </InputGroup.Text>
-                            <Form.Control
-                                type="text"
-                                placeholder="Rechercher catégories..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="border-start-0"
-                            />
-                        </InputGroup>
-                    </Col>
-                </Row>
-            </Container>
-
-            {/* CONTENIDO PRINCIPAL */}
-            <Container>
-                {loading ? (
-                    <Row className="justify-content-center py-5">
-                        <Col xs="auto" className="text-center">
-                            <img src={LoadIcon} alt="loading" />
-                            <p className="mt-2 text-muted">Chargement des catégories...</p>
-                        </Col>
-                    </Row>
-                ) : error ? (
-                    <Row className="justify-content-center py-5">
-                        <Col md={6} className="text-center">
-                            <div className="alert alert-danger">
-                                <i className="fas fa-exclamation-triangle me-2"></i>
-                                {error}
-                            </div>
-                        </Col>
-                    </Row>
-                ) : filteredCategories.length === 0 ? (
-                    <Row className="justify-content-center py-5">
-                        <Col md={6} className="text-center">
-                            <div className="alert alert-warning">
-                                <i className="fas fa-info-circle me-2"></i>
-                                Aucune catégorie disponible pour le moment
-                            </div>
-                        </Col>
-                    </Row>
-                ) : (
-                    <div className="categories-container">
-                        {filteredCategories.map((category, index) => {
-                            if (!category.name) return null;
-                            
-                            const postsForCategory = getPostsForCategory(category.name);
-                            const isLastCategory = index === filteredCategories.length - 1;
-                            
-                            return (
-                                <div 
-                                    key={category._id || `cat-${index}`}
-                                    ref={isLastCategory ? lastCategoryRef : null}
-                                    className="category-section mb-5"
-                                >
-                                    {/* HEADER DE CATÉGORIE */}
-                                    <div className="d-flex justify-content-between align-items-center mb-4">
-                                        <div className="d-flex align-items-center">
-                                            <div className="category-icon me-3" style={{
-                                                width: '50px',
-                                                height: '50px',
-                                                backgroundColor: '#f8f9fa',
-                                                borderRadius: '50%',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                fontSize: '24px'
-                                            }}>
-                                                {category.emoji || '📁'}
-                                            </div>
-                                            <div>
-                                                <h2 className="h4 fw-bold mb-1 text-capitalize">
-                                                    {category.displayName || category.name}
-                                                </h2>
-                                                <small className="text-muted">
-                                                    {category.count || postsForCategory.length} annonces
-                                                </small>
-                                            </div>
-                                        </div>
-                                        
-                                        <Link 
-                                            to={`/category/${category.slug || category.name.toLowerCase()}/1`}
-                                            className="btn btn-outline-primary btn-sm"
-                                        >
-                                            Voir tout
-                                        </Link>
-                                    </div>
-
-                                    {/* POSTS DE LA CATÉGORÍA */}
-                                    {postsForCategory.length > 0 ? (
-                                        <Row>
-                                            {postsForCategory.slice(0, 8).map(post => (
-                                                <Col key={post._id} md={3} sm={6} className="mb-4">
-                                                    <PostCard post={post} />
-                                                </Col>
-                                            ))}
-                                        </Row>
-                                    ) : (
-                                        <div className="text-center py-4">
-                                            <div className="spinner-border spinner-border-sm text-primary me-2"></div>
-                                            <span className="text-muted">
-                                                Chargement des annonces pour {category.name}...
-                                            </span>
-                                        </div>
-                                    )}
-                                    
-                                    {index < filteredCategories.length - 1 && <hr className="my-5" />}
-                                </div>
-                            );
-                        })}
-                        
-                        {/* LOADING MORE */}
-                        {loadingMore && (
-                            <div className="text-center py-4">
-                                <div className="spinner-border spinner-border-sm text-primary me-2"></div>
-                                <span>Chargement de plus de catégories...</span>
-                            </div>
-                        )}
-                        
-                        {/* NO MORE CATEGORIES */}
-                        {!homePosts.categoriesHasMore && filteredCategories.length > 0 && (
-                            <div className="text-center py-4">
-                                <div className="alert alert-light">
-                                    <i className="fas fa-check-circle text-success me-2"></i>
-                                    Toutes les catégories sont chargées
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </Container>
-        </div>
+      <div className="min-vh-100 d-flex flex-column">
+        <Header />
+        <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
+          <div className="text-center">
+            <Spinner animation="border" variant="primary" size="lg" />
+            <p className="mt-3">Cargando marketplace...</p>
+          </div>
+        </Container>
+      </div>
     );
+  }
+
+  if (showError) {
+    return (
+      <div className="min-vh-100 d-flex flex-column">
+        <Header />
+        <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
+          <Alert variant="danger" className="text-center">
+            <h4>Error al cargar contenido</h4>
+            <p>{error}</p>
+            <Button 
+              variant="outline-danger" 
+              onClick={() => {
+                hasLoadedRef.current = false;
+                dispatch(getAllCategoriesWithPosts(1, 8));
+              }}
+            >
+              Reintentar
+            </Button>
+          </Alert>
+        </Container>
+      </div>
+    );
+  }
+
+  if (showEmptyState) {
+    return (
+      <div className="min-vh-100 d-flex flex-column">
+        <Header />
+        <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
+          <Alert variant="info" className="text-center">
+            <h4>No hay contenido disponible</h4>
+            <p>No se encontraron categorías con productos.</p>
+            <Button 
+              variant="primary"
+              onClick={() => {
+                hasLoadedRef.current = false;
+                dispatch(getAllCategoriesWithPosts(1, 8));
+              }}
+            >
+              Buscar contenido
+            </Button>
+          </Alert>
+        </Container>
+      </div>
+    );
+  }
+
+  console.log('🎨 Home: Renderizando interfaz...');
+
+  return (
+    <div className="min-vh-100 d-flex flex-column">
+      <Header />
+      
+      <main className="flex-grow-1">
+        {/* Slider principal */}
+        <section className="py-4 bg-light">
+          <Container>
+            <h2 className="h4 mb-3">Explora nuestras categorías</h2>
+            <MainCategorySlider 
+              categories={categories}
+              onCategoryClick={handleCategoryClick}
+            />
+          </Container>
+        </section>
+
+        {/* Secciones de categorías */}
+        <Container className="py-5">
+          <InfiniteScroll
+            dataLength={categories.length}
+            next={fetchMoreData}
+            hasMore={hasMoreCategories}
+            loader={
+              <div className="text-center py-3">
+                <Spinner animation="border" size="sm" />
+                <span className="ms-2">Cargando más categorías...</span>
+              </div>
+            }
+            endMessage={
+              <p className="text-center text-muted py-3">
+                ¡Has visto todas las categorías!
+              </p>
+            }
+            scrollThreshold={0.8}
+          >
+            {categories.map((category) => (
+              <CategorySection
+                key={category._id || category.slug}
+                category={category}
+                onViewMore={() => handleViewMore(category.slug)}
+                onPostClick={handlePostClick}
+              />
+            ))}
+          </InfiniteScroll>
+
+          {/* Mensaje si categorías vacías */}
+          {initialLoadDone && categories.length === 0 && (
+            <div className="text-center py-5">
+              <Alert variant="warning">
+                <i className="fas fa-exclamation-triangle me-2"></i>
+                No hay categorías disponibles
+              </Alert>
+            </div>
+          )}
+
+          {/* Botón para cargar más */}
+          {hasMoreCategories && categories.length > 0 && (
+            <div className="text-center mt-4">
+              <Button
+                variant="outline-primary"
+                onClick={fetchMoreData}
+                disabled={loading}
+                className="px-4"
+              >
+                {loading ? (
+                  <>
+                    <Spinner animation="border" size="sm" className="me-2" />
+                    Cargando...
+                  </>
+                ) : (
+                  'Ver más categorías'
+                )}
+              </Button>
+            </div>
+          )}
+        </Container>
+      </main>
+    </div>
+  );
 };
 
 export default Home;

@@ -185,7 +185,7 @@ const CardFooterDescriptionPrice = (post) => {
         <style>{`
           .card-footer-price {
             padding: 1rem;
-            background: linear-gradient(to bottom, #ffffff, #f8f9fa);
+            background: linear-gradient(to bottom, #D5DCE8, #f8f9fa);
             border-top: 1px solid #e9ecef;
             border-radius: 0 0 8px 8px;
             animation: slideUp 0.3s ease;

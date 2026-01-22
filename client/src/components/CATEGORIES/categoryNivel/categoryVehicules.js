@@ -1,5 +1,4 @@
-// 📂 components/CATEGORIES/categoryNivel/categoryVehicules.js
-
+ 
 const categoryVehicules = {
   // ⭐ MISMA ESTRUCTURA QUE VETEMENTS
   levels: 2,

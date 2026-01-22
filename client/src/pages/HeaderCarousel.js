@@ -83,9 +83,7 @@ function HeaderCarousel() {
                   objectFit: 'cover',
                   objectPosition: 'center'
                 }}
-                onError={(e) => {
-                  e.target.src = `https://via.placeholder.com/800x400/8b5cf6/ffffff?text=Tassili+${index + 1}`;
-                }}
+                
               />
             </div>
          
@@ -107,7 +105,7 @@ function HeaderCarousel() {
                   fontSize: 'clamp(1.5rem, 3vw, 2.5rem)',
                   fontWeight: '700',
                   marginBottom: '10px',
-                  color: '#ffffff',
+                  color: '#D5DCE8',
                   textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)',
                   textAlign: 'center' // 🔥 TEXTO CENTRADO
                 }}

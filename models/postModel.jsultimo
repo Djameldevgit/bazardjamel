@@ -1,0 +1,185 @@
+// 📂 models/postModel.js - VERSIÓN CORREGIDA
+const mongoose = require('mongoose');
+
+const postSchema = new mongoose.Schema({
+  // ========== CAMPOS PRINCIPALES (USANDO LOS QUE YA TIENES) ==========
+  categorie: { 
+    type: String, 
+    required: [true, 'La catégorie est requise'], 
+    index: true 
+  },
+  subCategory: { 
+    type: String, 
+    default: '', 
+    index: true 
+  },
+  articleType: { 
+    type: String,
+    default: '' 
+  },
+  
+  // ========== REFERENCIA A BOUTIQUE (OPCIONAL) ==========
+  boutique: {
+    type: mongoose.Types.ObjectId,
+    ref: 'Boutique',
+    default: null,
+    index: true
+  },
+  
+  // ========== DATOS ESPECÍFICOS DE CATEGORÍA ==========
+  categorySpecificData: {
+    type: Map,
+    of: mongoose.Schema.Types.Mixed,
+    default: new Map()
+  },
+  
+  // ========== METADATOS PARA FILTRADO JERÁRQUICO (COMPATIBILIDAD) ==========
+  categoryLevels: {
+    level1: { type: String, index: true },
+    level2: { type: String, index: true },
+    level3: { type: String, index: true },
+    fullPath: { type: String, index: true }
+  },
+  
+  // ========== METADATOS ==========
+  searchKeywords: [{ type: String, index: true }],
+  images: [{ 
+    url: String, 
+    public_id: String 
+  }],
+  
+  user: { 
+    type: mongoose.Types.ObjectId, 
+    ref: 'user', 
+    required: true,
+    index: true 
+  },
+  
+  likes: [{ 
+    type: mongoose.Types.ObjectId, 
+    ref: 'user' 
+  }],
+  
+  // ========== ESTADOS Y VISIBILIDAD ==========
+  isActive: { 
+    type: Boolean, 
+    default: true, 
+    index: true 
+  },
+  isPromoted: { 
+    type: Boolean, 
+    default: false 
+  },
+  isUrgent: { 
+    type: Boolean, 
+    default: false 
+  },
+  views: { 
+    type: Number, 
+    default: 0 
+  },
+  
+  // ========== INFORMACIÓN BÁSICA ==========
+  title: { 
+    type: String, 
+   
+    index: true 
+  },
+  description: { 
+    type: String, 
+    required: [true, 'La description est requise'] 
+  },
+  price: { 
+    type: Number, 
+    default: 0 
+  },
+  etat: { 
+    type: String, 
+    default: 'occasion',
+   
+  },
+  
+  // ========== UBICACIÓN ==========
+  location: {
+    wilaya: {
+      type: String,
+      required: [true, 'La wilaya est requise']
+    },
+    commune: {
+      type: String,
+      required: [true, 'La commune est requise']
+    },
+    address: String
+  }
+  
+}, { 
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// ========== MIDDLEWARE PARA AUTOMATIZAR CATEGORY_LEVELS ==========
+postSchema.pre('save', function(next) {
+  // Auto-llenar categoryLevels basado en categorie/subCategory
+  this.categoryLevels = {
+    level1: this.categorie,
+    level2: this.subCategory || null,
+    level3: this.articleType || null,
+    fullPath: this.articleType 
+      ? `${this.categorie}/${this.subCategory}/${this.articleType}`
+      : this.subCategory
+        ? `${this.categorie}/${this.subCategory}`
+        : this.categorie
+  };
+  
+  // Asegurar que searchKeywords tenga al menos las categorías
+  if (!this.searchKeywords) {
+    this.searchKeywords = [];
+  }
+  
+  // Añadir categorías como keywords
+  const categoryKeywords = [
+    this.categorie,
+    this.subCategory,
+    this.articleType,
+    this.title
+  ].filter(Boolean);
+  
+  categoryKeywords.forEach(keyword => {
+    if (!this.searchKeywords.includes(keyword)) {
+      this.searchKeywords.push(keyword);
+    }
+  });
+  
+  next();
+});
+
+// ========== ÍNDICES ==========
+postSchema.index({ categorie: 1, subCategory: 1, articleType: 1, isActive: 1 });
+postSchema.index({ 'categoryLevels.level1': 1, 'categoryLevels.level2': 1, 'categoryLevels.level3': 1 });
+postSchema.index({ 'categoryLevels.fullPath': 1 });
+postSchema.index({ categorie: 1, price: 1, isActive: 1 });
+postSchema.index({ title: 'text', description: 'text', searchKeywords: 'text' });
+postSchema.index({ 'categorySpecificData.marque': 1 });
+postSchema.index({ 'categorySpecificData.etat': 1 });
+postSchema.index({ price: 1 });
+postSchema.index({ 'location.wilaya': 1, 'location.commune': 1 });
+postSchema.index({ user: 1, createdAt: -1 });
+postSchema.index({ boutique: 1, isActive: 1 });
+
+// ========== VIRTUAL PARA SABER SI TIENE BOUTIQUE ==========
+postSchema.virtual('hasBoutique').get(function() {
+  return this.boutique !== null && this.boutique !== undefined;
+});
+
+// ========== MÉTODO PARA OBTENER JERARQUÍA ==========
+postSchema.methods.getHierarchy = function() {
+  return {
+    level1: this.categorie,
+    level2: this.subCategory,
+    level3: this.articleType,
+    path: this.categoryLevels.fullPath
+  };
+};
+
+module.exports = mongoose.model('post', postSchema);

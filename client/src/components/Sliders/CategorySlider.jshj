@@ -1,0 +1,44 @@
+import React from "react";
+import Slider from "react-slick";
+import { useHistory } from "react-router-dom";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+
+ 
+const CategorySlider = ({ categories })  => {
+  const history = useHistory();
+
+  const settings = {
+    dots: false,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 4,
+    slidesToScroll: 1,
+    arrows: true,
+  };
+
+  const handleClick = (categorySlug) => {
+    history.push(`/${categorySlug}`);
+  };
+
+  return (
+    <Slider {...settings}>
+      {categories.map((cat) => (
+        <div
+          key={cat.id}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            cursor: "pointer",
+          }}
+          onClick={() => handleClick(cat.slug)}
+        >
+          <span style={{ fontSize: "2rem" }}>{cat.emoji}</span>
+          <span>{cat.name}</span>
+        </div>
+      ))}
+    </Slider>
+  );
+};
+export default CategorySlider

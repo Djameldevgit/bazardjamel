@@ -174,7 +174,7 @@ const AppInfo2 = () => {
               <Card style={styles.card}>
                 <Card.Body style={{ padding: '25px 20px' }}>
                   <div style={{ ...styles.featureIcon, color: '#3498db' }}>🤯</div>
-                  <h3 style={{ color: theme ? '#ffffff' : '#2c3e50', marginBottom: '15px', fontSize: '18px' }}>
+                  <h3 style={{ color: theme ? '#D5DCE8' : '#2c3e50', marginBottom: '15px', fontSize: '18px' }}>
                     {t('pain_section.algorithm.title')}
                   </h3>
                   <p style={{ color: theme ? '#bdc3c7' : '#6c757d', lineHeight: '1.6', fontSize: '14px' }}>
@@ -204,7 +204,7 @@ const AppInfo2 = () => {
               <Card style={styles.card}>
                 <Card.Body style={{ padding: '25px 20px' }}>
                   <div style={{ ...styles.featureIcon, color: '#3498db' }}>💸</div>
-                  <h3 style={{ color: theme ? '#ffffff' : '#2c3e50', marginBottom: '15px', fontSize: '18px' }}>
+                  <h3 style={{ color: theme ? '#D5DCE8' : '#2c3e50', marginBottom: '15px', fontSize: '18px' }}>
                     {t('pain_section.data_control.title')}
                   </h3>
                   <p style={{ color: theme ? '#bdc3c7' : '#6c757d', lineHeight: '1.6', fontSize: '14px' }}>

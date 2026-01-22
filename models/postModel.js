@@ -1,145 +1,161 @@
-// 📂 models/postModel.js
+// models/Post.js
 const mongoose = require('mongoose');
 
 const postSchema = new mongoose.Schema({
-  // ========== CAMPOS PRINCIPALES (NIVELES JERÁRQUICOS) ==========
-  category: { 
-    type: String, 
- 
-    index: true 
+  // Información básica
+  title: {
+    type: String,
+    //required: [true, 'El título es requerido'],
+    trim: true,
+    maxlength: [200, 'El título no puede exceder 200 caracteres']
   },
-  subCategory: { 
-    type: String, 
-    required: [true, 'La sous-catégorie est requise'], 
-    index: true 
+  description: {
+    type: String,
+   // required: [true, 'La descripción es requerida'],
+    trim: true,
+    maxlength: [2000, 'La descripción no puede exceder 2000 caracteres']
   },
-  subSubCategory: { 
-    type: String, 
-    index: true 
-  },
-  articleType: { 
-    type: String 
+  price: {
+    type: Number,
+   // required: [true, 'El precio es requerido'],
+    min: [0, 'El precio no puede ser negativo']
   },
   
-  // ========== REFERENCIA A BOUTIQUE (OPCIONAL) ==========
-  boutique: {
-    type: mongoose.Types.ObjectId,
-    ref: 'Boutique',
-    default: null,
+  // Relaciones
+  category: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    required: [true, 'La categoría es requerida'],
+    index: true
+  },
+  categoryPath: {
+    level1: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+      index: true
+    },
+    level2: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+      index: true
+    },
+    level3: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+      index: true
+    }
+  },
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'user',
+    required: true,
     index: true
   },
   
-  // ========== DATOS ESPECÍFICOS DE CATEGORÍA ==========
-  categorySpecificData: {
-    type: Map,
-    of: mongoose.Schema.Types.Mixed,
-    default: new Map()
-  },
+  // Multimedia
+  images: [{
+    type: String,
+    required: [true, 'Al menos una imagen es requerida']
+  }],
   
-  // ========== METADATOS PARA FILTRADO JERÁRQUICO ==========
-  categoryLevels: {
-    level1: { type: String, index: true }, // Ej: "vehicules"
-    level2: { type: String, index: true }, // Ej: "motos"
-    level3: { type: String, index: true }, // Ej: "125cc"
-    fullPath: { type: String, index: true } // Ej: "vehicules/motos/125cc"
-  },
-  
-  // ========== METADATOS ==========
-  searchKeywords: [{ type: String, index: true }],
-  images: [{ url: String, public_id: String }],
-  user: { 
-    type: mongoose.Types.ObjectId, 
-    ref: 'user', 
-    required: true,
-    index: true 
-  },
-  likes: [{ type: mongoose.Types.ObjectId, ref: 'user' }],
-  
-  // ========== ESTADOS Y VISIBILIDAD ==========
-  isActive: { type: Boolean, default: true, index: true },
-  isPromoted: { type: Boolean, default: false },
-  isUrgent: { type: Boolean, default: false },
-  views: { type: Number, default: 0 },
-  
-  // ========== INFORMACIÓN BÁSICA ==========
-  title: { type: String,   index: true },
-  description: { type: String },
-  price: { type: Number, default: 0 },
-  etat: { type: String, default: 'occasion' },
-  
-  // ========== UBICACIÓN ==========
+  // Ubicación
   location: {
-    wilaya: String,
-    commune: String,
-    address: String
-  }
+    city: String,
+    address: String,
+    coordinates: {
+      lat: Number,
+      lng: Number
+    }
+  },
   
-}, { 
+  // Atributos dinámicos
+  attributes: {
+    type: Map,
+    of: mongoose.Schema.Types.Mixed
+  },
+  
+  // Estado
+  status: {
+    type: String,
+    enum: ['active', 'sold', 'reserved', 'inactive'],
+    default: 'active',
+    index: true
+  },
+  
+  // Características especiales
+  featured: {
+    type: Boolean,
+    default: false
+  },
+  urgent: {
+    type: Boolean,
+    default: false
+  },
+  
+  // Estadísticas
+  views: {
+    type: Number,
+    default: 0
+  },
+  favorites: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'user'
+  }],
+  
+  // Metadatos
+  expiresAt: {
+    type: Date,
+    default: () => new Date(+new Date() + 30*24*60*60*1000) // 30 días
+  }
+}, {
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
 
-// ========== MIDDLEWARE PARA AUTOMATIZAR CATEGORY_LEVELS ==========
-postSchema.pre('save', function(next) {
-  // Auto-llenar categoryLevels basado en category/subCategory/subSubCategory
-  this.categoryLevels = {
-    level1: this.category,
-    level2: this.subCategory,
-    level3: this.subSubCategory || null,
-    fullPath: this.subSubCategory 
-      ? `${this.category}/${this.subCategory}/${this.subSubCategory}`
-      : `${this.category}/${this.subCategory}`
-  };
-  
-  // Asegurar que searchKeywords tenga al menos las categorías
-  if (!this.searchKeywords) {
-    this.searchKeywords = [];
-  }
-  
-  // Añadir categorías como keywords
-  const categoryKeywords = [
-    this.category,
-    this.subCategory,
-    this.subSubCategory,
-    this.title
-  ].filter(Boolean);
-  
-  categoryKeywords.forEach(keyword => {
-    if (!this.searchKeywords.includes(keyword)) {
-      this.searchKeywords.push(keyword);
+// Índices compuestos para búsquedas rápidas
+postSchema.index({ status: 1, createdAt: -1 });
+postSchema.index({ 'categoryPath.level1': 1, createdAt: -1 });
+postSchema.index({ 'categoryPath.level2': 1, createdAt: -1 });
+postSchema.index({ price: 1 });
+postSchema.index({ title: 'text', description: 'text' });
+
+// Middleware para establecer categoryPath antes de guardar
+postSchema.pre('save', async function(next) {
+  if (this.isModified('category')) {
+    try {
+      const category = await mongoose.model('Category').findById(this.category);
+      
+      if (category) {
+        this.categoryPath = {
+          level1: category.ancestors[0] || category._id,
+          level2: category.ancestors[1] || null,
+          level3: category.level === 3 ? category._id : null
+        };
+      }
+    } catch (error) {
+      return next(error);
     }
-  });
-  
+  }
   next();
 });
 
-// ========== ÍNDICES ==========
-postSchema.index({ categorie: 1, subCategory: 1, subSubCategory: 1, isActive: 1 });
-postSchema.index({ 'categoryLevels.level1': 1, 'categoryLevels.level2': 1, 'categoryLevels.level3': 1 });
-postSchema.index({ 'categoryLevels.fullPath': 1 });
-postSchema.index({ categorie: 1, price: 1, isActive: 1 });
-postSchema.index({ title: 'text', description: 'text', searchKeywords: 'text' });
-postSchema.index({ 'categorySpecificData.marque': 1 });
-postSchema.index({ 'categorySpecificData.etat': 1 });
-postSchema.index({ price: 1 });
-postSchema.index({ 'location.wilaya': 1, 'location.commune': 1 });
-postSchema.index({ user: 1, createdAt: -1 });
-postSchema.index({ boutique: 1, isActive: 1 });
-
-// ========== VIRTUAL PARA SABER SI TIENE BOUTIQUE ==========
-postSchema.virtual('hasBoutique').get(function() {
-  return this.boutique !== null && this.boutique !== undefined;
+// Virtual para obtener URL del post
+postSchema.virtual('url').get(function() {
+  return `/post/${this._id}`;
 });
 
-// ========== MÉTODO PARA OBTENER JERARQUÍA ==========
-postSchema.methods.getHierarchy = function() {
-  return {
-    level1: this.category,
-    level2: this.subCategory,
-    level3: this.subSubCategory,
-    path: this.categoryLevels.fullPath
-  };
+// Virtual para obtener precio formateado
+postSchema.virtual('priceFormatted').get(function() {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(this.price);
+});
+
+// Método para verificar si está expirado
+postSchema.methods.isExpired = function() {
+  return new Date() > this.expiresAt;
 };
 
 module.exports = mongoose.model('post', postSchema);

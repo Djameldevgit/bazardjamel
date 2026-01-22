@@ -1,16 +1,41 @@
+// 📂 pages/CreateAnnoncePage.js - VERSIÓN FINAL CORREGIDA
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Container, Button, Alert, Spinner, Card, Row, Col } from 'react-bootstrap';
+import { 
+  Container, Button, Alert, Spinner, Card, 
+  Row, Col, Badge, ProgressBar 
+} from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createPost, updatePost } from '../redux/actions/postAction';
+import { 
+  createPost, 
+  updatePost 
+} from '../redux/actions/postAction';
 import CategoryAccordion from '../components/CATEGORIES/CategoryAccordion';
 import DynamicFieldManager from '../components/CATEGORIES/DynamicFieldManager';
 import ImagesStep from '../components/CATEGORIES/camposComun/ImagesStep';
-
-// ✅ Importar configuración de categorías para detectar boutiques
-import { categoryHierarchy } from '../components/CATEGORIES/index';
+// ✅ Función para corregir campos invertidos (opcional)
+const correctCategoryFields = (data) => {
+  if (!data) return data;
+  
+  const corrected = { ...data };
+  const invertedPatterns = {
+    'appareils_photo': 'cameras_accessories',
+    'maison_cuisine': 'electromenager',
+    'jardin_bricolage': 'outils_jardinage'
+  };
+  
+  if (corrected.subCategory && invertedPatterns[corrected.subCategory]) {
+    if (!corrected.articleType || Object.values(invertedPatterns).includes(corrected.articleType)) {
+      const temp = corrected.subCategory;
+      corrected.subCategory = corrected.articleType || invertedPatterns[corrected.subCategory];
+      corrected.articleType = temp;
+    }
+  }
+  
+  return corrected;
+};
 
 const CreateAnnoncePage = () => {
   const { auth, socket } = useSelector((state) => state);
@@ -25,6 +50,8 @@ const CreateAnnoncePage = () => {
 
   const autoAdvanceTimeout = useRef(null);
   const [currentStep, setCurrentStep] = useState(1);
+  
+  // 🎯 ESTADOS PRINCIPALES
   const [formData, setFormData] = useState({
     categorie: '',
     articleType: '',
@@ -34,106 +61,75 @@ const CreateAnnoncePage = () => {
   const [specificData, setSpecificData] = useState({});
   const [images, setImages] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [alert, setAlert] = useState({ show: false, message: '', variant: 'info' });
+  const [alert, setAlert] = useState({ 
+    show: false, 
+    message: '', 
+    variant: 'info' 
+  });
   const [isLoadingEditData, setIsLoadingEditData] = useState(true);
   const [hasManuallyGoneBack, setHasManuallyGoneBack] = useState(false);
+  const [hasShownInvertedWarning, setHasShownInvertedWarning] = useState(false);
 
-  // ✅ NUEVA FUNCIÓN: Verificar si es boutique
-  const isBoutiqueCategory = useCallback(() => {
-    return formData.categorie === 'boutiques';
-  }, [formData.categorie]);
-
-  // ✅ NUEVA FUNCIÓN: Extraer datos de boutique del specificData
-  const extractBoutiqueData = useCallback(() => {
-    if (!isBoutiqueCategory()) return {};
-    
-    const boutiqueFields = [
-      'nom_boutique', 'domaine_boutique', 'slogan_boutique', 'description_boutique',
-      'categories_produits', 'couleur_theme', 'plan_boutique', 'duree_abonnement',
-      'total_credits', 'stockage_max', 'proprietaire_nom', 'proprietaire_email',
-      'proprietaire_telephone', 'proprietaire_wilaya', 'proprietaire_adresse',
-      'reseaux_sociaux', 'accepte_conditions'
-    ];
-    
-    const boutiqueData = {};
-    boutiqueFields.forEach(field => {
-      if (specificData[field] !== undefined && specificData[field] !== null) {
-        boutiqueData[field] = specificData[field];
-      }
-    });
-    
-    return boutiqueData;
-  }, [isBoutiqueCategory, specificData]);
-
-  // 🔷 CLEANUP EFFECT - Limpiar timeout al desmontar
+  // 🔍 DEBUG: Monitorizar cambios
   useEffect(() => {
-    return () => {
-      if (autoAdvanceTimeout.current) {
-        clearTimeout(autoAdvanceTimeout.current);
-        autoAdvanceTimeout.current = null;
-      }
-    };
-  }, []);
+    console.log('🔍 DEBUG Estado actual:', {
+      step: currentStep,
+      categorie: formData.categorie,
+      subCategory: formData.subCategory,
+      articleType: formData.articleType,
+      imagesCount: images.length,
+      specificDataKeys: Object.keys(specificData)
+    });
+  }, [formData, currentStep, images, specificData]);
 
-  // 🔷 CHARGEMENT DES DONNÉES ÉDITION - MEJORADO PARA BOUTIQUES
+  // 📥 CARGAR DATOS DE EDICIÓN
   useEffect(() => {
     if (isEdit && postToEdit) {
-      console.log('📥 Chargement données édition...', postToEdit);
+      const correctedPostData = correctCategoryFields(postToEdit);
       
       const loadedBaseData = {
-        categorie: postToEdit.categorie || '',
-        subCategory: postToEdit.subCategory || '',
-        articleType: postToEdit.articleType || '',
+        categorie: correctedPostData.categorie || '',
+        subCategory: correctedPostData.subCategory || '',
+        articleType: correctedPostData.articleType || '',
       };
 
       const loadedSpecificData = {};
 
-      // ✅ CARGA ESPECIAL PARA BOUTIQUES
-      if (postToEdit.postType === 'boutique' && postToEdit.boutiqueData) {
-        console.log('🏪 Cargando datos de boutique desde post edit');
-        
-        // Cargar datos de boutiqueData
-        Object.entries(postToEdit.boutiqueData).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== '') {
-            loadedSpecificData[key] = value;
-          }
-        });
-      }
-      
-      // Cargar también de categorySpecificData
-      if (postToEdit.categorySpecificData) {
-        try {
-          if (postToEdit.categorySpecificData instanceof Map) {
-            postToEdit.categorySpecificData.forEach((value, key) => {
-              if (value !== undefined && value !== null && value !== '') {
-                loadedSpecificData[key] = value;
-              }
-            });
-          } else if (typeof postToEdit.categorySpecificData === 'object') {
-            Object.entries(postToEdit.categorySpecificData).forEach(([key, value]) => {
-              if (value !== undefined && value !== null && value !== '') {
-                loadedSpecificData[key] = value;
-              }
-            });
-          }
-        } catch (err) {
-          console.warn('⚠️ Erreur:', err);
+      // Cargar categorySpecificData
+      if (correctedPostData.categorySpecificData) {
+        if (correctedPostData.categorySpecificData instanceof Map) {
+          correctedPostData.categorySpecificData.forEach((value, key) => {
+            if (value !== undefined && value !== null && value !== '') {
+              loadedSpecificData[key] = value;
+            }
+          });
+        } else if (typeof correctedPostData.categorySpecificData === 'object') {
+          Object.entries(correctedPostData.categorySpecificData).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+              loadedSpecificData[key] = value;
+            }
+          });
         }
       }
 
       // Campos directos
-      const directFields = ['description', 'price', 'loyer', 'marque', 'modele', 'superficie', 'phone', 'wilaya', 'commune'];
+      const directFields = [
+        'title', 'description', 'price', 'phone', 'telephone', 
+        'email', 'wilaya', 'commune', 'address', 'etat',
+        'livraison', 'echange', 'marque', 'modele', 'gross_detail', 'unite'
+      ];
+      
       directFields.forEach(field => {
-        if (postToEdit[field]) {
-          loadedSpecificData[field] = postToEdit[field];
+        if (correctedPostData[field]) {
+          loadedSpecificData[field] = correctedPostData[field];
         }
       });
 
       setFormData(loadedBaseData);
       setSpecificData(loadedSpecificData);
 
-      if (postToEdit.images?.length > 0) {
-        const loadedImages = postToEdit.images.map(img => ({
+      if (correctedPostData.images?.length > 0) {
+        const loadedImages = correctedPostData.images.map(img => ({
           url: img.url || img,
           public_id: img.public_id || '',
           isExisting: true
@@ -142,88 +138,66 @@ const CreateAnnoncePage = () => {
       }
 
       const hasCompleteCategory = loadedBaseData.categorie && loadedBaseData.subCategory;
-      const hasArticleTypeIfImmobilier = loadedBaseData.categorie !== 'immobilier' || loadedBaseData.articleType;
       
-      if (hasCompleteCategory && hasArticleTypeIfImmobilier) {
+      if (hasCompleteCategory) {
         setCurrentStep(2);
         setHasManuallyGoneBack(true);
       }
       
       setIsLoadingEditData(false);
-      
     } else {
       setIsLoadingEditData(false);
     }
   }, [isEdit, postToEdit]);
 
-  // 🔷 AVANCE AUTOMÁTICO AL STEP 2 - MEJORADO
+  // ⚡ AVANCE AUTOMÁTICO AL STEP 2
   useEffect(() => {
     const currentStepWhenScheduled = currentStep;
-    
     const hasCategory = formData.categorie;
     const hasSubCategory = formData.subCategory;
-    const hasArticleTypeIfImmobilier = formData.categorie !== 'immobilier' || formData.articleType;
-    
-    const isCategoryComplete = hasCategory && hasSubCategory && hasArticleTypeIfImmobilier;
+    const isCategoryComplete = hasCategory && hasSubCategory;
     
     if (hasManuallyGoneBack || isEdit || currentStepWhenScheduled !== 1) {
       if (autoAdvanceTimeout.current) {
         clearTimeout(autoAdvanceTimeout.current);
-        autoAdvanceTimeout.current = null;
       }
       return;
     }
     
     if (isCategoryComplete) {
-      console.log('🚀 Programando avance automático hacia Step 2');
-      
       if (autoAdvanceTimeout.current) {
         clearTimeout(autoAdvanceTimeout.current);
-        autoAdvanceTimeout.current = null;
       }
       
       autoAdvanceTimeout.current = setTimeout(() => {
         const stillHasCategory = formData.categorie && formData.subCategory;
-        const stillHasArticleType = formData.categorie !== 'immobilier' || formData.articleType;
         const stillInStep1 = currentStep === 1;
         const stillNoManualBack = !hasManuallyGoneBack;
         
-        if (stillHasCategory && stillHasArticleType && stillInStep1 && stillNoManualBack) {
-          console.log('✅ Ejecutando avance automático a Step 2');
+        if (stillHasCategory && stillInStep1 && stillNoManualBack) {
           setCurrentStep(2);
           
-          // ✅ MENSAJE ESPECIAL PARA BOUTIQUES
-          if (formData.categorie === 'boutiques') {
-            setAlert({
-              show: true,
-              message: "🏪 Configuration de boutique. Remplissez les informations de votre boutique.",
-              variant: "info"
-            });
-          } else {
-            setAlert({
-              show: true,
-              message: "✅ Catégorie sélectionnée. Complétez les détails.",
-              variant: "success"
-            });
-          }
+          setAlert({
+            show: true,
+            message: "✅ Catégorie sélectionnée. Complétez les détails.",
+            variant: "success"
+          });
         }
       }, 500);
       
       return () => {
         if (autoAdvanceTimeout.current) {
           clearTimeout(autoAdvanceTimeout.current);
-          autoAdvanceTimeout.current = null;
         }
       };
     } else {
       if (autoAdvanceTimeout.current) {
         clearTimeout(autoAdvanceTimeout.current);
-        autoAdvanceTimeout.current = null;
       }
     }
-  }, [formData.categorie, formData.subCategory, formData.articleType, currentStep, hasManuallyGoneBack, isEdit]);
+  }, [formData.categorie, formData.subCategory, currentStep, hasManuallyGoneBack, isEdit]);
 
-  // 🔷 HANDLER POUR TOUS LES CHAMPS - MEJORADO
+  // 🎯 HANDLER PARA CAMBIOS DE INPUT
   const handleInputChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
     const val = type === 'checkbox' ? checked : value;
@@ -235,17 +209,23 @@ const CreateAnnoncePage = () => {
         const newData = { ...prev, [name]: val };
         
         if (name === 'categorie') {
-          newData.articleType = '';
           newData.subCategory = '';
+          newData.articleType = '';
           setSpecificData({});
           if (currentStep === 1) {
             setHasManuallyGoneBack(false);
           }
-        }
-        
-        if (name === 'articleType') {
-          newData.subCategory = '';
-          setSpecificData({});
+          setHasShownInvertedWarning(false);
+        } else if (name === 'articleType') {
+          if (prev.articleType !== val) {
+            setSpecificData({});
+          }
+          newData.subCategory = prev.subCategory;
+        } else if (name === 'subCategory') {
+          if (prev.subCategory !== val) {
+            setSpecificData({});
+          }
+          newData.articleType = prev.articleType;
         }
         
         return newData;
@@ -261,12 +241,12 @@ const CreateAnnoncePage = () => {
     }
   }, [currentStep]);
 
+  // 🎯 HANDLER PARA CAMBIOS DE CATEGORÍA
   const handleCategoryChange = useCallback((e) => {
     const { name, value } = e.target;
     
     if (autoAdvanceTimeout.current) {
       clearTimeout(autoAdvanceTimeout.current);
-      autoAdvanceTimeout.current = null;
     }
     
     setFormData(prev => {
@@ -279,29 +259,30 @@ const CreateAnnoncePage = () => {
         if (currentStep === 1) {
           setHasManuallyGoneBack(false);
         }
-      }
-      
-      if (name === 'articleType') {
-        newData.subCategory = '';
-        setSpecificData({});
+        setHasShownInvertedWarning(false);
+      } else if (name === 'articleType') {
+        newData.subCategory = prev.subCategory;
+        if (prev.articleType !== value) {
+          setSpecificData({});
+        }
+      } else if (name === 'subCategory') {
+        newData.articleType = prev.articleType;
+        if (prev.subCategory !== value) {
+          setSpecificData({});
+        }
       }
       
       return newData;
     });
   }, [currentStep]);
 
-  // 🔷 FONCTION POUR CHANGER D'ÉTAPE
+  // 🔄 FUNCIÓN PARA CAMBIAR DE PASO
   const handleStepChange = useCallback((newStep) => {
-    console.log(`📝 Cambiando paso: ${currentStep} → ${newStep}`);
-    
     if (autoAdvanceTimeout.current) {
-      console.log('⏹️ Limpiando timeout de auto-avance');
       clearTimeout(autoAdvanceTimeout.current);
-      autoAdvanceTimeout.current = null;
     }
     
     if (newStep === 1) {
-      console.log('🔄 Usuario volviendo manualmente a categorías');
       setHasManuallyGoneBack(true);
     } else if (newStep > currentStep) {
       setHasManuallyGoneBack(false);
@@ -310,55 +291,177 @@ const CreateAnnoncePage = () => {
     setCurrentStep(newStep);
   }, [currentStep]);
 
-  // 🔷 AFFICHER ALERTE
-  const showAlertMessage = useCallback((message, variant = 'info') => {
+  // 📢 FUNCIÓN PARA MOSTRAR ALERTAS
+  const showAlertMessage = useCallback((message, variant = 'info', duration = 4000) => {
     setAlert({ show: true, message, variant });
-    setTimeout(() => setAlert({ show: false, message: '', variant: 'info' }), 4000);
+    setTimeout(() => {
+      setAlert({ show: false, message: '', variant: 'info' });
+    }, duration);
   }, []);
 
-  // 🔷 VALIDATION - MEJORADA PARA BOUTIQUES
+  // ✅ VALIDACIÓN DE PASOS
   const canProceedToNextStep = () => {
     const allData = { ...formData, ...specificData };
     
     switch(currentStep) {
       case 1:
-        const hasCategory = allData.categorie && allData.subCategory;
-        const hasArticleType = allData.categorie !== 'immobilier' || allData.articleType;
-        return hasCategory && hasArticleType;
+        return allData.categorie && allData.subCategory;
       
       case 5:
         return images.length > 0;
       
       default:
-        // ✅ VALIDACIONES ESPECIALES PARA BOUTIQUES
-        if (isBoutiqueCategory() && currentStep >= 2 && currentStep <= 4) {
-          const requiredBoutiqueFields = getRequiredBoutiqueFieldsByStep(currentStep);
-          const missingFields = requiredBoutiqueFields.filter(field => {
-            const value = allData[field];
-            return value === undefined || value === null || value === '';
-          });
-          
-          if (missingFields.length > 0) {
-            console.log(`❌ Boutique validation step ${currentStep} failed:`, missingFields);
-            return false;
-          }
-        }
         return true;
     }
   };
-  
-  // ✅ NUEVA FUNCIÓN: Campos requeridos por step para boutiques
-  const getRequiredBoutiqueFieldsByStep = (step) => {
-    const boutiqueRequiredFields = {
-      2: ['nom_boutique', 'domaine_boutique', 'slogan_boutique'],
-      3: ['plan_boutique', 'duree_abonnement'],
-      4: ['proprietaire_nom', 'proprietaire_email', 'proprietaire_telephone', 'accepte_conditions']
-    };
+
+  // 🚀 FUNCIÓN PRINCIPAL: ENVIAR POST - VERSIÓN SIMPLIFICADA Y FUNCIONAL
+  const handleSubmit = async () => {
+    console.log('=== 🚀 INICIANDO handleSubmit ===');
     
-    return boutiqueRequiredFields[step] || [];
+    if (isSubmitting) {
+      console.log('⏸️ Ya está enviando, abortando...');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // ✅ VALIDACIONES BÁSICAS
+      if (!formData.categorie || !formData.subCategory) {
+        showAlertMessage("❌ Sélectionnez une catégorie et sous-catégorie", "danger");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!specificData.title || specificData.title.trim() === '') {
+        showAlertMessage("❌ Le titre est requis", "danger");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!specificData.description || specificData.description.trim() === '') {
+        showAlertMessage("❌ La description est requise", "danger");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!specificData.price || parseFloat(specificData.price) <= 0) {
+        showAlertMessage("❌ Un prix valide est requis", "danger");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (images.length === 0) {
+        showAlertMessage("❌ Ajoutez au moins une image", "danger");
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log('✅ Validaciones pasadas');
+
+      // ✅ PREPARAR DATOS COMO TU ACTION ESPERA
+      const postDataForBackend = {
+        ...formData,
+        ...specificData,
+        categorySpecificData: specificData // Tu action espera categorySpecificData
+      };
+
+      console.log('📦 Datos preparados:', {
+        categorie: postDataForBackend.categorie,
+        subCategory: postDataForBackend.subCategory,
+        title: postDataForBackend.title,
+        price: postDataForBackend.price
+      });
+
+      // ✅ PREPARAR IMÁGENES
+      const imagesForBackend = images.map(img => ({
+        url: img.url || img,
+        public_id: img.public_id || '',
+        isExisting: img.isExisting || false
+      }));
+
+      console.log('🖼️ Imágenes preparadas:', imagesForBackend.length);
+
+      // ✅ CREAR ACTION DATA - ESTRUCTURA QUE TU ACTION ESPERA
+      const actionData = {
+        postData: postDataForBackend,  // Objeto plano con todo
+        images: imagesForBackend,
+        auth,  // ← ¡IMPORTANTE! Tu action original espera auth completo
+        socket: socket
+      };
+
+      console.log('🔐 Datos de auth:', {
+        token: auth.token ? 'PRESENTE' : 'AUSENTE',
+        user: auth.user?._id
+      });
+
+      // ✅ EJECUTAR ACCIÓN DE REDUX
+      let result;
+      
+      if (isEdit && postToEdit) {
+        console.log('✏️ Ejecutando updatePost...');
+        // Tu updatePost original espera (id, postData, auth, socket)
+        result = await dispatch(updatePost(
+          postToEdit._id,
+          postDataForBackend,
+          auth,
+          socket
+        ));
+      } else {
+        console.log('➕ Ejecutando createPost...');
+        // Tu createPost original espera ({ postData, images, auth, socket })
+        result = await dispatch(createPost(actionData));
+      }
+
+      console.log('✅ Resultado de la acción:', result);
+
+      // ✅ VERIFICAR RESULTADO
+      if (result && result.success === false) {
+        console.error('❌ Action retornó error:', result.error);
+        throw new Error(result.error);
+      }
+
+      // ✅ MOSTRAR ALERTA DE ÉXITO
+      showAlertMessage(
+        isEdit 
+          ? '✅ Annonce mise à jour avec succès!' 
+          : '✅ Annonce créée avec succès!',
+        "success"
+      );
+
+      // ✅ REDIRIGIR DESPUÉS DE 1.5 SEGUNDOS
+      setTimeout(() => {
+        history.push('/');
+      }, 1500);
+
+    } catch (error) {
+      console.error('❌ ERROR en handleSubmit:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      });
+      
+      let errorMessage = 'Erreur lors de la publication';
+      
+      if (error.message.includes('404')) {
+        errorMessage = 'Serveur non disponible. Vérifiez la connexion.';
+      } else if (error.message.includes('network')) {
+        errorMessage = 'Problème de connexion réseau.';
+      } else if (error.message.includes('token')) {
+        errorMessage = 'Session expirée. Veuillez vous reconnecter.';
+      } else {
+        errorMessage = error.message;
+      }
+      
+      showAlertMessage(`❌ ${errorMessage}`, "danger", 6000);
+      
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  // 🔷 BOUTON POUR REVENIR À LA CATÉGORIE EN ÉDITION
+  // 🎨 RENDERIZAR BOTÓN DE EDICIÓN DE CATEGORÍA
   const renderCategoryEditButton = () => {
     if (currentStep > 1 && isEdit) {
       return (
@@ -374,14 +477,8 @@ const CreateAnnoncePage = () => {
           </Button>
           <div className="mt-1">
             <small className="text-muted">
-              {isBoutiqueCategory() ? (
-                <span>🏪 <strong>Boutique:</strong> {formData.subCategory || 'Nouvelle boutique'}</span>
-              ) : (
-                <span>
-                  Catégorie actuelle: <strong>{formData.categorie}</strong> → <strong>{formData.subCategory}</strong>
-                  {formData.articleType && <span> (<strong>{formData.articleType}</strong>)</span>}
-                </span>
-              )}
+              Catégorie actuelle: <strong>{formData.categorie}</strong> → <strong>{formData.subCategory}</strong>
+              {formData.articleType && <span> (<strong>{formData.articleType}</strong>)</span>}
             </small>
           </div>
         </div>
@@ -390,7 +487,7 @@ const CreateAnnoncePage = () => {
     return null;
   };
 
-  // 🔷 BOUTON POUR REVENIR À LA CATÉGORIE (NON ÉDITION)
+  // 🎨 RENDERIZAR BOTÓN PARA VOLVER A CATEGORÍA
   const renderBackToCategoryButton = () => {
     if (currentStep > 1 && !isEdit && !hasManuallyGoneBack) {
       return (
@@ -409,11 +506,8 @@ const CreateAnnoncePage = () => {
           </Button>
           <div className="mt-1">
             <small className="text-muted">
-              {isBoutiqueCategory() ? (
-                <span>🏪 Configuration de boutique</span>
-              ) : (
-                <span>Catégorie: {formData.categorie} → {formData.subCategory}</span>
-              )}
+              Catégorie: <strong>{formData.categorie}</strong> → <strong>{formData.subCategory}</strong>
+              {formData.articleType && <span> (<strong>{formData.articleType}</strong>)</span>}
             </small>
           </div>
         </div>
@@ -422,121 +516,13 @@ const CreateAnnoncePage = () => {
     return null;
   };
 
-  // 🔷 SOUMETTRE ANNONCE - ACTUALIZADO PARA BOUTIQUES
-  const handleSubmit = useCallback(async () => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-
-    if (!formData.categorie || !formData.subCategory) {
-      showAlertMessage("Sélectionnez une catégorie et sous-catégorie", "danger");
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (images.length === 0) {
-      showAlertMessage("Ajoutez au moins une image", "danger");
-      setIsSubmitting(false);
-      return;
-    }
-
-    // ✅ VALIDACIÓN ESPECIAL PARA BOUTIQUES
-    if (isBoutiqueCategory()) {
-      const requiredFields = ['nom_boutique', 'domaine_boutique', 'proprietaire_nom', 
-                             'proprietaire_email', 'proprietaire_telephone', 'accepte_conditions'];
-      
-      const missingFields = requiredFields.filter(field => !specificData[field]);
-      
-      if (missingFields.length > 0) {
-        showAlertMessage(
-          `Champs boutique requis manquants: ${missingFields.join(', ')}`, 
-          "danger"
-        );
-        setIsSubmitting(false);
-        return;
-      }
-    }
-
-    try {
-      // ✅ PREPARAR DATOS ESPECIALMENTE PARA BOUTIQUES
-      const postDataForBackend = {
-        ...formData,
-        ...specificData
-      };
-
-      // Para boutiques, asegurar que todos los campos van en categorySpecificData
-      if (isBoutiqueCategory()) {
-        postDataForBackend.categorySpecificData = {
-          ...specificData,
-          is_boutique: true,
-          post_type: 'boutique'
-        };
-      }
-
-      const imagesForBackend = images.map(img => ({
-        url: img.url,
-        public_id: img.public_id || '',
-        isExisting: img.isExisting || false
-      }));
-
-      const actionData = {
-        postData: postDataForBackend,
-        images: imagesForBackend,
-        auth
-      };
-
-      if (isEdit && postToEdit) {
-        actionData.id = postToEdit._id;
-      } else if (!isEdit && socket) {
-        actionData.socket = socket;
-      }
-
-      const action = isEdit ? updatePost : createPost;
-      
-      console.log('📤 Enviando datos al backend:', {
-        isBoutique: isBoutiqueCategory(),
-        postData: postDataForBackend,
-        imageCount: imagesForBackend.length
-      });
-
-      await dispatch(action(actionData));
-
-      // ✅ MENSAJE ESPECIAL PARA BOUTIQUES
-      if (isBoutiqueCategory()) {
-        showAlertMessage(
-          '✅ Boutique créée avec succès! Votre boutique sera activée après vérification.',
-          "success"
-        );
-      } else {
-        showAlertMessage(
-          isEdit ? '✅ Annonce mise à jour!' : '✅ Annonce créée!',
-          "success"
-        );
-      }
-
-      setTimeout(() => history.push('/'), 1200);
-
-    } catch (error) {
-      console.error('❌ Erreur:', error);
-      showAlertMessage(
-        `❌ ${error.response?.data?.msg || error.message || 'Erreur'}`,
-        "danger"
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [
-    formData, specificData, images, auth, isEdit, postToEdit, 
-    socket, dispatch, history, isSubmitting, showAlertMessage,
-    isBoutiqueCategory // ✅ Añadido
-  ]);
-
-  // 🔷 RENDU ÉTAPE ACTUELLE - MEJORADO
+  // 🎨 RENDERIZAR CONTENIDO DEL PASO ACTUAL
   const renderCurrentStep = () => {
     if (isLoadingEditData) {
       return (
         <div className="text-center py-4">
           <Spinner animation="border" variant="primary" />
-          <p className="mt-2">Chargement...</p>
+          <p className="mt-2">Chargement des données...</p>
         </div>
       );
     }
@@ -570,20 +556,6 @@ const CreateAnnoncePage = () => {
                   {isEdit ? '✏️ Modifier la catégorie' : '🏷️ Sélectionnez une catégorie'}
                 </h5>
                 
-                {/* ✅ INFO ESPECIAL PARA BOUTIQUES */}
-                {formData.categorie === 'boutiques' && (
-                  <div className="alert alert-info py-2 mb-3">
-                    <div className="d-flex align-items-center">
-                      <i className="fas fa-store me-2"></i>
-                      <div>
-                        <small className="fw-bold">🏪 Création de boutique en ligne</small>
-                        <br />
-                        <small>Configurez votre espace de vente professionnel avec nom de domaine personnalisé.</small>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
                 {/* Info de categoría actual */}
                 {((formData.categorie && formData.subCategory) || hasManuallyGoneBack) && (
                   <div className={`alert ${hasManuallyGoneBack ? 'alert-info' : 'alert-success'} py-2 mb-3`}>
@@ -591,15 +563,9 @@ const CreateAnnoncePage = () => {
                       <div>
                         <i className={`fas fa-${hasManuallyGoneBack ? 'info-circle' : 'check-circle'} me-2`}></i>
                         <small>
-                          {isBoutiqueCategory() ? (
-                            <span>🏪 <strong>Configuration boutique</strong></span>
-                          ) : (
-                            <>
-                              {formData.categorie && <strong>{formData.categorie}</strong>}
-                              {formData.subCategory && <span> → {formData.subCategory}</span>}
-                              {formData.articleType && <span> ({formData.articleType})</span>}
-                            </>
-                          )}
+                          {formData.categorie && <strong>{formData.categorie}</strong>}
+                          {formData.subCategory && <span> → {formData.subCategory}</span>}
+                          {formData.articleType && <span> ({formData.articleType})</span>}
                         </small>
                       </div>
                       <Button 
@@ -613,10 +579,10 @@ const CreateAnnoncePage = () => {
                           });
                           setSpecificData({});
                           setHasManuallyGoneBack(false);
+                          setHasShownInvertedWarning(false);
                           
                           if (autoAdvanceTimeout.current) {
                             clearTimeout(autoAdvanceTimeout.current);
-                            autoAdvanceTimeout.current = null;
                           }
                         }}
                       >
@@ -632,53 +598,6 @@ const CreateAnnoncePage = () => {
                   handleChangeInput={handleCategoryChange}
                 />
                 
-                {/* ✅ Mensaje de auto-avance especial para boutiques */}
-                {formData.categorie === 'boutiques' && formData.subCategory && !isEdit && !hasManuallyGoneBack && (
-                  <motion.div 
-                    className="mt-3 text-center"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <div className="alert alert-light border">
-                      <small className="text-primary">
-                        <i className="fas fa-rocket me-1"></i>
-                        Configuration boutique prête à commencer!
-                      </small>
-                    </div>
-                  </motion.div>
-                )}
-                
-                {/* Mensaje de auto-avance normal */}
-                {formData.categorie && formData.subCategory && !isEdit && !hasManuallyGoneBack && formData.categorie !== 'boutiques' && (
-                  <motion.div 
-                    className="mt-3 text-center"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <div className="d-flex align-items-center justify-content-center">
-                      <div className="spinner-border spinner-border-sm text-primary me-2" role="status">
-                        <span className="visually-hidden">Chargement...</span>
-                      </div>
-                      <small className="text-primary me-2">
-                        Avance automatique en 0.5s...
-                      </small>
-                      <Button 
-                        variant="link" 
-                        size="sm" 
-                        className="p-0 text-decoration-none"
-                        onClick={() => {
-                          if (autoAdvanceTimeout.current) {
-                            clearTimeout(autoAdvanceTimeout.current);
-                          }
-                          handleStepChange(2);
-                        }}
-                      >
-                        Avancer maintenant
-                      </Button>
-                    </div>
-                  </motion.div>
-                )}
-                
                 {/* Botón manual para avanzar */}
                 {formData.categorie && formData.subCategory && hasManuallyGoneBack && (
                   <div className="text-center mt-3">
@@ -690,11 +609,6 @@ const CreateAnnoncePage = () => {
                       <i className="fas fa-arrow-right me-1"></i>
                       Continuer avec cette catégorie
                     </Button>
-                    {isBoutiqueCategory() && (
-                      <small className="d-block text-muted mt-1">
-                        3 étapes pour configurer votre boutique
-                      </small>
-                    )}
                   </div>
                 )}
               </Card.Body>
@@ -716,23 +630,6 @@ const CreateAnnoncePage = () => {
           >
             {renderCategoryEditButton()}
             {renderBackToCategoryButton()}
-            
-            {/* ✅ BANNER ESPECIAL PARA BOUTIQUES */}
-            {isBoutiqueCategory() && (
-              <div className="mb-3">
-                <div className={`alert ${getBoutiqueStepAlertVariant(currentStep)}`}>
-                  <div className="d-flex align-items-center">
-                    <div className="me-3">
-                      <span className="display-6">🏪</span>
-                    </div>
-                    <div>
-                      <h6 className="mb-1 fw-bold">{getBoutiqueStepTitle(currentStep)}</h6>
-                      <p className="mb-0 small">{getBoutiqueStepDescription(currentStep)}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
             
             <DynamicFieldManager
               mainCategory={formData.categorie}
@@ -760,19 +657,6 @@ const CreateAnnoncePage = () => {
             {renderCategoryEditButton()}
             {renderBackToCategoryButton()}
             
-            {/* ✅ BANNER ESPECIAL PARA BOUTIQUES EN STEP 5 */}
-            {isBoutiqueCategory() && (
-              <div className="mb-3">
-                <div className="alert alert-info">
-                  <h6 className="mb-1 fw-bold">🏪 Dernière étape: Photos</h6>
-                  <p className="mb-0 small">
-                    Ajoutez des photos pour présenter votre boutique. 
-                    Vous pourrez ajouter un logo spécifique dans les paramètres de votre boutique.
-                  </p>
-                </div>
-              </div>
-            )}
-            
             <ImagesStep
               images={images}
               setImages={setImages}
@@ -780,7 +664,6 @@ const CreateAnnoncePage = () => {
               onComplete={handleSubmit}
               onBack={() => handleStepChange(4)}
               isEdit={isEdit}
-              isBoutique={isBoutiqueCategory()} // ✅ Pasar prop especial
             />
           </motion.div>
         );
@@ -790,61 +673,18 @@ const CreateAnnoncePage = () => {
     }
   };
 
-  // ✅ NUEVAS FUNCIONES HELPER PARA BOUTIQUES
-  const getBoutiqueStepTitle = (step) => {
-    const titles = {
-      2: "Informations de la boutique",
-      3: "Plan & Tarification",
-      4: "Informations du propriétaire"
-    };
-    return titles[step] || "Configuration boutique";
-  };
-  
-  const getBoutiqueStepDescription = (step) => {
-    const descriptions = {
-      2: "Remplissez les informations de base de votre boutique en ligne",
-      3: "Choisissez le plan qui correspond à vos besoins",
-      4: "Informations de contact pour la gestion de votre boutique"
-    };
-    return descriptions[step] || "";
-  };
-  
-  const getBoutiqueStepAlertVariant = (step) => {
-    const variants = {
-      2: "info",
-      3: "warning",
-      4: "primary"
-    };
-    return variants[step] || "info";
-  };
-
-  // 🔷 TITRES ÉTAPES - ACTUALIZADO
+  // 📊 TITULOS DE PASOS
   const stepTitles = [
     { title: 'Catégorie', icon: '🏷️', step: 1 },
-    { title: isBoutiqueCategory() ? 'Boutique' : 'Détails', icon: isBoutiqueCategory() ? '🏪' : '📝', step: 2 },
-    { title: isBoutiqueCategory() ? 'Plan' : 'Spécifications', icon: isBoutiqueCategory() ? '💰' : '🔍', step: 3 },
-    { title: isBoutiqueCategory() ? 'Propriétaire' : 'Contact', icon: isBoutiqueCategory() ? '👤' : '📍', step: 4 },
+    { title: 'Détails', icon: '📝', step: 2 },
+    { title: 'Spécifications', icon: '🔍', step: 3 },
+    { title: 'Contact', icon: '📍', step: 4 },
     { title: 'Photos', icon: '🖼️', step: 5 }
   ];
 
-  // 🔷 VÉRIFIER SI ON PEUT ALLER À UNE ÉTAPE
-  const canGoToStep = (step) => {
-    if (step === 1) return true;
-    
-    if (step <= currentStep) {
-      return true;
-    }
-    
-    if (step === currentStep + 1) {
-      return canProceedToNextStep();
-    }
-    
-    return false;
-  };
-
   return (
-    <Container className="py-2" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* ALERTE */}
+    <Container className="py-4" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* ALERTA */}
       <AnimatePresence>
         {alert.show && (
           <motion.div
@@ -860,46 +700,37 @@ const CreateAnnoncePage = () => {
             >
               <div className="d-flex align-items-center">
                 <i className={`fas fa-${alert.variant === 'success' ? 'check' : 'exclamation-triangle'} me-2`}></i>
-                <span className="small">{alert.message}</span>
+                <span>{alert.message}</span>
               </div>
             </Alert>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* EN-TÊTE - MEJORADO */}
-      <div className="text-center mb-3">
-        <h1 className="fw-bold mb-1" style={{ fontSize: '1.5rem' }}>
-          {isBoutiqueCategory() ? (
-            isEdit ? '✏️ Modifier la boutique' : '🏪 Créer une boutique'
-          ) : (
-            isEdit ? '✏️ Modifier une annonce' : '➕ Publier une annonce'
-          )}
+      {/* ENCABEZADO */}
+      <div className="text-center mb-4">
+        <h1 className="fw-bold mb-2">
+          {isEdit ? '✏️ Modifier une annonce' : '➕ Publier une annonce'}
         </h1>
         
         {isEdit && currentStep > 1 && (
-          <span className="badge bg-warning text-dark px-2 py-1">
+          <Badge bg="warning" className="px-3 py-2">
             <i className="fas fa-edit me-1"></i>
             Mode édition
-          </span>
+          </Badge>
         )}
       </div>
 
-      {/* INDICATEUR ÉTAPES - MEJORADO PARA BOUTIQUES */}
-      <div className="mb-3">
+      {/* INDICADOR DE PASOS */}
+      <div className="mb-4">
         <div className="d-flex justify-content-between align-items-center">
           {stepTitles.map((step, index) => (
             <React.Fragment key={step.step}>
               <div className="text-center flex-grow-1">
                 <button
-                  className={`step-indicator ${currentStep === step.step ? 'active' : ''} ${isBoutiqueCategory() ? 'boutique-step' : ''}`}
-                  onClick={() => {
-                    if (canGoToStep(step.step)) {
-                      handleStepChange(step.step);
-                    }
-                  }}
-                  disabled={!canGoToStep(step.step)}
-                  title={!canGoToStep(step.step) ? "Completez l'étape précédente" : ""}
+                  className={`step-indicator ${currentStep === step.step ? 'active' : ''}`}
+                  onClick={() => handleStepChange(step.step)}
+                  disabled={isSubmitting}
                 >
                   <div className="step-icon-wrapper">
                     <span className="step-icon">{step.icon}</span>
@@ -925,36 +756,36 @@ const CreateAnnoncePage = () => {
         </div>
       </div>
 
-      {/* CONTENU ÉTAPE */}
+      {/* CONTENIDO DEL PASO */}
       <motion.div
         key={currentStep}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.2 }}
+        transition={{ duration: 0.3 }}
       >
-        <div className="border-0 shadow-sm overflow-hidden">
+        <div className="border-0 shadow-sm overflow-hidden rounded">
           <AnimatePresence mode="wait">
             {renderCurrentStep()}
           </AnimatePresence>
         </div>
       </motion.div>
 
-      {/* NAVIGATION - MEJORADO */}
+      {/* NAVEGACIÓN INFERIOR */}
       <motion.div 
-        className="mt-3 pt-2"
+        className="mt-4 pt-3 border-top"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
-        <Row className="g-2">
+        <Row className="g-3">
           <Col xs={6}>
             <Button
               variant="outline-secondary"
-              size="md"
+              size="lg"
               onClick={() => handleStepChange(currentStep - 1)}
               disabled={currentStep === 1 || isSubmitting}
-              className="w-100"
+              className="w-100 py-2"
             >
-              <i className="fas fa-arrow-left me-1"></i>
+              <i className="fas fa-arrow-left me-2"></i>
               Retour
             </Button>
           </Col>
@@ -963,74 +794,44 @@ const CreateAnnoncePage = () => {
             {currentStep < 5 ? (
               <Button
                 variant="primary"
-                size="md"
+                size="lg"
                 onClick={() => handleStepChange(currentStep + 1)}
                 disabled={!canProceedToNextStep() || isSubmitting}
-                className="w-100"
+                className="w-100 py-2"
               >
-                {isBoutiqueCategory() ? (
-                  <>
-                    Suivant
-                    <i className="fas fa-arrow-right ms-1"></i>
-                  </>
-                ) : (
-                  <>
-                    Suivant
-                    <i className="fas fa-arrow-right ms-1"></i>
-                  </>
-                )}
+                Suivant
+                <i className="fas fa-arrow-right ms-2"></i>
               </Button>
             ) : (
               <Button
-                variant={isBoutiqueCategory() ? "info" : (isEdit ? "warning" : "success")}
-                size="md"
+                variant={isEdit ? "warning" : "success"}
+                size="lg"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="w-100"
+                className="w-100 py-2"
               >
                 {isSubmitting ? (
                   <>
-                    <Spinner size="sm" animation="border" className="me-1" />
-                    {isBoutiqueCategory() ? 'Création boutique...' : (isEdit ? 'Mise à jour...' : 'Publication...')}
+                    <Spinner size="sm" animation="border" className="me-2" />
+                    {isEdit ? 'Mise à jour...' : 'Publication...'}
                   </>
                 ) : (
                   <>
-                    <i className={`fas ${isBoutiqueCategory() ? 'fa-store' : (isEdit ? 'fa-save' : 'fa-rocket')} me-1`}></i>
-                    {isBoutiqueCategory() ? 'Créer la boutique' : (isEdit ? 'Mettre à jour' : 'Publier')}
+                    <i className={`fas ${isEdit ? 'fa-save' : 'fa-paper-plane'} me-2`}></i>
+                    {isEdit ? 'Mettre à jour' : 'Publier'}
                   </>
                 )}
               </Button>
             )}
           </Col>
         </Row>
-        
-        {/* ✅ INFORMACIÓN ADICIONAL PARA BOUTIQUES */}
-        {isBoutiqueCategory() && currentStep === 5 && !isSubmitting && (
-          <div className="text-center mt-2">
-            <small className="text-muted">
-              <i className="fas fa-info-circle me-1"></i>
-              Après création, votre boutique sera vérifiée avant activation (24-48h)
-            </small>
-          </div>
-        )}
       </motion.div>
 
-      {/* INFORMATIONS - MEJORADO */}
-      <div className="mt-2 text-center">
-        <small className="text-muted d-block">
-          <i className="fas fa-clock me-1"></i>
-          {isBoutiqueCategory() ? 'Boutique valable selon plan choisi' : 'Annonce valable 6 mois'}
-        </small>
-        <small className="text-muted">
-          <i className="fas fa-shield-alt me-1"></i>
-          Sécurisée et vérifiée
-        </small>
-      </div>
-
-      {/* STYLES MEJORADOS */}
+      {/* ESTILOS CSS */}
       <style jsx>{`
         .step-content {
-          min-height: 350px;
+          min-height: 400px;
+          padding: 20px;
         }
         
         .step-indicator {
@@ -1039,24 +840,18 @@ const CreateAnnoncePage = () => {
           padding: 0;
           cursor: pointer;
           transition: all 0.2s ease;
-          opacity: 1;
-        }
-        
-        .step-indicator:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
         }
         
         .step-indicator.active .step-icon-wrapper {
-          background: ${isBoutiqueCategory() ? '#0d6efd' : '#4f46e5'};
+          background: #4f46e5;
           color: white;
           transform: scale(1.1);
-          box-shadow: 0 4px 8px rgba(${isBoutiqueCategory() ? '13, 110, 253' : '79, 70, 229'}, 0.2);
+          box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
         }
         
         .step-icon-wrapper {
-          width: 40px;
-          height: 40px;
+          width: 50px;
+          height: 50px;
           border-radius: 50%;
           background: #f8f9fa;
           display: flex;
@@ -1064,65 +859,46 @@ const CreateAnnoncePage = () => {
           justify-content: center;
           margin: 0 auto;
           position: relative;
-          transition: all 0.2s ease;
-          border: 2px solid white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          transition: all 0.3s ease;
+          border: 3px solid white;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
         .step-icon {
-          font-size: 16px;
+          font-size: 20px;
         }
         
         .step-dot {
           position: absolute;
-          bottom: -2px;
-          right: -2px;
-          width: 10px;
-          height: 10px;
+          bottom: -4px;
+          right: -4px;
+          width: 16px;
+          height: 16px;
           background: #10b981;
           border-radius: 50%;
-          border: 2px solid white;
+          border: 3px solid white;
         }
         
         .step-connector {
           display: flex;
           align-items: center;
-          padding: 0 5px;
+          padding: 0 10px;
         }
         
         .connector-line {
-          height: 2px;
+          height: 3px;
           background: #e9ecef;
           width: 100%;
           transition: all 0.3s ease;
         }
         
         .connector-line.active {
-          background: ${isBoutiqueCategory() ? '#0d6efd' : '#4f46e5'};
+          background: #4f46e5;
         }
         
         .step-label {
-          font-size: 0.75rem;
-        }
-        
-        /* ✅ Estilos especiales para boutiques */
-        .boutique-step.active .step-icon-wrapper {
-          background: linear-gradient(135deg, #0d6efd, #6610f2);
-        }
-        
-        @media (max-width: 576px) {
-          .step-icon-wrapper {
-            width: 36px;
-            height: 36px;
-          }
-          
-          .step-icon {
-            font-size: 14px;
-          }
-          
-          h1 {
-            font-size: 1.3rem !important;
-          }
+          font-size: 0.85rem;
+          margin-top: 8px;
         }
       `}</style>
     </Container>

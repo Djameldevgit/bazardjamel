@@ -58,7 +58,12 @@ app.get('/api/set-language', (req, res) => {
   }
 });
 
+// Todas las rutas de API
 app.use('/api', require('./routes/authRouter'));
+
+// ✅ ¡IMPORTANTE! Agrega el router de categorías
+app.use('/api/categories', require('./routes/categoryRouter')); // ← AQUÍ ESTÁ
+
 app.use('/api', require('./routes/userRouter'));
 app.use('/api', require('./routes/postRouter'));
 app.use('/api', require('./routes/commentRouter'));
@@ -72,11 +77,29 @@ app.use('/api', require('./routes/reportRouter'));
 app.use('/api/blog/comments', require('./routes/blogCommentRoutes'));
 app.use('/api/forms', require('./routes/formRouter'));
 app.use('/api', require('./routes/privacysettingsRouter'));
- 
 app.use("/api", require("./routes/settingsRouter"));
- app.use('/api', require('./routes/boutiqueRouter'))
- 
+app.use('/api', require('./routes/boutiqueRouter'));
+// app.js - DESPUÉS de app.use(express.json());
 
+// 🔧 DEBUG: Interceptar TODAS las rutas
+app.use((req, res, next) => {
+  console.log(`🌐 ${req.method} ${req.originalUrl} - ${new Date().toLocaleTimeString()}`);
+  
+  // Interceptar específicamente POST /api/posts
+  if (req.method === 'POST' && req.originalUrl === '/api/posts') {
+      console.log('🎯 INTERCEPTADO POST /api/posts');
+      console.log('📦 Headers:', req.headers);
+      console.log('👤 req.user:', req.user);
+      console.log('📝 Body:', req.body);
+      
+      // Forzar ir al controlador createPost
+      console.log('🚀 Redirigiendo a postCtrl.createPost...');
+      const postCtrl = require('./controllers/postCtrl');
+      return postCtrl.createPost(req, res, next);
+  }
+  
+  next();
+});
 setInterval(autoUnblockUsers, 5 * 60 * 1000);
 
 // --- MongoDB ---
@@ -100,5 +123,6 @@ if (process.env.NODE_ENV === 'production') {
 // --- Start Server ---
 const port = process.env.PORT || 5000;
 http.listen(port, () => {
-  console.log('Server is running on port', port);
+ 
+  
 });

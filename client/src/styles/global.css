@@ -149,12 +149,13 @@ url("./header.css"); */
 @import url("./blogCommentIAdmin.css");
 @import url("./modals/modalmultiselect.css");
  
-@import url("./components/home/cardnodycarouselestilotikto02.css");
+@import url("./CategoryAccordion.css");
 @import url("./typing.css");
 @import url("./DetailPostCard.css");
 @import url("./toast.css");
 @import url("./headercarousel.css");
 @import url("./cardbodycarousel.css");
+@import url("./category-slider.css");
 .rtl {
   direction: rtl;
   text-align: right;

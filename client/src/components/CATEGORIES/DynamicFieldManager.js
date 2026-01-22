@@ -1,9 +1,9 @@
-// 📁 src/components/CATEGORIES/DynamicFieldManager.js
+// 📂 components/CATEGORIES/DynamicFieldManager.js
 import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getFieldsForCategory } from './FieldConfig';
 import FieldRendererUniversal from './FiledRendererUniversal';
-import { categoryHierarchy } from './index'; // Importar la jerarquía
+import { categoryHierarchy } from './index';
 
 const DynamicFieldManager = ({
   mainCategory,
@@ -19,69 +19,85 @@ const DynamicFieldManager = ({
 }) => {
   const { t } = useTranslation();
   const [visibleFields, setVisibleFields] = useState([]);
-  const [categoryInfo, setCategoryInfo] = useState({});
+  const [categoryInfo, setCategoryInfo] = useState({
+    categoryName: '',
+    articleTypeName: '',
+    subCategoryName: ''
+  });
   const [loadingFields, setLoadingFields] = useState(false);
 
-  // 🔍 OBTENER INFORMACIÓN DE LA CATEGORÍA DESDE LA JERARQUÍA
+  // 🔍 OBTENER INFORMACIÓN DE CATEGORÍA CON NOMBRES AMIGABLES
   useEffect(() => {
     if (mainCategory) {
       const hierarchy = categoryHierarchy[mainCategory];
       if (hierarchy) {
-        let info = {
-          levels: hierarchy.levels,
-          level1: hierarchy.level1,
-          level2: hierarchy.level2,
-          name: mainCategory
+        let newCategoryInfo = {
+          categoryName: getCategoryDisplayName(mainCategory),
+          articleTypeName: '',
+          subCategoryName: ''
         };
 
-        console.log(`📊 Información de categoría ${mainCategory}:`, {
-          levels: hierarchy.levels,
-          level1: hierarchy.level1,
-          requiresLevel2: hierarchy.requiresLevel2
-        });
-
-        // Para categorías de 2 niveles, obtener nombres específicos
-        if (hierarchy.levels === 2) {
-          console.log(`🔄 Procesando categoría de 2 niveles: ${mainCategory}`);
-          console.log(`📌 articleType: ${articleType}, subCategory: ${subCategory}`);
-
-          if (hierarchy.level1 === 'operation' && articleType) {
-            const operation = hierarchy.operations?.find(op => op.id === articleType);
-            info.level1Name = operation?.name || articleType;
-            console.log(`✅ Nivel 1 (operation) encontrado: ${info.level1Name}`);
-          } else if (articleType) {
-            // Para vetements, electromenager, etc.
-            const category = hierarchy.categories?.find(cat => cat.id === articleType);
-            info.level1Name = category?.name || articleType;
-            console.log(`✅ Nivel 1 (category) encontrado: ${info.level1Name}`);
+        // OBTENER NOMBRE DEL articleType
+        if (articleType && hierarchy.levels === 2) {
+          // Para categorías de 2 niveles (electromenager, vetements)
+          const articleTypeItem = hierarchy.articleTypes?.find(
+            item => item.id === articleType
+          ) || hierarchy.categories?.find(item => item.id === articleType);
+          
+          if (articleTypeItem) {
+            newCategoryInfo.articleTypeName = articleTypeItem.name;
           }
-
-          if (subCategory) {
-            let propertyName = '';
-            if (hierarchy.level2 === 'property' && hierarchy.properties?.[articleType]) {
-              const property = hierarchy.properties[articleType]?.find(p => p.id === subCategory);
-              propertyName = property?.name || subCategory;
-              console.log(`✅ Nivel 2 (property) encontrado: ${propertyName}`);
-            } else if (hierarchy.subcategories?.[articleType]) {
-              const subcat = hierarchy.subcategories[articleType]?.find(s => s.id === subCategory);
-              propertyName = subcat?.name || subCategory;
-              console.log(`✅ Nivel 2 (subcategory) encontrado: ${propertyName}`);
-            }
-            info.level2Name = propertyName;
+        } else if (articleType && hierarchy.levels === 1) {
+          // Para categorías de 1 nivel (vehicules, telephones)
+          const subcatItem = hierarchy.subcategories?.find(
+            item => item.id === articleType
+          );
+          if (subcatItem) {
+            newCategoryInfo.articleTypeName = subcatItem.name;
           }
-        } else if (hierarchy.levels === 1 && subCategory) {
-          // Para categorías de 1 nivel (vehicules, telephones, etc.)
-          const subcatItem = hierarchy.subcategories?.find(sc => sc.id === subCategory);
-          info.level1Name = subcatItem?.name || subCategory;
-          console.log(`✅ Categoría simple - Subcategoría: ${info.level1Name}`);
         }
 
-        setCategoryInfo(info);
-      } else {
-        console.warn(`⚠️ No se encontró jerarquía para categoría: ${mainCategory}`);
+        // OBTENER NOMBRE DEL subCategory
+        if (subCategory) {
+          if (hierarchy.levels === 2 && articleType) {
+            // Buscar en subcategories del articleType
+            const subCategories = hierarchy.subcategories?.[articleType] || [];
+            const subCatItem = subCategories.find(item => item.id === subCategory);
+            if (subCatItem) {
+              newCategoryInfo.subCategoryName = subCatItem.name;
+            }
+          } else if (hierarchy.levels === 1) {
+            // Para categorías de 1 nivel
+            const subcatItem = hierarchy.subcategories?.find(
+              item => item.id === subCategory
+            );
+            if (subcatItem) {
+              newCategoryInfo.subCategoryName = subcatItem.name;
+            }
+          }
+          
+          // Si no encontramos el nombre, usar el ID
+          if (!newCategoryInfo.subCategoryName && subCategory) {
+            newCategoryInfo.subCategoryName = formatDisplayName(subCategory);
+          }
+        }
+
+        // Si articleTypeName sigue vacío, usar el ID formateado
+        if (!newCategoryInfo.articleTypeName && articleType) {
+          newCategoryInfo.articleTypeName = formatDisplayName(articleType);
+        }
+
+        setCategoryInfo(newCategoryInfo);
+
+        console.log('📊 Información de categoría actualizada:', {
+          mainCategory,
+          articleType,
+          subCategory,
+          categoryInfo: newCategoryInfo
+        });
       }
     }
-  }, [mainCategory, subCategory, articleType]);
+  }, [mainCategory, articleType, subCategory]);
 
   // 🔥 OBTENER CAMPOS SEGÚN CATEGORÍA Y NIVELES
   useEffect(() => {
@@ -90,8 +106,7 @@ const DynamicFieldManager = ({
       subCategory,
       articleType,
       currentStep,
-      categoryInfo,
-      isEdit
+      categoryInfo
     });
 
     setLoadingFields(true);
@@ -109,51 +124,15 @@ const DynamicFieldManager = ({
     // STEP 2, 3, 4: CAMPOS DINÁMICOS
     else if (currentStep >= 2 && currentStep <= 4) {
       if (mainCategory) {
-        const hierarchy = categoryHierarchy[mainCategory];
+        // Obtener campos específicos para la categoría
+        fields = getFieldsForCategory(
+          mainCategory,
+          subCategory,
+          currentStep,
+          articleType
+        );
 
-        // 🔍 DETERMINAR QUÉ COMPONENTE CARGAR BASADO EN LA JERARQUÍA
-        let componentToLoad = null;
-
-        if (hierarchy) {
-          if (hierarchy.levels === 1) {
-            // 📌 CATEGORÍAS DE 1 NIVEL (vehicules, telephones, etc.)
-            componentToLoad = getComponentForSimpleCategory(mainCategory);
-            console.log('📦 Categoría simple:', { mainCategory, componentToLoad });
-          } else if (hierarchy.levels === 2) {
-            // 📌 CATEGORÍAS DE 2 NIVELES (immobilier, electromenager, vetements, etc.)
-            componentToLoad = getComponentForHierarchicalCategory(mainCategory, articleType, subCategory);
-            console.log('🏗️ Categoría jerárquica:', {
-              mainCategory,
-              articleType,
-              subCategory,
-              componentToLoad
-            });
-          }
-        } else {
-          console.warn(`⚠️ No se encontró jerarquía para: ${mainCategory}`);
-        }
-
-        // 🎯 OBTENER CAMPOS ESPECÍFICOS
-        if (componentToLoad || mainCategory) {
-          // Pasar todos los parámetros necesarios
-          fields = getFieldsForCategory(
-            mainCategory,
-            subCategory,
-            currentStep,
-            articleType // IMPORTANTE: Para categorías de 2 niveles
-          );
-
-          console.log(`📋 Campos obtenidos para ${mainCategory}:`, fields);
-        } else {
-          console.warn('⚠️ No se pudo determinar el componente para:', {
-            mainCategory,
-            articleType,
-            subCategory
-          });
-
-          // Campos por defecto para evitar "Configuration en cours"
-          fields = getDefaultFieldsForCategory(mainCategory, currentStep);
-        }
+        console.log(`📋 Campos obtenidos para ${mainCategory}:`, fields);
 
         // 🔥 FILTRAR CAMPOS VÁLIDOS
         const validFields = fields.filter(field =>
@@ -163,17 +142,8 @@ const DynamicFieldManager = ({
           !field.startsWith('!')
         );
 
-        console.log(`✅ Step ${currentStep}: ${validFields.length} campos válidos para ${mainCategory}`);
-
-        // 📌 MANEJO ESPECIAL PARA VETEMENTS
-        if (mainCategory === 'vetements' && validFields.length === 0) {
-          console.log('🔄 Vetements sin campos específicos, usando configuración por defecto');
-          const defaultVetementsFields = getVetementsDefaultFields(currentStep, subCategory);
-          setVisibleFields(defaultVetementsFields);
-        } else {
-          setVisibleFields(validFields);
-        }
-
+        console.log(`✅ Step ${currentStep}: ${validFields.length} campos válidos`);
+        setVisibleFields(validFields);
         setLoadingFields(false);
         return;
       } else {
@@ -192,93 +162,7 @@ const DynamicFieldManager = ({
 
     setVisibleFields(fields || []);
     setLoadingFields(false);
-
-  }, [mainCategory, subCategory, articleType, currentStep, isEdit, categoryInfo]);
-
-  // 🎯 FUNCIONES PARA DETERMINAR COMPONENTES (CORREGIDAS)
-  const getComponentForSimpleCategory = (category) => {
-    // VETEMENTS NO DEBE ESTAR AQUÍ porque es categoría de 2 niveles
-    const componentMap = {
-      'immobiliers': 'ImmobiliersFields',
-      'vehicules': 'VehiculesFields',
-      'piecesDetachees': 'PiecesDetacheesFields',
-      'telephones': 'TelephonesFields',
-      'informatiques': 'InformatiquesFields', // ← REMOVIDO DE AQUÍ
-     
-      'electromenagers': 'ElectromenagersFields', // ← REMOVIDO DE AQUÍ
-      'vetements': 'VetementsFields', // ← REMOVIDO DE AQUÍ
-      'santebeaute': 'SanteBeauteFields',
-      'meubles': 'MeublesFields',
-      'loisirs': 'LoisirsFields',
-    
-      'sport': 'SportFields',
-      'alimentaires': 'AlimentairesFields',
-      'services': 'ServicesFields',
-      'materiaux': 'MateriauxFields',
-      'voyages': 'VoyagesFields',
-   
-      'emploi': 'EmploiFields',
-      'boutiques': 'BoutiquesFields'
-
-    };
-    return componentMap[category] || null;
-  };
-
-  const getComponentForHierarchicalCategory = (category, level1, level2) => {
-    // VETEMENTS SÍ DEBE ESTAR AQUÍ porque es categoría de 2 niveles
-    const componentMap = {
-      'immobilier': 'ImmobiliersFields',
-      'vehicules': 'VehiculesFields',
-      'electromenager': 'ElectromenagerFields',
-      'vetements': 'VetementsFields', // ← CORRECTO
-      'informatique': 'InformatiqueFields',
-      'piecesDetachees': 'PiecesDetacheesFields',
-      'santebeaute': 'SanteBeauteFields',
-      'meubles': 'MeublesFields',
-      'materiaux': 'MateriauxFields',
-      'alimentaires': 'AlimentairesFields',
-      'services': 'ServicesFields',
-      'sport': 'SportFields',
-      'voyage': 'VoyagesFields',
- 
-    };
-    return componentMap[category] || null;
-  };
-
-  // 🎯 CAMPOS POR DEFECTO PARA VETEMENTS
-  const getVetementsDefaultFields = (step, subCategory) => {
-    console.log(`🎯 Obteniendo campos por defecto para vetements step ${step}, sub: ${subCategory}`);
-
-    const vetementsFields = {
-      2: ['title', 'description', 'marque', 'etat', 'taille', 'couleur'],
-      3: ['price', 'unite', 'livraison'],
-      4: ['telephone', 'email', 'wilaya', 'echange']
-    };
-
-    // Campos específicos por tipo de subcategoría
-    if (subCategory) {
-      const isChaussures = subCategory.includes('chaussures');
-      const isAccessoire = ['sacs_valises', 'montres', 'lunettes', 'bijoux'].includes(subCategory);
-
-      if (isChaussures) {
-        vetementsFields[2] = ['title', 'description', 'marque', 'etat', 'pointure', 'couleur'];
-      } else if (isAccessoire) {
-        vetementsFields[2] = ['title', 'description', 'marque', 'etat', 'couleur', 'materiau'];
-      }
-    }
-
-    return vetementsFields[step] || [];
-  };
-
-  // 🎯 CAMPOS POR DEFECTO GENERALES
-  const getDefaultFieldsForCategory = (category, step) => {
-    const defaultFields = {
-      2: ['title', 'description'],
-      3: ['price'],
-      4: ['telephone', 'wilaya']
-    };
-    return defaultFields[step] || [];
-  };
+  }, [mainCategory, subCategory, articleType, currentStep, categoryInfo]);
 
   // 🔥 MEMOIZAR CAMPOS RENDERIZADOS
   const renderedFields = useMemo(() => {
@@ -332,7 +216,6 @@ const DynamicFieldManager = ({
               {isEdit ? 'Modification de catégorie' : 'Catégorie sélectionnée'}
             </h5>
 
-            {/* 📊 INFORMACIÓN DETALLADA DE LA CATEGORÍA */}
             <div className="category-details mt-3">
               <div className="row">
                 <div className="col-12">
@@ -341,63 +224,51 @@ const DynamicFieldManager = ({
                       {getCategoryEmoji(mainCategory)}
                     </div>
                     <div>
-                      <h6 className="mb-1 fw-bold">{getCategoryDisplayName(mainCategory)}</h6>
+                      <h6 className="mb-1 fw-bold">{categoryInfo.categoryName || getCategoryDisplayName(mainCategory)}</h6>
                       <small className="text-muted">
-                        {categoryInfo.levels === 1 ? 'Catégorie simple' :
-                          categoryInfo.levels === 2 ? 'Catégorie avec sous-catégories' :
-                            'Catégorie'}
+                        {mainCategory ? 'Catégorie principale' : 'Sélectionnez une catégorie'}
                       </small>
                     </div>
                   </div>
                 </div>
 
-                {/* PARA CATEGORÍAS DE 2 NIVELES */}
-                {categoryInfo.levels === 2 && (
+                {/* INFORMACIÓN DE NIVELES */}
+                {mainCategory && (
                   <>
-                    {categoryInfo.level1Name && (
+                    {/* articleType */}
+                    {categoryInfo.articleTypeName && (
                       <div className="col-md-6 mb-2">
                         <div className="card border-0 bg-light">
                           <div className="card-body py-2">
                             <small className="text-muted d-block">
-                              {categoryInfo.level1 === 'operation' ? 'Opération' :
-                                mainCategory === 'vetements' ? 'Type' : 'Catégorie'}
+                              Type d'article
                             </small>
-                            <div className="fw-medium">{categoryInfo.level1Name}</div>
+                            <div className="fw-medium">
+                              <span className="me-2">{getEmojiForType(articleType)}</span>
+                              {categoryInfo.articleTypeName}
+                            </div>
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {categoryInfo.level2Name && (
+                    {/* subCategory */}
+                    {categoryInfo.subCategoryName && (
                       <div className="col-md-6 mb-2">
                         <div className="card border-0 bg-light">
                           <div className="card-body py-2">
                             <small className="text-muted d-block">
-                              {categoryInfo.level2 === 'property' ? 'Type de bien' :
-                                mainCategory === 'vetements' ? 'Article' : 'Sous-catégorie'}
+                              Sous-catégorie
                             </small>
-                            <div className="fw-medium">{categoryInfo.level2Name}</div>
+                            <div className="fw-medium">
+                              <span className="me-2">{getEmojiForSubCategory(subCategory)}</span>
+                              {categoryInfo.subCategoryName}
+                            </div>
                           </div>
                         </div>
                       </div>
                     )}
                   </>
-                )}
-
-                {/* PARA CATEGORÍAS DE 1 NIVEL */}
-                {categoryInfo.levels === 1 && subCategory && (
-                  <div className="col-12">
-                    <div className="card border-0 bg-light">
-                      <div className="card-body py-2">
-                        <small className="text-muted d-block">Sous-catégorie</small>
-                        <div className="fw-medium">
-                          {categoryHierarchy[mainCategory]?.subcategories?.find(
-                            sc => sc.id === subCategory
-                          )?.name || subCategory}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 )}
               </div>
 
@@ -420,7 +291,6 @@ const DynamicFieldManager = ({
           <div className="alert alert-info">
             <h5><i className="fas fa-images me-2"></i> Étape 5: Images</h5>
             <p>Téléchargez les images de votre annonce (minimum 1, maximum 10)</p>
-            {/* Componente de imágenes aquí */}
           </div>
         </div>
       );
@@ -437,7 +307,7 @@ const DynamicFieldManager = ({
               </div>
               <div>
                 <h6 className="mb-1">Chargement des champs...</h6>
-                <p className="small mb-0">Configuration pour {getCategoryDisplayName(mainCategory)}</p>
+                <p className="small mb-0">Configuration pour {categoryInfo.categoryName}</p>
               </div>
             </div>
           </div>
@@ -447,49 +317,43 @@ const DynamicFieldManager = ({
             <p className="mb-2">
               {!mainCategory
                 ? 'Sélectionnez d\'abord une catégorie à l\'étape 1'
-                : `Aucun champ configuré pour ${getCategoryDisplayName(mainCategory)}`
+                : `Aucun champ configuré pour ${categoryInfo.categoryName}`
               }
             </p>
-            {mainCategory === 'vetements' && (
-              <div className="mt-2">
-                <small className="text-muted">
-                  <i className="fas fa-info-circle me-1"></i>
-                  Pour résoudre ce problème, vérifiez la configuration dans FieldConfig.js
-                </small>
-              </div>
-            )}
           </div>
         ) : (
           <div className="row g-3">
-            {/* INFO BAR PARA CATEGORÍAS JERÁRQUICAS */}
-            {(categoryInfo.levels === 2 || mainCategory === 'vetements') && renderedFields.length > 0 && (
+            {/* BARRA DE INFORMACIÓN DE CATEGORÍA */}
+            {mainCategory && (
               <div className="col-12">
                 <div className="category-path-card mb-3">
                   <div className="d-flex align-items-center justify-content-between">
                     <div className="d-flex align-items-center flex-wrap">
                       <span className="path-step">
                         <span className="path-emoji">{getCategoryEmoji(mainCategory)}</span>
-                        <span className="path-name">{getCategoryDisplayName(mainCategory)}</span>
+                        <span className="path-name">{categoryInfo.categoryName}</span>
                       </span>
 
-                      {categoryInfo.level1Name && (
+                      {categoryInfo.articleTypeName && (
                         <>
                           <span className="path-arrow mx-2">
                             <i className="fas fa-arrow-right text-muted"></i>
                           </span>
                           <span className="path-step">
-                            <span className="path-name">{categoryInfo.level1Name}</span>
+                            <span className="path-emoji">{getEmojiForType(articleType)}</span>
+                            <span className="path-name">{categoryInfo.articleTypeName}</span>
                           </span>
                         </>
                       )}
 
-                      {categoryInfo.level2Name && (
+                      {categoryInfo.subCategoryName && (
                         <>
                           <span className="path-arrow mx-2">
                             <i className="fas fa-arrow-right text-muted"></i>
                           </span>
                           <span className="path-step">
-                            <span className="path-name">{categoryInfo.level2Name}</span>
+                            <span className="path-emoji">{getEmojiForSubCategory(subCategory)}</span>
+                            <span className="path-name">{categoryInfo.subCategoryName}</span>
                           </span>
                         </>
                       )}
@@ -509,8 +373,7 @@ const DynamicFieldManager = ({
                   <div className="mt-2">
                     <small className="text-muted">
                       <i className="fas fa-cog me-1"></i>
-                      {renderedFields.length} champ(s) configuré(s) •
-                      {mainCategory === 'vetements' && ' 👕 Vêtements & Mode'}
+                      {renderedFields.length} champ(s) configuré(s)
                     </small>
                   </div>
                 </div>
@@ -519,28 +382,13 @@ const DynamicFieldManager = ({
 
             {/* CAMPOS RENDERIZADOS */}
             {renderedFields}
-
-            {/* COMPONENTE ESPECÍFICO VETEMENTS */}
-            {mainCategory === 'vetements' && renderedFields.length > 0 && (
-              <div className="col-12">
-                <div className="alert alert-light border">
-                  <h6 className="mb-2">
-                    <i className="fas fa-tshirt me-2"></i>
-                    Champs spécifiques aux vêtements
-                  </h6>
-                  <p className="small mb-0 text-muted">
-                    Les champs comme taille, pointure, couleur seront affichés ici
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>
     );
   };
 
-  // 🎯 FUNCIONES HELPER (mantener igual)
+  // 🎯 FUNCIONES HELPER
   const getCategoryEmoji = (category) => {
     const emojis = {
       'immobilier': '🏠',
@@ -559,7 +407,7 @@ const DynamicFieldManager = ({
       'emploi': '💼',
       'sport': '⚽',
       'voyages': '✈️',
-      'boutiques': '✈️'
+      'boutiques': '🏪'
     };
     return emojis[category] || '📁';
   };
@@ -582,9 +430,47 @@ const DynamicFieldManager = ({
       'emploi': 'Emploi',
       'sport': 'Sport',
       'voyages': 'Voyages',
-      
+      'boutiques': 'Boutiques'
     };
     return names[category] || category;
+  };
+
+  const formatDisplayName = (id) => {
+    if (!id) return '';
+    return id
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  const getEmojiForType = (typeId) => {
+    // Emojis comunes para articleTypes
+    const emojis = {
+      'cameras_accessories': '📹',
+      'audio': '🔊',
+      'machines_laver': '🧺',
+      'refrigerateurs_congelateurs': '❄️',
+      'televiseurs': '📺',
+      'fours_cuisson': '🔥',
+      'chauffage_climatisation': '🌡️',
+      'appareils_cuisine': '🍳'
+    };
+    return emojis[typeId] || '📋';
+  };
+
+  const getEmojiForSubCategory = (subCatId) => {
+    // Emojis comunes para subCategories
+    const emojis = {
+      'appareils_photo': '📷',
+      'cameras_video': '🎥',
+      'ecouteurs_baffles': '🎧',
+      'home_cinema': '🎬',
+      'lave_linge': '👚',
+      'seche_linge': '🌞',
+      'refrigerateur': '🧊',
+      'congelateur': '❄️'
+    };
+    return emojis[subCatId] || '📦';
   };
 
   // ✅ VALIDAR SI SE PUEDE CONTINUAR
@@ -606,16 +492,6 @@ const DynamicFieldManager = ({
       const value = postData[field] || '';
       return value.toString().trim() !== '';
     });
-  };
-
-  // 📏 CALCULAR ALTURA MÍNIMA
-  const getMinHeight = () => {
-    if (currentStep === 1 || currentStep === 5) return 'auto';
-    if (renderedFields.length === 0) return '150px';
-
-    const baseHeight = 80;
-    const perFieldHeight = renderedFields.length <= 2 ? 120 : 90;
-    return `${baseHeight + (renderedFields.length * perFieldHeight)}px`;
   };
 
   // 🚫 VERIFICAR SI FALTA CATEGORÍA
@@ -660,20 +536,24 @@ const DynamicFieldManager = ({
               {mainCategory && (
                 <div className="d-flex align-items-center flex-wrap">
                   <span className="category-badge me-2 mb-1">
-                    {getCategoryEmoji(mainCategory)} {getCategoryDisplayName(mainCategory)}
+                    {getCategoryEmoji(mainCategory)} {categoryInfo.categoryName}
                   </span>
 
-                  {categoryInfo.levels === 2 && categoryInfo.level1Name && (
+                  {categoryInfo.articleTypeName && (
                     <>
                       <i className="fas fa-chevron-right text-muted mx-1 mb-1"></i>
-                      <span className="category-badge me-2 mb-1">{categoryInfo.level1Name}</span>
+                      <span className="category-badge me-2 mb-1">
+                        {getEmojiForType(articleType)} {categoryInfo.articleTypeName}
+                      </span>
                     </>
                   )}
 
-                  {subCategory && categoryInfo.level2Name && (
+                  {categoryInfo.subCategoryName && (
                     <>
                       <i className="fas fa-chevron-right text-muted mx-1 mb-1"></i>
-                      <span className="category-badge mb-1">{categoryInfo.level2Name}</span>
+                      <span className="category-badge mb-1">
+                        {getEmojiForSubCategory(subCategory)} {categoryInfo.subCategoryName}
+                      </span>
                     </>
                   )}
 
@@ -706,7 +586,7 @@ const DynamicFieldManager = ({
 
       {/* CONTENIDO */}
       <div style={{
-        minHeight: getMinHeight(),
+        minHeight: visibleFields.length === 0 && currentStep > 1 ? '150px' : 'auto',
         transition: 'min-height 0.3s ease',
         display: 'flex',
         flexDirection: 'column'
@@ -745,8 +625,6 @@ const DynamicFieldManager = ({
               onClick={() => {
                 if (currentStep < 5) {
                   onStepChange && onStepChange(currentStep + 1);
-                } else {
-                  console.log('📤 Publicar/Actualizar anuncio');
                 }
               }}
               disabled={!canContinue()}
@@ -758,8 +636,8 @@ const DynamicFieldManager = ({
                 </>
               ) : (
                 <>
-                  {isEdit ? 'Mettre à jour' : 'Publier'}
-                  <i className="fas fa-paper-plane ms-2"></i>
+                  Continuer
+                  <i className="fas fa-arrow-right ms-2"></i>
                 </>
               )}
             </button>
@@ -779,14 +657,14 @@ const DynamicFieldManager = ({
         </div>
       )}
 
-      {/* ESTILOS MEJORADOS */}
+      {/* ESTILOS */}
       <style jsx>{`
         .dynamic-field-manager {
           background: white;
           padding: 25px;
           border-radius: 10px;
           box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-          min-height: ${renderedFields.length === 0 && currentStep > 1 ? '250px' : 'auto'};
+          min-height: ${visibleFields.length === 0 && currentStep > 1 ? '250px' : 'auto'};
           transition: all 0.3s ease;
           display: flex;
           flex-direction: column;
@@ -805,6 +683,9 @@ const DynamicFieldManager = ({
           border: 1px solid #dee2e6;
           font-size: 0.85rem;
           white-space: nowrap;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
         }
         
         .category-path-card {
@@ -838,15 +719,6 @@ const DynamicFieldManager = ({
           color: #6c757d;
         }
         
-        .category-details .card {
-          transition: all 0.2s ease;
-        }
-        
-        .category-details .card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-        }
-        
         .field-wrapper {
           background: #f8f9fa;
           padding: 15px;
@@ -854,7 +726,7 @@ const DynamicFieldManager = ({
           border: 1px solid #dee2e6;
           margin-bottom: 15px;
           transition: all 0.2s ease;
-          min-height: ${renderedFields.length <= 2 ? '120px' : '90px'};
+          min-height: 90px;
           height: 100%;
         }
         
@@ -862,15 +734,6 @@ const DynamicFieldManager = ({
           border-color: #0d6efd;
           box-shadow: 0 2px 5px rgba(13, 110, 253, 0.1);
           background: #fff;
-        }
-        
-        .progress {
-          background: #e9ecef;
-        }
-        
-        .btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
         }
         
         @keyframes fadeIn {
@@ -900,10 +763,6 @@ const DynamicFieldManager = ({
           .path-step {
             padding: 3px 8px;
             font-size: 0.8rem;
-          }
-          
-          .path-emoji {
-            font-size: 1rem;
           }
         }
       `}</style>

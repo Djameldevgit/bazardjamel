@@ -1,0 +1,20 @@
+6️⃣ DIAGRAMA VISUAL DEL FLUJO DEL SERVIDOR
+🟢 CLIENTE REACT
+│
+├── GET /api/categories
+│     ↳ categoryCtrl.getCategories()
+│
+├── GET /api/posts?page=1&limit=8
+│     ↳ postCtrl.getAllPosts()
+│
+├── GET /api/posts/category/:slug?page=1
+│     ↳ postCtrl.getPostsByCategory()
+│
+├── GET /api/posts/subcategory/:slug?page=1
+│     ↳ postCtrl.getPostsBySubcategory()
+│
+├── GET /api/posts/articletype/:slug?page=1
+│     ↳ postCtrl.getPostsByArticleType()
+│
+└── POST /api/posts  (auth)
+      ↳ postCtrl.createPost()

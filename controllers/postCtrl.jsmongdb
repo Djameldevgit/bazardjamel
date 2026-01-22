@@ -1,0 +1,468 @@
+// controllers/postController.js
+const Post = require('../models/postModel');
+const Category = require('../models/categoryModel');
+
+const postCtrl = { 
+ getHomePosts : async (req, res) => {
+  try {
+    const { limitPerCategory = 6 } = req.query;
+
+    // Obtener primeras 2 categorías principales
+    const mainCategories = await Category.find({ 
+      level: 1,
+      isActive: true 
+    })
+    .sort({ order: 1 })
+    .limit(2)
+    .select('_id name slug emoji');
+
+    if (mainCategories.length === 0) {
+      return res.json({
+        success: true,
+        categoriesWithPosts: []
+      });
+    }
+
+    // Para cada categoría, obtener sus posts
+    const categoriesWithPosts = await Promise.all(
+      mainCategories.map(async (category) => {
+        // Obtener todas las categorías finales de esta categoría principal
+        const leafCategories = await Category.find({
+          ancestors: category._id,
+          isLeaf: true,
+          isActive: true
+        }).select('_id');
+
+        const leafCategoryIds = leafCategories.map(cat => cat._id);
+
+        // Obtener posts de estas categorías finales
+        const posts = await Post.find({
+          category: { $in: leafCategoryIds },
+          status: 'active'
+        })
+        .populate('category', 'name slug path')
+        .populate('user', 'name avatar rating')
+        .sort({ featured: -1, createdAt: -1 })
+        .limit(parseInt(limitPerCategory));
+
+        return {
+          category: {
+            _id: category._id,
+            name: category.name,
+            slug: category.slug,
+            emoji: category.emoji
+          },
+          posts,
+          postCount: posts.length
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      categoriesWithPosts
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener posts para home',
+      error: error.message
+    });
+  }
+},
+
+// @desc    Obtener posts por categoría específica (para página de categoría)
+// @route   GET /api/posts/category/:slug
+// @access  Public
+  getPostsByCategory :async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { 
+      page = 1, 
+      limit = 12,
+      subcategory,
+      articleType 
+    } = req.query;
+
+    const skip = (page - 1) * limit;
+
+    // 1. Encontrar la categoría objetivo
+    let targetCategory = await Category.findOne({ 
+      slug,
+      isActive: true 
+    });
+
+    // Si no encuentra por slug directo, buscar por path completo
+    if (!targetCategory) {
+      targetCategory = await Category.findOne({
+        path: slug,
+        isActive: true
+      });
+    }
+
+    if (!targetCategory) {
+      return res.status(404).json({
+        success: false,
+        message: 'Categoría no encontrada'
+      });
+    }
+
+    // 2. Determinar categorías para filtrar
+    let categoryFilter = [];
+
+    // Si la categoría objetivo es hoja, usar solo ella
+    if (targetCategory.isLeaf) {
+      categoryFilter = [targetCategory._id];
+    } 
+    // Si tiene hijos, buscar todas las hojas descendientes
+    else {
+      const leafCategories = await Category.find({
+        ancestors: targetCategory._id,
+        isLeaf: true,
+        isActive: true
+      }).select('_id');
+      
+      categoryFilter = leafCategories.map(cat => cat._id);
+    }
+
+    // 3. Construir query base
+    let query = {
+      category: { $in: categoryFilter },
+      status: 'active'
+    };
+
+    // 4. Aplicar filtros adicionales si existen
+    if (subcategory) {
+      const subCat = await Category.findOne({
+        slug: subcategory,
+        parent: targetCategory._id,
+        isActive: true
+      });
+
+      if (subCat) {
+        if (subCat.isLeaf) {
+          query.category = [subCat._id];
+        } else {
+          const subLeafCategories = await Category.find({
+            ancestors: subCat._id,
+            isLeaf: true,
+            isActive: true
+          }).select('_id');
+          
+          query.category = { $in: subLeafCategories.map(cat => cat._id) };
+        }
+      }
+    }
+
+    if (articleType) {
+      const articleCat = await Category.findOne({
+        slug: articleType,
+        isLeaf: true,
+        isActive: true
+      });
+
+      if (articleCat) {
+        query.category = [articleCat._id];
+      }
+    }
+
+    // 5. Obtener posts con paginación
+    const posts = await Post.find(query)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .populate('category', 'name slug path')
+      .populate('user', 'name avatar rating')
+      .sort({ createdAt: -1 });
+
+    // 6. Obtener total para paginación
+    const total = await Post.countDocuments(query);
+
+    // 7. Obtener subcategorías disponibles para filtros
+    const availableSubcategories = await Category.find({
+      parent: targetCategory._id,
+      isActive: true
+    })
+    .sort({ order: 1 })
+    .select('name slug emoji hasChildren isLeaf');
+
+    res.json({
+      success: true,
+      category: {
+        _id: targetCategory._id,
+        name: targetCategory.name,
+        slug: targetCategory.slug,
+        emoji: targetCategory.emoji,
+        level: targetCategory.level,
+        path: targetCategory.path
+      },
+      posts,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        pages: Math.ceil(total / limit),
+        hasMore: (skip + posts.length) < total
+      },
+      filters: {
+        availableSubcategories,
+        currentSubcategory: subcategory || null,
+        currentArticleType: articleType || null
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener posts por categoría',
+      error: error.message
+    });
+  }
+},
+
+// @desc    Obtener posts con scroll infinito
+// @route   GET /api/posts/scroll
+// @access  Public
+  getPostsScroll : async (req, res) => {
+  try {
+    const { 
+      cursor,
+      limit = 12,
+      category,
+      subcategory,
+      articleType 
+    } = req.query;
+
+    let query = { status: 'active' };
+    let sortQuery = { createdAt: -1 };
+
+    // Aplicar filtro de categoría si existe
+    if (category) {
+      const categoryDoc = await Category.findOne({ 
+        slug: category,
+        isActive: true 
+      });
+
+      if (categoryDoc) {
+        if (categoryDoc.isLeaf) {
+          query.category = categoryDoc._id;
+        } else {
+          const leafCategories = await Category.find({
+            ancestors: categoryDoc._id,
+            isLeaf: true,
+            isActive: true
+          }).select('_id');
+          
+          query.category = { $in: leafCategories.map(cat => cat._id) };
+        }
+      }
+    }
+
+    // Aplicar cursor para paginación infinita
+    if (cursor) {
+      query.createdAt = { $lt: new Date(cursor) };
+    }
+
+    // Obtener posts
+    const posts = await Post.find(query)
+      .sort(sortQuery)
+      .limit(parseInt(limit) + 1) // +1 para saber si hay más
+      .populate('category', 'name slug path')
+      .populate('user', 'name avatar rating');
+
+    // Verificar si hay más posts
+    let hasMore = false;
+    let nextCursor = null;
+
+    if (posts.length > parseInt(limit)) {
+      hasMore = true;
+      posts.pop(); // Remover el extra
+      nextCursor = posts[posts.length - 1].createdAt;
+    }
+
+    res.json({
+      success: true,
+      posts,
+      pagination: {
+        hasMore,
+        nextCursor,
+        count: posts.length
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener posts con scroll',
+      error: error.message
+    });
+  }
+},
+
+// @desc    Buscar posts con múltiples filtros
+// @route   GET /api/posts/search
+// @access  Public
+  searchPosts : async (req, res) => {
+  try {
+    const {
+      q, // texto de búsqueda
+      category,
+      minPrice,
+      maxPrice,
+      location,
+      page = 1,
+      limit = 20
+    } = req.query;
+
+    const skip = (page - 1) * limit;
+    let query = { status: 'active' };
+
+    // Búsqueda por texto
+    if (q) {
+      query.$or = [
+        { title: { $regex: q, $options: 'i' } },
+        { description: { $regex: q, $options: 'i' } }
+      ];
+    }
+
+    // Filtro por categoría
+    if (category) {
+      const categoryDoc = await Category.findOne({
+        $or: [
+          { slug: category },
+          { path: category }
+        ],
+        isActive: true
+      });
+
+      if (categoryDoc) {
+        if (categoryDoc.isLeaf) {
+          query.category = categoryDoc._id;
+        } else {
+          const leafCategories = await Category.find({
+            ancestors: categoryDoc._id,
+            isLeaf: true,
+            isActive: true
+          }).select('_id');
+          
+          query.category = { $in: leafCategories.map(cat => cat._id) };
+        }
+      }
+    }
+
+    // Filtro por precio
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) query.price.$gte = Number(minPrice);
+      if (maxPrice) query.price.$lte = Number(maxPrice);
+    }
+
+    // Filtro por ubicación
+    if (location) {
+      query['location.city'] = { $regex: location, $options: 'i' };
+    }
+
+    // Obtener resultados
+    const posts = await Post.find(query)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .populate('category', 'name slug path')
+      .populate('user', 'name avatar rating')
+      .sort({ createdAt: -1 });
+
+    const total = await Post.countDocuments(query);
+
+    res.json({
+      success: true,
+      posts,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      },
+      filters: {
+        searchQuery: q || '',
+        category: category || '',
+        minPrice: minPrice || '',
+        maxPrice: maxPrice || '',
+        location: location || ''
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error en búsqueda de posts',
+      error: error.message
+    });
+  }
+},
+
+// @desc    Crear nuevo post
+// @route   POST /api/posts
+// @access  Private
+ createPost : async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      price,
+      category, // ID de categoría final (nivel 3 o 2 si esLeaf)
+      images,
+      location,
+      attributes
+    } = req.body;
+
+    // Verificar que la categoría exista y sea final
+    const categoryDoc = await Category.findById(category);
+    
+    if (!categoryDoc) {
+      return res.status(400).json({
+        success: false,
+        message: 'Categoría no encontrada'
+      });
+    }
+
+    if (!categoryDoc.isLeaf) {
+      return res.status(400).json({
+        success: false,
+        message: 'Debes seleccionar una categoría específica'
+      });
+    }
+
+    // Crear el post
+    const post = new Post({
+      title,
+      description,
+      price,
+      category: categoryDoc._id,
+      categoryPath: {
+        level1: categoryDoc.ancestors[0] || categoryDoc._id,
+        level2: categoryDoc.ancestors[1] || null,
+        level3: categoryDoc.level === 3 ? categoryDoc._id : null
+      },
+      user: req.userId, // Suponiendo que tienes autenticación
+      images,
+      location,
+      attributes
+    });
+
+    await post.save();
+
+    // Incrementar contador de posts en la categoría
+    await Category.findByIdAndUpdate(categoryDoc._id, {
+      $inc: { postCount: 1 }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Post creado exitosamente',
+      post
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al crear post',
+      error: error.message
+    });
+  }
+}
+}
+module.exports = postCtrl

@@ -1,70 +1,45 @@
-// routes/postRouter.js
-const router = require('express').Router()
-const postCtrl = require('../controllers/postCtrl')
-const postCategoryCtrl = require('../controllers/postCategoryCtrl')
-const auth = require('../middleware/auth')
+// 📂 routes/postRoutes.js - CORRECCIÓN COMPLETA
+const express = require('express');
+const router = express.Router();
+const postCtrl = require('../controllers/postCtrl');
+const auth = require('../middleware/auth');
 
-// ==================== RUTAS DE POSTS (OPERACIONES GENERALES) ====================
-// 📌 CREAR Y OBTENER POSTS
-router.route('/posts')
-    .post(auth, postCtrl.createPost)
-    .get(postCtrl.getPosts)
+// ⭐⭐ CORRECCIÓN: Todas las rutas NO deben comenzar con /posts
+// Porque ya estás en router.use('/api/posts', postRoutes) en server.js
 
-// 📌 OPERACIONES SOBRE UN POST ESPECÍFICO
-router.route('/post/:id')
-    .patch(auth, postCtrl.updatePost)
-    .get(postCtrl.getPost)
-    .delete(auth, postCtrl.deletePost)
+// ========== RUTAS CORRECTAS ==========
 
-// 📌 POSTS SIMILARES
-router.get('/posts/similar', postCtrl.getSimilarPosts)
+// 1. RUTAS FIJAS (sin /posts delante)
+router.get('/health', postCtrl.healthCheck);              // ✅ CORRECTO: /api/posts/health
+// router.get('/posts/health', ...)                       // ❌ INCORRECTO (duplicaría /api/posts/posts/health)
 
-// 📌 POSTS DE USUARIO
+// ⭐⭐ CRÍTICO: /filter correcto
+router.get('/posts/filter', postCtrl.filterPosts);              // ✅ CORRECTO: /api/posts/filter
+
+// 2. RUTAS RESTANTES (sin /posts delante)
+router.get('/featured', postCtrl.getFeaturedPosts);       // ✅ /api/posts/featured
+router.get('/recent', postCtrl.getRecentPosts);           // ✅ /api/posts/recent
+router.get('/post_discover', auth, postCtrl.getPostsDicover); // ✅ /api/posts/post_discover
+router.get('/getSavePosts', auth, postCtrl.getSavePosts); // ✅ /api/posts/getSavePosts
+router.get('/search/:query', postCtrl.searchPosts);       // ✅ /api/posts/search/:query
+router.get('/user_posts/:id', auth, postCtrl.getUserPosts); // ✅ /api/posts/user_posts/:id
+router.get('/', postCtrl.getPosts);                       // ✅ /api/posts/
+router.get('/:id', postCtrl.getPostById);                 // ✅ /api/posts/:id
+router.get('/post/:id', postCtrl.getPost);                // ✅ /api/posts/post/:id
+
+// Rutas protegidas
+router.post('/posts', auth, postCtrl.createPost);              // ✅ /api/posts/
+router.put('/:id', auth, postCtrl.updatePost);            // ✅ /api/posts/:id
+router.delete('/:id', auth, postCtrl.deletePost);         // ✅ /api/posts/:id
+router.put('/:id/sold', auth, postCtrl.markAsSold);       // ✅ /api/posts/:id/sold
+router.patch('/post/:id/like', auth, postCtrl.likePost);  // ✅ /api/posts/post/:id/like
+router.patch('/post/:id/unlike', auth, postCtrl.unLikePost); // ✅ /api/posts/post/:id/unlike
+router.patch('/savePost/:id', auth, postCtrl.savePost);   // ✅ /api/posts/savePost/:id
+router.patch('/unSavePost/:id', auth, postCtrl.unSavePost); // ✅ /api/posts/unSavePost/:id
+
+// Debug
+router.post('/debug-create', postCtrl.debugCreate);       // ✅ /api/posts/debug-create
+router.get('/posts/similar', postCtrl.getSimilarPosts);
 router.get('/user_posts/:id', auth, postCtrl.getUserPosts)
 
-// 📌 POSTS PARA DESCUBRIR
-router.get('/post_discover', auth, postCtrl.getPostsDicover)
-
-// 📌 GUARDAR/QUITAR POSTS
-router.patch('/savePost/:id', auth, postCtrl.savePost)
-router.patch('/unSavePost/:id', auth, postCtrl.unSavePost)
-router.get('/getSavePosts', auth, postCtrl.getSavePosts)
-
-// ==================== RUTAS DE CATEGORÍAS ====================
-// 📌 CATEGORÍAS PAGINADAS
-router.get('/categories/paginated', postCategoryCtrl.getAllCategoriesPaginated)
-
-// 📌 CATEGORÍAS JERÁRQUICAS
-router.get('/categories/hierarchy', postCategoryCtrl.getCategoriesHierarchy)
-
-// 📌 POSTS POR CATEGORÍA
-router.get('/posts/category/:category', postCategoryCtrl.getPostsByCategory)
-
-// 📌 POSTS POR SUBCATEGORÍA
-router.get('/posts/category/:category/subcategory/:subcategory', postCategoryCtrl.getPostsBySubcategory)
-
-// 📌 SUBCATEGORÍAS DE UNA CATEGORÍA
-router.get('/categories/:category/subcategories', postCategoryCtrl.getSubCategoriesByCategory)
-
-// 📌 POSTS POR JERARQUÍA (compatible con 2 niveles)
-router.get('/posts/hierarchy/:level1/:level2?', postCategoryCtrl.getPostsByCategoryHierarchy)
-
-// 📌 POSTS POR OPERACIÓN DE INMOBILIARIA
-router.get('/posts/immobilier/operation/:operationId', postCategoryCtrl.getPostsByImmobilierOperation)
-
-// ========== RUTAS ALIAS PARA COMPATIBILIDAD ==========
-router.get('/category/:category', (req, res, next) => {
-    req.params.level1 = req.params.category
-    postCategoryCtrl.getPostsByCategoryHierarchy(req, res, next)
-})
-
-router.get('/category/:category/:subcategory', (req, res, next) => {
-    req.params.level1 = req.params.category
-    req.params.level2 = req.params.subcategory
-    postCategoryCtrl.getPostsByCategoryHierarchy(req, res, next)
-})
-
-// Ruta para sub-subcategorías (si necesitas compatibilidad)
-router.get('/categories/:category/:subcategory/subsubcategories', postCategoryCtrl.getSubSubCategories)
-
-module.exports = router
+module.exports = router;
