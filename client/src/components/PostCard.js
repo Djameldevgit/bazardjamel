@@ -4,7 +4,7 @@ import CardBodyCarousel from './home/post_card/CardBodyCarousel';
 import CardBodyTitle from './home/post_card/CardBodyTitle';
 import CardFooter from './home/post_card/CardFooter';
 import DescriptionPost from './home/post_card/DescriptionPost';
-import DescriptionUser from './home/post_card/DescriptionUser';
+ 
 import UserInfo from './home/post_card/UserInfo';
 
 const PostCard = ({ post }) => {

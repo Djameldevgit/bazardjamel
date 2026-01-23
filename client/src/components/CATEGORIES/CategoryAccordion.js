@@ -295,9 +295,9 @@ const CategoryAccordion = ({
   );
 
   return (
-    <Card className="border-0 shadow-sm">
-      <Card.Body className="p-0">
-        <div className="p-3 border-bottom">
+    <Card  >
+      
+        <div className="p-1 border-bottom">
           <div className="d-flex justify-content-between align-items-center mb-2">
             <Card.Title className="mb-0 fs-5">
               <i className="fas fa-tags me-2"></i>
@@ -323,9 +323,9 @@ const CategoryAccordion = ({
 
         {/* Ruta seleccionada */}
         {selectedPath.length > 0 && (
-          <div className="p-3 border-bottom bg-light">
+          <div className="p-1 border-bottom bg-light">
             <div className="d-flex align-items-center">
-              <span className="me-2">📍</span>
+              <span className="me-1">📍</span>
               <div>
                 <small className="text-muted">Seleccionado:</small>
                 <div className="d-flex align-items-center flex-wrap mt-1">
@@ -346,7 +346,7 @@ const CategoryAccordion = ({
         )}
 
         {/* Lista de categorías */}
-        <div style={{ maxHeight: '500px', overflowY: 'auto', padding: '16px' }}>
+        <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
           {filteredCategories.length === 0 ? (
             <div className="text-center py-4">
               <span className="text-muted">
@@ -365,7 +365,7 @@ const CategoryAccordion = ({
             Haz clic en las categorías para expandir y seleccionar
           </small>
         </div>
-      </Card.Body>
+      
     </Card>
   );
 };

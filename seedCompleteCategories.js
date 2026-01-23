@@ -1,617 +1,895 @@
-// scripts/seedCompleteCategories.js
 require('dotenv').config();
 const mongoose = require('mongoose');
-const Category = require('./models/categoryModel');
+const Category = require('./models/categoryModel'); // Ajusta la ruta según tu estructura
 
-// ============ TODAS LAS 6 CATEGORÍAS ============
-
-const ALL_CATEGORIES = [
-  // 1. IMMOBILIER (3 niveles: main > operation > property)
+// ============================================
+// DATOS DE LAS CATEGORÍAS (COMBINADAS)
+// ============================================
+const categoriesData = [
+  // Tus categorías originales de Immobilier
   {
-    id: 'immobilier',
     name: 'Immobilier',
-    emoji: '🏡',
-    config: {
-      levels: 3,
-      level1: 'operation',
-      level2: 'property',
-      requiresLevel2: true,
-      displayName: 'operation',
-      accordionLevels: 3
-    },
-    level1Items: [
-      { id: 'vente', name: 'Vente', emoji: '💰', hasSublevel: true },
-      { id: 'location', name: 'Location', emoji: '🔑', hasSublevel: true },
-      { id: 'location_vacances', name: 'Location vacances', emoji: '🏖️', hasSublevel: true },
-      { id: 'cherche_location', name: 'Cherche location', emoji: '🔍', hasSublevel: true },
-      { id: 'cherche_achat', name: 'Cherche achat', emoji: '🔍', hasSublevel: true }
-    ],
-    level2Items: {
-      vente: [
-        { id: 'appartement', name: 'Appartement', emoji: '🏢' },
-        { id: 'local', name: 'Local', emoji: '🏪' },
-        { id: 'villa', name: 'Villa', emoji: '🏡' },
-        { id: 'terrain', name: 'Terrain', emoji: '⛰️' },
-        { id: 'terrain_agricole', name: 'Terrain Agricole', emoji: '🌾' },
-        { id: 'immeuble', name: 'Immeuble', emoji: '🏢' },
-        { id: 'bungalow', name: 'Bungalow', emoji: '🏝️' },
-        { id: 'hangar_usine', name: 'Hangar - Usine', emoji: '🏭' },
-        { id: 'autre', name: 'Autre', emoji: '🏠' }
-      ],
-      location: [
-        { id: 'appartement', name: 'Appartement', emoji: '🏢' },
-        { id: 'local', name: 'Local', emoji: '🏪' },
-        { id: 'villa', name: 'Villa', emoji: '🏡' },
-        { id: 'immeuble', name: 'Immeuble', emoji: '🏢' },
-        { id: 'bungalow', name: 'Bungalow', emoji: '🏝️' },
-        { id: 'autre', name: 'Autre', emoji: '🏠' }
-      ],
-      location_vacances: [
-        { id: 'appartement', name: 'Appartement', emoji: '🏢' },
-        { id: 'villa', name: 'Villa', emoji: '🏡' },
-        { id: 'bungalow', name: 'Bungalow', emoji: '🏝️' },
-        { id: 'autre', name: 'Autre', emoji: '🏠' }
-      ],
-      cherche_location: [
-        { id: 'appartement', name: 'Appartement', emoji: '🏢' },
-        { id: 'local', name: 'Local', emoji: '🏪' },
-        { id: 'villa', name: 'Villa', emoji: '🏡' },
-        { id: 'immeuble', name: 'Immeuble', emoji: '🏢' },
-        { id: 'bungalow', name: 'Bungalow', emoji: '🏝️' },
-        { id: 'autre', name: 'Autre', emoji: '🏠' }
-      ],
-      cherche_achat: [
-        { id: 'appartement', name: 'Appartement', emoji: '🏢' },
-        { id: 'local', name: 'Local', emoji: '🏪' },
-        { id: 'villa', name: 'Villa', emoji: '🏡' },
-        { id: 'terrain', name: 'Terrain', emoji: '⛰️' },
-        { id: 'terrain_agricole', name: 'Terrain Agricole', emoji: '🌾' },
-        { id: 'immeuble', name: 'Immeuble', emoji: '🏢' },
-        { id: 'bungalow', name: 'Bungalow', emoji: '🏝️' },
-        { id: 'hangar_usine', name: 'Hangar - Usine', emoji: '🏭' },
-        { id: 'autre', name: 'Autre', emoji: '🏠' }
-      ]
-    }
+    slug: 'immobilier',
+    emoji: '🏠',
+    level: 1,
+    hasChildren: true,
+    isLeaf: false,
+    children: [
+      {
+        name: 'Vente',
+        slug: 'vente',
+        emoji: '💰',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Appartement', slug: 'appartement-vente', emoji: '🏢', level: 3, isLeaf: true },
+          { name: 'Local', slug: 'local-vente', emoji: '🏪', level: 3, isLeaf: true },
+          { name: 'Villa', slug: 'villa-vente', emoji: '🏡', level: 3, isLeaf: true },
+          { name: 'Terrain', slug: 'terrain-vente', emoji: '⛰️', level: 3, isLeaf: true },
+          { name: 'Terrain Agricole', slug: 'terrain_agricole-vente', emoji: '🌾', level: 3, isLeaf: true },
+          { name: 'Immeuble', slug: 'immeuble-vente', emoji: '🏢', level: 3, isLeaf: true },
+          { name: 'Bungalow', slug: 'bungalow-vente', emoji: '🏝️', level: 3, isLeaf: true },
+          { name: 'Hangar - Usine', slug: 'hangar_usine-vente', emoji: '🏭', level: 3, isLeaf: true },
+          { name: 'Autre', slug: 'autre-vente', emoji: '🏠', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Location',
+        slug: 'location',
+        emoji: '🔑',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Appartement', slug: 'appartement-location', emoji: '🏢', level: 3, isLeaf: true },
+          { name: 'Local', slug: 'local-location', emoji: '🏪', level: 3, isLeaf: true },
+          { name: 'Villa', slug: 'villa-location', emoji: '🏡', level: 3, isLeaf: true },
+          { name: 'Immeuble', slug: 'immeuble-location', emoji: '🏢', level: 3, isLeaf: true },
+          { name: 'Bungalow', slug: 'bungalow-location', emoji: '🏝️', level: 3, isLeaf: true },
+          { name: 'Autre', slug: 'autre-location', emoji: '🏠', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Location vacances',
+        slug: 'location_vacances',
+        emoji: '🏖️',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Appartement', slug: 'appartement-location_vacances', emoji: '🏢', level: 3, isLeaf: true },
+          { name: 'Villa', slug: 'villa-location_vacances', emoji: '🏡', level: 3, isLeaf: true },
+          { name: 'Bungalow', slug: 'bungalow-location_vacances', emoji: '🏝️', level: 3, isLeaf: true },
+          { name: 'Autre', slug: 'autre-location_vacances', emoji: '🏠', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Cherche location',
+        slug: 'cherche_location',
+        emoji: '🔍',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Appartement', slug: 'appartement-cherche_location', emoji: '🏢', level: 3, isLeaf: true },
+          { name: 'Local', slug: 'local-cherche_location', emoji: '🏪', level: 3, isLeaf: true },
+          { name: 'Villa', slug: 'villa-cherche_location', emoji: '🏡', level: 3, isLeaf: true },
+          { name: 'Immeuble', slug: 'immeuble-cherche_location', emoji: '🏢', level: 3, isLeaf: true },
+          { name: 'Bungalow', slug: 'bungalow-cherche_location', emoji: '🏝️', level: 3, isLeaf: true },
+          { name: 'Autre', slug: 'autre-cherche_location', emoji: '🏠', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Cherche achat',
+        slug: 'cherche_achat',
+        emoji: '🔍',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Appartement', slug: 'appartement-cherche_achat', emoji: '🏢', level: 3, isLeaf: true },
+          { name: 'Local', slug: 'local-cherche_achat', emoji: '🏪', level: 3, isLeaf: true },
+          { name: 'Villa', slug: 'villa-cherche_achat', emoji: '🏡', level: 3, isLeaf: true },
+          { name: 'Terrain', slug: 'terrain-cherche_achat', emoji: '⛰️', level: 3, isLeaf: true },
+          { name: 'Terrain Agricole', slug: 'terrain_agricole-cherche_achat', emoji: '🌾', level: 3, isLeaf: true },
+          { name: 'Immeuble', slug: 'immeuble-cherche_achat', emoji: '🏢', level: 3, isLeaf: true },
+          { name: 'Bungalow', slug: 'bungalow-cherche_achat', emoji: '🏝️', level: 3, isLeaf: true },
+          { name: 'Hangar - Usine', slug: 'hangar_usine-cherche_achat', emoji: '🏭', level: 3, isLeaf: true },
+          { name: 'Autre', slug: 'autre-cherche_achat', emoji: '🏠', level: 3, isLeaf: true }
+        ]
+      }
+    ]
   },
-
-  // 2. VÉHICULES (2 niveles: main > category)
+  
+  // Tus categorías originales de Électroménager
   {
-    id: 'vehicules',
-    name: 'Véhicules',
-    emoji: '🚗',
-    config: {
-      levels: 2,
-      level1: 'categorie',
-      level2: null,
-      requiresLevel2: false,
-      displayName: 'categorie',
-      accordionLevels: 2
-    },
-    level1Items: [
-      { id: 'voitures', name: 'Voitures', emoji: '🚗', hasSublevel: false },
-      { id: 'utilitaire', name: 'Utilitaire', emoji: '🚐', hasSublevel: false },
-      { id: 'motos_scooters', name: 'Motos & Scooters', emoji: '🏍️', hasSublevel: false },
-      { id: 'quads', name: 'Quads', emoji: '🚜', hasSublevel: false },
-      { id: 'fourgon', name: 'Fourgon', emoji: '🚚', hasSublevel: false },
-      { id: 'camion', name: 'Camion', emoji: '🚛', hasSublevel: false },
-      { id: 'bus', name: 'Bus', emoji: '🚌', hasSublevel: false },
-      { id: 'engin', name: 'Engin', emoji: '🚜', hasSublevel: false },
-      { id: 'tracteurs', name: 'Tracteurs', emoji: '🚜', hasSublevel: false },
-      { id: 'remorques', name: 'Remorques', emoji: '🚛', hasSublevel: false },
-      { id: 'bateaux_barques', name: 'Bateaux & Barques', emoji: '🛥️', hasSublevel: false }
-    ],
-    level2Items: {}
-  },
-
-  // 3. TÉLÉPHONES (2 o 3 niveles dependiendo)
-  {
-    id: 'telephones',
-    name: 'Téléphones',
-    emoji: '📱',
-    config: {
-      levels: 'mixed',
-      level1: 'categorie',
-      level2: 'subCategory',
-      requiresLevel2: false,
-      displayName: 'categorie',
-      accordionLevels: 3
-    },
-    level1Items: [
-      { id: 'smartphones', name: 'Smartphones', emoji: '📱', hasSublevel: false },
-      { id: 'telephones_cellulaires', name: 'Téléphones cellulaires', emoji: '📞', hasSublevel: false },
-      { id: 'tablettes', name: 'Tablettes', emoji: '💻', hasSublevel: false },
-      { id: 'fixes_fax', name: 'Fixes & Fax', emoji: '☎️', hasSublevel: false },
-      { id: 'smartwatchs', name: 'Smartwatchs', emoji: '⌚', hasSublevel: false },
-      { id: 'accessoires', name: 'Accessoires', emoji: '🎧', hasSublevel: false },
-      { id: 'pieces_rechange', name: 'Pièces de rechange', emoji: '🔧', hasSublevel: false },
-      { id: 'offres_abonnements', name: 'Offres & Abonnements', emoji: '📶', hasSublevel: false },
-      { id: 'protection_antichoc', name: 'Protection & Antichoc', emoji: '🛡️', hasSublevel: true },
-      { id: 'ecouteurs_son', name: 'Ecouteurs & Son', emoji: '🎵', hasSublevel: true },
-      { id: 'chargeurs_cables', name: 'Chargeurs & Câbles', emoji: '🔌', hasSublevel: true },
-      { id: 'supports_stabilisateurs', name: 'Supports & Stabilisateurs', emoji: '📐', hasSublevel: true },
-      { id: 'manettes', name: 'Manettes', emoji: '🎮', hasSublevel: true },
-      { id: 'vr', name: 'VR', emoji: '👓', hasSublevel: true },
-      { id: 'power_banks', name: 'Power banks', emoji: '🔋', hasSublevel: true },
-      { id: 'stylets', name: 'Stylets', emoji: '✏️', hasSublevel: true },
-      { id: 'cartes_memoire', name: 'Cartes Mémoire', emoji: '💾', hasSublevel: true }
-    ],
-    level2Items: {
-      protection_antichoc: [
-        { id: 'protections_ecran', name: 'Protections d\'écran', emoji: '🖥️' },
-        { id: 'coques_antichoc', name: 'Coques & Antichoc', emoji: '📱' },
-        { id: 'films_protection', name: 'Films de protection', emoji: '📋' },
-        { id: 'etuis', name: 'Étuis', emoji: '🎁' },
-        { id: 'protections_camera', name: 'Protections de caméra', emoji: '📸' }
-      ],
-      ecouteurs_son: [
-        { id: 'ecouteurs_filaires', name: 'Écouteurs filaires', emoji: '🎧' },
-        { id: 'ecouteurs_bluetooth', name: 'Écouteurs Bluetooth', emoji: '🔵' },
-        { id: 'casques_audio', name: 'Casques audio', emoji: '🎧' },
-        { id: 'hauts_parleurs_portables', name: 'Hauts-parleurs portables', emoji: '🔊' },
-        { id: 'adaptateurs_audio', name: 'Adaptateurs audio', emoji: '🎛️' }
-      ],
-      chargeurs_cables: [
-        { id: 'chargeurs_mur', name: 'Chargeurs mural', emoji: '🔌' },
-        { id: 'chargeurs_voiture', name: 'Chargeurs voiture', emoji: '🚗' },
-        { id: 'chargeurs_sans_fil', name: 'Chargeurs sans fil', emoji: '⚡' },
-        { id: 'cables_usb', name: 'Câbles USB', emoji: '🔌' },
-        { id: 'cables_lightning', name: 'Câbles Lightning', emoji: '⚡' },
-        { id: 'cables_type_c', name: 'Câbles Type-C', emoji: '🔌' },
-        { id: 'hubs_chargeurs', name: 'Hubs chargeurs', emoji: '🔗' }
-      ],
-      supports_stabilisateurs: [
-        { id: 'supports', name: 'Supports', emoji: '📱' },
-        { id: 'stabilisateurs', name: 'Stabilisateurs', emoji: '🤳' },
-        { id: 'barres_selfies', name: 'Barres de selfies', emoji: '📸' },
-        { id: 'pieds_telephone', name: 'Pieds pour téléphone', emoji: '📐' },
-        { id: 'ventouses_voiture', name: 'Ventouses voiture', emoji: '🚗' }
-      ],
-      manettes: [
-        { id: 'manettes_bluetooth', name: 'Manettes Bluetooth', emoji: '🎮' },
-        { id: 'manettes_filaires', name: 'Manettes filaires', emoji: '🎮' },
-        { id: 'manettes_telephone', name: 'Manettes pour téléphone', emoji: '📱' },
-        { id: 'manettes_tablette', name: 'Manettes pour tablette', emoji: '💻' },
-        { id: 'accessoires_manettes', name: 'Accessoires pour manettes', emoji: '🔧' }
-      ],
-      vr: [
-        { id: 'casques_vr', name: 'Casques VR', emoji: '👓' },
-        { id: 'lunettes_vr', name: 'Lunettes VR', emoji: '🕶️' },
-        { id: 'accessoires_vr', name: 'Accessoires VR', emoji: '🔧' },
-        { id: 'controleurs_vr', name: 'Contrôleurs VR', emoji: '🎮' },
-        { id: 'jeux_vr', name: 'Jeux VR', emoji: '🎮' }
-      ],
-      power_banks: [
-        { id: 'power_bank_10000mah', name: 'Power bank 10,000mAh', emoji: '🔋' },
-        { id: 'power_bank_20000mah', name: 'Power bank 20,000mAh', emoji: '🔋' },
-        { id: 'power_bank_solaire', name: 'Power bank solaire', emoji: '☀️' },
-        { id: 'power_bank_rapide', name: 'Power bank charge rapide', emoji: '⚡' },
-        { id: 'power_bank_compact', name: 'Power bank compact', emoji: '📱' }
-      ],
-      stylets: [
-        { id: 'stylets_actifs', name: 'Stylets actifs', emoji: '✏️' },
-        { id: 'stylets_passifs', name: 'Stylets passifs', emoji: '✏️' },
-        { id: 'stylets_bluetooth', name: 'Stylets Bluetooth', emoji: '🔵' },
-        { id: 'stylets_tablette', name: 'Stylets pour tablette', emoji: '💻' },
-        { id: 'recharges_stylet', name: 'Recharges pour stylet', emoji: '🔋' }
-      ],
-      cartes_memoire: [
-        { id: 'sd_cards', name: 'Cartes SD', emoji: '💾' },
-        { id: 'micro_sd_cards', name: 'Cartes Micro SD', emoji: '💾' },
-        { id: 'sdhc_cards', name: 'Cartes SDHC', emoji: '💾' },
-        { id: 'sdxc_cards', name: 'Cartes SDXC', emoji: '💾' },
-        { id: 'adaptateurs_carte', name: 'Adaptateurs de carte', emoji: '🔌' },
-        { id: 'lecteurs_carte', name: 'Lecteurs de carte', emoji: '📖' }
-      ]
-    }
-  },
-
-  // 4. ÉLECTROMÉNAGER (2 o 3 niveles dependiendo)
-  {
-    id: 'electromenager',
     name: 'Électroménager',
+    slug: 'electromenager',
     emoji: '🔌',
-    config: {
-      levels: 'mixed',
-      level1: 'categorie',
-      level2: 'subCategory',
-      requiresLevel2: false,
-      displayName: 'categorie',
-      accordionLevels: 3
-    },
-    level1Items: [
-      { id: 'televiseurs', name: 'Téléviseurs', emoji: '📺', hasSublevel: false },
-      { id: 'demodulateurs_box_tv', name: 'Démodulateurs & Box TV', emoji: '📦', hasSublevel: false },
-      { id: 'paraboles_switch_tv', name: 'Paraboles & Switch TV', emoji: '🛰️', hasSublevel: false },
-      { id: 'abonnements_iptv', name: 'Abonnements IPTV', emoji: '📡', hasSublevel: false },
-      { id: 'cameras_accessories', name: 'Caméras & Accessories', emoji: '📹', hasSublevel: false },
-      { id: 'audio', name: 'Audio', emoji: '🔊', hasSublevel: false },
-      { id: 'aspirateurs_nettoyeurs', name: 'Aspirateurs & Nettoyeurs', emoji: '🧹', hasSublevel: false },
-      { id: 'repassage', name: 'Repassage', emoji: '👔', hasSublevel: false },
-      { id: 'beaute_hygiene', name: 'Beauté & Hygiène', emoji: '💄', hasSublevel: false },
-      { id: 'machines_coudre', name: 'Machines à coudre', emoji: '🧵', hasSublevel: false },
-      { id: 'telecommandes', name: 'Télécommandes', emoji: '🎮', hasSublevel: false },
-      { id: 'securite_gps', name: 'Sécurité & GPS', emoji: '🚨', hasSublevel: false },
-      { id: 'composants_electroniques', name: 'Composants électroniques', emoji: '⚙️', hasSublevel: false },
-      { id: 'pieces_rechange', name: 'Pièces de rechange', emoji: '🔧', hasSublevel: false },
-      { id: 'autre_electromenager', name: 'Autre Électroménager', emoji: '🔌', hasSublevel: false },
-      { id: 'refrigerateurs_congelateurs', name: 'Réfrigérateurs & Congélateurs', emoji: '❄️', hasSublevel: true },
-      { id: 'machines_laver', name: 'Machines à laver', emoji: '🧺', hasSublevel: true },
-      { id: 'lave_vaisselles', name: 'Lave-vaisselles', emoji: '🍽️', hasSublevel: true },
-      { id: 'fours_cuisson', name: 'Fours & Cuisson', emoji: '🔥', hasSublevel: true },
-      { id: 'chauffage_climatisation', name: 'Chauffage & Climatisation', emoji: '🌡️', hasSublevel: true },
-      { id: 'appareils_cuisine', name: 'Appareils de cuisine', emoji: '🍳', hasSublevel: true }
-    ],
-    level2Items: {
-      refrigerateurs_congelateurs: [
-        { id: 'refrigerateur', name: 'Réfrigérateur', emoji: '🧊' },
-        { id: 'congelateur', name: 'Congélateur', emoji: '❄️' },
-        { id: 'refrigerateur_congelateur', name: 'Réfrigérateur-Congélateur', emoji: '🧊❄️' },
-        { id: 'cave_vin', name: 'Cave à vin', emoji: '🍷' }
-      ],
-      machines_laver: [
-        { id: 'lave_linge', name: 'Lave-linge', emoji: '👚' },
-        { id: 'seche_linge', name: 'Sèche-linge', emoji: '🌞' },
-        { id: 'lave_linge_seche_linge', name: 'Lave-linge/Sèche-linge', emoji: '👚🌞' },
-        { id: 'lave_linge_essorage', name: 'Lave-linge avec essorage', emoji: '🌀' }
-      ],
-      lave_vaisselles: [
-        { id: 'lave_vaisselle_encastrable', name: 'Lave-vaisselle encastrable', emoji: '📦' },
-        { id: 'lave_vaisselle_poselibre', name: 'Lave-vaisselle pose libre', emoji: '🍽️' },
-        { id: 'lave_vaisselle_compact', name: 'Lave-vaisselle compact', emoji: '📦' }
-      ],
-      fours_cuisson: [
-        { id: 'four_electrique', name: 'Four électrique', emoji: '⚡' },
-        { id: 'four_gaz', name: 'Four à gaz', emoji: '🔥' },
-        { id: 'four_micro_ondes', name: 'Four micro-ondes', emoji: '🌀' },
-        { id: 'plaque_cuisson', name: 'Plaque de cuisson', emoji: '🍳' },
-        { id: 'cuisiniere', name: 'Cuisinière', emoji: '👩‍🍳' }
-      ],
-      chauffage_climatisation: [
-        { id: 'climatiseur', name: 'Climatiseur', emoji: '❄️' },
-        { id: 'ventilateur', name: 'Ventilateur', emoji: '💨' },
-        { id: 'radiateur', name: 'Radiateur', emoji: '🔥' },
-        { id: 'chauffe_eau', name: 'Chauffe-eau', emoji: '🚿' },
-        { id: 'pompe_chaleur', name: 'Pompe à chaleur', emoji: '🌡️' }
-      ],
-      appareils_cuisine: [
-        { id: 'robot_cuisine', name: 'Robot de cuisine', emoji: '🍲' },
-        { id: 'mixeur', name: 'Mixeur', emoji: '🥤' },
-        { id: 'bouilloire', name: 'Bouilloire', emoji: '♨️' },
-        { id: 'cafetiere', name: 'Cafetière', emoji: '☕' },
-        { id: 'grille_pain', name: 'Grille-pain', emoji: '🍞' }
-      ]
-    }
+    level: 1,
+    hasChildren: true,
+    isLeaf: false,
+    children: [
+      { name: 'Téléviseurs', slug: 'televiseurs', emoji: '📺', level: 2, hasChildren: false, isLeaf: true },
+      { name: 'Démodulateurs & Box TV', slug: 'demodulateurs_box_tv', emoji: '📦', level: 2, hasChildren: false, isLeaf: true },
+      { name: 'Paraboles & Switch TV', slug: 'paraboles_switch_tv', emoji: '🛰️', level: 2, hasChildren: false, isLeaf: true },
+      { name: 'Abonnements IPTV', slug: 'abonnements_iptv', emoji: '📡', level: 2, hasChildren: false, isLeaf: true },
+      { name: 'Caméras & Accessories', slug: 'cameras_accessories', emoji: '📹', level: 2, hasChildren: false, isLeaf: true },
+      { name: 'Audio', slug: 'audio', emoji: '🔊', level: 2, hasChildren: false, isLeaf: true },
+      { name: 'Aspirateurs & Nettoyeurs', slug: 'aspirateurs_nettoyeurs', emoji: '🧹', level: 2, hasChildren: false, isLeaf: true },
+      { name: 'Repassage', slug: 'repassage', emoji: '👔', level: 2, hasChildren: false, isLeaf: true },
+      { name: 'Beauté & Hygiène', slug: 'beaute_hygiene', emoji: '💄', level: 2, hasChildren: false, isLeaf: true },
+      { name: 'Machines à coudre', slug: 'machines_coudre', emoji: '🧵', level: 2, hasChildren: false, isLeaf: true },
+      { name: 'Télécommandes', slug: 'telecommandes', emoji: '🎮', level: 2, hasChildren: false, isLeaf: true },
+      { name: 'Sécurité & GPS', slug: 'securite_gps', emoji: '🚨', level: 2, hasChildren: false, isLeaf: true },
+      { name: 'Composants électroniques', slug: 'composants_electroniques', emoji: '⚙️', level: 2, hasChildren: false, isLeaf: true },
+      { name: 'Pièces de rechange', slug: 'pieces_rechange', emoji: '🔧', level: 2, hasChildren: false, isLeaf: true },
+      { name: 'Autre Électroménager', slug: 'autre_electromenager', emoji: '🔌', level: 2, hasChildren: false, isLeaf: true },
+      {
+        name: 'Réfrigérateurs & Congélateurs',
+        slug: 'refrigerateurs_congelateurs',
+        emoji: '❄️',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Réfrigérateur', slug: 'refrigerateur', emoji: '🧊', level: 3, isLeaf: true },
+          { name: 'Congélateur', slug: 'congelateur', emoji: '❄️', level: 3, isLeaf: true },
+          { name: 'Réfrigérateur-Congélateur', slug: 'refrigerateur_congelateur', emoji: '🧊❄️', level: 3, isLeaf: true },
+          { name: 'Cave à vin', slug: 'cave_vin', emoji: '🍷', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Machines à laver',
+        slug: 'machines_laver',
+        emoji: '🧺',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Lave-linge', slug: 'lave_linge', emoji: '👚', level: 3, isLeaf: true },
+          { name: 'Sèche-linge', slug: 'seche_linge', emoji: '🌞', level: 3, isLeaf: true },
+          { name: 'Lave-linge/Sèche-linge', slug: 'lave_linge_seche_linge', emoji: '👚🌞', level: 3, isLeaf: true },
+          { name: 'Lave-linge avec essorage', slug: 'lave_linge_essorage', emoji: '🌀', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Lave-vaisselles',
+        slug: 'lave_vaisselles',
+        emoji: '🍽️',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Lave-vaisselle encastrable', slug: 'lave_vaisselle_encastrable', emoji: '📦', level: 3, isLeaf: true },
+          { name: 'Lave-vaisselle pose libre', slug: 'lave_vaisselle_poselibre', emoji: '🍽️', level: 3, isLeaf: true },
+          { name: 'Lave-vaisselle compact', slug: 'lave_vaisselle_compact', emoji: '📦', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Fours & Cuisson',
+        slug: 'fours_cuisson',
+        emoji: '🔥',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Four électrique', slug: 'four_electrique', emoji: '⚡', level: 3, isLeaf: true },
+          { name: 'Four à gaz', slug: 'four_gaz', emoji: '🔥', level: 3, isLeaf: true },
+          { name: 'Four micro-ondes', slug: 'four_micro_ondes', emoji: '🌀', level: 3, isLeaf: true },
+          { name: 'Plaque de cuisson', slug: 'plaque_cuisson', emoji: '🍳', level: 3, isLeaf: true },
+          { name: 'Cuisinière', slug: 'cuisiniere', emoji: '👩‍🍳', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Chauffage & Climatisation',
+        slug: 'chauffage_climatisation',
+        emoji: '🌡️',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Climatiseur', slug: 'climatiseur', emoji: '❄️', level: 3, isLeaf: true },
+          { name: 'Ventilateur', slug: 'ventilateur', emoji: '💨', level: 3, isLeaf: true },
+          { name: 'Radiateur', slug: 'radiateur', emoji: '🔥', level: 3, isLeaf: true },
+          { name: 'Chauffe-eau', slug: 'chauffe_eau', emoji: '🚿', level: 3, isLeaf: true },
+          { name: 'Pompe à chaleur', slug: 'pompe_chaleur', emoji: '🌡️', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Appareils de cuisine',
+        slug: 'appareils_cuisine',
+        emoji: '🍳',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Robot de cuisine', slug: 'robot_cuisine', emoji: '🍲', level: 3, isLeaf: true },
+          { name: 'Mixeur', slug: 'mixeur', emoji: '🥤', level: 3, isLeaf: true },
+          { name: 'Bouilloire', slug: 'bouilloire', emoji: '♨️', level: 3, isLeaf: true },
+          { name: 'Cafetière', slug: 'cafetiere', emoji: '☕', level: 3, isLeaf: true },
+          { name: 'Grille-pain', slug: 'grille_pain', emoji: '🍞', level: 3, isLeaf: true }
+        ]
+      }
+    ]
   },
-
-  // 5. VÊTEMENTS
+  
+  // Tus categorías originales de Vêtements
   {
-    id: 'vetements',
     name: 'Vêtements',
+    slug: 'vetements',
     emoji: '👕',
-    config: {
-      levels: 3,
-      level1: 'categorie',
-      level2: 'subCategory',
-      requiresLevel2: false,
-      displayName: 'categorie',
-      accordionLevels: 3
-    },
-    level1Items: [
-      { id: 'hommes', name: 'Hommes', emoji: '👨', hasSublevel: true },
-      { id: 'femmes', name: 'Femmes', emoji: '👩', hasSublevel: true },
-      { id: 'enfants', name: 'Enfants', emoji: '👶', hasSublevel: true },
-      { id: 'accessoires_mode', name: 'Accessoires mode', emoji: '👜', hasSublevel: true }
-    ],
-    level2Items: {
-      hommes: [
-        { id: 'chemises', name: 'Chemises', emoji: '👔' },
-        { id: 'pantalons', name: 'Pantalons', emoji: '👖' },
-        { id: 'tshirts', name: 'T-shirts', emoji: '👕' },
-        { id: 'costumes', name: 'Costumes', emoji: '🤵' },
-        { id: 'chaussures', name: 'Chaussures', emoji: '👞' }
-      ],
-      femmes: [
-        { id: 'robes', name: 'Robes', emoji: '👗' },
-        { id: 'jupes', name: 'Jupes', emoji: '👚' },
-        { id: 'blouses', name: 'Blouses', emoji: '👚' },
-        { id: 'chaussures_femmes', name: 'Chaussures', emoji: '👠' },
-        { id: 'sacs', name: 'Sacs', emoji: '👜' }
-      ],
-      enfants: [
-        { id: 'bebes', name: 'Bébés', emoji: '🍼' },
-        { id: 'filles', name: 'Filles', emoji: '👧' },
-        { id: 'garcons', name: 'Garçons', emoji: '👦' },
-        { id: 'chaussures_enfants', name: 'Chaussures enfants', emoji: '👟' }
-      ],
-      accessoires_mode: [
-        { id: 'sacs_accessoires', name: 'Sacs', emoji: '👜' },
-        { id: 'ceintures', name: 'Ceintures', emoji: '⛓️' },
-        { id: 'bijoux', name: 'Bijoux', emoji: '💎' },
-        { id: 'montres', name: 'Montres', emoji: '⌚' },
-        { id: 'lunettes', name: 'Lunettes', emoji: '👓' }
-      ]
-    }
+    level: 1,
+    hasChildren: true,
+    isLeaf: false,
+    children: [
+      {
+        name: 'Vêtements Homme',
+        slug: 'vetements_homme',
+        emoji: '👨',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Hauts & Chemises', slug: 'hauts_chemises_homme', emoji: '👕', level: 3, isLeaf: true },
+          { name: 'Jeans & Pantalons', slug: 'jeans_pantalons_homme', emoji: '👖', level: 3, isLeaf: true },
+          { name: 'Shorts & Pantacourts', slug: 'shorts_pantacourts_homme', emoji: '🩳', level: 3, isLeaf: true },
+          { name: 'Vestes & Gilets', slug: 'vestes_gilets_homme', emoji: '🧥', level: 3, isLeaf: true },
+          { name: 'Costumes & Blazers', slug: 'costumes_blazers_homme', emoji: '🤵', level: 3, isLeaf: true },
+          { name: 'Survetements', slug: 'survetements_homme', emoji: '🏃‍♂️', level: 3, isLeaf: true },
+          { name: 'Kamiss', slug: 'kamiss_homme', emoji: '🕌', level: 3, isLeaf: true },
+          { name: 'Sous vêtements', slug: 'sous_vetements_homme', emoji: '🩲', level: 3, isLeaf: true },
+          { name: 'Pyjamas', slug: 'pyjamas_homme', emoji: '😴', level: 3, isLeaf: true },
+          { name: 'Maillots de bain', slug: 'maillots_bain_homme', emoji: '🏊‍♂️', level: 3, isLeaf: true },
+          { name: 'Casquettes & Chapeaux', slug: 'casquettes_chapeaux_homme', emoji: '🧢', level: 3, isLeaf: true },
+          { name: 'Chaussettes', slug: 'chaussettes_homme', emoji: '🧦', level: 3, isLeaf: true },
+          { name: 'Ceintures', slug: 'ceintures_homme', emoji: '⛓️', level: 3, isLeaf: true },
+          { name: 'Gants', slug: 'gants_homme', emoji: '🧤', level: 3, isLeaf: true },
+          { name: 'Cravates', slug: 'cravates_homme', emoji: '👔', level: 3, isLeaf: true },
+          { name: 'Autre', slug: 'autre_vetements_homme', emoji: '👚', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Vêtements Femme',
+        slug: 'vetements_femme',
+        emoji: '👩',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Hauts & Chemises', slug: 'hauts_chemises_femme', emoji: '👚', level: 3, isLeaf: true },
+          { name: 'Jeans & Pantalons', slug: 'jeans_pantalons_femme', emoji: '👖', level: 3, isLeaf: true },
+          { name: 'Shorts & Pantacourts', slug: 'shorts_pantacourts_femme', emoji: '🩳', level: 3, isLeaf: true },
+          { name: 'Vestes & Gilets', slug: 'vestes_gilets_femme', emoji: '🧥', level: 3, isLeaf: true },
+          { name: 'Ensembles', slug: 'ensembles_femme', emoji: '👗', level: 3, isLeaf: true },
+          { name: 'Abayas & Hijabs', slug: 'abayas_hijabs_femme', emoji: '🧕', level: 3, isLeaf: true },
+          { name: 'Mariages & Fêtes', slug: 'mariages_fetes_femme', emoji: '💃', level: 3, isLeaf: true },
+          { name: 'Maternité', slug: 'maternite_femme', emoji: '🤰', level: 3, isLeaf: true },
+          { name: 'Robes', slug: 'robes_femme', emoji: '👗', level: 3, isLeaf: true },
+          { name: 'Jupes', slug: 'jupes_femme', emoji: '🩳', level: 3, isLeaf: true },
+          { name: 'Joggings & Survetements', slug: 'joggings_survetements_femme', emoji: '🏃‍♀️', level: 3, isLeaf: true },
+          { name: 'Leggings', slug: 'leggings_femme', emoji: '🦵', level: 3, isLeaf: true },
+          { name: 'Sous-vêtements & Lingerie', slug: 'sous_vetements_lingerie_femme', emoji: '👙', level: 3, isLeaf: true },
+          { name: 'Pyjamas', slug: 'pyjamas_femme', emoji: '😴', level: 3, isLeaf: true },
+          { name: 'Peignoirs', slug: 'peignoirs_femme', emoji: '🛀', level: 3, isLeaf: true },
+          { name: 'Maillots de bain', slug: 'maillots_bain_femme', emoji: '🏊‍♀️', level: 3, isLeaf: true },
+          { name: 'Casquettes & Chapeaux', slug: 'casquettes_chapeaux_femme', emoji: '🧢', level: 3, isLeaf: true },
+          { name: 'Chaussettes & Collants', slug: 'chaussettes_collants_femme', emoji: '🧦', level: 3, isLeaf: true },
+          { name: 'Foulards & Echarpes', slug: 'foulards_echarpes_femme', emoji: '🧣', level: 3, isLeaf: true },
+          { name: 'Ceintures', slug: 'ceintures_femme', emoji: '⛓️', level: 3, isLeaf: true },
+          { name: 'Gants', slug: 'gants_femme', emoji: '🧤', level: 3, isLeaf: true },
+          { name: 'Autre', slug: 'autre_vetements_femme', emoji: '👚', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Chaussures Homme',
+        slug: 'chaussures_homme',
+        emoji: '👞',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Basquettes', slug: 'basquettes_homme', emoji: '👟', level: 3, isLeaf: true },
+          { name: 'Bottes', slug: 'bottes_homme', emoji: '🥾', level: 3, isLeaf: true },
+          { name: 'Classiques', slug: 'classiques_homme', emoji: '👞', level: 3, isLeaf: true },
+          { name: 'Mocassins', slug: 'mocassins_homme', emoji: '👞', level: 3, isLeaf: true },
+          { name: 'Sandales', slug: 'sandales_homme', emoji: '🩴', level: 3, isLeaf: true },
+          { name: 'Tangues & Pantoufles', slug: 'tangues_pantoufles_homme', emoji: '🩴', level: 3, isLeaf: true },
+          { name: 'Autre', slug: 'autre_chaussures_homme', emoji: '👞', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Chaussures Femme',
+        slug: 'chaussures_femme',
+        emoji: '👠',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Basquettes', slug: 'basquettes_femme', emoji: '👟', level: 3, isLeaf: true },
+          { name: 'Sandales', slug: 'sandales_femme', emoji: '🩴', level: 3, isLeaf: true },
+          { name: 'Bottes', slug: 'bottes_femme', emoji: '🥾', level: 3, isLeaf: true },
+          { name: 'Escarpins', slug: 'escarpins_femme', emoji: '👠', level: 3, isLeaf: true },
+          { name: 'Ballerines', slug: 'ballerines_femme', emoji: '🩰', level: 3, isLeaf: true },
+          { name: 'Tangues & Pantoufles', slug: 'tangues_pantoufles_femme', emoji: '🩴', level: 3, isLeaf: true },
+          { name: 'Autre', slug: 'autre_chaussures_femme', emoji: '👠', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Garçons',
+        slug: 'garcons',
+        emoji: '👦',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Chaussures', slug: 'chaussures_garcons', emoji: '👟', level: 3, isLeaf: true },
+          { name: 'Hauts & Chemises', slug: 'hauts_chemises_garcons', emoji: '👕', level: 3, isLeaf: true },
+          { name: 'Pantalons & Shorts', slug: 'pantalons_shorts_garcons', emoji: '👖', level: 3, isLeaf: true },
+          { name: 'Vestes & Gilets', slug: 'vestes_gilets_garcons', emoji: '🧥', level: 3, isLeaf: true },
+          { name: 'Costumes', slug: 'costumes_garcons', emoji: '🤵', level: 3, isLeaf: true },
+          { name: 'Survetements & Joggings', slug: 'survetements_joggings_garcons', emoji: '🏃‍♂️', level: 3, isLeaf: true },
+          { name: 'Pyjamas', slug: 'pyjamas_garcons', emoji: '😴', level: 3, isLeaf: true },
+          { name: 'Sous-vêtements', slug: 'sous_vetements_garcons', emoji: '🩲', level: 3, isLeaf: true },
+          { name: 'Maillots de bain', slug: 'maillots_bain_garcons', emoji: '🏊‍♂️', level: 3, isLeaf: true },
+          { name: 'Kamiss', slug: 'kamiss_garcons', emoji: '🕌', level: 3, isLeaf: true },
+          { name: 'Casquettes & Chapeaux', slug: 'casquettes_chapeaux_garcons', emoji: '🧢', level: 3, isLeaf: true },
+          { name: 'Autre', slug: 'autre_garcons', emoji: '👦', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Filles',
+        slug: 'filles',
+        emoji: '👧',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Chaussures', slug: 'chaussures_filles', emoji: '👟', level: 3, isLeaf: true },
+          { name: 'Hauts & Chemises', slug: 'hauts_chemises_filles', emoji: '👚', level: 3, isLeaf: true },
+          { name: 'Pantalons & Shorts', slug: 'pantalons_shorts_filles', emoji: '👖', level: 3, isLeaf: true },
+          { name: 'Vestes & Gilets', slug: 'vestes_gilets_filles', emoji: '🧥', level: 3, isLeaf: true },
+          { name: 'Robes', slug: 'robes_filles', emoji: '👗', level: 3, isLeaf: true },
+          { name: 'Jupes', slug: 'jupes_filles', emoji: '🩳', level: 3, isLeaf: true },
+          { name: 'Ensembles', slug: 'ensembles_filles', emoji: '👗', level: 3, isLeaf: true },
+          { name: 'Joggings & Survetements', slug: 'joggings_survetements_filles', emoji: '🏃‍♀️', level: 3, isLeaf: true },
+          { name: 'Pyjamas', slug: 'pyjamas_filles', emoji: '😴', level: 3, isLeaf: true },
+          { name: 'Sous-vêtements', slug: 'sous_vetements_filles', emoji: '👙', level: 3, isLeaf: true },
+          { name: 'Leggings & Collants', slug: 'leggings_collants_filles', emoji: '🦵', level: 3, isLeaf: true },
+          { name: 'Maillots de bain', slug: 'maillots_bain_filles', emoji: '🏊‍♀️', level: 3, isLeaf: true },
+          { name: 'Casquettes & Chapeaux', slug: 'casquettes_chapeaux_filles', emoji: '🧢', level: 3, isLeaf: true },
+          { name: 'Autre', slug: 'autre_filles', emoji: '👧', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Bébé',
+        slug: 'bebe',
+        emoji: '👶',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Vêtements', slug: 'vetements_bebe', emoji: '👕', level: 3, isLeaf: true },
+          { name: 'Chaussures', slug: 'chaussures_bebe', emoji: '👟', level: 3, isLeaf: true },
+          { name: 'Accessoires', slug: 'accessoires_bebe', emoji: '🧸', level: 3, isLeaf: true }
+        ]
+      },
+      { name: 'Tenues professionnelles', slug: 'tenues_professionnelles', emoji: '👔', level: 2, hasChildren: false, isLeaf: true },
+      {
+        name: 'Sacs & Valises',
+        slug: 'sacs_valises',
+        emoji: '👜',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Pochettes & Portefeuilles', slug: 'pochettes_portefeuilles', emoji: '💼', level: 3, isLeaf: true },
+          { name: 'Sacs à main', slug: 'sacs_main', emoji: '👜', level: 3, isLeaf: true },
+          { name: 'Sacs à dos', slug: 'sacs_dos', emoji: '🎒', level: 3, isLeaf: true },
+          { name: 'Sacs professionnels', slug: 'sacs_professionnels', emoji: '💼', level: 3, isLeaf: true },
+          { name: 'Valises', slug: 'valises', emoji: '🧳', level: 3, isLeaf: true },
+          { name: 'Cabas de sport', slug: 'cabas_sport', emoji: '🏸', level: 3, isLeaf: true },
+          { name: 'Autre', slug: 'autre_sacs', emoji: '👜', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Montres',
+        slug: 'montres',
+        emoji: '⌚',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Hommes', slug: 'montres_hommes', emoji: '⌚', level: 3, isLeaf: true },
+          { name: 'Femmes', slug: 'montres_femmes', emoji: '⌚', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Lunettes',
+        slug: 'lunettes',
+        emoji: '👓',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Lunettes de vue hommes', slug: 'lunettes_vue_hommes', emoji: '👓', level: 3, isLeaf: true },
+          { name: 'Lunettes de vue femmes', slug: 'lunettes_vue_femmes', emoji: '👓', level: 3, isLeaf: true },
+          { name: 'Lunettes de soleil hommes', slug: 'lunettes_soleil_hommes', emoji: '🕶️', level: 3, isLeaf: true },
+          { name: 'Lunettes de soleil femmes', slug: 'lunettes_soleil_femmes', emoji: '🕶️', level: 3, isLeaf: true },
+          { name: 'Lunettes de vue enfants', slug: 'lunettes_vue_enfants', emoji: '👓', level: 3, isLeaf: true },
+          { name: 'Lunettes de soleil enfants', slug: 'lunettes_soleil_enfants', emoji: '🕶️', level: 3, isLeaf: true },
+          { name: 'Accessoires', slug: 'accessoires_lunettes', emoji: '🧰', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Bijoux',
+        slug: 'bijoux',
+        emoji: '💍',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Parures', slug: 'parures', emoji: '👑', level: 3, isLeaf: true },
+          { name: 'Colliers & Pendentifs', slug: 'colliers_pendentifs', emoji: '📿', level: 3, isLeaf: true },
+          { name: 'Bracelets', slug: 'bracelets', emoji: '📿', level: 3, isLeaf: true },
+          { name: 'Bagues', slug: 'bagues', emoji: '💍', level: 3, isLeaf: true },
+          { name: 'Boucles', slug: 'boucles', emoji: '👂', level: 3, isLeaf: true },
+          { name: 'Chevillières', slug: 'chevilleres', emoji: '🦵', level: 3, isLeaf: true },
+          { name: 'Piercings', slug: 'piercings', emoji: '👃', level: 3, isLeaf: true },
+          { name: 'Accessoires cheveux', slug: 'accessoires_cheveux', emoji: '💇‍♀️', level: 3, isLeaf: true },
+          { name: 'Broches', slug: 'broches', emoji: '🧷', level: 3, isLeaf: true },
+          { name: 'Autre', slug: 'autre_bijoux', emoji: '💎', level: 3, isLeaf: true }
+        ]
+      }
+    ]
   },
-
-  // 6. VOYAGE
+  
+  // ============================================
+  // NUEVAS CATEGORÍAS
+  // ============================================
+  
+  // CATEGORÍA VÉHICULES
   {
-    id: 'voyage',
-    name: 'Voyage',
-    emoji: '✈️',
-    config: {
-      levels: 3,
-      level1: 'type',
-      level2: 'service',
-      requiresLevel2: false,
-      displayName: 'type',
-      accordionLevels: 3
-    },
-    level1Items: [
-      { id: 'billets_avion', name: 'Billets d\'avion', emoji: '🎫', hasSublevel: false },
-      { id: 'hotels', name: 'Hôtels', emoji: '🏨', hasSublevel: true },
-      { id: 'location_voiture', name: 'Location de voiture', emoji: '🚗', hasSublevel: false },
-      { id: 'circuits', name: 'Circuits', emoji: '🗺️', hasSublevel: true },
-      { id: 'croisieres', name: 'Croisières', emoji: '🛳️', hasSublevel: false },
-      { id: 'assurance_voyage', name: 'Assurance voyage', emoji: '🛡️', hasSublevel: false }
-    ],
-    level2Items: {
-      hotels: [
-        { id: 'hotel_etoile', name: 'Hôtel 5 étoiles', emoji: '⭐' },
-        { id: 'hotel_affaire', name: 'Hôtel d\'affaires', emoji: '💼' },
-        { id: 'auberge', name: 'Auberge', emoji: '🏡' },
-        { id: 'appart_hotel', name: 'Appart\'hôtel', emoji: '🏢' },
-        { id: 'villa_location', name: 'Villa en location', emoji: '🏖️' }
-      ],
-      circuits: [
-        { id: 'circuit_europe', name: 'Circuit Europe', emoji: '🇪🇺' },
-        { id: 'circuit_asie', name: 'Circuit Asie', emoji: '🌏' },
-        { id: 'circuit_afrique', name: 'Circuit Afrique', emoji: '🌍' },
-        { id: 'circuit_amerique', name: 'Circuit Amérique', emoji: '🌎' },
-        { id: 'circuit_australie', name: 'Circuit Australie', emoji: '🦘' }
-      ]
-    }
+    name: 'Véhicules',
+    slug: 'vehicules',
+    emoji: '🚗',
+    level: 1,
+    hasChildren: true,
+    isLeaf: false,
+    children: [
+      { name: 'Voitures', slug: 'voitures', emoji: '🚗', level: 2, isLeaf: true },
+      { name: 'Utilitaire', slug: 'utilitaire', emoji: '🚐', level: 2, isLeaf: true },
+      { name: 'Motos & Scooters', slug: 'motos_scooters', emoji: '🏍️', level: 2, isLeaf: true },
+      { name: 'Quads', slug: 'quads', emoji: '🚜', level: 2, isLeaf: true },
+      { name: 'Fourgon', slug: 'fourgon', emoji: '🚚', level: 2, isLeaf: true },
+      { name: 'Camion', slug: 'camion', emoji: '🚛', level: 2, isLeaf: true },
+      { name: 'Bus', slug: 'bus', emoji: '🚌', level: 2, isLeaf: true },
+      { name: 'Engin', slug: 'engin', emoji: '🚜', level: 2, isLeaf: true },
+      { name: 'Tracteurs', slug: 'tracteurs', emoji: '🚜', level: 2, isLeaf: true },
+      { name: 'Remorques', slug: 'remorques', emoji: '🚛', level: 2, isLeaf: true },
+      { name: 'Bateaux & Barques', slug: 'bateaux_barques', emoji: '🛥️', level: 2, isLeaf: true }
+    ]
+  },
+  
+  // CATEGORÍA TÉLÉPHONES
+  {
+    name: 'Téléphones & Communications',
+    slug: 'telephones',
+    emoji: '📱',
+    level: 1,
+    hasChildren: true,
+    isLeaf: false,
+    children: [
+      // CATEGORÍAS NIVEL 2 SIN SUB-NIVEL
+      { name: 'Smartphones', slug: 'smartphones', emoji: '📱', level: 2, isLeaf: true },
+      { name: 'Téléphones cellulaires', slug: 'telephones_cellulaires', emoji: '📞', level: 2, isLeaf: true },
+      { name: 'Tablettes', slug: 'tablettes', emoji: '💻', level: 2, isLeaf: true },
+      { name: 'Fixes & Fax', slug: 'fixes_fax', emoji: '☎️', level: 2, isLeaf: true },
+      { name: 'Smartwatchs', slug: 'smartwatchs', emoji: '⌚', level: 2, isLeaf: true },
+      { name: 'Accessoires', slug: 'accessoires', emoji: '🎧', level: 2, isLeaf: true },
+      { name: 'Pièces de rechange', slug: 'pieces_rechange', emoji: '🔧', level: 2, isLeaf: true },
+      { name: 'Offres & Abonnements', slug: 'offres_abonnements', emoji: '📶', level: 2, isLeaf: true },
+      
+      // CATEGORÍAS NIVEL 2 CON SUB-NIVEL
+      {
+        name: 'Protection & Antichoc',
+        slug: 'protection_antichoc',
+        emoji: '🛡️',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Protections d\'écran', slug: 'protections_ecran', emoji: '🖥️', level: 3, isLeaf: true },
+          { name: 'Coques & Antichoc', slug: 'coques_antichoc', emoji: '📱', level: 3, isLeaf: true },
+          { name: 'Films de protection', slug: 'films_protection', emoji: '📋', level: 3, isLeaf: true },
+          { name: 'Étuis', slug: 'etuis', emoji: '🎁', level: 3, isLeaf: true },
+          { name: 'Protections de caméra', slug: 'protections_camera', emoji: '📸', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Ecouteurs & Son',
+        slug: 'ecouteurs_son',
+        emoji: '🎵',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Écouteurs filaires', slug: 'ecouteurs_filaires', emoji: '🎧', level: 3, isLeaf: true },
+          { name: 'Écouteurs Bluetooth', slug: 'ecouteurs_bluetooth', emoji: '🔵', level: 3, isLeaf: true },
+          { name: 'Casques audio', slug: 'casques_audio', emoji: '🎧', level: 3, isLeaf: true },
+          { name: 'Hauts-parleurs portables', slug: 'hauts_parleurs_portables', emoji: '🔊', level: 3, isLeaf: true },
+          { name: 'Adaptateurs audio', slug: 'adaptateurs_audio', emoji: '🎛️', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Chargeurs & Câbles',
+        slug: 'chargeurs_cables',
+        emoji: '🔌',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Chargeurs mural', slug: 'chargeurs_mur', emoji: '🔌', level: 3, isLeaf: true },
+          { name: 'Chargeurs voiture', slug: 'chargeurs_voiture', emoji: '🚗', level: 3, isLeaf: true },
+          { name: 'Chargeurs sans fil', slug: 'chargeurs_sans_fil', emoji: '⚡', level: 3, isLeaf: true },
+          { name: 'Câbles USB', slug: 'cables_usb', emoji: '🔌', level: 3, isLeaf: true },
+          { name: 'Câbles Lightning', slug: 'cables_lightning', emoji: '⚡', level: 3, isLeaf: true },
+          { name: 'Câbles Type-C', slug: 'cables_type_c', emoji: '🔌', level: 3, isLeaf: true },
+          { name: 'Hubs chargeurs', slug: 'hubs_chargeurs', emoji: '🔗', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Supports & Stabilisateurs',
+        slug: 'supports_stabilisateurs',
+        emoji: '📐',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Supports', slug: 'supports', emoji: '📱', level: 3, isLeaf: true },
+          { name: 'Stabilisateurs', slug: 'stabilisateurs', emoji: '🤳', level: 3, isLeaf: true },
+          { name: 'Barres de selfies', slug: 'barres_selfies', emoji: '📸', level: 3, isLeaf: true },
+          { name: 'Pieds pour téléphone', slug: 'pieds_telephone', emoji: '📐', level: 3, isLeaf: true },
+          { name: 'Ventouses voiture', slug: 'ventouses_voiture', emoji: '🚗', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Manettes',
+        slug: 'manettes',
+        emoji: '🎮',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Manettes Bluetooth', slug: 'manettes_bluetooth', emoji: '🎮', level: 3, isLeaf: true },
+          { name: 'Manettes filaires', slug: 'manettes_filaires', emoji: '🎮', level: 3, isLeaf: true },
+          { name: 'Manettes pour téléphone', slug: 'manettes_telephone', emoji: '📱', level: 3, isLeaf: true },
+          { name: 'Manettes pour tablette', slug: 'manettes_tablette', emoji: '💻', level: 3, isLeaf: true },
+          { name: 'Accessoires pour manettes', slug: 'accessoires_manettes', emoji: '🔧', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'VR',
+        slug: 'vr',
+        emoji: '👓',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Casques VR', slug: 'casques_vr', emoji: '👓', level: 3, isLeaf: true },
+          { name: 'Lunettes VR', slug: 'lunettes_vr', emoji: '🕶️', level: 3, isLeaf: true },
+          { name: 'Accessoires VR', slug: 'accessoires_vr', emoji: '🔧', level: 3, isLeaf: true },
+          { name: 'Contrôleurs VR', slug: 'controleurs_vr', emoji: '🎮', level: 3, isLeaf: true },
+          { name: 'Jeux VR', slug: 'jeux_vr', emoji: '🎮', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Power banks',
+        slug: 'power_banks',
+        emoji: '🔋',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Power bank 10,000mAh', slug: 'power_bank_10000mah', emoji: '🔋', level: 3, isLeaf: true },
+          { name: 'Power bank 20,000mAh', slug: 'power_bank_20000mah', emoji: '🔋', level: 3, isLeaf: true },
+          { name: 'Power bank solaire', slug: 'power_bank_solaire', emoji: '☀️', level: 3, isLeaf: true },
+          { name: 'Power bank charge rapide', slug: 'power_bank_rapide', emoji: '⚡', level: 3, isLeaf: true },
+          { name: 'Power bank compact', slug: 'power_bank_compact', emoji: '📱', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Stylets',
+        slug: 'stylets',
+        emoji: '✏️',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Stylets actifs', slug: 'stylets_actifs', emoji: '✏️', level: 3, isLeaf: true },
+          { name: 'Stylets passifs', slug: 'stylets_passifs', emoji: '✏️', level: 3, isLeaf: true },
+          { name: 'Stylets Bluetooth', slug: 'stylets_bluetooth', emoji: '🔵', level: 3, isLeaf: true },
+          { name: 'Stylets pour tablette', slug: 'stylets_tablette', emoji: '💻', level: 3, isLeaf: true },
+          { name: 'Recharges pour stylet', slug: 'recharges_stylet', emoji: '🔋', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Cartes Mémoire',
+        slug: 'cartes_memoire',
+        emoji: '💾',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Cartes SD', slug: 'sd_cards', emoji: '💾', level: 3, isLeaf: true },
+          { name: 'Cartes Micro SD', slug: 'micro_sd_cards', emoji: '💾', level: 3, isLeaf: true },
+          { name: 'Cartes SDHC', slug: 'sdhc_cards', emoji: '💾', level: 3, isLeaf: true },
+          { name: 'Cartes SDXC', slug: 'sdxc_cards', emoji: '💾', level: 3, isLeaf: true },
+          { name: 'Adaptateurs de carte', slug: 'adaptateurs_carte', emoji: '🔌', level: 3, isLeaf: true },
+          { name: 'Lecteurs de carte', slug: 'lecteurs_carte', emoji: '📖', level: 3, isLeaf: true }
+        ]
+      }
+    ]
+  },
+  
+  // CATEGORÍA INFORMATIQUE
+  {
+    name: 'Informatique',
+    slug: 'informatique',
+    emoji: '💻',
+    level: 1,
+    hasChildren: true,
+    isLeaf: false,
+    children: [
+      // CATEGORÍAS NIVEL 2 SIN SUB-NIVEL
+      { name: 'Serveurs', slug: 'serveurs', emoji: '🖧', level: 2, isLeaf: true },
+      { name: 'Ecrans', slug: 'ecrans', emoji: '🖥️', level: 2, isLeaf: true },
+      { name: 'Onduleurs & Stabilisateurs', slug: 'onduleurs_stabilisateurs', emoji: '⚡', level: 2, isLeaf: true },
+      { name: 'Compteuses de billets', slug: 'compteuses_billets', emoji: '💰', level: 2, isLeaf: true },
+      { name: 'Claviers & Souris', slug: 'claviers_souris', emoji: '⌨️', level: 2, isLeaf: true },
+      { name: 'Casques & Son', slug: 'casques_son', emoji: '🎧', level: 2, isLeaf: true },
+      { name: 'Webcam & Vidéoconférence', slug: 'webcam_videoconference', emoji: '📹', level: 2, isLeaf: true },
+      { name: 'Data shows', slug: 'data_shows', emoji: '📊', level: 2, isLeaf: true },
+      { name: 'Câbles & Adaptateurs', slug: 'cables_adaptateurs', emoji: '🔌', level: 2, isLeaf: true },
+      { name: 'Stylets & Tablettes', slug: 'stylers_tablettes', emoji: '✏️', level: 2, isLeaf: true },
+      { name: 'Cartables & Sacoches', slug: 'cartables_sacoches', emoji: '🎒', level: 2, isLeaf: true },
+      { name: 'Manettes & Simulateurs', slug: 'manettes_simulateurs', emoji: '🎮', level: 2, isLeaf: true },
+      { name: 'VR', slug: 'vr', emoji: '🥽', level: 2, isLeaf: true },
+      { name: 'Logiciels & Abonnements', slug: 'logiciels_abonnements', emoji: '📀', level: 2, isLeaf: true },
+      { name: 'Bureautique', slug: 'bureautique', emoji: '📎', level: 2, isLeaf: true },
+      { name: 'Autre Informatique', slug: 'autre_informatique', emoji: '💡', level: 2, isLeaf: true },
+      
+      // CATEGORÍAS NIVEL 2 CON SUB-NIVEL
+      {
+        name: 'Ordinateurs portables',
+        slug: 'ordinateurs_portables',
+        emoji: '💻',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Pc Portable', slug: 'pc_portable', emoji: '💻', level: 3, isLeaf: true },
+          { name: 'Macbooks', slug: 'macbooks', emoji: '🍎', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Ordinateurs de bureau',
+        slug: 'ordinateurs_bureau',
+        emoji: '🖥️',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Pc de bureau', slug: 'pc_bureau', emoji: '🖥️', level: 3, isLeaf: true },
+          { name: 'Unités centrales', slug: 'unites_centrales', emoji: '🖥️', level: 3, isLeaf: true },
+          { name: 'All In One', slug: 'all_in_one', emoji: '🖥️', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Composants PC fixe',
+        slug: 'composants_pc_fixe',
+        emoji: '⚙️',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Cartes mère', slug: 'cartes_mere', emoji: '🔌', level: 3, isLeaf: true },
+          { name: 'Processeurs', slug: 'processeurs', emoji: '⚡', level: 3, isLeaf: true },
+          { name: 'RAM', slug: 'ram', emoji: '💾', level: 3, isLeaf: true },
+          { name: 'Disques dur', slug: 'disques_dur', emoji: '💿', level: 3, isLeaf: true },
+          { name: 'Cartes graphique', slug: 'cartes_graphique', emoji: '🎮', level: 3, isLeaf: true },
+          { name: 'Alimentations & Boitiers', slug: 'alimentations_boitiers', emoji: '🔋', level: 3, isLeaf: true },
+          { name: 'Refroidissement', slug: 'refroidissement', emoji: '❄️', level: 3, isLeaf: true },
+          { name: 'Lecteurs & Graveurs CD', slug: 'lecteurs_graveurs_cd', emoji: '📀', level: 3, isLeaf: true },
+          { name: 'Autres', slug: 'autres_composants_fixe', emoji: '🔧', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Composants PC portable',
+        slug: 'composants_pc_portable',
+        emoji: '🔧',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Chargeurs', slug: 'chargeurs', emoji: '🔌', level: 3, isLeaf: true },
+          { name: 'Batteries', slug: 'batteries', emoji: '🔋', level: 3, isLeaf: true },
+          { name: 'Ecrans', slug: 'ecrans_portable', emoji: '🖥️', level: 3, isLeaf: true },
+          { name: 'Claviers & Touchpads', slug: 'claviers_touchpads', emoji: '⌨️', level: 3, isLeaf: true },
+          { name: 'Disques Dur', slug: 'disques_dur_portable', emoji: '💿', level: 3, isLeaf: true },
+          { name: 'RAM', slug: 'ram_portable', emoji: '💾', level: 3, isLeaf: true },
+          { name: 'Refroidissement', slug: 'refroidissement_portable', emoji: '❄️', level: 3, isLeaf: true },
+          { name: 'Cartes mère', slug: 'cartes_mere_portable', emoji: '🔌', level: 3, isLeaf: true },
+          { name: 'Processeurs', slug: 'processeurs_portable', emoji: '⚡', level: 3, isLeaf: true },
+          { name: 'Cartes graphique', slug: 'cartes_graphique_portable', emoji: '🎮', level: 3, isLeaf: true },
+          { name: 'Lecteurs & Graveurs', slug: 'lecteurs_graveurs_portable', emoji: '📀', level: 3, isLeaf: true },
+          { name: 'Baffles & Webcams', slug: 'baffles_webcams', emoji: '🎤', level: 3, isLeaf: true },
+          { name: 'Autres', slug: 'autres_composants_portable', emoji: '🔧', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Composants serveur',
+        slug: 'composants_serveur',
+        emoji: '🖧',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Cartes mère', slug: 'cartes_mere_serveur', emoji: '🔌', level: 3, isLeaf: true },
+          { name: 'Processeurs', slug: 'processeurs_serveur', emoji: '⚡', level: 3, isLeaf: true },
+          { name: 'RAM', slug: 'ram_serveur', emoji: '💾', level: 3, isLeaf: true },
+          { name: 'Disques dur', slug: 'disques_dur_serveur', emoji: '💿', level: 3, isLeaf: true },
+          { name: 'Cartes réseau', slug: 'cartes_reseau', emoji: '📶', level: 3, isLeaf: true },
+          { name: 'Alimentations', slug: 'alimentations_serveur', emoji: '🔋', level: 3, isLeaf: true },
+          { name: 'Refroidissement', slug: 'refroidissement_serveur', emoji: '❄️', level: 3, isLeaf: true },
+          { name: 'Cartes graphique', slug: 'cartes_graphique_serveur', emoji: '🎮', level: 3, isLeaf: true },
+          { name: 'Autres', slug: 'autres_composants_serveur', emoji: '🔧', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Imprimantes & Cartouches',
+        slug: 'imprimantes_cartouches',
+        emoji: '🖨️',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Imprimantes jet d\'encre', slug: 'imprimantes_jet_encre', emoji: '🖨️', level: 3, isLeaf: true },
+          { name: 'Imprimantes Laser', slug: 'imprimantes_laser', emoji: '🖨️', level: 3, isLeaf: true },
+          { name: 'Imprimantes matricielles', slug: 'imprimantes_matricielles', emoji: '🖨️', level: 3, isLeaf: true },
+          { name: 'Codes à barre & Etiqueteuses', slug: 'codes_barre_etiqueteuses', emoji: '🏷️', level: 3, isLeaf: true },
+          { name: 'Imprimantes photo & badges', slug: 'imprimantes_photo_badges', emoji: '🖼️', level: 3, isLeaf: true },
+          { name: 'Photocopieuses professionnelles', slug: 'photocopieuses_professionnelles', emoji: '📠', level: 3, isLeaf: true },
+          { name: 'Imprimantes 3D', slug: 'imprimantes_3d', emoji: '🖨️', level: 3, isLeaf: true },
+          { name: 'Cartouches & Toners', slug: 'cartouches_toners', emoji: '🎨', level: 3, isLeaf: true },
+          { name: 'Autre', slug: 'autre_imprimantes', emoji: '🖨️', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Réseau & Connexion',
+        slug: 'reseau_connexion',
+        emoji: '📶',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Modems & Routeurs', slug: 'modems_routeurs', emoji: '📡', level: 3, isLeaf: true },
+          { name: 'Switchs', slug: 'switchs', emoji: '🔀', level: 3, isLeaf: true },
+          { name: 'Point d\'accès wifi', slug: 'point_acces_wifi', emoji: '📶', level: 3, isLeaf: true },
+          { name: 'Répéteur Wi-Fi', slug: 'repeater_wifi', emoji: '📶', level: 3, isLeaf: true },
+          { name: 'Cartes réseau', slug: 'cartes_reseau_connexion', emoji: '📡', level: 3, isLeaf: true },
+          { name: 'Autre', slug: 'autre_reseau', emoji: '📶', level: 3, isLeaf: true }
+        ]
+      },
+      {
+        name: 'Stockage externe & Racks',
+        slug: 'stockage_externe',
+        emoji: '💾',
+        level: 2,
+        hasChildren: true,
+        isLeaf: false,
+        children: [
+          { name: 'Disques durs', slug: 'disques_durs_externes', emoji: '💿', level: 3, isLeaf: true },
+          { name: 'Flash disque', slug: 'flash_disque', emoji: '💾', level: 3, isLeaf: true },
+          { name: 'Carte mémoire', slug: 'carte_memoire', emoji: '📋', level: 3, isLeaf: true },
+          { name: 'Rack', slug: 'rack', emoji: '🗄️', level: 3, isLeaf: true }
+        ]
+      }
+    ]
   }
 ];
 
-// ============ FUNCIÓN PRINCIPAL CORREGIDA ============
-
-async function seedCompleteCategories() {
+// Función principal
+async function seedDatabase() {
   try {
-    // 1. Conectar a MongoDB
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/marketplace';
-    await mongoose.connect(mongoUri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log('✅ MongoDB conectado');
-
-    // 2. Primero, verificar el modelo para ver qué valores de 'level' acepta
-    console.log('🔍 Verificando esquema de Category...');
-    const CategorySchema = Category.schema;
-    const levelPath = CategorySchema.path('level');
+    // Conectar a MongoDB
+    console.log('🔗 Conectando a MongoDB...');
+    const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/marketplace';
     
-    // Mostrar información sobre la validación de 'level'
-    if (levelPath && levelPath.enumValues) {
-      console.log(`   ✅ El campo 'level' acepta estos valores: ${levelPath.enumValues.join(', ')}`);
-      console.log(`   📝 Usando niveles: 1, 2, 3 en lugar de 0, 1, 2`);
-    } else {
-      console.log('   ⚠️ No se encontró validación enum para el campo level');
-      console.log('   📝 Usando niveles: 1, 2, 3');
-    }
+    await mongoose.connect(MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
+    console.log('✅ Conectado a MongoDB');
 
-    // 3. Limpiar colección existente (solo en desarrollo)
-    if (process.env.NODE_ENV === 'development') {
-      await Category.deleteMany({});
-      console.log('🧹 Colección de categorías limpiada');
-    }
+    // Limpiar colección existente
+    console.log('🧹 Limpiando colección existente...');
+    await Category.deleteMany({});
+    console.log('✅ Colección limpiada');
 
-    // 4. Variables para estadísticas
-    const stats = {
-      level1: 0,  // Nivel principal (antes 0, ahora 1)
-      level2: 0,  // Subcategorías (antes 1, ahora 2)
-      level3: 0,  // Artículos finales (antes 2, ahora 3)
-      total: 0,
-      byCategory: {}
-    };
+    let totalCategories = 0;
+    let orderCounter = 0;
 
-    // 5. Procesar cada categoría principal (nivel 1)
-    for (const [index, categoryData] of ALL_CATEGORIES.entries()) {
-      console.log(`\n📦 [${index + 1}/6] Procesando: ${categoryData.name} ${categoryData.emoji}`);
+    // Función recursiva para crear categorías
+    async function createCategory(catData, parentId = null, ancestors = []) {
+      const path = parentId ? 
+        `${ancestors.map(a => a.slug).join('/')}/${catData.slug}` : 
+        catData.slug;
       
-      stats.byCategory[categoryData.id] = {
-        level1: 0,
-        level2: 0,
-        level3: 0,
-        total: 0
-      };
-
-      // Crear categoría principal (nivel 1)
-      const mainCategory = new Category({
-        name: categoryData.name,
-        slug: categoryData.id,
-        emoji: categoryData.emoji,
-        level: 1, // CAMBIADO: De 0 a 1
-        order: index + 1,
-        parent: null,
-        ancestors: [],
-        path: categoryData.id,
-        config: {
-          ...categoryData.config,
-          isMainCategory: true
-        },
-        hasChildren: categoryData.level1Items.length > 0,
-        isLeaf: false,
-        displayInAccordion: true,
-        accordionConfig: {
-          showChildren: true,
-          maxLevels: categoryData.config.accordionLevels || 2,
-          expandable: true,
-          isMainCategory: true,
-          defaultExpanded: false
-        }
+      const category = new Category({
+        name: catData.name,
+        slug: catData.slug,
+        emoji: catData.emoji,
+        level: catData.level,
+        parent: parentId,
+        ancestors: ancestors.map(a => a._id),
+        path: path,
+        order: orderCounter++,
+        hasChildren: catData.hasChildren || (catData.children && catData.children.length > 0),
+        isLeaf: catData.isLeaf || false,
+        isActive: true,
+        postCount: 0
       });
 
-      const savedMain = await mainCategory.save();
-      stats.level1++;
-      stats.total++;
-      stats.byCategory[categoryData.id].level1++;
-      stats.byCategory[categoryData.id].total++;
-      console.log(`   ✅ ${categoryData.name} (nivel 1)`);
+      const savedCategory = await category.save();
+      totalCategories++;
 
-      // 6. Procesar items de nivel 2
-      for (const [itemIndex, level2Item] of categoryData.level1Items.entries()) {
-        const level2Slug = `${categoryData.id}-${level2Item.id}`;
-        const level2Path = `${categoryData.id}/${level2Item.id}`;
-        
-        const level2Category = new Category({
-          name: level2Item.name,
-          slug: level2Slug,
-          emoji: level2Item.emoji,
-          level: 2, // CAMBIADO: De 1 a 2
-          order: itemIndex + 1,
-          parent: savedMain._id,
-          ancestors: [savedMain._id],
-          path: level2Path,
-          config: {
-            ...categoryData.config,
-            hasSublevel: level2Item.hasSublevel,
-            isIntermediate: true
-          },
-          hasChildren: level2Item.hasSublevel,
-          isLeaf: !level2Item.hasSublevel,
-          displayInAccordion: true,
-          accordionConfig: {
-            showChildren: level2Item.hasSublevel,
-            parentId: savedMain._id,
-            level: 2,
-            expandable: level2Item.hasSublevel,
-            defaultExpanded: false
-          }
-        });
+      // Espacios para indentación según el nivel
+      const indent = '  '.repeat(catData.level - 1);
+      console.log(`${indent}✅ ${catData.emoji} ${catData.name}`);
 
-        const savedLevel2 = await level2Category.save();
-        stats.level2++;
-        stats.total++;
-        stats.byCategory[categoryData.id].level2++;
-        stats.byCategory[categoryData.id].total++;
-        console.log(`   ├── ${level2Item.name} (nivel 2)`);
-
-        // 7. Procesar items de nivel 3 si existen
-        if (level2Item.hasSublevel && categoryData.level2Items[level2Item.id]) {
-          const level3Items = categoryData.level2Items[level2Item.id];
-          
-          for (const [subIndex, level3Item] of level3Items.entries()) {
-            const level3Slug = `${level2Slug}-${level3Item.id}`;
-            const level3Path = `${level2Path}/${level3Item.id}`;
-            
-            const level3Category = new Category({
-              name: level3Item.name,
-              slug: level3Slug,
-              emoji: level3Item.emoji,
-              level: 3, // CAMBIADO: De 2 a 3
-              order: subIndex + 1,
-              parent: savedLevel2._id,
-              ancestors: [savedMain._id, savedLevel2._id],
-              path: level3Path,
-              config: {
-                ...categoryData.config,
-                isFinalLevel: true,
-                isLeaf: true
-              },
-              hasChildren: false,
-              isLeaf: true,
-              displayInAccordion: true,
-              accordionConfig: {
-                showChildren: false,
-                parentId: savedLevel2._id,
-                level: 3,
-                isLastLevel: true,
-                expandable: false,
-                selectable: true
-              }
-            });
-
-            await level3Category.save();
-            stats.level3++;
-            stats.total++;
-            stats.byCategory[categoryData.id].level3++;
-            stats.byCategory[categoryData.id].total++;
-            console.log(`   │   ├── ${level3Item.name} (nivel 3)`);
-          }
+      // Si tiene hijos, crearlos recursivamente
+      if (catData.children && catData.children.length > 0) {
+        const newAncestors = [...ancestors, savedCategory];
+        for (const child of catData.children) {
+          await createCategory(child, savedCategory._id, newAncestors);
         }
       }
+
+      return savedCategory;
     }
 
-    // 8. Mostrar resumen detallado
-    console.log('\n🎉 ¡SEED COMPLETADO!');
-    console.log('='.repeat(60));
-    console.log('📊 ESTADÍSTICAS GENERALES:');
-    console.log(`   • Nivel 1 (Categorías principales): ${stats.level1}`);
-    console.log(`   • Nivel 2 (Subcategorías): ${stats.level2}`);
-    console.log(`   • Nivel 3 (Artículos finales): ${stats.level3}`);
-    console.log(`   • TOTAL: ${stats.total} categorías insertadas`);
+    // Crear todas las categorías
+    console.log('\n🌱 Sembrando categorías...\n');
     
-    console.log('\n📋 ESTADÍSTICAS POR CATEGORÍA:');
-    for (const [catId, catStats] of Object.entries(stats.byCategory)) {
-      const category = ALL_CATEGORIES.find(c => c.id === catId);
-      console.log(`   • ${category.emoji} ${category.name}:`);
-      console.log(`       Nivel 1: ${catStats.level1}`);
-      console.log(`       Nivel 2: ${catStats.level2}`);
-      console.log(`       Nivel 3: ${catStats.level3}`);
-      console.log(`       Total: ${catStats.total}`);
+    for (const categoryData of categoriesData) {
+      await createCategory(categoryData);
     }
 
-    // 9. Mostrar estructura jerárquica
-    console.log('\n🌳 ESTRUCTURA JERÁRQUICA:');
-    const mainCats = await Category.find({ level: 1 }).sort({ order: 1 });
-    for (const mainCat of mainCats) {
-      const children = await Category.find({ parent: mainCat._id }).sort({ order: 1 });
-      console.log(`\n   ${mainCat.emoji} ${mainCat.name} (${mainCat.slug})`);
-      
-      for (const child of children) {
-        const grandchildren = await Category.find({ parent: child._id });
-        if (grandchildren.length > 0) {
-          console.log(`     ├── ${child.emoji} ${child.name}`);
-          grandchildren.forEach(grandchild => {
-            console.log(`     │   ├── ${grandchild.emoji} ${grandchild.name}`);
-          });
-        } else {
-          console.log(`     ├── ${child.emoji} ${child.name} (final)`);
-        }
-      }
-    }
+    console.log('\n🎉 ¡Base de datos poblada exitosamente!');
+    console.log(`📊 Total de categorías creadas: ${totalCategories}`);
 
-    // 10. Verificar que Immobilier tiene estructura correcta
-    console.log('\n🔍 VERIFICANDO IMMOBILIER:');
-    const immobilier = await Category.findOne({ slug: 'immobilier' });
-    if (immobilier) {
-      const operations = await Category.find({ parent: immobilier._id }).sort({ order: 1 });
-      console.log(`   ${immobilier.emoji} ${immobilier.name} tiene ${operations.length} operaciones:`);
-      for (const op of operations) {
-        const properties = await Category.find({ parent: op._id });
-        console.log(`     • ${op.emoji} ${op.name}: ${properties.length} propiedades`);
-      }
-    }
-
-    // 11. Cerrar conexión
-    console.log('\n🔌 Conexión a MongoDB cerrada');
-    await mongoose.connection.close();
-    process.exit(0);
-
+    // Desconectar
+    await mongoose.disconnect();
+    console.log('🔌 Desconectado de MongoDB');
+    
   } catch (error) {
-    console.error('❌ Error durante el seed:', error);
-    if (error.errors && error.errors.level) {
-      console.error('   ⚠️ Problema con el campo "level". Verifica el esquema:');
-      console.error('   📝 Asegúrate de que el modelo Category permita valores 1, 2, 3 para level');
+    console.error('❌ Error:', error.message);
+    console.error('Stack trace:', error.stack);
+    if (error.code === 'ENOTFOUND') {
+      console.error('⚠️  No se puede conectar a MongoDB. Verifica:');
+      console.error('   1. Que MongoDB esté instalado y corriendo');
+      console.error('   2. Que la URL de conexión sea correcta');
+      console.error('   3. Ejecuta: mongod (en otra terminal)');
     }
     process.exit(1);
   }
 }
 
-// ============ EJECUCIÓN ============
-
+// Si el archivo se ejecuta directamente
 if (require.main === module) {
-  seedCompleteCategories();
+  seedDatabase();
 }
 
-module.exports = { ALL_CATEGORIES, seedCompleteCategories };
+module.exports = { seedDatabase, categoriesData };

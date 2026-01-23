@@ -156,6 +156,8 @@ url("./header.css"); */
 @import url("./headercarousel.css");
 @import url("./cardbodycarousel.css");
 @import url("./category-slider.css");
+
+@import url("./dashboard.css");
 .rtl {
   direction: rtl;
   text-align: right;

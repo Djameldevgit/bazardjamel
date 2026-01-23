@@ -19,7 +19,7 @@ router.get('/posts/filter', postCtrl.filterPosts);              // ✅ CORRECTO:
 // 2. RUTAS RESTANTES (sin /posts delante)
 router.get('/featured', postCtrl.getFeaturedPosts);       // ✅ /api/posts/featured
 router.get('/recent', postCtrl.getRecentPosts);           // ✅ /api/posts/recent
-router.get('/post_discover', auth, postCtrl.getPostsDicover); // ✅ /api/posts/post_discover
+  // ✅ /api/posts/post_discover
 router.get('/getSavePosts', auth, postCtrl.getSavePosts); // ✅ /api/posts/getSavePosts
 router.get('/search/:query', postCtrl.searchPosts);       // ✅ /api/posts/search/:query
 router.get('/user_posts/:id', auth, postCtrl.getUserPosts); // ✅ /api/posts/user_posts/:id
@@ -38,7 +38,7 @@ router.patch('/savePost/:id', auth, postCtrl.savePost);   // ✅ /api/posts/save
 router.patch('/unSavePost/:id', auth, postCtrl.unSavePost); // ✅ /api/posts/unSavePost/:id
 
 // Debug
-router.post('/debug-create', postCtrl.debugCreate);       // ✅ /api/posts/debug-create
+      // ✅ /api/posts/debug-create
 router.get('/posts/similar', postCtrl.getSimilarPosts);
 router.get('/user_posts/:id', auth, postCtrl.getUserPosts)
 

@@ -29,7 +29,7 @@ const Drawer = ({
   });
 
   // Detectar si está en dashboard/profile
-  const isDashboardPage = location.pathname.includes('/users/dashboardpage') || 
+  const isDashboardPage = location.pathname.includes('/dashboard') || 
                          location.pathname.includes('/profile') ||
                          location.pathname.startsWith('/mes-');
 
@@ -60,7 +60,9 @@ const Drawer = ({
     plus: '➕', dashboard: '📊', store: '🏪', categories: '📂',
     all: '📊', login: '🔑', register: '📝', question: '❓',
     mail: '✉️', shield: '🛡️', arrow: '➡️', globe: '🌍',
-    sun: '☀️', moon: '🌙', fire: '🔥'
+    sun: '☀️', moon: '🌙', fire: '🔥', chart: '📈',
+    message: '💬', shopping: '🛒', megaphone: '📢', gear: '⚙️',
+    verified: '✅', warning: '⚠️', star: '⭐', heart: '❤️'
   };
 
   // Enlaces útiles
@@ -70,6 +72,65 @@ const Drawer = ({
     { name: 'Contactez-nous', path: '/users/contactt', emoji: emojis.mail },
     { name: 'Politique de confidentialité', path: '/bloginfo', emoji: emojis.shield }
   ];
+
+  // 🆕 Secciones del dashboard para usuarios logueados
+  const dashboardSections = auth.user ? [
+    { 
+      title: '📊 Tableau de bord', 
+      items: [
+        { name: 'Vue d\'ensemble', path: '/dashboard#overview', emoji: emojis.chart, color: '#667eea' },
+        { name: 'Mes Statistiques', path: '/dashboard#stats', emoji: emojis.chart, color: '#10b981' }
+      ]
+    },
+    { 
+      title: '📝 Annonces', 
+      items: [
+        { name: 'Mes Annonces', path: '/dashboard#annonces', emoji: emojis.list, color: '#f59e0b', badge: { text: '12', color: '#f59e0b' } },
+        { name: 'Nouvelle Annonce', path: '/creer-annonce', emoji: emojis.plus, color: '#10b981' },
+        { name: 'Annonces sauvegardées', path: '/dashboard#saved', emoji: emojis.heart, color: '#ef4444' }
+      ]
+    },
+    { 
+      title: '🏪 Boutique', 
+      items: [
+        { name: 'Ma Boutique', path: '/dashboard#boutique', emoji: emojis.store, color: '#8b5cf6', badge: { text: 'Pro', color: '#8b5cf6' } },
+        { name: 'Créer Boutique', path: '/create-boutique', emoji: '🏪➕', color: '#8b5cf6' },
+        { name: 'Statistiques boutique', path: '/dashboard#boutique-stats', emoji: emojis.chart, color: '#06b6d4' }
+      ]
+    },
+    { 
+      title: '📢 Publicité', 
+      items: [
+        { name: 'Campagnes', path: '/dashboard#publicite', emoji: emojis.megaphone, color: '#ec4899', badge: { text: '3', color: '#ec4899' } },
+        { name: 'Budget publicitaire', path: '/dashboard#ad-budget', emoji: '💰', color: '#10b981' }
+      ]
+    },
+    { 
+      title: '🛒 Commandes', 
+      items: [
+        { name: 'Mes Commandes', path: '/dashboard#commandes', emoji: emojis.shopping, color: '#f97316', badge: { text: '5', color: '#f97316' } },
+        { name: 'Transactions', path: '/dashboard#transactions', emoji: '💳', color: '#059669' },
+        { name: 'Historique', path: '/dashboard#history', emoji: '📅', color: '#6b7280' }
+      ]
+    },
+    { 
+      title: '💬 Conversations', 
+      items: [
+        { name: 'Messages', path: '/dashboard#conversations', emoji: emojis.message, color: '#3b82f6', badge: { text: '8', color: '#3b82f6' } },
+        { name: 'Support', path: '/dashboard#support', emoji: '🆘', color: '#ef4444' },
+        { name: 'Notifications', path: '/dashboard#notifications', emoji: emojis.bell, color: '#f59e0b', badge: { text: '7', color: '#f59e0b' } }
+      ]
+    },
+    { 
+      title: '👤 Profil', 
+      items: [
+        { name: 'Informations personnelles', path: '/dashboard#profil', emoji: emojis.user, color: '#6366f1' },
+        { name: 'Vérification', path: '/dashboard#verification', emoji: emojis.verified, color: '#10b981', badge: { text: '75%', color: '#10b981' } },
+        { name: 'Sécurité', path: '/dashboard#security', emoji: emojis.shield, color: '#6b7280' },
+        { name: 'Paramètres', path: '/dashboard#parametres', emoji: emojis.gear, color: '#4b5563' }
+      ]
+    }
+  ] : [];
 
   // 🔥 FUNCIÓN SIMPLE para cambiar idioma
   const handleLanguageChange = (langCode) => {
@@ -125,9 +186,9 @@ const Drawer = ({
     return categorySlug === 'boutiques' ? '/boutiques/1' : `/${categorySlug}/1`;
   };
 
-  // Componente LinkItem SIMPLIFICADO (sin hover que cause parpadeo)
-  const LinkItem = ({ emoji, name, path, onClick, color = '#667eea', badge = null }) => {
-    const isActive = location.pathname === path;
+  // Componente LinkItem SIMPLIFICADO
+  const LinkItem = ({ emoji, name, path, onClick, color = '#667eea', badge = null, isDashboardLink = false }) => {
+    const isActive = location.pathname === path || (isDashboardLink && location.pathname === '/dashboard');
     
     const handleClick = (e) => {
       if (onClick) onClick(e);
@@ -181,7 +242,9 @@ const Drawer = ({
             fontSize: '0.7rem',
             padding: '2px 8px',
             borderRadius: '12px',
-            fontWeight: '600'
+            fontWeight: '600',
+            minWidth: '24px',
+            textAlign: 'center'
           }}>
             {badge.text}
           </span>
@@ -200,14 +263,16 @@ const Drawer = ({
     return <div style={{ display: 'block' }}>{content}</div>;
   };
 
-  // Contenidos
+  // Contenidos - Versión mejorada con Dashboard completo
   const renderDashboardContent = () => (
     <>
+      {/* Encabezado del usuario */}
       <div style={{
         padding: '20px 16px',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         color: 'white',
         marginBottom: '15px',
+        borderRadius: '0 0 12px 12px',
         position: 'relative'
       }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -227,42 +292,118 @@ const Drawer = ({
           </div>
           <div>
             <div style={{ fontWeight: '600', fontSize: '1.1rem' }}>
-              {auth.user?.username || 'Usuario'}
+              {auth.user?.username || 'Utilisateur'}
             </div>
             <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>
               {auth.user?.email || ''}
+            </div>
+            <div style={{ 
+              fontSize: '0.75rem', 
+              marginTop: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px'
+            }}>
+              <span style={{
+                backgroundColor: '#10b981',
+                padding: '2px 8px',
+                borderRadius: '10px',
+                fontSize: '0.7rem'
+              }}>
+                {emojis.verified} Vérifié
+              </span>
+              <span style={{
+                backgroundColor: '#f59e0b',
+                padding: '2px 8px',
+                borderRadius: '10px',
+                fontSize: '0.7rem'
+              }}>
+                {emojis.star} Pro
+              </span>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Botón Dashboard principal */}
+      <div style={{ marginBottom: '15px', padding: '0 16px' }}>
+        <Link to="/dashboard" style={{ textDecoration: 'none' }} onClick={onHide}>
+          <div style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #8b5cf6 100%)',
+            color: 'white',
+            padding: '15px',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+            transition: 'all 0.3s ease'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                background: 'rgba(255,255,255,0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: '12px',
+                fontSize: '1.2rem'
+              }}>
+                {emojis.dashboard}
+              </div>
+              <div>
+                <div style={{ fontWeight: '600', fontSize: '1rem' }}>Tableau de bord</div>
+                <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>Accédez à toutes vos données</div>
+              </div>
+            </div>
+            <div style={{ fontSize: '1.2rem' }}>→</div>
+          </div>
+        </Link>
+      </div>
+
+      {/* Secciones del Dashboard */}
+      {dashboardSections.map((section, sectionIndex) => (
+        <div key={sectionIndex}>
+          <div style={{ 
+            margin: '20px 0 5px 16px', 
+            fontSize: '0.85rem', 
+            fontWeight: '600', 
+            color: '#666',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}>
+            {section.title}
+          </div>
+          
+          {section.items.map((item, itemIndex) => (
+            <LinkItem 
+              key={itemIndex}
+              emoji={item.emoji} 
+              name={item.name} 
+              path={item.path} 
+              color={item.color}
+              badge={item.badge}
+              isDashboardLink={item.path.includes('/dashboard')}
+            />
+          ))}
+        </div>
+      ))}
+
+      {/* Dark Mode */}
+      <div style={{ margin: '25px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666' }}>
+        {emojis.gear} Préférences
+      </div>
+      
       <LinkItem 
         emoji={darkMode ? emojis.sun : emojis.moon} 
-        name="Dark Mode" 
+        name={darkMode ? 'Mode Clair' : 'Mode Sombre'} 
         onClick={toggleDarkMode}
         color={darkMode ? '#f59e0b' : '#4b5563'}
       />
 
-      <div style={{ margin: '20px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666' }}>
-        {emojis.user} Mon compte
-      </div>
-      
-      <LinkItem emoji={emojis.dashboard} name="Tableau de bord" path="/users/dashboardpage" />
-      <LinkItem emoji={emojis.user} name="Paramètres du profil" path="/profile" />
-
-      <div style={{ margin: '25px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666' }}>
-        {emojis.list} Annonces
-      </div>
-      
-      <LinkItem emoji={emojis.list} name="Mes Annonces" path="/mes-annonces" />
-      <LinkItem emoji={emojis.plus} name="Ajouter Annonce" path="/creer-annonce" color="#10b981" />
-
-      <div style={{ margin: '25px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666' }}>
-        {emojis.store} Boutiques
-      </div>
-      
-      <LinkItem emoji="🏪➕" name="Créer une boutique" path="/create-boutique" color="#8b5cf6" />
-
+      {/* Todas las categorías */}
       <div style={{ margin: '25px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666' }}>
         {emojis.categories} Toutes les catégories
       </div>
@@ -271,6 +412,7 @@ const Drawer = ({
         <LinkItem key={index} emoji={category.emoji} name={category.name} path={getCategoryPath(category.slug)} color={category.color} />
       ))}
 
+      {/* Logout */}
       <div style={{ marginTop: '30px', paddingTop: '20px', borderTop: '1px solid #e5e7eb' }}>
         <LinkItem emoji={emojis.logout} name="Se déconnecter" onClick={handleLogout} color="#ef4444" />
       </div>
@@ -279,6 +421,7 @@ const Drawer = ({
 
   const renderLoggedInContent = () => (
     <>
+      {/* Encabezado simple */}
       <div style={{
         padding: '15px 16px',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -286,7 +429,7 @@ const Drawer = ({
         marginBottom: '15px',
         borderRadius: '0 0 10px 10px'
       }}>
-        <Link to="/users/dashboardpage" style={{ textDecoration: 'none', color: 'inherit' }} onClick={onHide}>
+        <Link to="/dashboard" style={{ textDecoration: 'none', color: 'inherit' }} onClick={onHide}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <div style={{
               width: '40px',
@@ -307,22 +450,33 @@ const Drawer = ({
                 Bonjour, {auth.user?.username}
               </div>
               <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>
-                Accédez à votre espace
+                Accédez à votre tableau de bord
               </div>
             </div>
           </div>
         </Link>
       </div>
 
-      <LinkItem emoji={emojis.dashboard} name="Mon Tableau de bord" path="/users/dashboardpage" color="#667eea" />
+      {/* Botón principal al Dashboard */}
+      <LinkItem 
+        emoji={emojis.dashboard} 
+        name="Tableau de bord" 
+        path="/dashboard" 
+        color="#667eea" 
+        badge={{ text: 'Nouveau', color: '#10b981' }}
+      />
 
+      {/* Acciones rápidas */}
       <div style={{ margin: '20px 0 8px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
         {emojis.fire} Actions Rapides
       </div>
       
       <LinkItem emoji={emojis.plus} name="Nouvelle Annonce" path="/creer-annonce" color="#10b981" />
       <LinkItem emoji="🏪➕" name="Créer Boutique" path="/create-boutique" color="#8b5cf6" />
+      <LinkItem emoji={emojis.message} name="Mes Messages" path="/dashboard#conversations" color="#3b82f6" />
+      <LinkItem emoji={emojis.bell} name="Notifications" path="/dashboard#notifications" color="#f59e0b" />
 
+      {/* Categorías populares */}
       <div style={{ margin: '25px 0 8px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
         {emojis.categories} Catégories populaires
       </div>
@@ -333,16 +487,34 @@ const Drawer = ({
       
       <LinkItem emoji={emojis.all} name="Voir toutes les catégories" path="/vehicules/1" color="#6b7280" />
 
+      {/* Preferencias */}
       <div style={{ marginTop: '25px', paddingTop: '20px', borderTop: '1px solid #e5e7eb' }}>
-        <LinkItem emoji={darkMode ? emojis.sun : emojis.moon} name="Mode sombre" onClick={toggleDarkMode} color={darkMode ? '#f59e0b' : '#4b5563'} />
+        <LinkItem 
+          emoji={darkMode ? emojis.sun : emojis.moon} 
+          name={darkMode ? 'Mode Clair' : 'Mode Sombre'} 
+          onClick={toggleDarkMode} 
+          color={darkMode ? '#f59e0b' : '#4b5563'} 
+        />
+      </div>
+
+      {/* Logout */}
+      <div style={{ marginTop: '15px' }}>
+        <LinkItem emoji={emojis.logout} name="Se déconnecter" onClick={handleLogout} color="#ef4444" />
       </div>
     </>
   );
 
   const renderLoggedOutContent = () => (
     <>
-      <LinkItem emoji={darkMode ? emojis.sun : emojis.moon} name="Mode sombre" onClick={toggleDarkMode} color={darkMode ? '#f59e0b' : '#4b5563'} />
+      {/* Dark Mode para no logueados */}
+      <LinkItem 
+        emoji={darkMode ? emojis.sun : emojis.moon} 
+        name={darkMode ? 'Mode Clair' : 'Mode Sombre'} 
+        onClick={toggleDarkMode} 
+        color={darkMode ? '#f59e0b' : '#4b5563'} 
+      />
 
+      {/* Cuenta */}
       <div style={{ margin: '20px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
         {emojis.user} Compte
       </div>
@@ -350,12 +522,14 @@ const Drawer = ({
       <LinkItem emoji={emojis.login} name="Se connecter" path="/login" color="#10b981" />
       <LinkItem emoji={emojis.register} name="S'inscrire" path="/register" color="#667eea" />
 
+      {/* Boutiques */}
       <div style={{ margin: '25px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
         {emojis.store} Boutiques
       </div>
       
       <LinkItem emoji="🏪➕" name="Créer une boutique" path="/create-boutique" color="#8b5cf6" />
 
+      {/* Categorías */}
       <div style={{ margin: '25px 0 8px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
         {emojis.categories} Catégories
       </div>
@@ -366,6 +540,7 @@ const Drawer = ({
       
       <LinkItem emoji={emojis.all} name="Explorer toutes les catégories" path="/vehicules/1" color="#6b7280" />
 
+      {/* Enlaces útiles */}
       <div style={{ margin: '25px 0 8px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
         {emojis.link} Liens utiles
       </div>
@@ -394,6 +569,7 @@ const Drawer = ({
         boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)'
       }}
     >
+      {/* Encabezado del Drawer */}
       <div style={{
         padding: '15px 16px',
         borderBottom: '1px solid #e5e7eb',
@@ -411,11 +587,23 @@ const Drawer = ({
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent'
           }}>
-            
+            Menu
           </div>
+          {auth.user && (
+            <span style={{
+              backgroundColor: '#10b981',
+              color: 'white',
+              fontSize: '0.7rem',
+              padding: '2px 8px',
+              borderRadius: '10px',
+              fontWeight: '600'
+            }}>
+              Connecté
+            </span>
+          )}
         </div>
         
-        {/* 🔥 BOTONES DE IDIOMA SIMPLIFICADOS - SOLO 3 */}
+        {/* Selector de idioma */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ 
             display: 'flex', 
@@ -450,7 +638,8 @@ const Drawer = ({
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    transition: 'all 0.2s ease'
                   }}
                   title={lang.title}
                 >
@@ -473,7 +662,8 @@ const Drawer = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '1.2rem'
+              fontSize: '1.2rem',
+              transition: 'all 0.2s ease'
             }}
             title="Fermer"
           >
@@ -482,6 +672,7 @@ const Drawer = ({
         </div>
       </div>
       
+      {/* Contenido del Drawer */}
       <Offcanvas.Body style={{ 
         overflowY: 'auto',
         padding: '10px 0',
@@ -489,6 +680,7 @@ const Drawer = ({
       }}>
         {getContent()}
         
+        {/* Footer */}
         <div style={{
           marginTop: '30px',
           padding: '15px 16px',

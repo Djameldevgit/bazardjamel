@@ -4,24 +4,11 @@ import { useLocation, useHistory } from 'react-router-dom';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import { logout } from '../../redux/actions/authAction';
 import { useTranslation } from 'react-i18next';
-import { 
-  FaHome, FaUser, FaCog, FaSignOutAlt, FaBell, FaShoppingCart,
-  FaCar, FaTools, FaMobileAlt, FaLaptop, FaTv, FaTshirt, FaHeart,
-  FaCouch, FaGamepad, FaFutbol, FaBriefcase, FaIndustry, FaUtensils,
-  FaPlane, FaPaintBrush, FaStore, FaMoon, FaSun, FaSignInAlt, FaUserPlus,
-  FaBullhorn, FaCreditCard, FaTicketAlt, FaShippingFast, FaFileAlt,
-  FaQuestionCircle, FaEnvelope, FaShieldAlt, FaFileContract, FaTag,
-  FaPlus, FaList, FaBox, FaExchangeAlt, FaPalette, FaAd,
-  FaWrench, FaBuilding, FaTruck, FaHeadset, FaMedkit, FaFutbol as FaSoccerBall,
-  FaGraduationCap, FaHardHat, FaCarrot, FaHandsHelping, FaGlobeAmericas,
-  FaTimes
-} from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 const Drawer = ({ 
   show, 
   onHide, 
-  title = "Menú",
   width = 280,
   height = '100vh'
 }) => {
@@ -29,64 +16,95 @@ const Drawer = ({
   const location = useLocation();
   const history = useHistory();
   const { auth } = useSelector(state => state);
-  const { languageReducer } = useSelector(state => state);
   const { t, i18n } = useTranslation('global');
   const [darkMode, setDarkMode] = useState(false);
-  const [currentLang, setCurrentLang] = useState(languageReducer.language || 'fr');
+  
+  // 🔥 SIMPLIFICADO: Solo 3 idiomas - AR, FR, EN
+  const [currentLang, setCurrentLang] = useState(() => {
+    const savedLang = localStorage.getItem('appLanguage') || 'fr';
+    const useGoogleTranslate = localStorage.getItem('useGoogleTranslate') === 'true';
+    const targetLang = localStorage.getItem('targetTranslateLang');
+    
+    return useGoogleTranslate && targetLang ? targetLang : savedLang;
+  });
 
   // Detectar si está en dashboard/profile
   const isDashboardPage = location.pathname.includes('/users/dashboardpage') || 
                          location.pathname.includes('/profile') ||
                          location.pathname.startsWith('/mes-');
 
-  // Categorías completas con iconos únicos
+  // ✅ CATEGORÍAS
   const categories = [
-    { name: 'Boutiques', icon: FaStore, slug: 'boutiques', color: '#667eea' },
-    { name: 'Immobilier', icon: FaBuilding, slug: 'immobilier', color: '#f093fb' },
-    { name: 'Automobiles & Véhicules', icon: FaCar, slug: 'vehicules', color: '#f5576c' },
-    { name: 'Pièces détachées', icon: FaWrench, slug: 'piecesDetachees', color: '#48c6ef' },
-    { name: 'Téléphones & Accessoires', icon: FaMobileAlt, slug: 'telephones', color: '#6a11cb' },
-    { name: 'Informatique', icon: FaLaptop, slug: 'informatique', color: '#37ecba' },
-    { name: 'Électroménager & Électronique', icon: FaTv, slug: 'electromenager', color: '#ff9a9e' },
-    { name: 'Vêtements & Mode', icon: FaTshirt, slug: 'vetements', color: '#a18cd1' },
-    { name: 'Santé & Beauté', icon: FaMedkit, slug: 'santebeaute', color: '#fbc2eb' },
-    { name: 'Meubles & Maison', icon: FaCouch, slug: 'meubles', color: '#667eea' },
-    { name: 'Loisirs & Divertissements', icon: FaGamepad, slug: 'loisirs', color: '#f093fb' },
-    { name: 'Sport', icon: FaSoccerBall, slug: 'sport', color: '#f5576c' },
-    { name: 'Emploi', icon: FaGraduationCap, slug: 'emploi', color: '#48c6ef' },
-    { name: 'Matériaux & Équipement', icon: FaHardHat, slug: 'materiaux', color: '#6a11cb' },
-    { name: 'Alimentaires', icon: FaCarrot, slug: 'alimentaires', color: '#37ecba' },
-    { name: 'Services', icon: FaHandsHelping, slug: 'services', color: '#ff9a9e' },
-    { name: 'Voyages', icon: FaGlobeAmericas, slug: 'voyages', color: '#a18cd1' },
-    { name: 'Artisanat', icon: FaPalette, slug: 'artisanat', color: '#667eea' },
-    { name: 'Publicité', icon: FaBullhorn, slug: 'publicite', color: '#f093fb' },
+    { name: 'Boutiques', emoji: '🏪', slug: 'boutiques', color: '#667eea' },
+    { name: 'Immobilier', emoji: '🏠', slug: 'immobilier', color: '#f093fb' },
+    { name: 'Automobiles & Véhicules', emoji: '🚗', slug: 'vehicules', color: '#f5576c' },
+    { name: 'Pièces détachées', emoji: '🔧', slug: 'pieces-detachees', color: '#48c6ef' },
+    { name: 'Téléphones & Accessoires', emoji: '📱', slug: 'telephones', color: '#6a11cb' },
+    { name: 'Informatique', emoji: '💻', slug: 'informatique', color: '#37ecba' },
+    { name: 'Électroménager & Électronique', emoji: '📺', slug: 'electromenager', color: '#ff9a9e' },
+    { name: 'Vêtements & Mode', emoji: '👕', slug: 'vetements', color: '#a18cd1' },
+    { name: 'Santé & Beauté', emoji: '💄', slug: 'sante-beaute', color: '#fbc2eb' },
+    { name: 'Meubles & Maison', emoji: '🛋️', slug: 'meubles', color: '#667eea' },
+    { name: 'Loisirs & Divertissements', emoji: '🎮', slug: 'loisirs', color: '#f093fb' },
+    { name: 'Sport', emoji: '⚽', slug: 'sport', color: '#f5576c' },
+    { name: 'Emploi', emoji: '💼', slug: 'emploi', color: '#48c6ef' },
+    { name: 'Matériaux & Équipement', emoji: '🔨', slug: 'materiaux', color: '#6a11cb' },
+    { name: 'Alimentaires', emoji: '🍎', slug: 'alimentaires', color: '#37ecba' },
+    { name: 'Services', emoji: '👷', slug: 'services', color: '#ff9a9e' },
+    { name: 'Voyages', emoji: '✈️', slug: 'voyages', color: '#a18cd1' }
   ];
 
-  // Enlaces útiles para usuarios no conectados
-  const usefulLinks = [
-    { name: 'Créez une boutique', path: '/creer-boutique', icon: FaStore },
-    { name: 'Comment annoncer ?', path: '/comment-annoncer', icon: FaQuestionCircle },
-    { name: 'Contactez-nous', path: '/contact', icon: FaEnvelope },
-    { name: 'Politique de confidentialité', path: '/politique-confidentialite', icon: FaShieldAlt },
-    { name: 'Conditions d\'utilisation', path: '/conditions-utilisation', icon: FaFileContract },
-    { name: 'Conditions de vente et paiement', path: '/conditions-vente', icon: FaTag },
-  ];
-
-  // Manejar cambio de idioma
-  const handleLanguageChange = (lang) => {
-    setCurrentLang(lang);
-    i18n.changeLanguage(lang);
-    // Aquí podrías dispatch una acción para guardar en Redux si es necesario
-    // dispatch(setLanguage(lang));
+  // Emojis
+  const emojis = {
+    home: '🏠', user: '👤', logout: '🚪', bell: '🔔', list: '📋',
+    plus: '➕', dashboard: '📊', store: '🏪', categories: '📂',
+    all: '📊', login: '🔑', register: '📝', question: '❓',
+    mail: '✉️', shield: '🛡️', arrow: '➡️', globe: '🌍',
+    sun: '☀️', moon: '🌙', fire: '🔥'
   };
 
-  // Efecto para sincronizar idioma con Redux
+  // Enlaces útiles
+  const usefulLinks = [
+    { name: 'Créer une boutique', path: '/create-boutique', emoji: '🏪➕' },
+    { name: 'Comment annoncer ?', path: '/bloginfo', emoji: emojis.question },
+    { name: 'Contactez-nous', path: '/users/contactt', emoji: emojis.mail },
+    { name: 'Politique de confidentialité', path: '/bloginfo', emoji: emojis.shield }
+  ];
+
+  // 🔥 FUNCIÓN SIMPLE para cambiar idioma
+  const handleLanguageChange = (langCode) => {
+    setCurrentLang(langCode);
+    localStorage.setItem('appLanguage', langCode);
+    
+    // Siempre activar Google Translate para los 3 idiomas
+    localStorage.setItem('useGoogleTranslate', 'true');
+    localStorage.setItem('targetTranslateLang', langCode);
+    
+    // Configurar cookie para Google Translate
+    document.cookie = `googtrans=/auto/${langCode}; path=/`;
+    
+    // Disparar evento
+    const event = new CustomEvent('languageChanged', {
+      detail: { targetLang: langCode }
+    });
+    document.dispatchEvent(event);
+    
+    // Recargar
+    setTimeout(() => {
+      onHide();
+      window.location.reload();
+    }, 300);
+  };
+
+  // Sincronizar idioma
   useEffect(() => {
-    if (languageReducer.language && languageReducer.language !== currentLang) {
-      setCurrentLang(languageReducer.language);
-      i18n.changeLanguage(languageReducer.language);
+    const useGoogleTranslate = localStorage.getItem('useGoogleTranslate') === 'true';
+    const targetLang = localStorage.getItem('targetTranslateLang');
+    
+    if (useGoogleTranslate && targetLang && targetLang !== currentLang) {
+      setCurrentLang(targetLang);
     }
-  }, [languageReducer.language, currentLang, i18n]);
+  }, [currentLang]);
 
   // Manejar logout
   const handleLogout = () => {
@@ -97,90 +115,102 @@ const Drawer = ({
 
   // Alternar dark mode
   const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    document.body.classList.toggle('dark-mode', !darkMode);
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+    document.body.classList.toggle('dark-mode', newDarkMode);
   };
 
-  // Componente LinkItem mejorado
-  const LinkItem = ({ icon: Icon, name, path, onClick, color = '#667eea', isSection = false, external = false }) => {
+  // Generar rutas
+  const getCategoryPath = (categorySlug) => {
+    return categorySlug === 'boutiques' ? '/boutiques/1' : `/${categorySlug}/1`;
+  };
+
+  // Componente LinkItem SIMPLIFICADO (sin hover que cause parpadeo)
+  const LinkItem = ({ emoji, name, path, onClick, color = '#667eea', badge = null }) => {
     const isActive = location.pathname === path;
+    
+    const handleClick = (e) => {
+      if (onClick) onClick(e);
+      if (path && !onClick) onHide();
+    };
     
     const content = (
       <div
+        onClick={handleClick}
         style={{
-          padding: isSection ? '12px 16px' : '10px 16px',
+          padding: '10px 16px',
           margin: '2px 0',
           borderRadius: '8px',
           display: 'flex',
           alignItems: 'center',
-          transition: 'all 0.2s ease',
+          justifyContent: 'space-between',
           cursor: 'pointer',
           backgroundColor: isActive ? `${color}15` : 'transparent',
-          borderLeft: isActive ? `3px solid ${color}` : 'none'
-        }}
-        onClick={onClick}
-        onMouseEnter={(e) => {
-          if (!isSection && !isActive) e.currentTarget.style.backgroundColor = `${color}10`;
-        }}
-        onMouseLeave={(e) => {
-          if (!isSection) e.currentTarget.style.backgroundColor = isActive ? `${color}15` : 'transparent';
+          borderLeft: isActive ? `3px solid ${color}` : 'none',
         }}
       >
-        {Icon && <Icon style={{ color: isActive ? color : (isSection ? '#555' : '#6c757d'), marginRight: '12px', fontSize: '1.1rem' }} />}
-        <span style={{
-          fontSize: isSection ? '0.9rem' : '0.95rem',
-          fontWeight: isSection ? '600' : '500',
-          color: isActive ? color : (isSection ? '#555' : '#333')
-        }}>
-          {name}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+          {emoji && (
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              backgroundColor: isActive ? color : `${color}20`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: '12px',
+              fontSize: '1.2rem'
+            }}>
+              {emoji}
+            </div>
+          )}
+          <span style={{
+            fontSize: '0.95rem',
+            fontWeight: '500',
+            color: isActive ? color : '#333'
+          }}>
+            {name}
+          </span>
+        </div>
+        
+        {badge && (
+          <span style={{
+            backgroundColor: badge.color || '#667eea',
+            color: 'white',
+            fontSize: '0.7rem',
+            padding: '2px 8px',
+            borderRadius: '12px',
+            fontWeight: '600'
+          }}>
+            {badge.text}
+          </span>
+        )}
       </div>
     );
 
-    if (external) {
-      return (
-        <a 
-          href={path} 
-          style={{ textDecoration: 'none', color: 'inherit', display: 'block' }} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          onClick={onHide}
-        >
-          {content}
-        </a>
-      );
-    }
-
     if (path && !onClick) {
       return (
-        <Link 
-          to={path} 
-          style={{ textDecoration: 'none', color: 'inherit', display: 'block' }} 
-          onClick={onHide}
-        >
+        <Link to={path} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }} onClick={onHide}>
           {content}
         </Link>
       );
     }
 
-    return (
-      <div style={{ display: 'block' }} onClick={onClick}>
-        {content}
-      </div>
-    );
+    return <div style={{ display: 'block' }}>{content}</div>;
   };
 
-  // CONTENIDO 1: Dashboard del usuario
+  // Contenidos
   const renderDashboardContent = () => (
     <>
-      {/* Header del usuario */}
       <div style={{
         padding: '20px 16px',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         color: 'white',
-        marginBottom: '15px'
+        marginBottom: '15px',
+        position: 'relative'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
           <div style={{
             width: '50px',
             height: '50px',
@@ -189,9 +219,11 @@ const Drawer = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            marginRight: '12px'
+            marginRight: '12px',
+            border: '2px solid rgba(255,255,255,0.3)',
+            fontSize: '1.5rem'
           }}>
-            <FaUser size={24} />
+            {emojis.user}
           </div>
           <div>
             <div style={{ fontWeight: '600', fontSize: '1.1rem' }}>
@@ -204,76 +236,49 @@ const Drawer = ({
         </div>
       </div>
 
-      {/* Dark Mode */}
       <LinkItem 
-        icon={darkMode ? FaSun : FaMoon} 
+        emoji={darkMode ? emojis.sun : emojis.moon} 
         name="Dark Mode" 
         onClick={toggleDarkMode}
-        color={darkMode ? '#ffc107' : '#6c757d'}
+        color={darkMode ? '#f59e0b' : '#4b5563'}
       />
 
-      {/* Sección: Mon compte */}
-      <div style={{ margin: '15px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666' }}>
-        Mon compte
-      </div>
-      
-      <LinkItem icon={FaHome} name="Tableau de bord" path="/users/dashboardpage" />
-      <LinkItem icon={FaUser} name="Paramètres du profil" path="/profile" />
-
-      {/* Sección: Annonces */}
       <div style={{ margin: '20px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666' }}>
-        Annonces
+        {emojis.user} Mon compte
       </div>
       
-      <LinkItem icon={FaList} name="Mes Annonces" path="/mes-annonces" />
-      <LinkItem icon={FaPlus} name="Ajouter Annonce" path="/creer-annonce" color="#28a745" />
+      <LinkItem emoji={emojis.dashboard} name="Tableau de bord" path="/users/dashboardpage" />
+      <LinkItem emoji={emojis.user} name="Paramètres du profil" path="/profile" />
 
-      {/* Sección: Commandes */}
-      <div style={{ margin: '20px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666' }}>
-        Commandes
+      <div style={{ margin: '25px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666' }}>
+        {emojis.list} Annonces
       </div>
       
-      <LinkItem icon={FaShoppingCart} name="Mes Commandes" path="/mes-commandes" />
-      <LinkItem icon={FaTicketAlt} name="Mes Tickets de livraison" path="/tickets-livraison" />
+      <LinkItem emoji={emojis.list} name="Mes Annonces" path="/mes-annonces" />
+      <LinkItem emoji={emojis.plus} name="Ajouter Annonce" path="/creer-annonce" color="#10b981" />
 
-      {/* Sección: Voyage */}
-      <div style={{ margin: '20px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666' }}>
-        Voyage
+      <div style={{ margin: '25px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666' }}>
+        {emojis.store} Boutiques
       </div>
       
-      <LinkItem icon={FaPlane} name="Mes Demandes de Devis" path="/demandes-devis" />
+      <LinkItem emoji="🏪➕" name="Créer une boutique" path="/create-boutique" color="#8b5cf6" />
 
-      {/* Sección: Publicité */}
-      <div style={{ margin: '20px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666' }}>
-        Publicité
+      <div style={{ margin: '25px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666' }}>
+        {emojis.categories} Toutes les catégories
       </div>
       
-      <LinkItem icon={FaStore} name="Achat Store" path="/achat-store" />
-      <LinkItem icon={FaBullhorn} name="Achat Publicité" path="/achat-publicite" />
+      {categories.map((category, index) => (
+        <LinkItem key={index} emoji={category.emoji} name={category.name} path={getCategoryPath(category.slug)} color={category.color} />
+      ))}
 
-      {/* Sección: Transactions */}
-      <div style={{ margin: '20px 0 5px 16px', fontSize: '0.85rem', fontWeight: '600', color: '#666' }}>
-        Transactions
-      </div>
-      
-      <LinkItem icon={FaCreditCard} name="Transactions" path="/transactions" />
-
-      {/* Logout */}
-      <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '1px solid #eee' }}>
-        <LinkItem 
-          icon={FaSignOutAlt} 
-          name="Se déconnecter" 
-          onClick={handleLogout}
-          color="#dc3545"
-        />
+      <div style={{ marginTop: '30px', paddingTop: '20px', borderTop: '1px solid #e5e7eb' }}>
+        <LinkItem emoji={emojis.logout} name="Se déconnecter" onClick={handleLogout} color="#ef4444" />
       </div>
     </>
   );
 
-  // CONTENIDO 2: Usuario conectado (pero no en dashboard)
   const renderLoggedInContent = () => (
     <>
-      {/* Header del usuario */}
       <div style={{
         padding: '15px 16px',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -291,9 +296,11 @@ const Drawer = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginRight: '12px'
+              marginRight: '12px',
+              border: '2px solid rgba(255,255,255,0.3)',
+              fontSize: '1.2rem'
             }}>
-              <FaUser size={20} />
+              {emojis.user}
             </div>
             <div>
               <div style={{ fontWeight: '600', fontSize: '1rem' }}>
@@ -307,112 +314,72 @@ const Drawer = ({
         </Link>
       </div>
 
-      {/* Acceso rápido al dashboard */}
-      <LinkItem 
-        icon={FaHome} 
-        name="Mon Tableau de bord" 
-        path="/users/dashboardpage"
-        color="#667eea"
-      />
+      <LinkItem emoji={emojis.dashboard} name="Mon Tableau de bord" path="/users/dashboardpage" color="#667eea" />
 
-      {/* Categorías */}
       <div style={{ margin: '20px 0 8px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
-        Catégories
+        {emojis.fire} Actions Rapides
       </div>
       
-      {categories.map((category, index) => (
-        <LinkItem 
-          key={index}
-          icon={category.icon} 
-          name={category.name} 
-          path={`/category/${category.slug}`}
-          color={category.color}
-        />
-      ))}
+      <LinkItem emoji={emojis.plus} name="Nouvelle Annonce" path="/creer-annonce" color="#10b981" />
+      <LinkItem emoji="🏪➕" name="Créer Boutique" path="/create-boutique" color="#8b5cf6" />
 
-      {/* Dark Mode */}
-      <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '1px solid #eee' }}>
-        <LinkItem 
-          icon={darkMode ? FaSun : FaMoon} 
-          name="Mode sombre" 
-          onClick={toggleDarkMode}
-          color={darkMode ? '#ffc107' : '#6c757d'}
-        />
+      <div style={{ margin: '25px 0 8px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
+        {emojis.categories} Catégories populaires
+      </div>
+      
+      {categories.slice(0, 6).map((category, index) => (
+        <LinkItem key={index} emoji={category.emoji} name={category.name} path={getCategoryPath(category.slug)} color={category.color} />
+      ))}
+      
+      <LinkItem emoji={emojis.all} name="Voir toutes les catégories" path="/vehicules/1" color="#6b7280" />
+
+      <div style={{ marginTop: '25px', paddingTop: '20px', borderTop: '1px solid #e5e7eb' }}>
+        <LinkItem emoji={darkMode ? emojis.sun : emojis.moon} name="Mode sombre" onClick={toggleDarkMode} color={darkMode ? '#f59e0b' : '#4b5563'} />
       </div>
     </>
   );
 
-  // CONTENIDO 3: Usuario no conectado
   const renderLoggedOutContent = () => (
     <>
-      {/* Dark Mode */}
-      <LinkItem 
-        icon={darkMode ? FaSun : FaMoon} 
-        name="Mode sombre" 
-        onClick={toggleDarkMode}
-        color={darkMode ? '#ffc107' : '#6c757d'}
-      />
+      <LinkItem emoji={darkMode ? emojis.sun : emojis.moon} name="Mode sombre" onClick={toggleDarkMode} color={darkMode ? '#f59e0b' : '#4b5563'} />
 
-      {/* Compte */}
-      <div style={{ margin: '15px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
-        Compte
+      <div style={{ margin: '20px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
+        {emojis.user} Compte
       </div>
       
-      <LinkItem icon={FaSignInAlt} name="Se connecter" path="/login" color="#28a745" />
-      <LinkItem icon={FaUserPlus} name="S'inscrire" path="/register" color="#667eea" />
+      <LinkItem emoji={emojis.login} name="Se connecter" path="/login" color="#10b981" />
+      <LinkItem emoji={emojis.register} name="S'inscrire" path="/register" color="#667eea" />
 
-      {/* Catégories */}
-      <div style={{ margin: '20px 0 8px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
-        Catégories
+      <div style={{ margin: '25px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
+        {emojis.store} Boutiques
       </div>
       
-      {categories.map((category, index) => (
-        <LinkItem 
-          key={index}
-          icon={category.icon} 
-          name={category.name} 
-          path={`/category/${category.slug}`}
-          color={category.color}
-        />
+      <LinkItem emoji="🏪➕" name="Créer une boutique" path="/create-boutique" color="#8b5cf6" />
+
+      <div style={{ margin: '25px 0 8px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
+        {emojis.categories} Catégories
+      </div>
+      
+      {categories.slice(0, 8).map((category, index) => (
+        <LinkItem key={index} emoji={category.emoji} name={category.name} path={getCategoryPath(category.slug)} color={category.color} />
       ))}
+      
+      <LinkItem emoji={emojis.all} name="Explorer toutes les catégories" path="/vehicules/1" color="#6b7280" />
 
-      {/* Liens utiles */}
-      <div style={{ margin: '20px 0 8px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
-        Liens utiles
+      <div style={{ margin: '25px 0 8px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
+        {emojis.link} Liens utiles
       </div>
     
       {usefulLinks.map((link, index) => (
-        <LinkItem 
-          key={index}
-          icon={link.icon} 
-          name={link.name} 
-          path={link.path}
-          color="#6c757d"
-        />
+        <LinkItem key={index} emoji={link.emoji} name={link.name} path={link.path} color="#6b7280" />
       ))}
     </>
   );
 
-  // Determinar qué contenido mostrar
   const getContent = () => {
-    if (auth.user && isDashboardPage) {
-      return renderDashboardContent();
-    } else if (auth.user) {
-      return renderLoggedInContent();
-    } else {
-      return renderLoggedOutContent();
-    }
-  };
-
-  // Determinar título dinámico
-  const getTitle = () => {
-    if (auth.user && isDashboardPage) {
-      return 'Mon Espace';
-    } else if (auth.user) {
-      return 'Menu';
-    } else {
-      return 'Menu';
-    }
+    if (auth.user && isDashboardPage) return renderDashboardContent();
+    if (auth.user) return renderLoggedInContent();
+    return renderLoggedOutContent();
   };
 
   return (
@@ -420,172 +387,122 @@ const Drawer = ({
       show={show} 
       onHide={onHide} 
       placement="start"
+      className="drawer"
       style={{
         width: width,
-        height: height
+        height: height,
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)'
       }}
     >
-      {/* HEADER PERSONALIZADO CON BOTONES DE IDIOMA */}
       <div style={{
         padding: '15px 16px',
-        borderBottom: '1px solid #eee',
+        borderBottom: '1px solid #e5e7eb',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        background: '#f8fafc'
       }}>
-        {/* Título */}
-        <div style={{ fontWeight: '600', fontSize: '1.1rem', color: '#333' }}>
-          {getTitle()}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ 
+            fontWeight: '700', 
+            fontSize: '1.1rem', 
+            color: '#1f2937',
+            background: 'linear-gradient(90deg, #667eea, #8b5cf6)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
+          }}>
+            
+          </div>
         </div>
         
-        {/* Contenedor de botones: Idiomas + Cerrar */}
+        {/* 🔥 BOTONES DE IDIOMA SIMPLIFICADOS - SOLO 3 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {/* Botones de idioma */}
-          <div style={{ display: 'flex', gap: '6px', marginRight: '10px' }}>
-            {/* Árabe (AR) */}
-            <button
-              onClick={() => handleLanguageChange('ar')}
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '8px',
-                background: currentLang === 'ar' ? '#667eea' : '#f0f0f0',
-                border: 'none',
-                color: currentLang === 'ar' ? 'white' : '#666',
-                fontWeight: '600',
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-              onMouseEnter={(e) => {
-                if (currentLang !== 'ar') {
-                  e.currentTarget.style.background = '#e0e0e0';
-                  e.currentTarget.style.transform = 'scale(1.05)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (currentLang !== 'ar') {
-                  e.currentTarget.style.background = '#f0f0f0';
-                  e.currentTarget.style.transform = 'scale(1)';
-                }
-              }}
-              title="العربية"
-            >
-              AR
-            </button>
-            
-            {/* Francés (FR) */}
-            <button
-              onClick={() => handleLanguageChange('fr')}
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '8px',
-                background: currentLang === 'fr' ? '#667eea' : '#f0f0f0',
-                border: 'none',
-                color: currentLang === 'fr' ? 'white' : '#666',
-                fontWeight: '600',
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-              onMouseEnter={(e) => {
-                if (currentLang !== 'fr') {
-                  e.currentTarget.style.background = '#e0e0e0';
-                  e.currentTarget.style.transform = 'scale(1.05)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (currentLang !== 'fr') {
-                  e.currentTarget.style.background = '#f0f0f0';
-                  e.currentTarget.style.transform = 'scale(1)';
-                }
-              }}
-              title="Français"
-            >
-              FR
-            </button>
-            
-            {/* Inglés (EN) */}
-            <button
-              onClick={() => handleLanguageChange('en')}
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '8px',
-                background: currentLang === 'en' ? '#667eea' : '#f0f0f0',
-                border: 'none',
-                color: currentLang === 'en' ? 'white' : '#666',
-                fontWeight: '600',
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-              onMouseEnter={(e) => {
-                if (currentLang !== 'en') {
-                  e.currentTarget.style.background = '#e0e0e0';
-                  e.currentTarget.style.transform = 'scale(1.05)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (currentLang !== 'en') {
-                  e.currentTarget.style.background = '#f0f0f0';
-                  e.currentTarget.style.transform = 'scale(1)';
-                }
-              }}
-              title="English"
-            >
-              EN
-            </button>
+          <div style={{ 
+            display: 'flex', 
+            gap: '6px', 
+            marginRight: '10px',
+            background: '#f3f4f6',
+            padding: '4px',
+            borderRadius: '10px'
+          }}>
+            {[
+              { code: 'ar', label: 'ع', title: 'العربية' },
+              { code: 'fr', label: 'FR', title: 'Français' },
+              { code: 'en', label: 'EN', title: 'English' }
+            ].map((lang) => {
+              const isActive = currentLang === lang.code;
+              const useGoogleTranslate = localStorage.getItem('useGoogleTranslate') === 'true';
+              const isTranslateActive = useGoogleTranslate && localStorage.getItem('targetTranslateLang') === lang.code;
+              
+              return (
+                <button
+                  key={lang.code}
+                  onClick={() => handleLanguageChange(lang.code)}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    background: isActive || isTranslateActive ? '#667eea' : 'transparent',
+                    border: isTranslateActive ? '2px solid #28a745' : 'none',
+                    color: isActive || isTranslateActive ? 'white' : '#6b7280',
+                    fontWeight: '600',
+                    fontSize: lang.code === 'ar' ? '1rem' : '0.8rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  title={lang.title}
+                >
+                  {lang.label}
+                </button>
+              );
+            })}
           </div>
          
-          {/* Botón de cerrar */}
           <button
             onClick={onHide}
             style={{
               width: '36px',
               height: '36px',
-              borderRadius: '8px',
-              background: 'transparent',
-              border: '1px solid #e0e0e0',
-              color: '#666',
+              borderRadius: '10px',
+              background: '#f3f4f6',
+              border: 'none',
+              color: '#6b7280',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#f8f9fa';
-              e.currentTarget.style.borderColor = '#667eea';
-              e.currentTarget.style.color = '#667eea';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.borderColor = '#e0e0e0';
-              e.currentTarget.style.color = '#666';
+              fontSize: '1.2rem'
             }}
             title="Fermer"
           >
-            <FaTimes size={16} />
+            ✕
           </button>
         </div>
       </div>
       
       <Offcanvas.Body style={{ 
         overflowY: 'auto',
-        padding: '10px 0'
+        padding: '10px 0',
+        scrollbarWidth: 'thin'
       }}>
         {getContent()}
+        
+        <div style={{
+          marginTop: '30px',
+          padding: '15px 16px',
+          borderTop: '1px solid #e5e7eb',
+          fontSize: '0.75rem',
+          color: '#9ca3af',
+          textAlign: 'center'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', marginBottom: '5px' }}>
+            <span>{emojis.shield}</span>
+            <span>Plateforme sécurisée</span>
+          </div>
+          © {new Date().getFullYear()} MarketPlace. Tous droits réservés.
+        </div>
       </Offcanvas.Body>
     </Offcanvas>
   );

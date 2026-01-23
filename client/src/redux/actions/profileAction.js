@@ -15,37 +15,64 @@ export const PROFILE_TYPES = {
 }
 
 
+// actions/profileAction.js
 export const getProfileUsers = ({id, auth}) => async (dispatch) => {
     dispatch({type: PROFILE_TYPES.GET_ID, payload: id})
 
     try {
         dispatch({type: PROFILE_TYPES.LOADING, payload: true})
-        const res = getDataAPI(`/user/${id}`, auth.token)
-        const res1 = getDataAPI(`/user_posts/${id}`, auth.token)
         
-        const users = await res;
-        const posts = await res1;
+        // 🔥 PROBLEMA: Estás usando res y res1 sin await
+        // Solución: Usar Promise.all para esperar ambas promesas
+        const [usersRes, postsRes] = await Promise.all([
+            getDataAPI(`user/${id}`, auth.token),
+            getDataAPI(`user_posts/${id}?limit=9&page=1`, auth.token) // Añadir paginación
+        ]);
+
+        // Verificar si las respuestas son exitosas
+        if (!usersRes.data || !usersRes.data.user) {
+            throw new Error('Usuario no encontrado');
+        }
+
+        // Preparar datos estructurados
+        const userData = {
+            ...usersRes.data.user,
+            _id: id
+        };
+
+        const postsData = {
+            _id: id,
+            posts: postsRes.data.posts || [],
+            result: postsRes.data.pagination?.totalPosts || postsRes.data.result || 0,
+            page: 1
+        };
+
+        console.log('📦 Datos obtenidos:', {
+            user: userData,
+            posts: postsData
+        });
 
         dispatch({
             type: PROFILE_TYPES.GET_USER,
-            payload: users.data
-        })
+            payload: userData
+        });
 
         dispatch({
             type: PROFILE_TYPES.GET_POSTS,
-            payload: {...posts.data, _id: id, page: 2}
-        })
+            payload: postsData // Cambiado de {...posts.data, _id: id, page: 2}
+        });
 
-        dispatch({type: PROFILE_TYPES.LOADING, payload: false})
+        dispatch({type: PROFILE_TYPES.LOADING, payload: false});
+        
     } catch (err) {
+        console.error('❌ Error en getProfileUsers:', err);
         dispatch({
             type: GLOBALTYPES.ALERT, 
-            payload: {error: err.response.data.msg}
-        })
+            payload: {error: err.response?.data?.msg || 'Error al cargar perfil'}
+        });
+        dispatch({type: PROFILE_TYPES.LOADING, payload: false});
     }
-    
 }
-
 
 export const updateProfileUser = ({userData, avatar, auth}) => async (dispatch) => {
    

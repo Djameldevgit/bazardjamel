@@ -144,140 +144,43 @@ const CardBodyCarousel = ({ post }) => {
     const iconSizes = getIconSizes();
 
     return (
-        <div>
-            <div className="card_body">
-                {images.length > 0 && (
-                    <div className="carousel-container" style={{ position: 'relative' }}>
-                        {/* ====== ICONO DE GUARDADO ====== */}
-                        <div
-                            className="bookmark-button"
-                            style={{
-                                position: 'absolute',
-                                top: iconSizes.topMargin,
-                                right: iconSizes.sideMargin,
-                                zIndex: 10,
-                                cursor: 'pointer',
-                                backgroundColor: 'rgba(255, 255, 255, 0.98)',
-                                borderRadius: '50%',
-                                width: `${iconSizes.buttonSize}px`,
-                                height: `${iconSizes.buttonSize}px`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
-                                transition: 'all 0.2s ease',
-                                border: '1px solid rgba(0,0,0,0.05)',
-                                backdropFilter: isMobile ? 'none' : 'blur(4px)',
-                                background: isMobile 
-                                    ? 'rgba(255, 255, 255, 0.98)' 
-                                    : 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,249,250,0.98) 100%)',
-                            }}
-                            onClick={saved ? handleUnSavePost : handleSavePost}
-                            title={saved ? t("removeFromSaved") : t("savePost")}
-                        >
-                            {saved ? (
-                                <BookmarkFill 
-                                    size={iconSizes.bookmarkSize} 
-                                    color="#ff8c00" 
-                                />
-                            ) : (
-                                <Bookmark 
-                                    size={iconSizes.bookmarkSize} 
-                                    color="#2c3e50"
-                                />
-                            )}
-                        </div>
-
-                        {/* ====== ICONO DE LIKES ====== */}
-                        <div
-                            className="like-container"
-                            style={{
-                                position: 'absolute',
-                                top: iconSizes.topMargin,
-                                left: iconSizes.sideMargin,
-                                zIndex: 10,
-                                display: 'flex',
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                gap: iconSizes.gap,
-                                backgroundColor: 'rgba(255, 255, 255, 0.98)',
-                                borderRadius: '16px',
-                                padding: iconSizes.containerPadding,
-                                boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
-                                border: '1px solid rgba(0,0,0,0.05)',
-                                backdropFilter: isMobile ? 'none' : 'blur(4px)',
-                                background: isMobile 
-                                    ? 'rgba(255, 255, 255, 0.98)' 
-                                    : 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,249,250,0.98) 100%)',
-                            }}
-                        >
-                            <span
-                                className="like-counter"
-                                style={{
-                                    fontSize: iconSizes.counterFontSize,
-                                    fontWeight: '600',
-                                    color: '#ff4757',
-                                    textAlign: 'center',
-                                    fontFamily: 'Arial, sans-serif',
-                                    lineHeight: 1,
-                                    marginRight: iconSizes.marginRight,
-                                    padding: '0 1px',
-                                    minWidth: 'auto',
-                                }}
-                            >
-                                {post.likes?.length || 0}
-                            </span>
-
-                            <div
-                                className="like-button"
-                                style={{
-                                    cursor: 'pointer',
-                                    width: isMobile ? '20px' : '24px',
-                                    height: isMobile ? '20px' : '24px',
-                                    borderRadius: '50%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    transition: 'all 0.2s ease',
-                                    padding: 0,
-                                    minWidth: isMobile ? '20px' : '24px',
-                                    minHeight: isMobile ? '20px' : '24px',
-                                }}
-                                onClick={isLike ? handleUnLike : handleLike}
-                                title={isLike ? t("unlike") : t("like")}
-                            >
-                                {isLike ? (
-                                    <HeartFill 
-                                        size={iconSizes.heartSize} 
-                                        color="#ff4757" 
-                                        className={isLike ? 'pulse-animation' : ''}
-                                    />
-                                ) : (
-                                    <Heart 
-                                        size={iconSizes.heartSize} 
-                                        color="#2c3e50"
-                                    />
-                                )}
-                            </div>
-                        </div>
-
-                        {/* ====== CARRUSEL ====== */}
-                        <div className="card">
-                            <div
-                                className="card__image"
-                                onClick={() => history.push(`/post/${post._id}`)}
-                                style={{ 
-                                    cursor: 'pointer',
-                                    borderRadius: isMobile ? '4px' : '6px',
-                                    overflow: 'hidden',
-                                }}
-                            >
-                                <Carousel images={images} id={post._id} />
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
+        <div className="card">
+        <div
+            className="card__image"
+            onClick={() => history.push(`/post/${post._id}`)}
+            style={{ 
+                cursor: 'pointer',
+                borderRadius: isMobile ? '4px' : '6px',
+                overflow: 'hidden',
+            }}
+        >
+            {/* REEMPLAZA ESTO: {post.images} */}
+            {/* CON ESTO: */}
+            {images.length > 0 ? (
+                <Carousel 
+                    images={images} 
+                    id={post._id}
+                    isMobile={isMobile}
+                    isTablet={isTablet}
+                    isDesktop={isDesktop}
+                />
+            ) : (
+                <div style={{
+                    width: '100%',
+                    height: isMobile ? '200px' : '300px',
+                    backgroundColor: '#f8f9fa',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: isMobile ? '4px' : '6px',
+                    color: '#6c757d',
+                    fontSize: isMobile ? '14px' : '16px',
+                }}>
+                    {t("noImagesAvailable")}
+                </div>
+            )}
+        </div>
+    
 
             {/* ====== MODAL ====== */}
             {showModal && (

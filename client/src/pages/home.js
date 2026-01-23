@@ -1,4 +1,4 @@
-// src/pages/Home.jsx - CORRECCIÓN DE SELECTORES
+// src/pages/Home.jsx - VERSIÓN OPTIMIZADA Y CORREGIDA
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
@@ -7,12 +7,25 @@ import {
   Container, 
   Spinner, 
   Alert,
-  Button
+  Button,
+  Row,
+  Col,
+  Card
 } from 'react-bootstrap';
 import InfiniteScroll from 'react-infinite-scroll-component';
-import CategorySection from '../components/SlidersCategories/CategorySection';
+// ✅ ELIMINADO: CategorySection no se usa
 import MainCategorySlider from '../components/SlidersCategories/CategorySlider';
 import Header from '../components/SlidersCategories/HeaderCarousel';
+import { 
+  ArrowRight, 
+  ChevronRight,
+  Star,
+  StarFill,
+  Heart,
+  HeartFill,
+  Eye,
+  Clock
+} from 'react-bootstrap-icons';
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -20,165 +33,132 @@ const Home = () => {
   
   const [page, setPage] = useState(1);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [hoveredCard, setHoveredCard] = useState(null);
   const hasLoadedRef = useRef(false);
   
-  // ⭐ SELECTOR CORRECTO - Acceder directamente a state.category
+  const { theme = 'light' } = useSelector(state => state.theme || {});
+  
   const {
     categories = [],
     loading,
     error,
     hasMoreCategories,
     currentPage
-  } = useSelector((state) => {
-    // Debug completo del estado
-    console.log('🏠 Home - Estado completo de Redux:', state.category);
-    
-    const catState = state.category || {};
-    
-    // Verificar estructura de cada categoría
-    if (catState.categories && catState.categories.length > 0) {
-      console.log(`📊 Home: ${catState.categories.length} categorías encontradas`);
-      
-      catState.categories.forEach((cat, index) => {
-        console.log(`📁 Categoría ${index + 1}: "${cat.name}"`, {
-          id: cat._id,
-          slug: cat.slug,
-          postsPropiedad: 'posts' in cat,
-          postsValor: cat.posts,
-          esArray: Array.isArray(cat.posts),
-          cantidadPosts: cat.posts ? cat.posts.length : 0,
-          primerPost: cat.posts && cat.posts[0] ? {
-            id: cat.posts[0]._id,
-            title: cat.posts[0].title,
-            price: cat.posts[0].price
-          } : null
-        });
-      });
-    } else {
-      console.log('⚠️ Home: No hay categorías en el estado');
-    }
-    
-    return {
-      categories: catState.categories || [],
-      loading: catState.loading || false,
-      error: catState.error || null,
-      hasMoreCategories: catState.hasMoreCategories || true,
-      currentPage: catState.currentPage || 1
-    };
-  });
+  } = useSelector((state) => state.category || {});
 
-  // ⭐ Cargar categorías SOLO UNA VEZ
   useEffect(() => {
-    if (hasLoadedRef.current || loading) {
-      return;
-    }
+    if (hasLoadedRef.current || loading) return;
     
     console.log('🏠 Home: Disparando acción getAllCategoriesWithPosts...');
     hasLoadedRef.current = true;
-    
-    // ⭐ Asegúrate de pasar el parámetro posts=true
     dispatch(getAllCategoriesWithPosts(1, 8));
     
-    const timer = setTimeout(() => {
-      setInitialLoadDone(true);
-      console.log('✅ Home: Timer de carga inicial completado');
-    }, 1500);
-    
+    const timer = setTimeout(() => setInitialLoadDone(true), 1500);
     return () => clearTimeout(timer);
   }, [dispatch, loading]);
 
-  // ⭐ Debug adicional cuando cambian las categorías
-  useEffect(() => {
-    if (initialLoadDone && categories.length > 0) {
-      console.log('🔍 Home - Análisis final de datos:');
-      
-      let totalPostsEnTodasCategorias = 0;
-      let categoriasConPosts = 0;
-      
-      categories.forEach((cat, index) => {
-        const tienePosts = cat.posts && Array.isArray(cat.posts) && cat.posts.length > 0;
-        const cantidadPosts = cat.posts ? cat.posts.length : 0;
-        
-        totalPostsEnTodasCategorias += cantidadPosts;
-        if (tienePosts) categoriasConPosts++;
-        
-        console.log(`${index + 1}. ${cat.name}:`, {
-          tienePosts,
-          cantidadPosts,
-          tipoDePosts: typeof cat.posts
-        });
-      });
-      
-      console.log(`📈 Resumen: ${categoriasConPosts}/${categories.length} categorías tienen posts`);
-      console.log(`📈 Total de posts en home: ${totalPostsEnTodasCategorias}`);
-      
-      // Si no hay posts, hacer una prueba directa
-      if (totalPostsEnTodasCategorias === 0) {
-        console.log('⚠️ ALERTA: No hay posts en NINGUNA categoría');
-        console.log('Prueba endpoint manualmente: /api/categories/main?posts=true&limit=2');
-      }
-    }
-  }, [categories, initialLoadDone]);
-
-  // Manejar scroll infinito
   const fetchMoreData = useCallback(() => {
     if (hasMoreCategories && !loading && initialLoadDone) {
       const nextPage = currentPage + 1;
-      console.log(`📥 Home: Cargando página ${nextPage}...`);
       setPage(nextPage);
       dispatch(loadMoreCategories(nextPage));
     }
   }, [dispatch, hasMoreCategories, loading, currentPage, initialLoadDone]);
 
-  const handleCategoryClick = (slug) => {
-    console.log(`🔗 Home: Click en categoría ${slug}`);
+  // ✅ CORREGIDO: Maneja objeto completo O parámetros separados
+  const handleCategoryClick = (slugOrObject, categoryNameParam) => {
+    let slug, categoryName;
+    
+    if (typeof slugOrObject === 'object' && slugOrObject !== null) {
+      // Es objeto completo desde CategorySlider
+      slug = slugOrObject.slug;
+      categoryName = slugOrObject.name || 'Categoría';
+    } else if (typeof slugOrObject === 'string') {
+      // Es string slug (compatibilidad)
+      slug = slugOrObject;
+      categoryName = categoryNameParam || 'Categoría';
+    } else {
+      console.error('❌ Parámetro inválido:', slugOrObject);
+      return;
+    }
+    
+    if (!slug) {
+      console.error('❌ Slug vacío');
+      return;
+    }
+    
+    console.log(`🔗 Navegando a: ${categoryName} (/${slug})`);
     history.push(`/category/${slug}`);
   };
 
-  const handleViewMore = (slug) => {
-    console.log(`🔗 Home: Ver más de categoría ${slug}`);
-    history.push(`/category/${slug}`);
+  const handleViewMore = (slug, categoryName) => {
+    console.log(`🔗 Ver más de: ${categoryName}`);
+    history.push(`/category/${slug}`, { fromHome: true, categoryName });
   };
 
-  const handlePostClick = (postId) => {
-    console.log(`🔗 Home: Click en post ${postId}`);
-    history.push(`/post/${postId}`);
+  const handlePostClick = (postId, postTitle) => {
+    console.log(`🔗 Click en post: ${postTitle}`);
+    history.push(`/post/${postId}`, { fromHome: true, postTitle });
+  };
+
+  const getCategoryPlaceholder = (categorySlug) => {
+    const placeholders = {
+      'immobilier': '🏠', 'vehicules': '🚗', 'electronique': '📱',
+      'mode': '👕', 'maison': '🛋️', 'loisirs': '🎮',
+      'emploi': '💼', 'services': '🛠️', 'animaux': '🐶',
+      'alimentation': '🍎'
+    };
+    return placeholders[categorySlug] || '📦';
+  };
+
+  const formatPrice = (price) => {
+    if (!price && price !== 0) return 'Precio no disponible';
+    return new Intl.NumberFormat('es-ES', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(price);
+  };
+
+  const calculateDiscount = (originalPrice, salePrice) => {
+    if (!originalPrice || !salePrice || salePrice >= originalPrice) return null;
+    return Math.round(((originalPrice - salePrice) / originalPrice) * 100);
   };
 
   // Render condicional
-  const showLoading = loading && categories.length === 0 && !initialLoadDone;
-  const showError = error && categories.length === 0 && initialLoadDone;
-  const showEmptyState = !loading && categories.length === 0 && initialLoadDone;
-
-  if (showLoading) {
+  if (loading && categories.length === 0 && !initialLoadDone) {
     return (
-      <div className="min-vh-100 d-flex flex-column">
+      <div className="min-vh-100 d-flex flex-column bg-gradient-light">
         <Header />
         <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
           <div className="text-center">
             <Spinner animation="border" variant="primary" size="lg" />
-            <p className="mt-3">Cargando marketplace...</p>
+            <p className="mt-3 text-muted">Cargando experiencias únicas...</p>
           </div>
         </Container>
       </div>
     );
   }
 
-  if (showError) {
+  if (error && categories.length === 0 && initialLoadDone) {
     return (
       <div className="min-vh-100 d-flex flex-column">
         <Header />
         <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
-          <Alert variant="danger" className="text-center">
-            <h4>Error al cargar contenido</h4>
-            <p>{error}</p>
+          <Alert variant="danger" className="shadow-lg border-0 text-center">
+            <i className="fas fa-exclamation-circle fa-3x text-danger mb-3"></i>
+            <h4 className="h5 mb-2">Error de conexión</h4>
+            <p className="text-muted mb-4">No pudimos cargar el contenido</p>
             <Button 
-              variant="outline-danger" 
+              variant="gradient-primary" 
               onClick={() => {
                 hasLoadedRef.current = false;
                 dispatch(getAllCategoriesWithPosts(1, 8));
               }}
+              className="rounded-pill px-4"
             >
+              <i className="fas fa-redo me-2"></i>
               Reintentar
             </Button>
           </Alert>
@@ -187,43 +167,41 @@ const Home = () => {
     );
   }
 
-  if (showEmptyState) {
+  if (!loading && categories.length === 0 && initialLoadDone) {
     return (
       <div className="min-vh-100 d-flex flex-column">
         <Header />
         <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
-          <Alert variant="info" className="text-center">
-            <h4>No hay contenido disponible</h4>
-            <p>No se encontraron categorías con productos.</p>
-            <Button 
-              variant="primary"
-              onClick={() => {
-                hasLoadedRef.current = false;
-                dispatch(getAllCategoriesWithPosts(1, 8));
-              }}
-            >
-              Buscar contenido
+          <div className="text-center">
+            <i className="fas fa-search fa-4x text-muted mb-4"></i>
+            <h4 className="h5 mb-2">Marketplace vacío</h4>
+            <p className="text-muted mb-4">Aún no hay productos publicados</p>
+            <Button variant="outline-primary" className="rounded-pill px-4">
+              <i className="fas fa-plus me-2"></i>
+              Publicar primer producto
             </Button>
-          </Alert>
+          </div>
         </Container>
       </div>
     );
   }
 
-  console.log('🎨 Home: Renderizando interfaz...');
+  
 
   return (
-    <div className="min-vh-100 d-flex flex-column">
+    <div className={`min-vh-100 d-flex flex-column ${theme === 'dark' ? 'bg-dark text-light' : 'bg-light'}`}>
       <Header />
       
       <main className="flex-grow-1">
-        {/* Slider principal */}
-        <section className="py-4 bg-light">
+      
+       
+        <section  >
           <Container>
-            <h2 className="h4 mb-3">Explora nuestras categorías</h2>
+          
+         
             <MainCategorySlider 
-              categories={categories}
-              onCategoryClick={handleCategoryClick}
+              categories={categories}  
+              onCategoryClick={handleCategoryClick}  
             />
           </Container>
         </section>
@@ -235,60 +213,184 @@ const Home = () => {
             next={fetchMoreData}
             hasMore={hasMoreCategories}
             loader={
-              <div className="text-center py-3">
-                <Spinner animation="border" size="sm" />
-                <span className="ms-2">Cargando más categorías...</span>
+              <div className="text-center py-5">
+                <Spinner animation="border" variant="primary" />
+                <p className="mt-3 text-muted">Buscando más tesoros...</p>
               </div>
             }
             endMessage={
-              <p className="text-center text-muted py-3">
-                ¡Has visto todas las categorías!
-              </p>
+              <div className="text-center py-5">
+                <i className="fas fa-flag-checkered fa-2x text-success mb-3"></i>
+                <h4 className="h5 mb-2">¡Llegaste al final!</h4>
+                <p className="text-muted">Has explorado todas nuestras categorías</p>
+              </div>
             }
-            scrollThreshold={0.8}
+            scrollThreshold={0.9}
           >
-            {categories.map((category) => (
-              <CategorySection
-                key={category._id || category.slug}
-                category={category}
-                onViewMore={() => handleViewMore(category.slug)}
-                onPostClick={handlePostClick}
-              />
+            {categories.map((category, index) => (
+              <section key={category._id} className="mb-5">
+                <div className="d-flex justify-content-between align-items-center mb-4">
+                  <div>
+                    <div className="d-flex align-items-center gap-3 mb-2">
+                      <div className="category-icon bg-primary bg-opacity-10 rounded-3 p-3">
+                        <i className="fas fa-tag text-primary"></i>
+                      </div>
+                      <div>
+                        <h3 className="h4 fw-bold mb-0">{category.name}</h3>
+                        <p className="text-muted mb-0">
+                          {category.posts?.length || 0} productos
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    variant="outline-primary"
+                    className="rounded-pill px-4"
+                    onClick={() => handleViewMore(category.slug, category.name)}
+                  >
+                    Ver todos
+                    <ArrowRight className="ms-2" size={16} />
+                  </Button>
+                </div>
+
+                {category.posts && category.posts.length > 0 ? (
+                  <Row>
+                    {category.posts.slice(0, 6).map((post) => {
+                      const discount = calculateDiscount(post.originalPrice, post.price);
+                      
+                      return (
+                        <Col key={post._id} xs={6} md={4} lg={2} className="mb-4">
+                          <Card 
+                            className="h-100 border-0 shadow-sm hover-lift"
+                            onMouseEnter={() => setHoveredCard(post._id)}
+                            onMouseLeave={() => setHoveredCard(null)}
+                            onClick={() => handlePostClick(post._id, post.title)}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <div className="position-relative overflow-hidden" style={{ paddingTop: '75%' }}>
+                              {post.images && post.images[0] ? (
+                                <>
+                                  <Card.Img
+                                    variant="top"
+                                    src={post.images[0]}
+                                    alt={post.title}
+                                    className="position-absolute top-0 start-0 w-100 h-100 object-fit-cover"
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.src = `https://via.placeholder.com/300x225/6c757d/ffffff?text=${getCategoryPlaceholder(category.slug)}`;
+                                    }}
+                                  />
+                                  {discount && (
+                                    <div className="position-absolute top-0 start-0 m-2">
+                                      <span className="badge bg-danger rounded-pill px-2 py-1">
+                                        -{discount}%
+                                      </span>
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                <div className="position-absolute top-0 start-0 w-100 h-100 bg-light d-flex align-items-center justify-content-center">
+                                  <div className="display-4 text-muted mb-2">
+                                    {getCategoryPlaceholder(category.slug)}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            <Card.Body className="d-flex flex-column p-3">
+                              <Card.Title className="h6 mb-2 text-truncate">
+                                {post.title}
+                              </Card.Title>
+                              
+                              <div className="mt-auto">
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                  <div>
+                                    <span className="h5 fw-bold text-primary mb-0">
+                                      {formatPrice(post.price)}
+                                    </span>
+                                    {post.originalPrice && discount && (
+                                      <small className="text-decoration-line-through text-muted d-block">
+                                        {formatPrice(post.originalPrice)}
+                                      </small>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </Col>
+                      );
+                    })}
+                  </Row>
+                ) : (
+                  <Alert variant="info" className="text-center">
+                    <i className="fas fa-info-circle me-2"></i>
+                    Aún no hay productos en esta categoría
+                  </Alert>
+                )}
+              </section>
             ))}
           </InfiniteScroll>
-
-          {/* Mensaje si categorías vacías */}
-          {initialLoadDone && categories.length === 0 && (
-            <div className="text-center py-5">
-              <Alert variant="warning">
-                <i className="fas fa-exclamation-triangle me-2"></i>
-                No hay categorías disponibles
-              </Alert>
-            </div>
-          )}
-
-          {/* Botón para cargar más */}
-          {hasMoreCategories && categories.length > 0 && (
-            <div className="text-center mt-4">
-              <Button
-                variant="outline-primary"
-                onClick={fetchMoreData}
-                disabled={loading}
-                className="px-4"
-              >
-                {loading ? (
-                  <>
-                    <Spinner animation="border" size="sm" className="me-2" />
-                    Cargando...
-                  </>
-                ) : (
-                  'Ver más categorías'
-                )}
-              </Button>
-            </div>
-          )}
         </Container>
+
+        <section className="py-5 bg-gradient-primary text-white position-relative overflow-hidden">
+          <div className="position-absolute top-0 start-0 w-100 h-100 bg-pattern"></div>
+          <Container className="position-relative z-1">
+            <Row className="align-items-center">
+              <Col lg={6} className="mb-4 mb-lg-0">
+                <h1 className="display-4 fw-bold mb-3">Descubre lo extraordinario</h1>
+                <p className="lead mb-4 opacity-75">
+                  Miles de productos únicos esperándote. Desde lo esencial hasta lo exclusivo.
+                </p>
+                <div className="d-flex gap-3">
+                  <Button 
+                    variant="light" 
+                    size="lg"
+                    className="rounded-pill px-4 fw-semibold"
+                    onClick={() => window.scrollTo({ top: 600, behavior: 'smooth' })}
+                  >
+                    <i className="fas fa-rocket me-2"></i>
+                    Explorar ahora
+                  </Button>
+                  <Button variant="outline-light" size="lg" className="rounded-pill px-4">
+                    <i className="fas fa-question-circle me-2"></i>
+                    Cómo funciona
+                  </Button>
+                </div>
+              </Col>
+              <Col lg={6}>
+                <div className="hero-image-placeholder rounded-4 overflow-hidden shadow-lg">
+                  <div className="bg-dark bg-opacity-25 p-5 text-center">
+                    <i className="fas fa-store fa-5x mb-3 opacity-50"></i>
+                    <p className="mb-0">Tu mercado digital</p>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          </Container>
+        </section>
+
+
+
+
+
       </main>
+
+      <style jsx>{`
+        .bg-gradient-primary {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .hover-lift {
+          transition: all 0.3s ease;
+        }
+        
+        .hover-lift:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+      `}</style>
     </div>
   );
 };

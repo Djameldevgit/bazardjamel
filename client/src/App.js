@@ -92,7 +92,7 @@ function App() {
         <Route exact path="/category/:slug/:subSlug/:articleSlug" component={CategoryPage} />
         <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
 
-        <Route exact path="/users/dashboardpage" component={DashboardPage} />
+        <Route exact path="/dashboard" component={DashboardPage} />
         <Route exact path="/create-boutique" component={CreateBoutiquePage} />
         {/* Detalle de post */}
         <Route exact path="/post/:id" component={PostId} />

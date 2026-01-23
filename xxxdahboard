@@ -1,0 +1,195 @@
+src/
+├── pages/
+│   └── Dashboard.jsx          ← Página principal del dashboard
+│
+├── components/
+│   └── DashboardUser/         ← Nueva carpeta para el dashboard
+│       ├── DashboardLayout/   ← Layout principal con sidebar
+│       │   ├── Sidebar.jsx
+│       │   ├── Header.jsx
+│       │   └── MobileMenu.jsx
+│       │
+│       ├── Overview/          ← Vue d'ensemble / Estadísticas generales
+│       │   ├── StatsCards.jsx
+│       │   ├── RecentActivity.jsx
+│       │   └── PerformanceChart.jsx
+│       │
+│       ├── Annonces/          ← Gestión de anuncios
+│       │   ├── AnnoncesList.jsx
+│       │   ├── AnnonceCard.jsx
+│       │   ├── CreateAnnonce.jsx
+│       │   └── AnnonceFilters.jsx
+│       │
+│       ├── Boutique/          ← Gestión de boutique
+│       │   ├── BoutiqueInfo.jsx
+│       │   ├── CreateBoutique.jsx
+│       │   ├── BoutiqueStats.jsx
+│       │   └── UpgradeBoutique.jsx
+│       │
+│       ├── Publicite/         ← Publicidad
+│       │   ├── AdCampaigns.jsx
+│       │   ├── CreateAd.jsx
+│       │   ├── AdStats.jsx
+│       │   └── AdBudget.jsx
+│       │
+│       ├── Commandes/         ← Pedidos y transacciones
+│       │   ├── CommandesList.jsx
+│       │   ├── CommandeDetail.jsx
+│       │   ├── Transactions.jsx
+│       │   └── Paiements.jsx
+│       │
+│       ├── Conversations/     ← Mensajes y chats
+│       │   ├── ChatList.jsx
+│       │   ├── ChatWindow.jsx
+│       │   ├── AdminMessages.jsx
+│       │   └── SupportChat.jsx
+│       │
+│       ├── Notifications/     ← Notificaciones
+│       │   ├── NotificationsList.jsx
+│       │   ├── NotificationCard.jsx
+│       │   └── NotificationSettings.jsx
+│       │
+│       ├── Profil/            ← Información personal
+│       │   ├── InfoPersonnelle.jsx
+│       │   ├── Verification.jsx
+│       │   ├── Security.jsx
+│       │   └── Preferences.jsx
+│       │
+│       ├── Parametres/        ← Configuraciones
+│       │   ├── GeneralSettings.jsx
+│       │   ├── PrivacySettings.jsx
+│       │   └── AccountSettings.jsx
+│       │
+│       └── Shared/
+│           ├── LoadingSkeleton.jsx
+│           ├── EmptyState.jsx
+│           ├── StatCard.jsx
+│           └── Breadcrumb.jsx
+
+
+
+
+
+
+
+
+FONCTIONNALITÉS IMPLÉMENTÉES:
+Vue d'ensemble - Statistiques globales et activité récente
+
+Gestion des annonces - CRUD complet avec états (publié/en attente/rejeté)
+
+Boutique en ligne - Gestion de boutique avec plans d'abonnement
+
+Publicité - Campagnes publicitaires avec suivi des performances
+
+Commandes - Gestion des ventes et transactions
+
+Conversations - Messagerie avec clients et support
+
+Notifications - Système complet de notifications
+
+Profil utilisateur - Informations personnelles et vérification
+
+Paramètres - Configuration du compte
+
+🚀 POUR COMMENCER:
+Crée la structure de dossiers comme indiqué
+
+Ajoute les routes dans ton App.js
+
+Connecte Redux pour les actions dashboard
+
+Ajoute le lien dans ton menu principal:
+
+jsx
+
+
+
+src/
+├── pages/
+│   └── Dashboard.jsx          ← Ya lo tienes (usarás este que te envié)
+│
+├── components/
+│   └── DashboardUser/         ← Carpeta principal del dashboard
+│       ├── DashboardLayout/   ← Layout principal con sidebar
+│       │   ├── index.js       ← Export principal
+│       │   ├── DashboardLayout.jsx  ← Layout principal
+│       │   ├── Sidebar.jsx    ← Barra lateral de navegación
+│       │   ├── Header.jsx     ← Encabezado del dashboard
+│       │   └── MobileMenu.jsx ← Menú para móviles
+│       │
+│       ├── Overview/          ← Vue d'ensemble / Estadísticas generales
+│       │   ├── index.js       ← Export principal
+│       │   ├── Overview.jsx   ← Componente principal de Overview
+│       │   ├── StatsCards.jsx ← Tarjetas de estadísticas
+│       │   ├── RecentActivity.jsx ← Actividad reciente
+│       │   └── PerformanceChart.jsx ← Gráfico de rendimiento
+│       │
+│       ├── Annonces/          ← Gestión de anuncios
+│       │   ├── index.js       ← Export principal
+│       │   ├── Annonces.jsx   ← Componente principal
+│       │   ├── AnnoncesList.jsx ← Lista de anuncios
+│       │   ├── AnnonceCard.jsx ← Tarjeta individual de anuncio
+│       │   ├── CreateAnnonce.jsx ← Formulario crear anuncio
+│       │   └── AnnonceFilters.jsx ← Filtros de anuncios
+│       │
+│       ├── Boutique/          ← Gestión de boutique
+│       │   ├── index.js       ← Export principal
+│       │   ├── Boutique.jsx   ← Componente principal
+│       │   ├── BoutiqueInfo.jsx ← Información de la boutique
+│       │   ├── CreateBoutique.jsx ← Crear boutique
+│       │   ├── BoutiqueStats.jsx ← Estadísticas
+│       │   └── UpgradeBoutique.jsx ← Mejorar plan
+│       │
+│       ├── Publicite/         ← Publicidad
+│       │   ├── index.js       ← Export principal
+│       │   ├── Publicite.jsx  ← Componente principal
+│       │   ├── AdCampaigns.jsx ← Campañas publicitarias
+│       │   ├── CreateAd.jsx   ← Crear anuncio publicitario
+│       │   ├── AdStats.jsx    ← Estadísticas de ads
+│       │   └── AdBudget.jsx   ← Gestión de presupuesto
+│       │
+│       ├── Commandes/         ← Pedidos y transacciones
+│       │   ├── index.js       ← Export principal
+│       │   ├── Commandes.jsx  ← Componente principal
+│       │   ├── CommandesList.jsx ← Lista de pedidos
+│       │   ├── CommandeDetail.jsx ← Detalle de pedido
+│       │   ├── Transactions.jsx ← Transacciones
+│       │   └── Paiements.jsx  ← Pagos
+│       │
+│       ├── Conversations/     ← Mensajes y chats
+│       │   ├── index.js       ← Export principal
+│       │   ├── Conversations.jsx ← Componente principal
+│       │   ├── ChatList.jsx   ← Lista de chats
+│       │   ├── ChatWindow.jsx ← Ventana de chat
+│       │   ├── AdminMessages.jsx ← Mensajes de admin
+│       │   └── SupportChat.jsx ← Chat de soporte
+│       │
+│       ├── Notifications/     ← Notificaciones
+│       │   ├── index.js       ← Export principal
+│       │   ├── Notifications.jsx ← Componente principal
+│       │   ├── NotificationsList.jsx ← Lista de notificaciones
+│       │   ├── NotificationCard.jsx ← Tarjeta individual
+│       │   └── NotificationSettings.jsx ← Configuración
+│       │
+│       ├── Profil/            ← Información personal
+│       │   ├── index.js       ← Export principal
+│       │   ├── Profil.jsx     ← Componente principal
+│       │   ├── InfoPersonnelle.jsx ← Info personal
+│       │   ├── Verification.jsx ← Verificación
+│       │   ├── Security.jsx   ← Seguridad
+│       │   └── Preferences.jsx ← Preferencias
+│       │
+│       ├── Parametres/        ← Configuraciones
+│       │   ├── index.js       ← Export principal
+│       │   ├── Parametres.jsx ← Componente principal
+│       │   ├── GeneralSettings.jsx ← Config general
+│       │   ├── PrivacySettings.jsx ← Privacidad
+│       │   └── AccountSettings.jsx ← Config cuenta
+│       │
+│       └── Shared/
+│           ├── index.js       ← Export principal
+│           ├── LoadingSkeleton.jsx ← Esqueleto de carga
+│           ├── EmptyState.jsx ← Estado vacío
+│           ├── StatCard.jsx   ← Tarjeta de estadística
+│           └── Breadcrumb.jsx ← Migas de pan

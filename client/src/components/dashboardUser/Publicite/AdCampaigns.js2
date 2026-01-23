@@ -1,0 +1,319 @@
+// src/components/DashboardUser/Publicite/AdCampaigns.jsx
+import React, { useState } from 'react';
+import { 
+    Card, 
+    Row, 
+    Col, 
+    Badge, 
+    Button, 
+    Table,
+    ProgressBar,
+    Alert,
+    Form
+} from 'react-bootstrap';
+import { 
+    Megaphone,
+    Eye,
+    Click,
+    CurrencyDollar,
+    Calendar,
+    GraphUp,
+    PauseCircle,
+    PlayCircle,
+    Trash,
+    Edit,
+    Plus
+} from 'react-bootstrap-icons';
+
+const AdCampaigns = () => {
+    const [campaigns, setCampaigns] = useState([
+        {
+            id: 1,
+            name: 'Promo Électronique',
+            type: 'Annonce boostée',
+            status: 'active',
+            statusColor: 'success',
+            budget: '5,000 DA',
+            spent: '3,250 DA',
+            impressions: '12,456',
+            clicks: '348',
+            ctr: '2.8%',
+            startDate: '2024-01-01',
+            endDate: '2024-01-31',
+            target: 'Alger, Oran'
+        },
+        {
+            id: 2,
+            name: 'Black Friday',
+            type: 'Campagne saisonnière',
+            status: 'paused',
+            statusColor: 'warning',
+            budget: '10,000 DA',
+            spent: '2,150 DA',
+            impressions: '8,234',
+            clicks: '189',
+            ctr: '2.3%',
+            startDate: '2024-11-20',
+            endDate: '2024-11-27',
+            target: 'National'
+        },
+        {
+            id: 3,
+            name: 'Lancement boutique',
+            type: 'Campagne branding',
+            status: 'completed',
+            statusColor: 'info',
+            budget: '15,000 DA',
+            spent: '15,000 DA',
+            impressions: '45,678',
+            clicks: '1,234',
+            ctr: '2.7%',
+            startDate: '2023-12-01',
+            endDate: '2023-12-31',
+            target: 'Jeunes 18-35 ans'
+        }
+    ]);
+
+    const adTypes = [
+        { id: 'boosted', name: 'Annonce boostée', icon: '🚀', desc: 'Augmente la visibilité de vos annonces' },
+        { id: 'banner', name: 'Bannière', icon: '🖼️', desc: 'Publicité sur les pages principales' },
+        { id: 'email', name: 'Email marketing', icon: '📧', desc: 'Campagne email ciblée' },
+        { id: 'push', name: 'Notifications push', icon: '🔔', desc: 'Notifications sur l\'application' }
+    ];
+
+    const budgetStats = {
+        totalBudget: '30,000 DA',
+        totalSpent: '20,400 DA',
+        remaining: '9,600 DA',
+        roi: '156%'
+    };
+
+    const toggleCampaignStatus = (id) => {
+        setCampaigns(campaigns.map(campaign => {
+            if (campaign.id === id) {
+                const newStatus = campaign.status === 'active' ? 'paused' : 'active';
+                return {
+                    ...campaign,
+                    status: newStatus,
+                    statusColor: newStatus === 'active' ? 'success' : 'warning'
+                };
+            }
+            return campaign;
+        }));
+    };
+
+    return (
+        <div>
+            {/* En-tête */}
+            <Card className="border-0 shadow-sm mb-4">
+                <Card.Body className="p-4">
+                    <div className="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h4 className="mb-1">Campagnes publicitaires</h4>
+                            <p className="text-muted mb-0">
+                                Gérez vos publicités et suivez les performances
+                            </p>
+                        </div>
+                        <Button variant="primary" className="rounded-pill px-4">
+                            <Plus size={18} className="me-2" />
+                            Nouvelle campagne
+                        </Button>
+                    </div>
+
+                    {/* Statistiques budget */}
+                    <Row className="g-4 mb-4">
+                        <Col xs={6} md={3}>
+                            <div className="border rounded-3 p-3 text-center">
+                                <div className="text-primary mb-2">
+                                    <CurrencyDollar size={24} />
+                                </div>
+                                <h5 className="fw-bold mb-1">{budgetStats.totalBudget}</h5>
+                                <small className="text-muted">Budget total</small>
+                            </div>
+                        </Col>
+                        <Col xs={6} md={3}>
+                            <div className="border rounded-3 p-3 text-center">
+                                <div className="text-success mb-2">
+                                    <GraphUp size={24} />
+                                </div>
+                                <h5 className="fw-bold mb-1">{budgetStats.totalSpent}</h5>
+                                <small className="text-muted">Dépensé</small>
+                            </div>
+                        </Col>
+                        <Col xs={6} md={3}>
+                            <div className="border rounded-3 p-3 text-center">
+                                <div className="text-warning mb-2">
+                                    <Calendar size={24} />
+                                </div>
+                                <h5 className="fw-bold mb-1">{budgetStats.remaining}</h5>
+                                <small className="text-muted">Restant</small>
+                            </div>
+                        </Col>
+                        <Col xs={6} md={3}>
+                            <div className="border rounded-3 p-3 text-center">
+                                <div className="text-danger mb-2">
+                                    <Click size={24} />
+                                </div>
+                                <h5 className="fw-bold mb-1">{budgetStats.roi}</h5>
+                                <small className="text-muted">ROI</small>
+                            </div>
+                        </Col>
+                    </Row>
+                </Card.Body>
+            </Card>
+
+            {/* Types de publicité */}
+            <Card className="border-0 shadow-sm mb-4">
+                <Card.Body className="p-4">
+                    <h5 className="mb-4">Types de publicité disponibles</h5>
+                    <Row className="g-4">
+                        {adTypes.map(type => (
+                            <Col key={type.id} xs={6} md={3}>
+                                <Card className="border h-100 hover-lift">
+                                    <Card.Body className="text-center p-4">
+                                        <div className="display-4 mb-3">{type.icon}</div>
+                                        <h6 className="fw-bold mb-2">{type.name}</h6>
+                                        <p className="text-muted small mb-3">{type.desc}</p>
+                                        <Button variant="outline-primary" size="sm" className="rounded-pill">
+                                            En savoir plus
+                                        </Button>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        ))}
+                    </Row>
+                </Card.Body>
+            </Card>
+
+            {/* Liste des campagnes */}
+            <Card className="border-0 shadow-sm">
+                <Card.Body className="p-0">
+                    <div className="p-4 border-bottom">
+                        <div className="d-flex justify-content-between align-items-center">
+                            <h5 className="mb-0">Mes campagnes actives</h5>
+                            <Form.Select className="w-auto">
+                                <option>Trier par date</option>
+                                <option>Trier par budget</option>
+                                <option>Trier par performance</option>
+                            </Form.Select>
+                        </div>
+                    </div>
+
+                    <Table hover className="mb-0">
+                        <thead>
+                            <tr>
+                                <th>Campagne</th>
+                                <th>Statut</th>
+                                <th>Budget</th>
+                                <th>Performance</th>
+                                <th>Période</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {campaigns.map(campaign => (
+                                <tr key={campaign.id}>
+                                    <td>
+                                        <div>
+                                            <h6 className="mb-1">{campaign.name}</h6>
+                                            <small className="text-muted">{campaign.type}</small>
+                                            <div className="small">
+                                                <i className="fas fa-target me-1"></i>
+                                                {campaign.target}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <Badge bg={campaign.statusColor} className="px-3 py-2">
+                                            {campaign.status === 'active' ? 'Active' : 
+                                             campaign.status === 'paused' ? 'En pause' : 'Terminée'}
+                                        </Badge>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <div className="fw-bold">{campaign.budget}</div>
+                                            <small className="text-muted">Dépensé: {campaign.spent}</small>
+                                            <ProgressBar 
+                                                now={(parseInt(campaign.spent.replace(/[^0-9]/g, '')) / parseInt(campaign.budget.replace(/[^0-9]/g, ''))) * 100} 
+                                                className="mt-1"
+                                                style={{ height: '4px' }}
+                                            />
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <div className="d-flex align-items-center mb-1">
+                                                <Eye size={14} className="text-primary me-2" />
+                                                <small>{campaign.impressions}</small>
+                                            </div>
+                                            <div className="d-flex align-items-center mb-1">
+                                                <Click size={14} className="text-success me-2" />
+                                                <small>{campaign.clicks}</small>
+                                            </div>
+                                            <div>
+                                                <small>CTR: {campaign.ctr}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <div className="small">
+                                                <Calendar size={12} className="me-1" />
+                                                Début: {new Date(campaign.startDate).toLocaleDateString('fr-FR')}
+                                            </div>
+                                            <div className="small">
+                                                <Calendar size={12} className="me-1" />
+                                                Fin: {new Date(campaign.endDate).toLocaleDateString('fr-FR')}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div className="d-flex gap-2">
+                                            <Button 
+                                                variant="outline-primary" 
+                                                size="sm"
+                                                onClick={() => toggleCampaignStatus(campaign.id)}
+                                            >
+                                                {campaign.status === 'active' ? (
+                                                    <PauseCircle size={16} />
+                                                ) : (
+                                                    <PlayCircle size={16} />
+                                                )}
+                                            </Button>
+                                            <Button variant="outline-success" size="sm">
+                                                <Edit size={16} />
+                                            </Button>
+                                            <Button variant="outline-danger" size="sm">
+                                                <Trash size={16} />
+                                            </Button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Table>
+                </Card.Body>
+            </Card>
+
+            {/* Conseils */}
+            <Alert variant="info" className="border-0 shadow-sm mt-4">
+                <div className="d-flex">
+                    <div className="flex-shrink-0">
+                        <Megaphone size={24} className="me-3" />
+                    </div>
+                    <div>
+                        <h6 className="alert-heading">Conseils pour optimiser vos publicités</h6>
+                        <ul className="mb-0">
+                            <li>Utilisez des images de haute qualité pour augmenter le CTR</li>
+                            <li>Ciblez des audiences spécifiques pour de meilleurs résultats</li>
+                            <li>Testez différents horaires de publication</li>
+                            <li>Analysez régulièrement vos performances</li>
+                        </ul>
+                    </div>
+                </div>
+            </Alert>
+        </div>
+    );
+};
+
+export default AdCampaigns;
