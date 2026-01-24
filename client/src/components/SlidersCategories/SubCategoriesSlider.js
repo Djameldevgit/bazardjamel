@@ -1,10 +1,6 @@
-// SubCategorySlider.jsx - VERSIÓN IDÉNTICA A CategorySlider
 import React, { useState, useEffect } from "react";
-import Slider from "react-slick";
 import { useHistory } from "react-router-dom";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
- 
+
 const SubCategorySlider = ({ 
   subcategories = [], 
   currentCategory,
@@ -13,105 +9,83 @@ const SubCategorySlider = ({
   const history = useHistory();
   const [imageErrors, setImageErrors] = useState({});
   const [currentPage, setCurrentPage] = useState(0);
-  const [debugInfo, setDebugInfo] = useState({});
+  const [itemsPerPage, setItemsPerPage] = useState(6); // 6 por defecto (3x2)
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
+  // Detectar cambios en el tamaño de la ventana
   useEffect(() => {
-    console.log('🔍 DEBUG SubCategorySlider - Props recibidas:', {
-      totalSubcategories: subcategories.length,
-      currentCategoryName: currentCategory?.name,
-      currentCategorySlug: currentCategory?.slug,
-      
-      // Verificar PRIMERA subcategoría
-      primeraSubcat: subcategories[0] || null,
-      primeraSubcatIcon: subcategories[0]?.icon || 'NO TIENE',
-      primeraSubcatName: subcategories[0]?.name || 'NO NOMBRE',
-      
-      // Verificar TODAS las subcategorías
-      subcatsConIcono: subcategories.filter(sc => sc.icon).length,
-      subcatsSinIcono: subcategories.filter(sc => !sc.icon).length,
-      
-      // Estructura completa de la primera
-      estructuraCompletaPrimera: subcategories[0] ? {
-        campos: Object.keys(subcategories[0]),
-        valores: subcategories[0]
-      } : 'No hay subcategorías'
-    });
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
 
-    // Guardar info para mostrar en UI
-    setDebugInfo({
-      total: subcategories.length,
-      conIcono: subcategories.filter(sc => sc.icon).length,
-      primeraIcon: subcategories[0]?.icon || 'No tiene',
-      primeraNombre: subcategories[0]?.name || 'Sin nombre'
-    });
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-    // Mostrar todas las subcategorías
-    if (subcategories.length > 0) {
-      console.log('📋 LISTA COMPLETA DE SUBCATEGORÍAS:');
-      subcategories.forEach((sc, i) => {
-        console.log(`${i}. ${sc.name}:`, {
-          icon: sc.icon || '❌ NO',
-          iconType: sc.iconType,
-          iconColor: sc.iconColor,
-          bgColor: sc.bgColor,
-          nivel: sc.level,
-          slug: sc.slug
-        });
+  // Determinar cuántos iconos mostrar según el ancho de pantalla
+  useEffect(() => {
+    if (windowWidth <= 767) {
+      // MÓVIL/ANDROID: 8 iconos (4x2)
+      setItemsPerPage(8);
+    } else if (windowWidth <= 1023) {
+      // TABLET: 6 iconos (3x2)
+      setItemsPerPage(6);
+    } else if (windowWidth <= 1439) {
+      // DESKTOP: 8 iconos (4x2)
+      setItemsPerPage(8);
+    } else {
+      // PANTALLAS MUY GRANDES: 10 iconos (5x2)
+      setItemsPerPage(10);
+    }
+  }, [windowWidth]);
+
+  // Calcular columnas por fila
+  const columnsPerRow = itemsPerPage / 2;
+
+  // Crear páginas con exactamente 2 filas cada una
+  const createPages = () => {
+    const pages = [];
+    
+    for (let i = 0; i < subcategories.length; i += itemsPerPage) {
+      const pageSubcategories = subcategories.slice(i, i + itemsPerPage);
+      
+      const row1 = pageSubcategories.slice(0, columnsPerRow);
+      const row2 = pageSubcategories.slice(columnsPerRow, itemsPerPage);
+      
+      const filledRow2 = [...row2];
+      while (filledRow2.length < columnsPerRow) {
+        filledRow2.push(null);
+      }
+      
+      pages.push({
+        row1,
+        row2: filledRow2,
+        pageNumber: pages.length + 1
       });
     }
-  }, [subcategories, currentCategory]);
-
-  // ⭐ MISMAS CONFIGURACIONES QUE CategorySlider
-  const CATEGORIES_PER_PAGE = 6; // 6 por página (3x2)
-  const COLUMNS_PER_ROW = 3; // 3 columnas por fila
-
-  // Calcular páginas
-  const totalPages = Math.ceil(subcategories.length / CATEGORIES_PER_PAGE);
-  
-  // Dividir en páginas de 2 filas (IDÉNTICO)
-  const getPages = () => {
-    const pages = [];
-    for (let i = 0; i < subcategories.length; i += CATEGORIES_PER_PAGE) {
-      const pageItems = subcategories.slice(i, i + CATEGORIES_PER_PAGE);
-      const row1 = pageItems.slice(0, COLUMNS_PER_ROW);
-      const row2 = pageItems.slice(COLUMNS_PER_ROW, CATEGORIES_PER_PAGE);
-      pages.push({ row1, row2 });
-    }
+    
     return pages;
   };
 
-  const pages = getPages();
+  const pages = createPages();
+  const totalPages = pages.length;
 
-  // ⭐ CONFIGURACIÓN SLICK IDÉNTICA
-  const settings = {
-    dots: true,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    arrows: true,
-    autoplay: false,
-    beforeChange: (current, next) => setCurrentPage(next),
-    appendDots: dots => (
-      <div className="slider-dots-container">
-        <ul className="slider-dots">{dots}</ul>
-      </div>
-    ),
-    customPaging: i => (
-      <div className={`custom-dot ${i === currentPage ? 'active' : ''}`}></div>
-    ),
-    responsive: [
-      {
-        breakpoint: 768,
-        settings: {
-          arrows: false,
-          dots: true
-        }
-      }
-    ]
+  // Navegación
+  const goToNextPage = () => {
+    setCurrentPage(prev => (prev < totalPages - 1 ? prev + 1 : 0));
+  };
+
+  const goToPrevPage = () => {
+    setCurrentPage(prev => (prev > 0 ? prev - 1 : totalPages - 1));
+  };
+
+  const goToPage = (pageIndex) => {
+    setCurrentPage(pageIndex);
   };
 
   const handleClick = (subcategory) => {
+    if (!subcategory) return;
+    
     if (onSubcategoryClick) {
       onSubcategoryClick(subcategory);
     } else if (currentCategory?.slug) {
@@ -120,131 +94,173 @@ const SubCategorySlider = ({
   };
 
   const handleImageError = (subcatId, imageUrl) => {
-    console.error(`❌ Error cargando imagen subcategoría: ${imageUrl}`);
+    console.error(`Error cargando imagen: ${imageUrl}`);
     setImageErrors(prev => ({ ...prev, [subcatId]: true }));
   };
-
-  // ⭐ DEBUG: Verificar datos recibidos
-  useEffect(() => {
-    console.log('🔍 SubCategorySlider - Datos recibidos:', {
-      totalSubcategories: subcategories.length,
-      currentCategory: currentCategory?.name,
-      firstSubcat: subcategories[0] || {},
-      // Verificar rutas de imágenes
-      imagePaths: subcategories.slice(0, 3).map(sc => ({
-        name: sc.name,
-        icon: sc.icon,
-        hasIcon: !!sc.icon
-      }))
-    });
-  }, [subcategories, currentCategory]);
 
   // Si no hay subcategorías
   if (!subcategories || subcategories.length === 0) {
     return (
-      <div className="no-subcategories">
-        <div className="empty-icon">📂</div>
-        <h3>Aucune sous-catégorie disponible</h3>
-        <p>Les sous-catégories seront bientôt ajoutées</p>
+      <div className="cs-no-subcategories">
+        <div className="cs-empty-icon">📂</div>
+        <h3 className="cs-no-subcategories-title">Aucune sous-catégorie disponible</h3>
+        <p className="cs-no-subcategories-description">
+          Les sous-catégories seront bientôt ajoutées
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="category-slider-container"> {/* ⭐ MISMA CLASE */}
-      <div className="slider-header">
-        <h2 className="slider-title">
-          Sous-catégories de <span style={{ color: '#4ECDC4' }}>{currentCategory?.name || ''}</span>
+    <div className="cs-slider-final cs-subcategory-slider">
+      <div className="cs-slider-header">
+        <h2 className="cs-slider-title">
+          <span className="cs-category-name">{currentCategory?.name || "Catégorie"}</span>
+          <span className="cs-slider-subtitle"> - Sous-catégories</span>
         </h2>
-        <div className="page-indicator">
-          <span className="current-page">{currentPage + 1}</span>
-          <span className="separator">/</span>
-          <span className="total-pages">{totalPages}</span>
+        <div className="cs-page-indicator">
+          <span className="cs-current-page">{currentPage + 1}</span>
+          <span className="cs-separator">/</span>
+          <span className="cs-total-pages">{totalPages}</span>
         </div>
       </div>
       
-      <div className="slider-wrapper">
-        <Slider {...settings}>
-          {pages.map((page, pageIndex) => (
-            <div key={pageIndex} className="slider-page">
-              {/* ⭐ PRIMERA FILA - 3 iconos (IDÉNTICO) */}
-              <div className="slider-row">
-                {page.row1.map((subcat) => (
-                  <div
-                    key={subcat._id || subcat.slug}
-                    className="category-item" // ⭐ MISMA CLASE
-                    onClick={() => handleClick(subcat)}
-                  >
-                    <div className="image-container">
-                      {subcat.icon && !imageErrors[subcat._id] ? (
-                        <img 
-                          src={subcat.icon}
-                          alt={subcat.name || "Sous-catégorie"}
-                          className="category-image" // ⭐ MISMA CLASE
-                          onError={() => handleImageError(subcat._id, subcat.icon)}
-                          onLoad={() => console.log(`✅ ${subcat.name} cargada: ${subcat.icon}`)}
-                        />
-                      ) : (
-                        <div className="image-fallback">
-                          {subcat.name ? subcat.name.charAt(0).toUpperCase() : "S"}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="category-name">
-                      {subcat.name || "Sans nom"}
-                    </div>
-                    
-                    {/* Opcional: Mostrar contador de productos si existe */}
-                    {subcat.postCount > 0 && (
-                      <div className="product-count">
-                        {subcat.postCount}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              
-              {/* ⭐ SEGUNDA FILA - 3 iconos (si hay) (IDÉNTICO) */}
-              {page.row2.length > 0 && (
-                <div className="slider-row second-row">
-                  {page.row2.map((subcat) => (
-                    <div
-                      key={subcat._id || subcat.slug}
-                      className="category-item" // ⭐ MISMA CLASE
-                      onClick={() => handleClick(subcat)}
-                    >
-                      <div className="image-container">
+      <div className="cs-slider-container">
+        {/* Página actual */}
+        {pages.length > 0 && (
+          <div className="cs-slider-page cs-active">
+            {/* Primera fila */}
+            <div className="cs-category-row cs-first-row">
+              {pages[currentPage].row1.map((subcat, index) => (
+                <div
+                  key={subcat?._id || `cs-sub-empty-${index}`}
+                  className={`cs-category-item ${subcat ? '' : 'cs-empty-item'}`}
+                  onClick={() => handleClick(subcat)}
+                  style={{ 
+                    '--cs-item-delay': index,
+                    '--cs-icon-bg-color': subcat?.iconColor || '#e3f2fd'
+                  }}
+                >
+                  {subcat ? (
+                    <>
+                      <div className="cs-image-container">
                         {subcat.icon && !imageErrors[subcat._id] ? (
                           <img 
                             src={subcat.icon}
                             alt={subcat.name || "Sous-catégorie"}
-                            className="category-image" // ⭐ MISMA CLASE
+                            className="cs-category-image"
                             onError={() => handleImageError(subcat._id, subcat.icon)}
                           />
                         ) : (
-                          <div className="image-fallback">
+                          <div className="cs-image-fallback">
                             {subcat.name ? subcat.name.charAt(0).toUpperCase() : "S"}
                           </div>
                         )}
                       </div>
                       
-                      <div className="category-name">
+                      <div className="cs-category-name">
                         {subcat.name || "Sans nom"}
                       </div>
                       
                       {subcat.postCount > 0 && (
-                        <div className="product-count">
+                        <div className="cs-product-count">
                           {subcat.postCount}
                         </div>
                       )}
-                    </div>
-                  ))}
+                    </>
+                  ) : (
+                    <div className="cs-empty-space"></div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
-          ))}
-        </Slider>
+            
+            {/* Segunda fila */}
+            <div className="cs-category-row cs-second-row">
+              {pages[currentPage].row2.map((subcat, index) => (
+                <div
+                  key={subcat?._id || `cs-sub-empty2-${index}`}
+                  className={`cs-category-item ${subcat ? '' : 'cs-empty-item'}`}
+                  onClick={() => handleClick(subcat)}
+                  style={{ 
+                    '--cs-item-delay': index + columnsPerRow,
+                    '--cs-icon-bg-color': subcat?.iconColor || '#e3f2fd'
+                  }}
+                >
+                  {subcat ? (
+                    <>
+                      <div className="cs-image-container">
+                        {subcat.icon && !imageErrors[subcat._id] ? (
+                          <img 
+                            src={subcat.icon}
+                            alt={subcat.name || "Sous-catégorie"}
+                            className="cs-category-image"
+                            onError={() => handleImageError(subcat._id, subcat.icon)}
+                          />
+                        ) : (
+                          <div className="cs-image-fallback">
+                            {subcat.name ? subcat.name.charAt(0).toUpperCase() : "S"}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="cs-category-name">
+                        {subcat.name || "Sans nom"}
+                      </div>
+                      
+                      {subcat.postCount > 0 && (
+                        <div className="cs-product-count">
+                          {subcat.postCount}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="cs-empty-space"></div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Navegación */}
+        {totalPages > 1 && (
+          <div className="cs-slider-controls">
+            <button 
+              className="cs-nav-btn cs-prev-btn"
+              onClick={goToPrevPage}
+              aria-label="Página anterior"
+            >
+              ‹
+            </button>
+            
+            <div className="cs-page-indicators">
+              {pages.map((_, index) => (
+                <button
+                  key={index}
+                  className={`cs-page-indicator-btn ${index === currentPage ? 'cs-active' : ''}`}
+                  onClick={() => goToPage(index)}
+                  aria-label={`Ir a página ${index + 1}`}
+                >
+                  {index + 1}
+                </button>
+              ))}
+            </div>
+            
+            <button 
+              className="cs-nav-btn cs-next-btn"
+              onClick={goToNextPage}
+              aria-label="Página siguiente"
+            >
+              ›
+            </button>
+          </div>
+        )}
+      </div>
+      
+      {/* Contador de subcategorías */}
+      <div className="cs-categories-counter">
+        {subcategories.length} sous-catégories • Page {currentPage + 1} sur {totalPages}
       </div>
     </div>
   );

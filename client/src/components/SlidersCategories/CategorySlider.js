@@ -1,66 +1,83 @@
 import React, { useState, useEffect } from "react";
-import Slider from "react-slick";
 import { useHistory } from "react-router-dom";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
- 
 
 const CategorySlider = ({ categories = [], onCategoryClick }) => {
   const history = useHistory();
   const [imageErrors, setImageErrors] = useState({});
   const [currentPage, setCurrentPage] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(8);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
-  // Configuración fija: 3 columnas × 2 filas = 6 categorías por página
-  const CATEGORIES_PER_PAGE = 6;
-  const COLUMNS_PER_ROW = 3;
+  // Detectar cambios en el tamaño de la ventana 
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
 
-  // Calcular páginas
-  const totalPages = Math.ceil(categories.length / CATEGORIES_PER_PAGE);
-  
-  // Dividir en páginas de 2 filas
-  const getPages = () => {
-    const pages = [];
-    for (let i = 0; i < categories.length; i += CATEGORIES_PER_PAGE) {
-      const pageItems = categories.slice(i, i + CATEGORIES_PER_PAGE);
-      const row1 = pageItems.slice(0, COLUMNS_PER_ROW);
-      const row2 = pageItems.slice(COLUMNS_PER_ROW, CATEGORIES_PER_PAGE);
-      pages.push({ row1, row2 });
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Determinar cuántos iconos mostrar según el ancho de pantalla
+  useEffect(() => {
+    if (windowWidth <= 767) {
+      setItemsPerPage(8);
+    } else if (windowWidth <= 1023) {
+      setItemsPerPage(6);
+    } else if (windowWidth <= 1439) {
+      setItemsPerPage(8);
+    } else {
+      setItemsPerPage(10);
     }
+  }, [windowWidth]);
+
+  // Calcular columnas por fila
+  const columnsPerRow = itemsPerPage / 2;
+
+  // Crear páginas con exactamente 2 filas cada una
+  const createPages = () => {
+    const pages = [];
+    
+    for (let i = 0; i < categories.length; i += itemsPerPage) {
+      const pageCategories = categories.slice(i, i + itemsPerPage);
+      
+      const row1 = pageCategories.slice(0, columnsPerRow);
+      const row2 = pageCategories.slice(columnsPerRow, itemsPerPage);
+      
+      const filledRow2 = [...row2];
+      while (filledRow2.length < columnsPerRow) {
+        filledRow2.push(null);
+      }
+      
+      pages.push({
+        row1,
+        row2: filledRow2,
+        pageNumber: pages.length + 1
+      });
+    }
+    
     return pages;
   };
 
-  const pages = getPages();
+  const pages = createPages();
+  const totalPages = pages.length;
 
-  // Configuración del slider Slick
-  const settings = {
-    dots: true,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    arrows: true,
-    autoplay: false,
-    beforeChange: (current, next) => setCurrentPage(next),
-    appendDots: dots => (
-      <div className="slider-dots-container">
-        <ul className="slider-dots">{dots}</ul>
-      </div>
-    ),
-    customPaging: i => (
-      <div className={`custom-dot ${i === currentPage ? 'active' : ''}`}></div>
-    ),
-    responsive: [
-      {
-        breakpoint: 768,
-        settings: {
-          arrows: false,
-          dots: true
-        }
-      }
-    ]
+  // Navegación
+  const goToNextPage = () => {
+    setCurrentPage(prev => (prev < totalPages - 1 ? prev + 1 : 0));
+  };
+
+  const goToPrevPage = () => {
+    setCurrentPage(prev => (prev > 0 ? prev - 1 : totalPages - 1));
+  };
+
+  const goToPage = (pageIndex) => {
+    setCurrentPage(pageIndex);
   };
 
   const handleClick = (category) => {
+    if (!category) return;
+    
     if (onCategoryClick) {
       onCategoryClick(category);
     } else {
@@ -76,106 +93,160 @@ const CategorySlider = ({ categories = [], onCategoryClick }) => {
   // Si no hay categorías
   if (!categories || categories.length === 0) {
     return (
-      <div className="no-categories">
-        <div className="empty-icon">📦</div>
-        <h3>Aucune catégorie disponible</h3>
-        <p>Les catégories seront bientôt ajoutées</p>
+      <div className="cs-no-categories">
+        <div className="cs-empty-icon">📦</div>
+        <h3 className="cs-no-categories-title">Aucune catégorie disponible</h3>
+        <p className="cs-no-categories-description">Les catégories seront bientôt ajoutées</p>
       </div>
     );
   }
 
   return (
-    <div className="category-slider-container">
-      <div className="slider-header">
-        <h2 className="slider-title">Catégories Principales</h2>
-        <div className="page-indicator">
-          <span className="current-page">{currentPage + 1}</span>
-          <span className="separator">/</span>
-          <span className="total-pages">{totalPages}</span>
+    <div className="cs-slider-final">
+      <div className="cs-slider-header">
+        <h2 className="cs-slider-title">Catégories Principales</h2>
+        <div className="cs-page-indicator">
+          <span className="cs-current-page">{currentPage + 1}</span>
+          <span className="cs-separator">/</span>
+          <span className="cs-total-pages">{totalPages}</span>
         </div>
       </div>
       
-      <div className="slider-wrapper">
-        <Slider {...settings}>
-          {pages.map((page, pageIndex) => (
-            <div key={pageIndex} className="slider-page">
-              {/* PRIMERA FILA - 3 iconos */}
-              <div className="slider-row">
-                {page.row1.map((cat) => (
-                  <div
-                    key={cat._id}
-                    className="category-item"
-                    onClick={() => handleClick(cat)}
-                  >
-                    <div className="image-container">
-                      {cat.icon && !imageErrors[cat._id] ? (
-                        <img 
-                          src={cat.icon}
-                          alt={cat.name || "Catégorie"}
-                          className="category-image"
-                          onError={() => handleImageError(cat._id, cat.icon)}
-                          onLoad={() => console.log(`✅ ${cat.name} cargada`)}
-                        />
-                      ) : (
-                        <div className="image-fallback">
-                          {cat.name ? cat.name.charAt(0).toUpperCase() : "C"}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="category-name">
-                      {cat.name || "Sans nom"}
-                    </div>
-                    
-                    {cat.posts && cat.posts.length > 0 && (
-                      <div className="product-count">
-                        {cat.posts.length}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              
-              {/* SEGUNDA FILA - 3 iconos (si hay) */}
-              {page.row2.length > 0 && (
-                <div className="slider-row second-row">
-                  {page.row2.map((cat) => (
-                    <div
-                      key={cat._id}
-                      className="category-item"
-                      onClick={() => handleClick(cat)}
-                    >
-                      <div className="image-container">
+      <div className="cs-slider-container">
+        {pages.length > 0 && (
+          <div className="cs-slider-page cs-active">
+            {/* Primera fila */}
+            <div className="cs-category-row cs-first-row">
+              {pages[currentPage].row1.map((cat, index) => (
+                <div
+                  key={cat?._id || `cs-empty-${index}`}
+                  className={`cs-category-item ${cat ? '' : 'cs-empty-item'}`}
+                  onClick={() => handleClick(cat)}
+                  style={{ 
+                    '--cs-item-delay': index,
+                    '--cs-icon-bg-color': cat?.iconColor || '#f8f9fa'
+                  }}
+                >
+                  {cat ? (
+                    <>
+                      <div className="cs-image-container">
                         {cat.icon && !imageErrors[cat._id] ? (
                           <img 
                             src={cat.icon}
                             alt={cat.name || "Catégorie"}
-                            className="category-image"
+                            className="cs-category-image"
                             onError={() => handleImageError(cat._id, cat.icon)}
                           />
                         ) : (
-                          <div className="image-fallback">
+                          <div className="cs-image-fallback">
                             {cat.name ? cat.name.charAt(0).toUpperCase() : "C"}
                           </div>
                         )}
                       </div>
                       
-                      <div className="category-name">
+                      <div className="cs-category-name">
                         {cat.name || "Sans nom"}
                       </div>
                       
                       {cat.posts && cat.posts.length > 0 && (
-                        <div className="product-count">
+                        <div className="cs-product-count">
                           {cat.posts.length}
                         </div>
                       )}
-                    </div>
-                  ))}
+                    </>
+                  ) : (
+                    <div className="cs-empty-space"></div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
-          ))}
-        </Slider>
+            
+            {/* Segunda fila */}
+            <div className="cs-category-row cs-second-row">
+              {pages[currentPage].row2.map((cat, index) => (
+                <div
+                  key={cat?._id || `cs-empty2-${index}`}
+                  className={`cs-category-item ${cat ? '' : 'cs-empty-item'}`}
+                  onClick={() => handleClick(cat)}
+                  style={{ 
+                    '--cs-item-delay': index + columnsPerRow,
+                    '--cs-icon-bg-color': cat?.iconColor || '#f8f9fa'
+                  }}
+                >
+                  {cat ? (
+                    <>
+                      <div className="cs-image-container">
+                        {cat.icon && !imageErrors[cat._id] ? (
+                          <img 
+                            src={cat.icon}
+                            alt={cat.name || "Catégorie"}
+                            className="cs-category-image"
+                            onError={() => handleImageError(cat._id, cat.icon)}
+                          />
+                        ) : (
+                          <div className="cs-image-fallback">
+                            {cat.name ? cat.name.charAt(0).toUpperCase() : "C"}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="cs-category-name">
+                        {cat.name || "Sans nom"}
+                      </div>
+                      
+                      {cat.posts && cat.posts.length > 0 && (
+                        <div className="cs-product-count">
+                          {cat.posts.length}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="cs-empty-space"></div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Navegación */}
+        {totalPages > 1 && (
+          <div className="cs-slider-controls">
+            <button 
+              className="cs-nav-btn cs-prev-btn"
+              onClick={goToPrevPage}
+              aria-label="Página anterior"
+            >
+              ‹
+            </button>
+            
+            <div className="cs-page-indicators">
+              {pages.map((_, index) => (
+                <button
+                  key={index}
+                  className={`cs-page-indicator-btn ${index === currentPage ? 'cs-active' : ''}`}
+                  onClick={() => goToPage(index)}
+                  aria-label={`Ir a página ${index + 1}`}
+                >
+                  {index + 1}
+                </button>
+              ))}
+            </div>
+            
+            <button 
+              className="cs-nav-btn cs-next-btn"
+              onClick={goToNextPage}
+              aria-label="Página siguiente"
+            >
+              ›
+            </button>
+          </div>
+        )}
+      </div>
+      
+      {/* Contador de categorías */}
+      <div className="cs-categories-counter">
+        {categories.length} catégories disponibles • Page {currentPage + 1} sur {totalPages}
       </div>
     </div>
   );

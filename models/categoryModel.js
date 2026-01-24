@@ -1,4 +1,3 @@
-// models/Category.js
 const mongoose = require('mongoose');
 
 const categorySchema = new mongoose.Schema({
@@ -39,8 +38,10 @@ const categorySchema = new mongoose.Schema({
   },
   
   // Metadata de UI
-  emoji: String,
   icon: String,
+  iconType: String,   // 'image-png', 'emoji', 'svg', etc.
+  iconColor: String,  // color del icono
+  bgColor: String,    // color de fondo
   order: { 
     type: Number, 
     default: 0 

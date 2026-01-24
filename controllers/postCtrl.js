@@ -143,13 +143,7 @@ const postCtrl = {
       let categoryDoc = await Category.findOne({ slug: category }).lean();
       
       // Debug: Ver qué encontramos
-      console.log('📋 Categoría encontrada por slug:', {
-        nombre: categoryDoc?.name,
-        nivel: categoryDoc?.level,
-        slug: categoryDoc?.slug,
-        parent: categoryDoc?.parent,
-        id: categoryDoc?._id
-      });
+   
   
       if (!categoryDoc && mongoose.Types.ObjectId.isValid(category)) {
         categoryDoc = await Category.findById(category).lean();
