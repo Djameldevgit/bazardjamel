@@ -1,0 +1,68 @@
+public/uploads/categories/
+├── electromenager/
+│   ├── level1/
+│   │   └── electromenager.png
+│   ├── level2/
+│   │   ├── televiseurs.png
+│   │   ├── demodulateurs-box-tv.png
+│   │   ├── paraboles-switch-tv.png
+│   │   ├── audio.png
+│   │   ├── aspirateurs-nettoyeurs.png
+│   │   ├── refrigerateurs-congelateurs.png
+│   │   └── machines-a-laver.png
+│   └── level3/
+│       ├── tv-led.png
+│       ├── tv-oled.png
+│       ├── tv-4k.png
+│       ├── tv-smart.png
+│       ├── box-tv-orange.png
+│       ├── box-tv-free.png
+│       ├── demodulateur-hd.png
+│       ├── parabole-hd.png
+│       ├── switch-tv-4k.png
+│       ├── enceintes-bluetooth.png
+│       ├── home-cinema.png
+│       ├── soundbar.png
+│       ├── aspirateur-sans-sac.png
+│       ├── aspirateur-robot.png
+│       ├── nettoyeur-vapeur.png
+│       ├── refrigerateur.png
+│       ├── congelateur.png
+│       ├── refrigerateur-congelateur.png
+│       ├── lave-linge.png
+│       ├── seche-linge.png
+│       ├── lave-vaisselle.png
+│       └── lave-linge-sechant.png
+├── telephones/
+│   ├── level1/
+│   │   └── smartphone.png
+│   ├── level2/
+│   │   ├── smartphones.png
+│   │   ├── tablettes.png
+│   │   ├── accessoires-telephones.png
+│   │   └── chargeurs-cables.png
+│   └── level3/
+│       ├── iphone.png
+│       ├── samsung-galaxy.png
+│       ├── xiaomi.png
+│       ├── huawei.png
+│       ├── ipad.png
+│       ├── tablette-android.png
+│       ├── ecouteurs-bluetooth.png
+│       ├── power-bank.png
+│       └── coques.png
+├── immobilier/
+│   ├── level1/
+│   │   └── house.png
+│   ├── level2/
+│   │   ├── vente.png
+│   │   ├── location.png
+│   │   └── location-vacances.png
+│   └── level3/
+│       ├── appartement.png
+│       ├── villa.png
+│       ├── terrain.png
+│       ├── local-commercial.png
+│       ├── studio.png
+│       ├── appartement-location.png
+│       └── maison

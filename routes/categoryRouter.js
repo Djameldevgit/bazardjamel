@@ -9,11 +9,11 @@ const {
   obtenerSubcategorias,
   buscarCategorias,
   obtenerEstadisticasDeCategorias,
- 
+  obtenerPostsFiltradosPorCategoria
 } = require('../controllers/categoryCtrl');
 
 // ⭐⭐ RUTAS ESPECÍFICAS PRIMERO (antes de parámetros dinámicos)
- 
+router.get('/filter', obtenerPostsFiltradosPorCategoria);
 // 1. Rutas fijas
 router.get('/main', obtenerCategoriasPrincipales);
 router.get('/tree', obtenerArbolDeCategorias);

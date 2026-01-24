@@ -1,0 +1,55 @@
+public/
+└── uploads/
+    └── categories/
+        ├── level1/
+        │   ├── electromenager.png
+        │   ├── smartphone.png
+        │   ├── house.png
+        │   ├── computer.png
+        │   ├── car.png
+        │   └── fashion.png
+        │
+        ├── level2/
+        │   ├── tv.png
+        │   ├── tv-box.png
+        │   ├── satellite.png
+        │   ├── audio.png
+        │   ├── vacuum.png
+        │   ├── fridge.png
+        │   ├── washing-machine.png
+        │   ├── tablet.png
+        │   ├── phone-accessories.png
+        │   ├── charger.png
+        │   ├── sell.png
+        │   ├── rent.png
+        │   ├── vacation-rental.png
+        │   ├── laptop.png
+        │   ├── desktop.png
+        │   ├── printer.png
+        │   ├── motorcycle.png
+        │   ├── boat.png
+        │   ├── mens-clothing.png
+        │   ├── womens-clothing.png
+        │   ├── shoes.png
+        │   └── bag.png
+        │
+        └── level3/
+            ├── tv-led.png
+            ├── tv-oled.png
+            ├── tv-4k.png
+            ├── refrigerator.png
+            ├── freezer.png
+            ├── fridge-freezer.png
+            ├── washing-machine.png
+            ├── dryer.png
+            ├── iphone.png
+            ├── samsung.png
+            ├── xiaomi.png
+            ├── bluetooth-earbuds.png
+            ├── power-bank.png
+            ├── phone-case.png
+            ├── apartment.png
+            ├── villa.png
+            ├── land.png
+            ├── studio.png
+            └── apartment-rent.png

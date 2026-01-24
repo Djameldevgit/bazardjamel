@@ -83,61 +83,123 @@ export const getAllCategoriesWithPosts = (page = 1, limit = 8) => async (dispatc
 };
 
 // ✅ 2. ACCIÓN PARA CATEGORÍA ESPECÍFICA CON POSTS - CORREGIDA COMPLETAMENTE
+// ✅ ACCIÓN COMPLETA Y CORREGIDA PARA CATEGORYPAGE
+// src/redux/actions/categoryAction.js - VERSIÓN ACTUALIZADA
 export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = null, page = 1, limit = 12) => async (dispatch) => {
   try {
     dispatch({ type: types.GET_CATEGORY_POSTS });
 
-    const params = { page, limit };
-    if (categorySlug) params.category = categorySlug;
-    if (subSlug) params.sub = subSlug;
-    if (articleSlug) params.article = articleSlug;
-
-    console.log('📡 Action getCategoryPosts - Llamando API:', params);
-    
-    const { data } = await axios.get(`${API_URL}/api/posts/filter`, { params });
-
-    // ⭐ DEBUG COMPLETO DE LA RESPUESTA
-    console.log('✅ Action getCategoryPosts - Respuesta COMPLETA del backend:', {
-      success: data.success,
-      postsCount: data.posts ? data.posts.length : 0,
-      hasMoreRoot: data.hasMore,                    // hasMore en root
-      hasMorePagination: data.pagination?.hasMore,  // hasMore en pagination
-      totalRoot: data.total,                        // total en root
-      totalPagination: data.pagination?.totalPosts, // total en pagination
-      categoryInfo: data.category,
-      childrenCount: data.children ? data.children.length : 0,
-      pagination: data.pagination,
-      // Muestra los primeros 3 posts para verificar
-      samplePosts: data.posts ? data.posts.slice(0, 3) : []
+    console.log('🚀 Action getCategoryPosts - INICIANDO:', {
+      categorySlug,
+      subSlug,
+      articleSlug,
+      page,
+      limit
     });
 
-    // ⭐ CORRECCIÓN CRÍTICA: Determinar hasMore correctamente
+    // ⭐ DECISIÓN CRÍTICA: ¿Qué necesitamos obtener?
+    let endpoint = '';
+    let params = {};
+    
+    // ⭐⭐ CAMBIO IMPORTANTE: USAR SIEMPRE EL ENDPOINT filterPosts
+    // Este endpoint ahora devuelve todo: categoría, hijos (children) y posts
+    endpoint = `${API_URL}/api/posts/filter`;
+    params = { 
+      category: categorySlug,
+      page: page,
+      limit: limit
+    };
+    
+    // Añadir sub y article si existen
+    if (subSlug) params.sub = subSlug;
+    if (articleSlug) params.article = articleSlug;
+    
+    console.log('🎯 Endpoint único - filterPosts:', endpoint);
+    console.log('📋 Params:', params);
+
+    // ⭐ LLAMADA A LA API
+    console.log('📡 Llamando a API (filterPosts)...');
+    const { data } = await axios.get(endpoint, { params });
+
+    // ⭐ DEBUG COMPLETO DE LA RESPUESTA
+    console.log('✅ Action getCategoryPosts - RESPUESTA COMPLETA:', {
+      success: data.success,
+      endpoint: endpoint,
+      
+      // Información de categoría (viene en categoryInfo ahora)
+      categoryInfo: data.categoryInfo ? '✅ SÍ' : '❌ NO',
+      categoryName: data.categoryInfo?.name,
+      categorySlug: data.categoryInfo?.slug,
+      categoryLevel: data.categoryInfo?.level,
+      
+      // ⭐ CRÍTICO: Verificar HIJOS (vienen en children)
+      childrenCount: data.children ? data.children.length : 0,
+      childrenFromData: data.children ? '✅ SÍ' : '❌ NO',
+      childrenLevels: data.children?.map(c => c.level) || [],
+      
+      // ⭐ MEGA CRÍTICO: Verificar si los hijos tienen ICONOS
+      primerHijo: data.children?.[0] || null,
+      tieneIconoPrimerHijo: data.children?.[0]?.icon ? '✅ SÍ' : '❌ NO',
+      iconoPrimerHijo: data.children?.[0]?.icon || 'NO TIENE',
+      
+      // Verificar TODOS los campos del primer hijo
+      camposPrimerHijo: data.children?.[0] ? Object.keys(data.children[0]) : [],
+      
+      // Información de posts
+      postsCount: data.posts ? data.posts.length : 0,
+      hasMore: data.hasMore !== undefined ? data.hasMore : false,
+      totalPosts: data.total || 0
+    });
+
+    // ⭐ SI HAY HIJOS, MOSTRAR TODOS CON SUS ICONOS
+    const childrenList = data.children || [];
+    if (childrenList.length > 0) {
+      console.log('📋 LISTA COMPLETA DE HIJOS DEL FILTERPOSTS:');
+      childrenList.forEach((child, i) => {
+        console.log(`${i}. ${child.name || 'Sin nombre'} (Nivel ${child.level}):`, {
+          icon: child.icon || '❌ NO TIENE',
+          iconType: child.iconType || 'NO',
+          iconColor: child.iconColor || 'NO',
+          bgColor: child.bgColor || 'NO',
+          slug: child.slug,
+          hasChildren: child.hasChildren,
+          isLeaf: child.isLeaf
+        });
+      });
+      
+      // Contar cuántos tienen icono
+      const conIcono = childrenList.filter(c => c.icon).length;
+      const sinIcono = childrenList.filter(c => !c.icon).length;
+      console.log(`📊 ESTADÍSTICAS ICONOS: ${conIcono} con icono | ${sinIcono} sin icono`);
+    }
+
+    // ⭐ DETERMINAR HAS_MORE CORRECTAMENTE
     let hasMoreValue = false;
     let totalPagesValue = 1;
     let totalPostsValue = 0;
 
-    // 1. Prioridad: hasMore en root
+    // El controlador filterPosts devuelve hasMore directamente
     if (data.hasMore !== undefined) {
       hasMoreValue = data.hasMore;
-    }
-    // 2. Alternativa: hasMore en pagination
-    else if (data.pagination?.hasMore !== undefined) {
-      hasMoreValue = data.pagination.hasMore;
-    }
-    // 3. Alternativa: calcular de totalPages
-    else if (data.pagination?.totalPages !== undefined) {
-      hasMoreValue = page < data.pagination.totalPages;
-      totalPagesValue = data.pagination.totalPages;
+    } else if (data.totalPages !== undefined) {
+      // Si tiene totalPages, calcular hasMore
+      hasMoreValue = page < data.totalPages;
+      totalPagesValue = data.totalPages;
     }
 
-    // Determinar totalPosts
+    // Total de posts
     if (data.total !== undefined) {
       totalPostsValue = data.total;
-    } else if (data.pagination?.totalPosts !== undefined) {
-      totalPostsValue = data.pagination.totalPosts;
     }
 
-    // ⭐ Actualizar estado activo
+    console.log('📊 PAGINACIÓN CALCULADA:', {
+      page,
+      hasMoreValue,
+      totalPagesValue,
+      totalPostsValue
+    });
+
+    // ⭐ ACTUALIZAR ESTADO ACTIVO (siempre se ejecuta)
     if (categorySlug) {
       dispatch({ type: types.SET_ACTIVE_CATEGORY, payload: categorySlug });
     }
@@ -148,54 +210,100 @@ export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = nul
       dispatch({ type: types.SET_ACTIVE_ARTICLE, payload: articleSlug });
     }
 
-    // ⭐ Payload corregido - Mapeo exacto
+    // ⭐ PREPARAR PAYLOAD - UNIFICAR ESTRUCTURA
     const payload = {
-      categoryInfo: data.category || {},
+      // La categoría viene en categoryInfo
+      categoryInfo: data.categoryInfo || {},
+      
+      // Los hijos vienen en children
       children: data.children || [],
+      
+      // Posts
       posts: data.posts || [],
+      
+      // Paginación
       currentPage: page,
       hasMore: hasMoreValue,
-      totalPages: data.pagination?.totalPages || totalPagesValue,
-      totalPosts: totalPostsValue
+      totalPages: data.totalPages || totalPagesValue,
+      totalPosts: totalPostsValue,
+      
+      // Para compatibilidad
+      total: totalPostsValue
     };
 
-    console.log('📤 Action getCategoryPosts - Payload a enviar al reducer:', {
+    console.log('📤 Action getCategoryPosts - PAYLOAD FINAL:', {
+      categoryName: payload.categoryInfo.name,
+      categoryLevel: payload.categoryInfo.level,
+      childrenCount: payload.children.length,
+      childrenLevels: payload.children.map(c => c.level),
       postsCount: payload.posts.length,
       hasMore: payload.hasMore,
       currentPage: payload.currentPage,
       totalPosts: payload.totalPosts
     });
 
+    // ⭐ DESPACHAR AL REDUCER
+    // Para la primera página, reemplazamos todo
+    // Para páginas siguientes, el reducer debe concatenar posts (ver reducer)
     dispatch({
       type: types.GET_CATEGORY_POSTS_SUCCESS,
       payload: payload
     });
 
-    return data;
+    return {
+      success: true,
+      ...payload,
+      // Mantener compatibilidad
+      category: payload.categoryInfo,
+      pagination: {
+        hasMore: payload.hasMore,
+        totalPages: payload.totalPages,
+        totalPosts: payload.totalPosts,
+        currentPage: payload.currentPage
+      }
+    };
 
   } catch (error) {
-    console.error('❌ Action getCategoryPosts - Error:', {
+    console.error('❌ Action getCategoryPosts - ERROR COMPLETO:', {
       message: error.message,
-      response: error.response ? error.response.data : null,
+      response: error.response ? {
+        status: error.response.status,
+        data: error.response.data,
+        url: error.response.config?.url,
+        params: error.response.config?.params
+      } : null,
       config: error.config ? {
         url: error.config.url,
-        params: error.config.params
+        params: error.config.params,
+        method: error.config.method
       } : null
     });
     
-    const errorMessage = error.response && error.response.data ? 
-      error.response.data.message : 
-      `Error al obtener posts para ${categorySlug}`;
+    const errorMessage = error.response?.data?.message || 
+                        error.message || 
+                        `Error al obtener datos para ${categorySlug}`;
 
     dispatch({
       type: types.GET_CATEGORY_POSTS_FAIL,
       payload: errorMessage
     });
 
-    throw error;
+    // Retornar estructura vacía pero consistente
+    return {
+      success: false,
+      categoryInfo: {},
+      children: [],
+      posts: [],
+      hasMore: false,
+      total: 0
+    };
   }
 };
 
+// ⭐⭐ ACCIÓN PARA CARGAR MÁS POSTS (scroll infinito)
+ 
+// ✅ ACCIÓN ADICIONAL: SOLO OBTENER CATEGORÍA CON HIJOS (para cuando no se necesitan posts)
+ 
 // ✅ 4. ACCIÓN PARA SCROLL INFINITO EN CATEGORY PAGE - CORREGIDA
 export const loadMorePosts = () => async (dispatch, getState) => {
   try {

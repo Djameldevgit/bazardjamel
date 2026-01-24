@@ -1,14 +1,11 @@
-// src/pages/CategoryPage.jsx - VERSIÓN CORREGIDA SIN resetCategoryPosts
-import React, { useEffect, useCallback, useRef } from 'react';
+// src/pages/CategoryPage.jsx - VERSIÓN CORREGIDA
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams, useHistory } from 'react-router-dom';
+import { useParams, useHistory, useLocation } from 'react-router-dom';
 import { 
   getCategoryPosts, 
   loadMorePosts,
-  setActiveCategory,
-  setActiveSubcategory,
-  setActiveArticle,
-  resetCategoryState  // ⭐ USA resetCategoryState que YA tienes
+  resetCategoryState
 } from '../../redux/actions/categoryAction';
 import { 
   Container, 
@@ -16,143 +13,169 @@ import {
   Col, 
   Spinner, 
   Alert,
-  Button
+  Button,
+  Badge
 } from 'react-bootstrap';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import Header from '../../components/SlidersCategories/HeaderCarousel';
 import BreadcrumbNav from '../../components/BreadcrumbNav';
-import SubCategorySlider from '../../components/SlidersCategories/SubcategorySlider';
+import SubCategorySlider from '../../components/SlidersCategories/SubCategoriesSlider';
 import ArticleSlider from '../../components/SlidersCategories/ArticleSlider';
 import PostCard from '../../components/PostCard';
 
 const CategoryPage = () => {
   const dispatch = useDispatch();
   const history = useHistory();
+  const location = useLocation();
   const { slug, subSlug, articleSlug } = useParams();
   
   // Refs para control
   const initialLoadRef = useRef(false);
   const isFetchingRef = useRef(false);
   const prevParamsRef = useRef({ slug: null, subSlug: null, articleSlug: null });
+  
+  // Estado local
+  const [currentArticle, setCurrentArticle] = useState(null);
+  const [childrenToShow, setChildrenToShow] = useState([]);
 
-  // ⭐ SELECTOR CORREGIDO - Sincronizado con reducer actualizado
+  // Selector
   const {
-    activeCategory,
-    activeSubcategory,
-    activeArticle,
     categoryInfo,
-    children,
+    children,  // ⚠️ Esto es lo que viene del backend
     posts,
     postsLoading,
     postsError,
-    hasMorePosts,
-    postsCurrentPage,
-    postsTotalPages
-  } = useSelector((state) => {
-    const catState = state.category || {};
-    
-    console.log('🔍 CategoryPage - Selector State:', {
-      posts: catState.posts?.length || 0,
-      postsLoading: catState.postsLoading,
-      postsError: catState.postsError,
-      hasMorePosts: catState.hasMorePosts,
-      postsCurrentPage: catState.postsCurrentPage,
-      postsTotalPages: catState.postsTotalPages,
-      categoryInfo: catState.categoryInfo?.name,
-      children: catState.children?.length || 0
-    });
-    
-    return {
-      activeCategory: catState.activeCategory,
-      activeSubcategory: catState.activeSubcategory,
-      activeArticle: catState.activeArticle,
-      categoryInfo: catState.categoryInfo || {},
-      children: catState.children || [],
-      posts: catState.posts || [],
-      postsLoading: catState.postsLoading || false,
-      postsError: catState.postsError || null,
-      hasMorePosts: catState.hasMorePosts || false,
-      postsCurrentPage: catState.postsCurrentPage || 0,
-      postsTotalPages: catState.postsTotalPages || 0
-    };
-  });
+    hasMorePosts
+  } = useSelector((state) => state.category || {});
 
+  // Determinar nivel actual
   const currentLevel = articleSlug ? 3 : subSlug ? 2 : 1;
 
-  // ⭐ DEBUG MEJORADO
+  // ⭐⭐ LÓGICA CRÍTICA: Filtrar children según nivel
   useEffect(() => {
-    console.log('📊 CategoryPage - Estado actual:', {
-      params: { slug, subSlug, articleSlug },
-      nivel: currentLevel,
-      postsCount: posts.length,
-      postsLoading,
-      postsError,
-      hasMorePosts,
-      postsCurrentPage,
-      postsTotalPages,
-      categoryName: categoryInfo.name || 'Sin nombre',
-      childrenCount: children.length,
-      isFetching: isFetchingRef.current
+    console.log('🔍 PROCESANDO CHILDREN DEL BACKEND:', {
+      nivelActual: currentLevel,
+      slug,
+      subSlug,
+      articleSlug,
+      totalChildrenRecibidos: children?.length || 0,
+      childrenEjemplo: children?.slice(0, 3)
     });
-    
-    // ⭐ Mostrar primeros 3 posts para debug
-    if (posts.length > 0 && process.env.NODE_ENV === 'development') {
-      console.log('📦 Primeros 3 posts:', posts.slice(0, 3));
-    }
-  }, [slug, subSlug, articleSlug, posts, postsLoading, postsError, hasMorePosts]);
 
-  // ⭐ Carga inicial CORREGIDA - SIN resetCategoryPosts
+    // Si no hay children, no hacer nada
+    if (!children || children.length === 0) {
+      setChildrenToShow([]);
+      setCurrentArticle(null);
+      return;
+    }
+
+    // Verificar estructura de los children
+    const primerChild = children[0];
+    console.log('🔬 ESTRUCTURA DEL PRIMER CHILD:', {
+      nombre: primerChild.name,
+      slug: primerChild.slug,
+      level: primerChild.level,
+      parent: primerChild.parent,
+      // Mostrar todas las propiedades
+      propiedades: Object.keys(primerChild)
+    });
+
+    // ⭐⭐ ESTRATEGIA INTELIGENTE:
+    // 1. Si los children tienen propiedad 'level', filtrar por ella
+    // 2. Si no tienen 'level', usar lógica basada en slugs
+
+    if (primerChild.level !== undefined) {
+      // CASO 1: Los children tienen propiedad 'level'
+      console.log('🎯 Children tienen propiedad level');
+      
+      if (currentLevel === 1) {
+        // Nivel 1: Mostrar children con level = 2 (subcategorías)
+        const subcategories = children.filter(child => child.level === 2);
+        console.log('📋 Subcategorías (nivel 2):', subcategories.map(s => s.name));
+        setChildrenToShow(subcategories);
+      } 
+      else if (currentLevel === 2) {
+        // Nivel 2: Mostrar children con level = 3 (artículos)
+        const articles = children.filter(child => child.level === 3);
+        console.log('📋 Artículos (nivel 3):', articles.map(a => a.name));
+        setChildrenToShow(articles);
+        
+        // Detectar si el backend está devolviendo datos incorrectos
+        if (articles.length === 0 && children.some(c => c.level === 2)) {
+          console.warn('⚠️ BACKEND DEVUELVE SUB CATEGORÍAS EN VEZ DE ARTÍCULOS');
+          // Mostrar mensaje de error o intentar corregir
+        }
+      }
+      else if (currentLevel === 3) {
+        // Nivel 3: Mostrar children con level = 3 (artículos), marcando el activo
+        const articles = children.filter(child => child.level === 3);
+        setChildrenToShow(articles);
+        
+        // Marcar artículo actual
+        if (articleSlug) {
+          const foundArticle = articles.find(article => article.slug === articleSlug);
+          setCurrentArticle(foundArticle || null);
+        }
+      }
+    } else {
+      // CASO 2: Los children NO tienen propiedad 'level'
+      console.log('⚠️ Children NO tienen propiedad level - Usando lógica alternativa');
+      
+      // Aquí necesitamos una lógica diferente basada en tu estructura de datos
+      // Por ejemplo, podrías tener una propiedad 'type' o analizar la profundidad
+      
+      // ESTRATEGIA TEMPORAL: Mostrar todos los children y dejar que el backend filtre
+      setChildrenToShow(children);
+      
+      if (currentLevel === 3 && articleSlug) {
+        const foundArticle = children.find(child => child.slug === articleSlug);
+        setCurrentArticle(foundArticle || null);
+      }
+    }
+
+  }, [currentLevel, children, slug, subSlug, articleSlug]);
+
+  // ⭐⭐ Carga inicial de posts
   useEffect(() => {
     if (!slug) return;
 
     const currentParams = { slug, subSlug, articleSlug };
     const prevParams = prevParamsRef.current;
     
-    // Verificar si los parámetros cambiaron
     const paramsChanged = 
       slug !== prevParams.slug || 
       subSlug !== prevParams.subSlug || 
       articleSlug !== prevParams.articleSlug;
 
-    // ⭐ CRÍTICO: Si cambian parámetros, resetear estado
     if (paramsChanged) {
-      console.log('🔄 Parámetros cambiaron:', {
-        anterior: prevParams,
-        nuevo: currentParams
-      });
-      
-      // ⭐ OPCIÓN 1: Usar resetCategoryState (más agresivo)
-      // dispatch(resetCategoryState());
-      
-      // ⭐ OPCIÓN 2: Usar setActiveCategory que YA limpia posts
-      // (setActiveCategory limpia posts en el reducer según vimos antes)
-      dispatch(setActiveCategory(slug));
-      if (subSlug) dispatch(setActiveSubcategory(subSlug));
-      if (articleSlug) dispatch(setActiveArticle(articleSlug));
-      
+      console.log('🔄 Cambio de URL, recargando datos...');
+      dispatch(resetCategoryState());
       initialLoadRef.current = false;
       isFetchingRef.current = false;
     }
 
-    // Si es la primera carga o cambiaron parámetros, cargar posts
     if ((!initialLoadRef.current || paramsChanged) && !postsLoading && !isFetchingRef.current) {
-      console.log('🔄 CategoryPage: Iniciando carga de posts', currentParams);
+      console.log('📡 Llamando a getCategoryPosts con:', {
+        slug,
+        subSlug,
+        articleSlug,
+        nivel: currentLevel
+      });
       
       initialLoadRef.current = true;
       isFetchingRef.current = true;
       
-      // ⭐ CARGAR POSTS - Página 1
+      // ⭐⭐ IMPORTANTE: El backend debe filtrar los children según los slugs
       dispatch(getCategoryPosts(slug, subSlug, articleSlug, 1, 12))
-        .then((data) => {
-          console.log('✅ Posts cargados exitosamente:', {
-            posts: data.posts?.length || 0,
-            hasMore: data.hasMore,
-            total: data.total
+        .then((response) => {
+          console.log('✅ Respuesta del backend:', {
+            categoryInfo: response.categoryInfo,
+            childrenRecibidos: response.children?.length || 0,
+            primerChild: response.children?.[0]
           });
         })
         .catch((error) => {
-          console.error('❌ Error al cargar posts:', error);
-          initialLoadRef.current = false; // Permitir reintento
+          console.error('❌ Error:', error);
         })
         .finally(() => {
           isFetchingRef.current = false;
@@ -160,123 +183,46 @@ const CategoryPage = () => {
       
       prevParamsRef.current = currentParams;
     }
-  }, [dispatch, slug, subSlug, articleSlug, postsLoading]);
+  }, [dispatch, slug, subSlug, articleSlug, postsLoading, currentLevel]);
 
-  // ⭐ Manejar scroll infinito - COMPLETAMENTE CORREGIDO
-  const fetchMorePosts = useCallback(() => {
-    // ⭐ CONDICIONES MÁS ESTRICTAS
-    const puedeCargarMas = (
-      hasMorePosts && 
-      !postsLoading && 
-      !isFetchingRef.current && 
-      slug && 
-      postsCurrentPage >= 0
-    );
-    
-    if (puedeCargarMas) {
-      console.log('📜 CategoryPage: Cargando más posts...', {
-        paginaActual: postsCurrentPage,
-        siguientePagina: postsCurrentPage + 1,
-        postsActuales: posts.length,
-        tieneMas: hasMorePosts
-      });
-      
-      isFetchingRef.current = true;
-      
-      dispatch(loadMorePosts())
-        .then((data) => {
-          console.log('✅ Posts adicionales cargados:', {
-            nuevosPosts: data.posts?.length || 0,
-            totalAhora: posts.length + (data.posts?.length || 0),
-            sigueTeniendoMas: data.hasMore
-          });
-        })
-        .catch((error) => {
-          console.error('❌ Error al cargar más posts:', error);
-        })
-        .finally(() => {
-          isFetchingRef.current = false;
-        });
-    } else {
-      console.log('⏹️ No se puede cargar más posts:', {
-        hasMorePosts,
-        postsLoading,
-        isFetching: isFetchingRef.current,
-        slug,
-        postsCurrentPage
-      });
-    }
-  }, [dispatch, hasMorePosts, postsLoading, slug, postsCurrentPage, posts.length]);
+  // ⭐⭐ DEPURACIÓN: Ver qué acción se está ejecutando
+  useEffect(() => {
+    console.log('📊 ESTADO ACTUAL:', {
+      nivel: currentLevel,
+      url: location.pathname,
+      childrenToShow: childrenToShow.length,
+      childrenToShowNombres: childrenToShow.map(c => c.name),
+      childrenOriginales: children?.length || 0,
+      childrenOriginalesNombres: children?.map(c => c.name)
+    });
+  }, [currentLevel, location.pathname, childrenToShow, children]);
 
-  // ⭐ Mostrar loading inicial MEJORADO
-  const showInitialLoading = postsLoading && posts.length === 0 && !postsError;
-
-  if (showInitialLoading) {
-    return (
-      <div className="min-vh-100 d-flex flex-column">
-        <Header />
-        <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
-          <div className="text-center">
-            <Spinner animation="border" variant="primary" size="lg" />
-            <p className="mt-3">Cargando productos de {slug}...</p>
-            <p className="text-muted small">
-              Buscando productos en esta categoría y sus subcategorías
-            </p>
-          </div>
-        </Container>
-      </div>
-    );
-  }
-
-  // ⭐ Mostrar error MEJORADO
-  if (postsError && posts.length === 0) {
-    return (
-      <div className="min-vh-100 d-flex flex-column">
-        <Header />
-        <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
-          <Alert variant="danger" className="text-center" style={{ maxWidth: '500px' }}>
-            <div className="mb-3">
-              <span style={{ fontSize: '48px' }}>⚠️</span>
-            </div>
-            <h4 className="alert-heading">Error al cargar productos</h4>
-            <p>{postsError}</p>
-            <div className="d-flex gap-2 justify-content-center">
-              <Button 
-                variant="outline-danger" 
-                onClick={() => {
-                  initialLoadRef.current = false;
-                  dispatch(getCategoryPosts(slug, subSlug, articleSlug, 1, 12));
-                }}
-              >
-                <i className="fas fa-redo me-2"></i>
-                Reintentar
-              </Button>
-              <Button 
-                variant="outline-secondary"
-                onClick={() => history.push('/')}
-              >
-                <i className="fas fa-home me-2"></i>
-                Volver al inicio
-              </Button>
-            </div>
-          </Alert>
-        </Container>
-      </div>
-    );
-  }
-
-  const handleSubcategoryClick = (subSlug) => {
-    if (currentLevel === 1) {
-      console.log('👉 Navegando a subcategoría:', subSlug);
-      history.push(`/category/${slug}/${subSlug}`);
-    }
+  // Handlers
+  const handleSubcategoryClick = (subcategory) => {
+    console.log('👉 Navegando a subcategoría:', subcategory.name);
+    history.push(`/category/${slug}/${subcategory.slug}`);
   };
 
-  const handleArticleClick = (articleSlug) => {
-    if (currentLevel === 2) {
-      console.log('👉 Navegando a artículo:', articleSlug);
-      history.push(`/category/${slug}/${subSlug}/${articleSlug}`);
+  const handleArticleClick = (article) => {
+    console.log('👉 Navegando a artículo:', article.name);
+    history.push(`/category/${slug}/${subSlug}/${article.slug}`);
+  };
+
+  // Determinar qué slider mostrar
+  const shouldShowSubcategorySlider = currentLevel === 1 && childrenToShow.length > 0;
+  const shouldShowArticleSlider = (currentLevel === 2 || currentLevel === 3) && childrenToShow.length > 0;
+
+  // Resto del componente (igual que antes)...
+  const getPageTitle = () => {
+    if (currentLevel === 1) {
+      return categoryInfo?.name || slug;
+    } else if (currentLevel === 2) {
+      const subcategory = children?.find(c => c.slug === subSlug);
+      return subcategory?.name || subSlug?.replace(/-/g, ' ') || '';
+    } else if (currentLevel === 3) {
+      return currentArticle?.name || articleSlug?.replace(/-/g, ' ') || '';
     }
+    return '';
   };
 
   const buildBreadcrumbItems = () => {
@@ -284,27 +230,46 @@ const CategoryPage = () => {
     
     if (slug) {
       items.push({ 
-        label: categoryInfo.name || slug, 
+        label: categoryInfo?.name || slug, 
         path: `/category/${slug}` 
       });
     }
     
     if (subSlug && currentLevel >= 2) {
+      const subcategory = children?.find(c => c.slug === subSlug);
       items.push({ 
-        label: subSlug, 
+        label: subcategory?.name || subSlug.replace(/-/g, ' '), 
         path: `/category/${slug}/${subSlug}` 
       });
     }
     
     if (articleSlug && currentLevel === 3) {
       items.push({ 
-        label: articleSlug, 
+        label: currentArticle?.name || articleSlug.replace(/-/g, ' '), 
         path: `/category/${slug}/${subSlug}/${articleSlug}` 
       });
     }
     
     return items;
   };
+
+  // Loading inicial
+  if (postsLoading && (!posts || posts.length === 0) && !postsError) {
+    return (
+      <div className="min-vh-100 d-flex flex-column">
+        <Header />
+        <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
+          <div className="text-center">
+            <Spinner animation="border" variant="primary" />
+            <p className="mt-2">Cargando productos...</p>
+            <small className="text-muted d-block mt-2">
+              Nivel: {currentLevel} | Slug: {slug} {subSlug && `| Sub: ${subSlug}`}
+            </small>
+          </div>
+        </Container>
+      </div>
+    );
+  }
 
   return (
     <div className="min-vh-100 d-flex flex-column">
@@ -315,100 +280,146 @@ const CategoryPage = () => {
           {/* Breadcrumb */}
           <BreadcrumbNav items={buildBreadcrumbItems()} />
           
-          {/* Título de la categoría */}
+          {/* Título principal */}
           <Row className="mb-4">
             <Col>
               <h1 className="h2 mb-2">
-                {categoryInfo.name || slug}
-                {categoryInfo.emoji && (
-                  <span className="ms-2">{categoryInfo.emoji}</span>
+                {getPageTitle()}
+                <Badge bg={currentLevel === 1 ? 'primary' : currentLevel === 2 ? 'success' : 'info'} className="ms-2">
+                  Nivel {currentLevel}
+                </Badge>
+                {currentArticle && (
+                  <Badge bg="warning" className="ms-2">
+                    Filtrado por: {currentArticle.name}
+                  </Badge>
                 )}
               </h1>
-              {categoryInfo.description && (
-                <p className="text-muted">{categoryInfo.description}</p>
+              
+              {/* ⭐⭐ DEBUG INFO IMPORTANTE */}
+              <div className="alert alert-info mt-3">
+                <div className="row">
+                  <div className="col-md-6">
+                    <p className="mb-1"><strong>URL actual:</strong> {location.pathname}</p>
+                    <p className="mb-1"><strong>Children a mostrar:</strong> {childrenToShow.length}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <p className="mb-1">
+                      <strong>Slider a mostrar:</strong> 
+                      {shouldShowSubcategorySlider ? ' SubCategorySlider' : ''}
+                      {shouldShowArticleSlider ? ' ArticleSlider' : ''}
+                      {!shouldShowSubcategorySlider && !shouldShowArticleSlider ? ' Ninguno' : ''}
+                    </p>
+                    <Button 
+                      size="sm" 
+                      variant="outline-info"
+                      onClick={() => {
+                        console.log('=== DEBUG COMPLETO ===');
+                        console.log('Children del backend:', children);
+                        console.log('ChildrenToShow:', childrenToShow);
+                        console.log('CurrentLevel:', currentLevel);
+                        console.log('CategoryInfo:', categoryInfo);
+                      }}
+                    >
+                      Ver datos en consola
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Info de filtro activo */}
+              {currentLevel === 3 && currentArticle && (
+                <Alert variant="success" className="mt-3 py-2">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div>
+                      <i className="fas fa-filter me-2"></i>
+                      <strong>Filtro activo:</strong> {currentArticle.name}
+                    </div>
+                    <Button 
+                      variant="outline-success" 
+                      size="sm"
+                      onClick={() => history.push(`/category/${slug}/${subSlug}`)}
+                    >
+                      <i className="fas fa-times me-1"></i>
+                      Ver todos
+                    </Button>
+                  </div>
+                </Alert>
               )}
             </Col>
           </Row>
 
-          {/* Slider dinámico según nivel */}
-          {currentLevel === 1 && children.length > 0 && (
+          {/* ⭐⭐ SUBCATEGORY SLIDER */}
+          {shouldShowSubcategorySlider && (
             <section className="mb-5">
-              <h3 className="h5 mb-3">Subcategorías</h3>
+              <h3 className="h5 mb-3">Subcategorías de {categoryInfo?.name}</h3>
               <SubCategorySlider 
-                subcategories={children}
+                subcategories={childrenToShow}
+                currentCategory={categoryInfo}
                 onSubcategoryClick={handleSubcategoryClick}
               />
             </section>
           )}
 
-          {currentLevel === 2 && children.length > 0 && (
+          {/* ⭐⭐ ARTICLE SLIDER */}
+          {shouldShowArticleSlider && (
             <section className="mb-5">
-              <h3 className="h5 mb-3">Artículos</h3>
+              <h3 className="h5 mb-3">
+                {currentLevel === 2 ? 'Artículos disponibles' : 'Cambiar artículo'}
+              </h3>
               <ArticleSlider 
-                articles={children}
+                articles={childrenToShow}
+                currentCategory={categoryInfo}
+                currentSubcategory={{ 
+                  slug: subSlug, 
+                  name: children?.find(c => c.slug === subSlug)?.name || subSlug?.replace(/-/g, ' ') 
+                }}
+                currentArticle={currentArticle}
                 onArticleClick={handleArticleClick}
               />
             </section>
           )}
 
-          {/* Posts */}
+          {/* Sección de Posts */}
           <section>
             <div className="d-flex justify-content-between align-items-center mb-4">
               <h2 className="h4 mb-0">
-                {posts.length > 0 ? `Productos (${posts.length})` : 'Productos'}
+                {posts && posts.length > 0 ? `Productos (${posts.length})` : 'Productos'}
+                {currentArticle && (
+                  <span className="text-muted ms-2">
+                    · Filtrado por: {currentArticle.name}
+                  </span>
+                )}
               </h2>
-              {posts.length > 0 && (
-                <Button 
-                  variant="outline-primary" 
-                  size="sm"
-                  onClick={() => history.push('/create-post')}
-                >
-                  <i className="fas fa-plus me-1"></i>
-                  Crear producto
-                </Button>
-              )}
+              <Button 
+                variant="outline-primary" 
+                size="sm"
+                onClick={() => history.push('/create-post')}
+              >
+                <i className="fas fa-plus me-1"></i>
+                Publicar producto
+              </Button>
             </div>
 
-            {posts.length > 0 ? (
+            {/* Posts list */}
+            {posts && posts.length > 0 ? (
               <InfiniteScroll
                 dataLength={posts.length}
-                next={fetchMorePosts}
+               
                 hasMore={hasMorePosts}
                 loader={
-                  postsLoading ? (
-                    <div className="text-center py-4">
-                      <Spinner animation="border" variant="primary" size="sm" />
-                      <span className="ms-2 text-muted">Cargando más productos...</span>
+                  postsLoading && (
+                    <div className="text-center py-3">
+                      <Spinner animation="border" size="sm" />
                     </div>
-                  ) : null
+                  )
                 }
-                endMessage={
-                  !hasMorePosts && posts.length > 0 ? (
-                    <div className="text-center py-4">
-                      <div className="mb-2">
-                        <span style={{ fontSize: '32px' }}>🎉</span>
-                      </div>
-                      <p className="text-muted mb-0">
-                        ¡Has visto todos los {posts.length} productos!
-                      </p>
-                      <small className="text-muted">
-                        Página {postsCurrentPage + 1} de {Math.max(postsTotalPages, 1)}
-                      </small>
-                    </div>
-                  ) : null
-                }
-                scrollThreshold={0.8}
-                style={{ overflow: 'hidden' }}
               >
                 <Row xs={1} md={2} lg={3} xl={4} className="g-4">
-                  {posts.map((post, index) => (
-                    <Col key={post._id || `post-${index}`}>
+                  {posts.map((post) => (
+                    <Col key={post._id}>
                       <PostCard 
                         post={post}
-                        onClick={() => {
-                          console.log('🖱️ Click en post:', post._id);
-                          history.push(`/post/${post._id}`);
-                        }}
+                        onClick={() => history.push(`/post/${post._id}`)}
                       />
                     </Col>
                   ))}
@@ -416,83 +427,53 @@ const CategoryPage = () => {
               </InfiniteScroll>
             ) : (
               <div className="text-center py-5">
-                <div className="mb-4">
-                  <span style={{ fontSize: '64px' }}>📭</span>
+                <div className="mb-3" style={{ fontSize: '3rem' }}>
+                  📭
                 </div>
-                <h3 className="h4 mb-3">No hay productos en esta categoría</h3>
-                <p className="text-muted mb-4" style={{ maxWidth: '500px', margin: '0 auto' }}>
-                  La categoría <strong>"{categoryInfo.name || slug}"</strong> no tiene productos publicados.
-                  {children.length > 0 ? ' Prueba explorando las subcategorías:' : ''}
+                <h3 className="h4 mb-2">No hay productos</h3>
+                <p className="text-muted mb-4">
+                  {currentArticle 
+                    ? `No se encontraron productos de ${currentArticle.name}`
+                    : 'Esta categoría aún no tiene productos'
+                  }
                 </p>
-                
-                {currentLevel === 1 && children.length > 0 && (
-                  <div className="mb-4">
-                    <p className="mb-3">Explora estas subcategorías:</p>
-                    <div className="d-flex flex-wrap justify-content-center gap-2">
-                      {children.slice(0, 6).map((child) => (
-                        <Button
-                          key={child._id}
-                          variant="outline-primary"
-                          onClick={() => handleSubcategoryClick(child.slug)}
-                          className="d-flex align-items-center"
-                        >
-                          {child.emoji && <span className="me-2">{child.emoji}</span>}
-                          {child.name}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                <div className="d-flex flex-column flex-md-row gap-3 justify-content-center">
-                  <Button 
-                    variant="primary"
-                    onClick={() => history.push('/create-post')}
-                    className="px-4"
-                  >
-                    <i className="fas fa-plus me-2"></i>
-                    Crear un producto aquí
-                  </Button>
-                  <Button 
-                    variant="outline-secondary"
-                    onClick={() => history.push('/')}
-                  >
-                    <i className="fas fa-home me-2"></i>
-                    Volver al inicio
-                  </Button>
-                </div>
               </div>
             )}
-
-            {/* ⭐ DEBUG PARA DESARROLLO */}
-            {process.env.NODE_ENV === 'development' && (
-              <Row className="mt-4">
-                <Col className="text-center">
-                  <div className="card border-info">
-                    <div className="card-body py-2">
-                      <small className="text-info">
-                        <strong>DEBUG:</strong> Página {postsCurrentPage + 1} | 
-                        Total: {posts.length} | 
-                        HasMore: {hasMorePosts ? 'Sí' : 'No'} | 
-                        Loading: {postsLoading ? 'Sí' : 'No'} |
-                        Error: {postsError ? 'Sí' : 'No'}
-                      </small>
-                      <div className="mt-1">
-                        <Button
-                          variant="outline-info"
-                          size="sm"
-                          onClick={fetchMorePosts}
-                          disabled={!hasMorePosts || postsLoading}
-                        >
-                          {postsLoading ? 'Cargando...' : 'Forzar carga más'}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </Col>
-              </Row>
-            )}
           </section>
+
+          {/* ⭐⭐ DEBUG DETALLADO */}
+          <div className="mt-4 p-3 border rounded bg-light">
+            <h6 className="mb-3">
+              <i className="fas fa-code me-2"></i>
+              Información Técnica
+            </h6>
+            
+            <div className="row">
+              <div className="col-md-4">
+                <p><strong>URL:</strong> <code>{location.pathname}</code></p>
+                <p><strong>Nivel:</strong> {currentLevel}</p>
+                <p><strong>Slugs:</strong> {slug} / {subSlug || '-'} / {articleSlug || '-'}</p>
+              </div>
+              
+              <div className="col-md-4">
+                <p><strong>Children (backend):</strong> {children?.length || 0}</p>
+                <p><strong>Children (a mostrar):</strong> {childrenToShow.length}</p>
+                <p><strong>Posts:</strong> {posts?.length || 0}</p>
+              </div>
+              
+              <div className="col-md-4">
+                <p><strong>Primeros 3 Children:</strong></p>
+                <ul className="list-unstyled small">
+                  {childrenToShow.slice(0, 3).map((child, i) => (
+                    <li key={i} className="mb-1">
+                      <code>{child.name}</code> 
+                      {child.level && <span className="ms-2 badge bg-secondary">Lvl: {child.level}</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
         </Container>
       </main>
     </div>

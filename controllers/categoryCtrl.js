@@ -10,12 +10,7 @@ let cacheCategoriasPrincipalesEn = 0;
 
 let cacheEstadisticas = null;
 let cacheEstadisticasEn = 0;
-
-/**
- * GET /api/categories/main
- * Obtener categorías principales (nivel 1) y subniveles (niveles 2 y 3)
- */
- const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
+const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
   const incluirPosts = req.query.posts === 'true';
   const ahora = Date.now();
 
@@ -119,19 +114,236 @@ let cacheEstadisticasEn = 0;
   return res.json(respuesta);
 });
 
+// 📂 controllers/categoryCtrl.js - VERSIÓN SIMPLIFICADA
+// 📂 controllers/categoryCtrl.js - VERSIÓN SIMPLIFICADA
+const obtenerPostsFiltradosPorCategoria = asyncHandler(async (req, res) => {
+  try {
+    const { category, sub, article, page = 1, limit = 12 } = req.query;
+    
+    console.log('=== INICIO OBTENER POSTS ===');
+    console.log('Parámetros:', { category, sub, article, page, limit });
 
+    // 1. BUSCAR CATEGORÍA PRINCIPAL (nivel 1)
+    const categoriaPrincipal = await Category.findOne({ 
+      slug: category, 
+      level: 1 
+    });
+    
+    if (!categoriaPrincipal) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Categoría principal no encontrada' 
+      });
+    }
 
-/**
- * GET /api/categories/:slug
- * Obtener categoría por slug (con hijos, posts o ancestros)
- */
- /**
- * GET /api/categories/:slug
- * Obtener categoría por slug (con hijos, posts o ancestros)
- */
+    let currentCategory = categoriaPrincipal;
+    let children = [];
+    let postQuery = {};
+
+    // 2. DETERMINAR NIVEL Y BUSCAR
+    if (!sub && !article) {
+      // NIVEL 1: Subcategorías
+      console.log('📍 NIVEL 1: Buscando subcategorías');
+      children = await Category.find({ 
+        parent: categoriaPrincipal._id,
+        level: 2 
+      }).sort({ order: 1 }).lean();
+      
+      postQuery = {
+        $or: [
+          { category: categoriaPrincipal._id },
+          { category: { $in: children.map(c => c._id) } }
+        ],
+        status: 'active'
+      };
+      
+    } else if (sub && !article) {
+      // NIVEL 2: Buscar subcategoría y luego sus artículos
+      console.log('📍 NIVEL 2: Buscando subcategoría:', sub);
+      
+      const subcategoria = await Category.findOne({
+        slug: sub,
+        parent: categoriaPrincipal._id,
+        level: 2
+      });
+      
+      if (!subcategoria) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Subcategoría no encontrada' 
+        });
+      }
+      
+      currentCategory = subcategoria;
+      
+      // ⭐⭐ BUSCAR ARTÍCULOS (esto es lo crítico)
+      console.log('🔍 Buscando artículos para subcategoría:', subcategoria.name);
+      
+      // PRIMERO: Buscar nivel 3 (artículos)
+      children = await Category.find({ 
+        parent: subcategoria._id,
+        level: 3 
+      }).sort({ order: 1 }).lean();
+      
+      console.log('📊 Resultado búsqueda nivel 3:', {
+        encontrados: children.length,
+        nombres: children.map(c => c.name)
+      });
+      
+      // SEGUNDO: Si no hay nivel 3, buscar cualquier hijo
+      if (children.length === 0) {
+        console.log('⚠️ No se encontraron artículos nivel 3. Buscando cualquier hijo...');
+        children = await Category.find({ 
+          parent: subcategoria._id 
+        }).sort({ order: 1 }).lean();
+        
+        console.log('📊 Hijos encontrados (cualquier nivel):', {
+          encontrados: children.length,
+          niveles: children.map(c => c.level),
+          nombres: children.map(c => c.name)
+        });
+      }
+      
+      // TERCERO: Si aún no hay hijos, verificar si es leaf
+      if (children.length === 0 && subcategoria.isLeaf) {
+        console.log('ℹ️ Subcategoría marcada como leaf - no tiene hijos');
+      }
+      
+      postQuery = {
+        category: subcategoria._id,
+        status: 'active'
+      };
+      
+    } else if (sub && article) {
+      // NIVEL 3: Artículo específico
+      console.log('📍 NIVEL 3: Buscando artículo:', article);
+      
+      // Buscar subcategoría primero
+      const subcategoria = await Category.findOne({
+        slug: sub,
+        parent: categoriaPrincipal._id,
+        level: 2
+      });
+      
+      if (!subcategoria) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Subcategoría no encontrada' 
+        });
+      }
+      
+      // Buscar artículo
+      const articulo = await Category.findOne({
+        slug: article,
+        parent: subcategoria._id,
+        level: 3
+      });
+      
+      if (!articulo) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Artículo no encontrada' 
+        });
+      }
+      
+      currentCategory = articulo;
+      
+      // Para nivel 3: Mostrar TODOS los artículos de la misma subcategoría
+      // (para mantener el slider funcional)
+      children = await Category.find({ 
+        parent: subcategoria._id,
+        level: 3 
+      }).sort({ order: 1 }).lean();
+      
+      console.log('📁 Artículos para slider:', children.map(a => a.name));
+      
+      postQuery = {
+        category: articulo._id,
+        status: 'active'
+      };
+    }
+
+    // 3. DEBUG COMPLETO
+    console.log('=== DEBUG COMPLETO ===');
+    console.log('Categoría actual:', {
+      nombre: currentCategory.name,
+      nivel: currentCategory.level,
+      id: currentCategory._id
+    });
+    console.log('Children encontrados:', {
+      total: children.length,
+      items: children.map(c => ({
+        nombre: c.name,
+        nivel: c.level,
+        slug: c.slug,
+        icon: c.icon ? 'Sí' : 'No'
+      }))
+    });
+    console.log('Query para posts:', postQuery);
+
+    // 4. OBTENER POSTS
+    const skip = (page - 1) * limit;
+    const posts = await Post.find(postQuery)
+      .populate('user', 'name avatar')
+      .populate('category', 'name slug level')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const total = await Post.countDocuments(postQuery);
+    const hasMore = page * limit < total;
+
+    // 5. RESPONSE
+    const response = {
+      success: true,
+      categoryInfo: {
+        _id: currentCategory._id,
+        name: currentCategory.name,
+        slug: currentCategory.slug,
+        level: currentCategory.level,
+        icon: currentCategory.icon || '',
+        iconType: currentCategory.iconType || 'image-png',
+        iconColor: currentCategory.iconColor || '#666666',
+        bgColor: currentCategory.bgColor || '#FFFFFF'
+      },
+      children: children.map(child => ({
+        _id: child._id,
+        name: child.name,
+        slug: child.slug,
+        level: child.level,
+        icon: child.icon || '',
+        iconType: child.iconType || 'image-png',
+        iconColor: child.iconColor || currentCategory.iconColor || '#666666',
+        bgColor: child.bgColor || currentCategory.bgColor || '#FFFFFF',
+        postCount: child.postCount || 0
+      })),
+      posts,
+      total,
+      hasMore,
+      currentPage: parseInt(page)
+    };
+
+    console.log('✅ Response enviada:', {
+      nivel: response.categoryInfo.level,
+      childrenCount: response.children.length,
+      postsCount: response.posts.length
+    });
+
+    return res.json(response);
+
+  } catch (error) {
+    console.error('❌ Error crítico:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Error del servidor',
+      error: error.message 
+    });
+  }
+});
 /**
  * GET /api/categories/:identifier
- * Obtener categoría por slug O por ID - VERSIÓN UNIFICADA
+ * Obtener categoría por slug O por ID - VERSIÓN UNIFICADA CON ICONOS COMPLETOS
  */
  const obtenerCategoriaPorId = asyncHandler(async (req, res) => {
   const { identifier } = req.params;
@@ -158,8 +370,11 @@ let cacheEstadisticasEn = 0;
     console.log('🔍 Buscando por slug:', identifier);
   }
 
-  // 2. BUSCAR CATEGORÍA
-  const categoria = await Category.findOne(query).lean();
+  // 2. BUSCAR CATEGORÍA - CON ICONOS COMPLETOS
+  const categoria = await Category.findOne(query)
+    .select('_id name slug icon emoji iconType iconColor bgColor level hasChildren isLeaf parent ancestors description order postCount createdAt updatedAt')
+    .lean();
+    
   if (!categoria) {
     return res.status(404).json({ 
       success: false, 
@@ -171,18 +386,22 @@ let cacheEstadisticasEn = 0;
     name: categoria.name,
     slug: categoria.slug,
     level: categoria.level,
-    hasChildren: categoria.hasChildren
+    hasIcon: !!categoria.icon,
+    icon: categoria.icon,
+    iconType: categoria.iconType,
+    iconColor: categoria.iconColor,
+    bgColor: categoria.bgColor
   });
 
   // 3. PREPARAR DATOS DE RESPUESTA
   const datosRespuesta = { ...categoria };
   const promesas = [];
 
-  // 4. HIJOS DIRECTOS
+  // 4. HIJOS DIRECTOS - CON ICONOS COMPLETOS
   if (incluirHijos && categoria.hasChildren) {
     promesas.push(
       Category.find({ parent: categoria._id })
-        .select('name slug emoji level hasChildren isLeaf order postCount')
+        .select('name slug emoji icon iconType iconColor bgColor level hasChildren isLeaf order postCount createdAt')
         .sort({ order: 1 })
         .lean()
     );
@@ -256,11 +475,11 @@ let cacheEstadisticasEn = 0;
     );
   }
 
-  // 6. ANCESTROS
+  // 6. ANCESTROS - CON ICONOS COMPLETOS
   if (categoria.ancestors && categoria.ancestors.length > 0) {
     promesas.push(
       Category.find({ _id: { $in: categoria.ancestors } })
-        .select('name slug level')
+        .select('name slug level icon iconType iconColor bgColor')
         .sort({ level: 1 })
         .lean()
     );
@@ -325,11 +544,11 @@ let cacheEstadisticasEn = 0;
     if (Array.isArray(ancestros) && ancestros.length > 0) {
       datosRespuesta.ancestors = ancestros;
     } else {
-      // Fallback
+      // Fallback con iconos
       const ancestrosDirectos = await Category.find({ 
         _id: { $in: categoria.ancestors } 
       })
-        .select('name slug level')
+        .select('name slug level icon iconType iconColor bgColor')
         .sort({ level: 1 })
         .lean();
       
@@ -354,7 +573,12 @@ let cacheEstadisticasEn = 0;
     slug: categoria.slug,
     level: categoria.level,
     emoji: categoria.emoji || '',
-    description: categoria.description || ''
+    description: categoria.description || '',
+    // ✅ CAMPOS DE ICONO COMPLETOS
+    icon: categoria.icon || '',
+    iconType: categoria.iconType || 'image-png',
+    iconColor: categoria.iconColor || '#666666',
+    bgColor: categoria.bgColor || '#FFFFFF'
   };
 
   if (incluirPosts) {
@@ -366,12 +590,14 @@ let cacheEstadisticasEn = 0;
     categoryName: respuesta.categoryInfo.name,
     postsCount: respuesta.posts.length,
     childrenCount: respuesta.children.length,
-    hasMore: respuesta.hasMore
+    hasMore: respuesta.hasMore,
+    // ✅ Verificar que los hijos tengan iconos
+    primerHijoIcono: respuesta.children[0].icon || 'No tiene icono',
+    totalHijosConIcono: respuesta.children.filter(c => c.icon).length
   });
 
   return res.json(respuesta);
 });
-
 /**
  * GET /api/categories/tree
  */
@@ -402,16 +628,7 @@ const obtenerArbolDeCategorias = asyncHandler(async (req, res) => {
 
 
  
-/**
- * GET /api/posts/filter
- * Obtener posts filtrados por categoría (con jerarquía)
- */
-// En controllers/postCtrl.js - VERSIÓN CON DEBUG COMPLETO
  
-
-/**
- * GET /api/categories/:slug/posts
- */
 const obtenerMasPostsDeCategoria = asyncHandler(async (req, res) => {
   const { slug } = req.params;
   const page = parseInt(req.query.page) || 2;
@@ -531,9 +748,7 @@ const buscarCategorias = asyncHandler(async (req, res) => {
   return res.json({ success: true, categories: categorias, totalResults: categorias.length });
 });
 
-/**
- * GET /api/categories/stats
- */
+ 
 const obtenerEstadisticasDeCategorias = asyncHandler(async (req, res) => {
   const ahora = Date.now();
   if (cacheEstadisticas && ahora - cacheEstadisticasEn < 10 * 60 * 1000) {
@@ -600,6 +815,8 @@ module.exports = {
   obtenerSubcategorias,
   buscarCategorias,
   obtenerEstadisticasDeCategorias,
+
+  obtenerPostsFiltradosPorCategoria
   
 
 };

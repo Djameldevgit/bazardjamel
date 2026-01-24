@@ -117,91 +117,285 @@ const postCtrl = {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 12;
       const skip = (page - 1) * limit;
-
+  
       const { category, sub, article } = req.query;
-
+  
+      console.log('🔍 FILTERPOSTS - Parámetros recibidos:', {
+        category,
+        sub,
+        article,
+        page,
+        limit
+      });
+  
       if (!category) {
-        return res.json({ success: true, posts: [], total: 0, page, hasMore: false, message: 'Se requiere categoría' });
+        return res.json({ 
+          success: true, 
+          posts: [], 
+          total: 0, 
+          page, 
+          hasMore: false, 
+          message: 'Se requiere categoría' 
+        });
       }
-
-      // 1️⃣ Buscar categoría principal
+  
+      // 1️⃣ Buscar categoría principal por SLUG
       let categoryDoc = await Category.findOne({ slug: category }).lean();
+      
+      // Debug: Ver qué encontramos
+      console.log('📋 Categoría encontrada por slug:', {
+        nombre: categoryDoc?.name,
+        nivel: categoryDoc?.level,
+        slug: categoryDoc?.slug,
+        parent: categoryDoc?.parent,
+        id: categoryDoc?._id
+      });
+  
       if (!categoryDoc && mongoose.Types.ObjectId.isValid(category)) {
         categoryDoc = await Category.findById(category).lean();
       }
-      if (!categoryDoc) return res.json({ success: true, posts: [], total: 0, page, hasMore: false, message: 'Categoría no encontrada' });
-
+      
+      if (!categoryDoc) {
+        return res.json({ 
+          success: true, 
+          posts: [], 
+          total: 0, 
+          page, 
+          hasMore: false, 
+          message: 'Categoría no encontrada' 
+        });
+      }
+  
       // 2️⃣ Obtener todos los IDs de categorías hijos
       let todasCategoriasIds = [categoryDoc._id];
       let children = [];
-
+  
+      // ⭐⭐ CASO 1: NIVEL 1 (categoría principal)
       if (categoryDoc.level === 1) {
-        // Traer todas subcategorías y artículos
-        const niveles2y3 = await Category.find({
-          $or: [
-            { parent: categoryDoc._id, level: 2, isActive: true },
-            { ancestors: categoryDoc._id, level: 3, isActive: true }
-          ]
-        }).select('_id name slug parent level emoji hasChildren isLeaf').lean();
-
-        const nivel2 = niveles2y3.filter(c => c.level === 2);
-        const nivel3 = niveles2y3.filter(c => c.level === 3);
-
-        // Filtrar por sub si viene
+        console.log('📍 CASO 1: Nivel 1 - Categoría principal');
+        
+        // Si viene subcategoría específica
         if (sub) {
-          const subcatEspecifica = nivel2.find(s => s.slug === sub);
-          if (subcatEspecifica) {
-            children = [subcatEspecifica];
-            todasCategoriasIds = [subcatEspecifica._id, ...nivel3.filter(a => String(a.parent) === String(subcatEspecifica._id)).map(a => a._id)];
+          console.log('🔍 Buscando subcategoría específica:', sub);
+          
+          // Buscar subcategoría
+          const subcatDoc = await Category.findOne({
+            slug: sub,
+            parent: categoryDoc._id,
+            level: 2,
+            isActive: true
+          }).lean();
+          
+          if (subcatDoc) {
+            console.log('✅ Subcategoría encontrada:', subcatDoc.name);
+            
+            // ⭐⭐ IMPORTANTE: Ahora buscar ARTÍCULOS de esta subcategoría
+            const articulos = await Category.find({
+              parent: subcatDoc._id,
+              level: 3,
+              isActive: true
+            })
+              .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf')
+              .sort({ order: 1 })
+              .lean();
+            
+            console.log('📁 Artículos encontrados para subcategoría:', {
+              subcategoria: subcatDoc.name,
+              totalArticulos: articulos.length,
+              nombres: articulos.map(a => a.name)
+            });
+            
+            children = articulos;
+            todasCategoriasIds = [subcatDoc._id, ...articulos.map(a => a._id)];
+            
           } else {
-            children = nivel2;
-            todasCategoriasIds = [categoryDoc._id, ...nivel2.map(s => s._id), ...nivel3.map(a => a._id)];
+            console.log('⚠️ Subcategoría no encontrada, mostrando todas las subcategorías');
+            // Fallback: mostrar subcategorías
+            const subcategorias = await Category.find({
+              parent: categoryDoc._id,
+              level: 2,
+              isActive: true
+            })
+              .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf')
+              .sort({ order: 1 })
+              .lean();
+            
+            children = subcategorias;
+            todasCategoriasIds = [categoryDoc._id, ...subcategorias.map(s => s._id)];
+          }
+          
+        } else {
+          // Sin sub: mostrar subcategorías
+          console.log('📋 Mostrando subcategorías de', categoryDoc.name);
+          const subcategorias = await Category.find({
+            parent: categoryDoc._id,
+            level: 2,
+            isActive: true
+          })
+            .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf')
+            .sort({ order: 1 })
+            .lean();
+          
+          children = subcategorias;
+          todasCategoriasIds = [categoryDoc._id, ...subcategorias.map(s => s._id)];
+        }
+        
+      } 
+      // ⭐⭐ CASO 2: NIVEL 2 (subcategoría) - ESTO ES LO QUE NECESITAS FIJAR
+      else if (categoryDoc.level === 2) {
+        console.log('📍 CASO 2: Nivel 2 - Subcategoría DIRECTA');
+        console.log('🔍 Subcategoría encontrada:', {
+          nombre: categoryDoc.name,
+          id: categoryDoc._id,
+          slug: categoryDoc.slug
+        });
+        
+        // ⭐⭐ BUSCAR ARTÍCULOS (nivel 3)
+        const articulos = await Category.find({ 
+          parent: categoryDoc._id, 
+          level: 3, 
+          isActive: true 
+        })
+          .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf order')
+          .sort({ order: 1 })
+          .lean();
+        
+        console.log('📊 Resultado búsqueda de artículos:', {
+          subcategoria: categoryDoc.name,
+          queryUsado: { parent: categoryDoc._id, level: 3 },
+          articulosEncontrados: articulos.length,
+          nombres: articulos.map(a => a.name)
+        });
+        
+        // ⭐⭐ SI NO ENCUENTRA ARTÍCULOS NIVEL 3, VERIFICAR ESTRUCTURA
+        if (articulos.length === 0) {
+          console.warn('⚠️ NO SE ENCONTRARON ARTÍCULOS NIVEL 3. Verificando estructura...');
+          
+          // Opción A: Buscar cualquier hijo sin filtrar por level
+          const hijosCualquierNivel = await Category.find({ 
+            parent: categoryDoc._id,
+            isActive: true 
+          })
+            .select('_id name slug level emoji icon hasChildren isLeaf')
+            .sort({ order: 1 })
+            .lean();
+          
+          console.log('🔍 Hijos encontrados (cualquier nivel):', {
+            total: hijosCualquierNivel.length,
+            niveles: hijosCualquierNivel.map(h => h.level),
+            nombres: hijosCualquierNivel.map(h => h.name)
+          });
+          
+          if (hijosCualquierNivel.length > 0) {
+            children = hijosCualquierNivel;
+            todasCategoriasIds = [categoryDoc._id, ...hijosCualquierNivel.map(h => h._id)];
+          } else {
+            // Opción B: Si no tiene hijos, verificar si es leaf
+            if (categoryDoc.isLeaf) {
+              console.log('ℹ️ La subcategoría está marcada como leaf - no tiene hijos');
+              children = [];
+              todasCategoriasIds = [categoryDoc._id];
+            } else {
+              // Opción C: Mostrar la categoría actual como única opción
+              children = [];
+              todasCategoriasIds = [categoryDoc._id];
+            }
           }
         } else {
-          children = nivel2;
-          todasCategoriasIds = [categoryDoc._id, ...nivel2.map(s => s._id), ...nivel3.map(a => a._id)];
+          // ✅ Encontró artículos nivel 3
+          children = articulos;
+          todasCategoriasIds = [categoryDoc._id, ...articulos.map(a => a._id)];
         }
-
-      } else if (categoryDoc.level === 2) {
-        // Nivel 2: traer artículos hijos
-        const articulos = await Category.find({ parent: categoryDoc._id, level: 3, isActive: true })
-          .select('_id name slug level emoji hasChildren isLeaf').lean();
-        children = articulos;
-        todasCategoriasIds = [categoryDoc._id, ...articulos.map(a => a._id)];
       }
-      // Nivel 3: solo la categoría actual
-
+      // ⭐⭐ CASO 3: NIVEL 3 (artículo)
+      else if (categoryDoc.level === 3) {
+        console.log('📍 CASO 3: Nivel 3 - Artículo');
+        
+        // Para artículo: mostrar TODOS los artículos de la misma subcategoría
+        const subcategoriaPadre = await Category.findById(categoryDoc.parent).lean();
+        
+        if (subcategoriaPadre) {
+          const todosArticulos = await Category.find({
+            parent: subcategoriaPadre._id,
+            level: 3,
+            isActive: true
+          })
+            .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf')
+            .sort({ order: 1 })
+            .lean();
+          
+          children = todosArticulos;
+          todasCategoriasIds = [categoryDoc._id]; // Solo posts del artículo actual
+        } else {
+          children = [];
+          todasCategoriasIds = [categoryDoc._id];
+        }
+      }
+  
+      console.log('🎯 Resultado final children:', {
+        totalChildren: children.length,
+        children: children.map(c => ({
+          nombre: c.name,
+          nivel: c.level,
+          slug: c.slug
+        }))
+      });
+  
       // 3️⃣ Buscar posts
-      const filter = { category: { $in: todasCategoriasIds }, status: 'active' };
+      const filter = { 
+        category: { $in: todasCategoriasIds }, 
+        status: 'active' 
+      };
+      
+      console.log('🔍 Query para posts:', {
+        categoriasIds: todasCategoriasIds.map(id => String(id).substring(0, 8)),
+        totalIds: todasCategoriasIds.length
+      });
+  
       const [posts, total] = await Promise.all([
         Post.find(filter)
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit)
-          .select('_id title price images createdAt location user category')
+          .select('_id title price images createdAt location user category description')
           .populate('user', 'name avatar')
           .populate('category', 'name slug icon level')
           .lean(),
         Post.countDocuments(filter)
       ]);
-
+  
       const hasMore = page * limit < total;
-
-      return res.json({
+      const totalPages = Math.ceil(total / limit);
+  
+      console.log('📦 Posts obtenidos:', {
+        postsEncontrados: posts.length,
+        totalPosts: total,
+        page,
+        totalPages,
+        hasMore
+      });
+  
+      // 4️⃣ Preparar respuesta
+      const response = {
         success: true,
         posts,
         total,
         page,
         limit,
         hasMore,
-        totalPages: Math.ceil(total / limit),
-        category: {
+        totalPages,
+        categoryInfo: {  // ⭐ Cambié de "category" a "categoryInfo" para coincidir con frontend
           _id: categoryDoc._id,
           name: categoryDoc.name,
           slug: categoryDoc.slug,
           level: categoryDoc.level,
           emoji: categoryDoc.emoji || '',
-          description: categoryDoc.description || ''
+          description: categoryDoc.description || '',
+          // ⭐ Añadir campos de icono
+          icon: categoryDoc.icon || '',
+          iconType: categoryDoc.iconType || 'image-png',
+          iconColor: categoryDoc.iconColor || '#666666',
+          bgColor: categoryDoc.bgColor || '#FFFFFF'
         },
         children: children.map(c => ({
           _id: c._id,
@@ -209,13 +403,33 @@ const postCtrl = {
           slug: c.slug,
           level: c.level,
           emoji: c.emoji || '',
-          hasChildren: c.hasChildren || false
+          hasChildren: c.hasChildren || false,
+          isLeaf: c.isLeaf || false,
+          // ⭐ Añadir campos de icono para children también
+          icon: c.icon || '',
+          iconType: c.iconType || 'image-png',
+          iconColor: c.iconColor || categoryDoc.iconColor || '#666666',
+          bgColor: c.bgColor || categoryDoc.bgColor || '#FFFFFF'
         }))
+      };
+  
+      console.log('✅ Response final:', {
+        categoryName: response.categoryInfo.name,
+        categoryLevel: response.categoryInfo.level,
+        childrenCount: response.children.length,
+        childrenNiveles: response.children.map(c => c.level),
+        childrenNombres: response.children.map(c => c.name)
       });
-
+  
+      return res.json(response);
+  
     } catch (error) {
-      console.error('❌ Error en filterPosts:', error);
-      res.status(500).json({ success: false, message: 'Error al filtrar posts', error: error.message });
+      console.error('❌ Error crítico en filterPosts:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error al filtrar posts', 
+        error: error.message 
+      });
     }
   },
 

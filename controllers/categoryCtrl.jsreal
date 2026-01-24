@@ -1,431 +1,104 @@
-// 📂 controllers/categoryController.js
-const Category = require('../models/categoryModel');
-const Post = require('../models/postModel');
-const asyncHandler = require('express-async-handler');
-const mongoose = require('mongoose');
+ const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
+  const incluirPosts = req.query.posts === 'true';
+  const ahora = Date.now();
 
-/**
- * Caché simple en memoria (puedes reemplazar con Redis si quieres)
- */
-let cachedMainCategories = null;
-let cachedMainCategoriesAt = 0;
-
-let cachedStats = null;
-let cachedStatsAt = 0;
-
-/**
- * GET /api/categories/main
- * Obtener categorías de nivel 1 + (opcional) posts por categoría.
- * Query: ?posts=true
- */
-const getMainCategories = asyncHandler(async (req, res) => {
-  const includePosts = req.query.posts === 'true';
-
-  // Cache 5 minutos
-  const now = Date.now();
-  if (!includePosts && cachedMainCategories && now - cachedMainCategoriesAt < 5 * 60 * 1000) {
-    return res.json(cachedMainCategories);
+  // 🔹 Caché solo para nivel 1 sin posts
+  if (!incluirPosts && cacheCategoriasPrincipales && ahora - cacheCategoriasPrincipalesEn < 5 * 60 * 1000) {
+    return res.json(cacheCategoriasPrincipales);
   }
 
-  // 1) Traer categorías nivel 1
-  const mainCategories = await Category.find({ level: 1, isActive: true })
-    .select('_id name slug icon emoji order hasChildren postCount')
-    .sort({ order: 1 })
-    .lean();
+  // 1️⃣ Traer categorías activas
+  const [nivel1, nivel2, nivel3] = await Promise.all([
+    Category.find({ level: 1, isActive: true })
+      .select('_id name slug icon emoji order hasChildren postCount')
+      .sort({ order: 1 })
+      .lean(),
+    Category.find({ level: 2, isActive: true })
+      .select('_id name slug parent emoji order hasChildren isLeaf')
+      .sort({ order: 1 })
+      .lean(),
+    Category.find({ level: 3, isActive: true })
+      .select('_id name slug parent emoji order isLeaf')
+      .sort({ order: 1 })
+      .lean(),
+  ]);
 
-  // 2) Traer nivel 2 en una sola query
-  const children = await Category.find({ level: 2, isActive: true })
-    .select('_id name slug parent emoji order hasChildren isLeaf')
-    .sort({ order: 1 })
-    .lean();
-
-  // 3) Agrupar hijos por parent
-  const childrenByParent = {};
-  children.forEach(child => {
-    const parentId = String(child.parent);
-    if (!childrenByParent[parentId]) childrenByParent[parentId] = [];
-    childrenByParent[parentId].push(child);
+  // 2️⃣ Armar relaciones padre-hijo en memoria
+  const nivel3PorPadre = {};
+  nivel3.forEach(cat => {
+    const idPadre = String(cat.parent);
+    if (!nivel3PorPadre[idPadre]) nivel3PorPadre[idPadre] = [];
+    nivel3PorPadre[idPadre].push(cat);
   });
 
-  // 4) Asignar hijos a cada main category
-  mainCategories.forEach(cat => {
-    const key = String(cat._id);
-    cat.children = childrenByParent[key] || [];
-    cat.hasChildren = !!(cat.children && cat.children.length);
+  nivel2.forEach(subcat => {
+    const clave = String(subcat._id);
+    subcat.children = nivel3PorPadre[clave] || [];
+    subcat.hasChildren = subcat.children.length > 0;
   });
 
-  // 5) Si piden posts, cargarlos en paralelo (limit por categoría)
-  if (includePosts) {
-    const postsPromises = mainCategories.map(cat =>
-      Post.find({ category: cat._id, status: 'active' })
-        .select('_id title price images createdAt location')
-        .sort({ createdAt: -1 })
-        .limit(8)
-        .lean()
-    );
+  const nivel2PorPadre = {};
+  nivel2.forEach(subcat => {
+    const idPadre = String(subcat.parent);
+    if (!nivel2PorPadre[idPadre]) nivel2PorPadre[idPadre] = [];
+    nivel2PorPadre[idPadre].push(subcat);
+  });
 
-    const postsByCategory = await Promise.all(postsPromises);
-    mainCategories.forEach((cat, i) => {
-      cat.posts = postsByCategory[i] || [];
+  nivel1.forEach(cat => {
+    const clave = String(cat._id);
+    cat.children = nivel2PorPadre[clave] || [];
+    cat.hasChildren = cat.children.length > 0;
+  });
+
+  // 3️⃣ Traer posts si se piden
+  if (incluirPosts) {
+    // Crear lista de todos los ids de categorías (nivel1, nivel2, nivel3)
+    const todosIds = [
+      ...nivel1.map(c => c._id),
+      ...nivel2.map(c => c._id),
+      ...nivel3.map(c => c._id),
+    ];
+
+    // 🔹 UNA SOLA CONSULTA a Post
+    const posts = await Post.find({ category: { $in: todosIds }, status: 'active' })
+      .select('_id title price images createdAt location category')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // 🔹 Map para asignar posts a su categoría
+    const postsMap = {};
+    posts.forEach(post => {
+      const key = String(post.category);
+      if (!postsMap[key]) postsMap[key] = [];
+      if (postsMap[key].length < 8) postsMap[key].push(post); // limitar a 8 por categoría
+    });
+
+    // 🔹 Asignar posts a nivel3
+    nivel3.forEach(cat => {
+      cat.posts = postsMap[String(cat._id)] || [];
+    });
+
+    // 🔹 Asignar posts a nivel2 sumando hijos nivel3
+    nivel2.forEach(cat => {
+      const hijosPosts = cat.children.flatMap(c => c.posts || []);
+      cat.posts = [...(postsMap[String(cat._id)] || []), ...hijosPosts].slice(0, 8);
+    });
+
+    // 🔹 Asignar posts a nivel1 sumando hijos nivel2
+    nivel1.forEach(cat => {
+      const hijosPosts = cat.children.flatMap(c => c.posts || []);
+      cat.posts = [...(postsMap[String(cat._id)] || []), ...hijosPosts].slice(0, 8);
     });
   }
 
-  const response = { success: true, categories: mainCategories };
+  const respuesta = { success: true, categories: nivel1 };
 
-  // Guardar en caché solo si no pedimos posts (para evitar cache grande)
-  if (!includePosts) {
-    cachedMainCategories = response;
-    cachedMainCategoriesAt = now;
+  // 🔹 Guardar caché si no se piden posts
+  if (!incluirPosts) {
+    cacheCategoriasPrincipales = respuesta;
+    cacheCategoriasPrincipalesEn = ahora;
   }
 
-  return res.json(response);
+  return res.json(respuesta);
 });
 
-/**
- * GET /api/categories/:slug
- * Obtener categoría por slug, opcional children (deep) y posts paginados.
- * Query: ?children=true|deep, ?posts=true, ?page=1&limit=12
- */
-const getCategoryBySlug = asyncHandler(async (req, res) => {
-  const { slug } = req.params;
-  const includeChildren = req.query.children === 'true' || req.query.children === 'deep';
-  const includeChildrenDeep = req.query.children === 'deep';
-  const includePosts = req.query.posts === 'true';
-
-  const category = await Category.findOne({ slug }).lean();
-  if (!category) {
-    return res.status(404).json({ success: false, message: 'Categoría no encontrada' });
-  }
-
-  const responseData = { ...category };
-
-  // Preparar promesas según parámetros
-  const promises = [];
-
-  if (includeChildren && category.hasChildren) {
-    promises.push(Category.find({ parent: category._id }).sort({ order: 1 }).lean());
-  }
-
-  if (includePosts) {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 12;
-    const skip = (page - 1) * limit;
-
-    promises.push(
-      Post.find({ category: category._id, status: 'active' })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Post.countDocuments({ category: category._id, status: 'active' })
-    );
-  }
-
-  if (category.ancestors && category.ancestors.length > 0) {
-    promises.push(
-      Category.find({ _id: { $in: category.ancestors } })
-        .select('name slug level')
-        .sort({ level: 1 })
-        .lean()
-    );
-  }
-
-  // Ejecutar todas las promesas en paralelo
-  const results = promises.length ? await Promise.all(promises) : [];
-
-  let idx = 0;
-
-  if (includeChildren && category.hasChildren) {
-    responseData.children = results[idx] || [];
-    idx++;
-    // Si deep, comprobar si cada hijo tiene children de forma paralela (exists)
-    if (includeChildrenDeep && responseData.children.length) {
-      const existsPromises = responseData.children.map(ch => Category.exists({ parent: ch._id }));
-      const existsResults = await Promise.all(existsPromises);
-      responseData.children.forEach((ch, i) => ch.hasChildren = !!existsResults[i]);
-    }
-  }
-
-  if (includePosts) {
-    const posts = results[idx] || [];
-    const totalPosts = results[idx + 1] || 0;
-    idx += 2;
-
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 12;
-
-    responseData.posts = posts;
-    responseData.postsPagination = {
-      currentPage: page,
-      totalPages: Math.ceil(totalPosts / limit),
-      totalPosts,
-      hasMore: page < Math.ceil(totalPosts / limit)
-    };
-  }
-
-  // Ancestors (si se pidió)
-  if (category.ancestors && category.ancestors.length > 0) {
-    const anc = results[results.length - 1];
-    // Si anc coincide con lo que ya pusimos, asignar; si no, volvemos a consultar por seguridad
-    if (Array.isArray(anc) && anc.length) {
-      responseData.ancestors = anc;
-    } else {
-      const ancestors = await Category.find({ _id: { $in: category.ancestors } })
-        .select('name slug level')
-        .sort({ level: 1 })
-        .lean();
-      responseData.ancestors = ancestors;
-    }
-  }
-
-  return res.json({ success: true, category: responseData });
-});
-
-/**
- * GET /api/categories/id/:id
- * Obtener categoría por ID (simple)
- */
-const getCategoryById = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-
-  // Validar ObjectId
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ success: false, message: 'ID de categoría inválido' });
-  }
-
-  const category = await Category.findById(id).lean();
-  if (!category) {
-    return res.status(404).json({ success: false, message: 'Categoría no encontrada' });
-  }
-
-  return res.json({ success: true, category });
-});
-
-/**
- * GET /api/categories/tree
- * Obtener árbol completo para accordion (optimizado: traer todas las categorías y armar árbol en memoria)
- */
-const getCategoryTree = asyncHandler(async (req, res) => {
-  // Traer todas las categorías activas ordenadas
-  const allCategories = await Category.find({ isActive: true }).sort({ order: 1 }).lean();
-
-  // Map de id -> nodo
-  const map = {};
-  allCategories.forEach(cat => {
-    map[String(cat._id)] = { ...cat, children: [] };
-  });
-
-  const roots = [];
-  allCategories.forEach(cat => {
-    const id = String(cat._id);
-    if (cat.parent) {
-      const parentId = String(cat.parent);
-      if (map[parentId]) {
-        map[parentId].children.push(map[id]);
-      } else {
-        // Parent not found in map (unlikely) -> push to roots as fallback
-        roots.push(map[id]);
-      }
-    } else {
-      roots.push(map[id]);
-    }
-  });
-
-  return res.json({ success: true, tree: roots, totalLevels: 3 });
-});
-
-/**
- * GET /api/categories/:slug/posts
- * Obtener más posts de la categoría (paginación / scroll infinito)
- */
-const getMoreCategoryPosts = asyncHandler(async (req, res) => {
-  const { slug } = req.params;
-  const page = parseInt(req.query.page) || 2;
-  const limit = parseInt(req.query.limit) || 12;
-  const skip = (page - 1) * limit;
-
-  const category = await Category.findOne({ slug }).lean();
-  if (!category) {
-    return res.status(404).json({ success: false, message: 'Categoría no encontrada' });
-  }
-
-  const [posts, totalPosts] = await Promise.all([
-    Post.find({ category: category._id, status: 'active' })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean(),
-    Post.countDocuments({ category: category._id, status: 'active' })
-  ]);
-
-  const totalPages = Math.ceil(totalPosts / limit);
-  const hasMore = page < totalPages;
-
-  return res.json({
-    success: true,
-    posts,
-    pagination: {
-      currentPage: page,
-      totalPages,
-      totalPosts,
-      hasMore
-    },
-    category: {
-      _id: category._id,
-      name: category.name,
-      slug: category.slug
-    }
-  });
-});
-
-/**
- * GET /api/categories/:slug/children
- * Obtener hijos para slider (optimizado: obtener conteos en paralelo)
- */
-const getCategoryChildren = asyncHandler(async (req, res) => {
-  const { slug } = req.params;
-  const limit = parseInt(req.query.limit) || 10;
-
-  const category = await Category.findOne({ slug }).lean();
-  if (!category) return res.status(404).json({ success: false, message: 'Categoría no encontrada' });
-
-  const children = await Category.find({ parent: category._id })
-    .sort({ order: 1 })
-    .limit(limit)
-    .select('name slug emoji level hasChildren postCount')
-    .lean();
-
-  // Obtener conteos en paralelo
-  const postCounts = await Promise.all(
-    children.map(c => Post.countDocuments({ category: c._id, status: 'active' }))
-  );
-
-  children.forEach((c, i) => {
-    c.postCount = postCounts[i] || 0;
-  });
-
-  const totalChildren = await Category.countDocuments({ parent: category._id });
-
-  return res.json({
-    success: true,
-    parentCategory: {
-      _id: category._id,
-      name: category.name,
-      slug: category.slug,
-      level: category.level
-    },
-    children,
-    hasMoreChildren: totalChildren > limit
-  });
-});
-
-/**
- * GET /api/categories/search/:query
- * Buscar categorías (solo hojas) - optimizado usando aggregate para traer postCount en una sola operación
- */
-const searchCategories = asyncHandler(async (req, res) => {
-  const { query } = req.params;
-  const limit = parseInt(req.query.limit) || 10;
-
-  // Aggregation: match -> lookup posts -> project size
-  const categories = await Category.aggregate([
-    {
-      $match: {
-        isLeaf: true,
-        $or: [
-          { name: { $regex: query, $options: 'i' } },
-          { slug: { $regex: query, $options: 'i' } }
-        ]
-      }
-    },
-    {
-      $lookup: {
-        from: 'posts',
-        localField: '_id',
-        foreignField: 'category',
-        as: 'posts'
-      }
-    },
-    {
-      $project: {
-        name: 1,
-        slug: 1,
-        emoji: 1,
-        level: 1,
-        path: 1,
-        postCount: { $size: '$posts' }
-      }
-    },
-    { $limit: limit }
-  ]);
-
-  return res.json({ success: true, categories, totalResults: categories.length });
-});
-
-/**
- * GET /api/categories/stats
- * Obtener estadísticas (cache 10 min)
- */
-const getCategoryStats = asyncHandler(async (req, res) => {
-  const now = Date.now();
-  if (cachedStats && now - cachedStatsAt < 10 * 60 * 1000) {
-    return res.json(cachedStats);
-  }
-
-  const [totalCategories, totalMainCategories, totalSubcategories, totalArticles] = await Promise.all([
-    Category.countDocuments(),
-    Category.countDocuments({ level: 1 }),
-    Category.countDocuments({ level: 2 }),
-    Category.countDocuments({ level: 3 })
-  ]);
-
-  // Top categories with post counts (limit 10)
-  const popularCategories = await Category.aggregate([
-    { $match: { isLeaf: true } },
-    {
-      $lookup: {
-        from: 'posts',
-        localField: '_id',
-        foreignField: 'category',
-        as: 'posts'
-      }
-    },
-    {
-      $project: {
-        name: 1,
-        slug: 1,
-        emoji: 1,
-        postCount: { $size: '$posts' }
-      }
-    },
-    { $sort: { postCount: -1 } },
-    { $limit: 10 }
-  ]);
-
-  const response = {
-    success: true,
-    stats: {
-      totalCategories,
-      totalMainCategories,
-      totalSubcategories,
-      totalArticles,
-      popularCategories
-    }
-  };
-
-  cachedStats = response;
-  cachedStatsAt = now;
-
-  return res.json(response);
-});
-
-module.exports = {
-  getMainCategories,
-  getCategoryBySlug,
-  getCategoryById,
-  getCategoryTree,
-  getMoreCategoryPosts,
-  getCategoryChildren,
-  searchCategories,
-  getCategoryStats
-};
