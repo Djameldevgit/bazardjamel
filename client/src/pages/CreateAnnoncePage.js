@@ -550,8 +550,8 @@ const CreateAnnoncePage = () => {
             exit="exit"
             className="step-content"
           >
-            <Card className="border-0 shadow-sm">
-              <Card.Body className="p-3">
+            <Card className="border-0">
+             
                 <h5 className="text-center mb-3">
                   {isEdit ? '✏️ Modifier la catégorie' : '🏷️ Sélectionnez une catégorie'}
                 </h5>
@@ -611,7 +611,7 @@ const CreateAnnoncePage = () => {
                     </Button>
                   </div>
                 )}
-              </Card.Body>
+            
             </Card>
           </motion.div>
         );

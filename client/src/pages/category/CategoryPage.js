@@ -119,8 +119,7 @@ const CategoryPage = () => {
       }
     } else {
       // CASO 2: Los children NO tienen propiedad 'level'
-      console.log('⚠️ Children NO tienen propiedad level - Usando lógica alternativa');
-      
+     
       // Aquí necesitamos una lógica diferente basada en tu estructura de datos
       // Por ejemplo, podrías tener una propiedad 'type' o analizar la profundidad
       
@@ -294,37 +293,7 @@ const CategoryPage = () => {
                   </Badge>
                 )}
               </h1>
-              
-              {/* ⭐⭐ DEBUG INFO IMPORTANTE */}
-              <div className="alert alert-info mt-3">
-                <div className="row">
-                  <div className="col-md-6">
-                    <p className="mb-1"><strong>URL actual:</strong> {location.pathname}</p>
-                    <p className="mb-1"><strong>Children a mostrar:</strong> {childrenToShow.length}</p>
-                  </div>
-                  <div className="col-md-6">
-                    <p className="mb-1">
-                      <strong>Slider a mostrar:</strong> 
-                      {shouldShowSubcategorySlider ? ' SubCategorySlider' : ''}
-                      {shouldShowArticleSlider ? ' ArticleSlider' : ''}
-                      {!shouldShowSubcategorySlider && !shouldShowArticleSlider ? ' Ninguno' : ''}
-                    </p>
-                    <Button 
-                      size="sm" 
-                      variant="outline-info"
-                      onClick={() => {
-                        console.log('=== DEBUG COMPLETO ===');
-                        console.log('Children del backend:', children);
-                        console.log('ChildrenToShow:', childrenToShow);
-                        console.log('CurrentLevel:', currentLevel);
-                        console.log('CategoryInfo:', categoryInfo);
-                      }}
-                    >
-                      Ver datos en consola
-                    </Button>
-                  </div>
-                </div>
-              </div>
+             
               
               {/* Info de filtro activo */}
               {currentLevel === 3 && currentArticle && (
@@ -351,7 +320,7 @@ const CategoryPage = () => {
           {/* ⭐⭐ SUBCATEGORY SLIDER */}
           {shouldShowSubcategorySlider && (
             <section className="mb-5">
-              <h3 className="h5 mb-3">Subcategorías de {categoryInfo?.name}</h3>
+             
               <SubCategorySlider 
                 subcategories={childrenToShow}
                 currentCategory={categoryInfo}
@@ -443,23 +412,10 @@ const CategoryPage = () => {
 
           {/* ⭐⭐ DEBUG DETALLADO */}
           <div className="mt-4 p-3 border rounded bg-light">
-            <h6 className="mb-3">
-              <i className="fas fa-code me-2"></i>
-              Información Técnica
-            </h6>
+          
             
             <div className="row">
-              <div className="col-md-4">
-                <p><strong>URL:</strong> <code>{location.pathname}</code></p>
-                <p><strong>Nivel:</strong> {currentLevel}</p>
-                <p><strong>Slugs:</strong> {slug} / {subSlug || '-'} / {articleSlug || '-'}</p>
-              </div>
-              
-              <div className="col-md-4">
-                <p><strong>Children (backend):</strong> {children?.length || 0}</p>
-                <p><strong>Children (a mostrar):</strong> {childrenToShow.length}</p>
-                <p><strong>Posts:</strong> {posts?.length || 0}</p>
-              </div>
+            
               
               <div className="col-md-4">
                 <p><strong>Primeros 3 Children:</strong></p>

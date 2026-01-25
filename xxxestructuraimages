@@ -1,803 +1,746 @@
-public/uploads/categories/
-├── vetements/
-│   ├── level1/
-│   │   └── vetements.png
-│   ├── level2/
-│   │   ├── vetements-homme.png
-│   │   ├── vetements-femme.png
-│   │   ├── chaussures-homme.png
-│   │   ├── chaussures-femme.png
-│   │   ├── garcons.png
-│   │   ├── filles.png
-│   │   ├── bebe.png
-│   │   ├── tenues-professionnelles.png
-│   │   ├── sacs-valises.png
-│   │   ├── montres.png
-│   │   ├── lunettes.png
-│   │   └── bijoux.png
-│   └── level3/
-│       ├── hauts-chemises-homme.png
-│       ├── jeans-pantalons-homme.png
-│       ├── shorts-pantacourts-homme.png
-│       ├── vestes-gilets-homme.png
-│       ├── costumes-blazers-homme.png
-│       ├── survetements-homme.png
-│       ├── kamiss-homme.png
-│       ├── sous-vetements-homme.png
-│       ├── pyjamas-homme.png
-│       ├── maillots-bain-homme.png
-│       ├── casquettes-chapeaux-homme.png
-│       ├── chaussettes-homme.png
-│       ├── ceintures-homme.png
-│       ├── gants-homme.png
-│       ├── cravates-homme.png
-│       ├── autre-vetements-homme.png
-│       ├── hauts-chemises-femme.png
-│       ├── jeans-pantalons-femme.png
-│       ├── shorts-pantacourts-femme.png
-│       ├── vestes-gilets-femme.png
-│       ├── ensembles-femme.png
-│       ├── abayas-hijabs-femme.png
-│       ├── mariages-fetes-femme.png
-│       ├── maternite-femme.png
-│       ├── robes-femme.png
-│       ├── jupes-femme.png
-│       ├── joggings-survetements-femme.png
-│       ├── leggings-femme.png
-│       ├── sous-vetements-lingerie-femme.png
-│       ├── pyjamas-femme.png
-│       ├── peignoirs-femme.png
-│       ├── maillots-bain-femme.png
-│       ├── casquettes-chapeaux-femme.png
-│       ├── chaussettes-collants-femme.png
-│       ├── foulards-echarpes-femme.png
-│       ├── ceintures-femme.png
-│       ├── gants-femme.png
-│       ├── autre-vetements-femme.png
-│       ├── basquettes-homme.png
-│       ├── bottes-homme.png
-│       ├── classiques-homme.png
-│       ├── mocassins-homme.png
-│       ├── sandales-homme.png
-│       ├── tangues-pantacourts-homme.png
-│       ├── autre-chaussures-homme.png
-│       ├── basquettes-femme.png
-│       ├── sandales-femme.png
-│       ├── bottes-femme.png
-│       ├── escarpins-femme.png
-│       ├── ballerines-femme.png
-│       ├── tangues-pantacourts-femme.png
-│       ├── autre-chaussures-femme.png
-│       ├── chaussures-garcons.png
-│       ├── hauts-chemises-garcons.png
-│       ├── pantalons-shorts-garcons.png
-│       ├── vestes-gilets-garcons.png
-│       ├── costumes-garcons.png
-│       ├── survetements-joggings-garcons.png
-│       ├── pyjamas-garcons.png
-│       ├── sous-vetements-garcons.png
-│       ├── maillots-bain-garcons.png
-│       ├── kamiss-garcons.png
-│       ├── casquettes-chapeaux-garcons.png
-│       ├── autre-garcons.png
-│       ├── chaussures-filles.png
-│       ├── hauts-chemises-filles.png
-│       ├── pantalons-shorts-filles.png
-│       ├── vestes-gilets-filles.png
-│       ├── robes-filles.png
-│       ├── jupes-filles.png
-│       ├── ensembles-filles.png
-│       ├── joggings-survetements-filles.png
-│       ├── pyjamas-filles.png
-│       ├── sous-vetements-filles.png
-│       ├── leggings-collants-filles.png
-│       ├── maillots-bain-filles.png
-│       ├── casquettes-chapeaux-filles.png
-│       ├── autre-filles.png
-│       ├── vetements-bebe.png
-│       ├── chaussures-bebe.png
-│       ├── accessoires-bebe.png
-│       ├── pochettes-portefeuilles.png
-│       ├── sacs-main.png
-│       ├── sacs-dos.png
-│       ├── sacs-professionnels.png
-│       ├── valises.png
-│       ├── cabas-sport.png
-│       ├── autre-sacs.png
-│       ├── montres-hommes.png
-│       ├── montres-femmes.png
-│       ├── lunettes-vue-hommes.png
-│       ├── lunettes-vue-femmes.png
-│       ├── lunettes-soleil-hommes.png
-│       ├── lunettes-soleil-femmes.png
-│       ├── lunettes-vue-enfants.png
-│       ├── lunettes-soleil-enfants.png
-│       ├── accessoires-lunettes.png
-│       ├── parures.png
-│       ├── colliers-pendentifs.png
-│       ├── bracelets.png
-│       ├── bagues.png
-│       ├── boucles.png
-│       ├── chevilleres.png
-│       ├── piercings.png
-│       ├── accessoires-cheveux.png
-│       ├── broches.png
-│       └── autre-bijoux.png
-├── telephones-accessoires/
-│   ├── level1/
-│   │   └── smartphones.png
-│   ├── level2/
-│   │   ├── smartphones.png
-│   │   ├── telephones-cellulaires.png
-│   │   ├── tablettes.png
-│   │   ├── fixes-fax.png
-│   │   ├── smartwatchs.png
-│   │   ├── accessoires.png
-│   │   ├── pieces-rechange.png
-│   │   ├── offres-abonnements.png
-│   │   ├── protection-antichoc.png
-│   │   ├── ecouteurs-son.png
-│   │   ├── chargeurs-cables.png
-│   │   ├── supports-stabilisateurs.png
-│   │   ├── manettes.png
-│   │   ├── vr.png
-│   │   ├── power-banks.png
-│   │   ├── stylets.png
-│   │   ├── cartes-memoire.png
-│   │   └── accessoires-divers.png
-│   └── level3/
-│       ├── protections-ecran.png
-│       ├── coques-antichoc.png
-│       ├── films-protection.png
-│       ├── etuis.png
-│       ├── protections-camera.png
-│       ├── ecouteurs-filaires.png
-│       ├── ecouteurs-bluetooth.png
-│       ├── casques-audio.png
-│       ├── haut-parleurs-portables.png
-│       ├── adaptateurs-audio.png
-│       ├── chargeurs-mur.png
-│       ├── chargeurs-voiture.png
-│       ├── chargeurs-sans-fil.png
-│       ├── cables-usb.png
-│       ├── cables-lightning.png
-│       ├── cables-type-c.png
-│       ├── hubs-chargeurs.png
-│       ├── supports.png
-│       ├── stabilisateurs.png
-│       ├── barres-selfies.png
-│       ├── pieds-telephone.png
-│       ├── ventouses-voiture.png
-│       ├── manettes-bluetooth.png
-│       ├── manettes-filaires.png
-│       ├── manettes-telephone.png
-│       ├── manettes-tablette.png
-│       ├── accessoires-manettes.png
-│       ├── casques-vr.png
-│       ├── lunettes-vr.png
-│       ├── accessoires-vr.png
-│       ├── controleurs-vr.png
-│       ├── jeux-vr.png
-│       ├── power-bank-10000mah.png
-│       ├── power-bank-20000mah.png
-│       ├── power-bank-solaire.png
-│       ├── power-bank-rapide.png
-│       ├── power-bank-compact.png
-│       ├── stylets-actifs.png
-│       ├── stylets-passifs.png
-│       ├── stylets-bluetooth.png
-│       ├── stylets-tablette.png
-│       ├── recharges-stylet.png
-│       ├── sd-cards.png
-│       ├── micro-sd-cards.png
-│       ├── sdhc-cards.png
-│       ├── sdxc-cards.png
-│       ├── adaptateurs-carte.png
-│       └── lecteurs-carte.png
-├── immobilier/
-│   ├── level1/
-│   │   └── house.png
-│   ├── level2/
-│   │   ├── vente.png
-│   │   ├── location.png
-│   │   ├── location-vacances.png
-│   │   ├── cherche-location.png
-│   │   └── cherche-achat.png
-│   └── level3/
-│       ├── appartement.png
-│       ├── local.png
-│       ├── villa.png
-│       ├── terrain.png
-│       ├── terrain-agricole.png
-│       ├── immeuble.png
-│       ├── bungalow.png
-│       ├── hangar-usine.png
-│       ├── autre.png
-│       ├── appartement-location.png
-│       ├── local-location.png
-│       ├── villa-location.png
-│       ├── immeuble-location.png
-│       ├── bungalow-location.png
-│       ├── autre-location.png
-│       ├── appartement-vacances.png
-│       ├── villa-vacances.png
-│       ├── bungalow-vacances.png
-│       ├── autre-vacances.png
-│       ├── appartement-cherche-location.png
-│       ├── local-cherche-location.png
-│       ├── villa-cherche-location.png
-│       ├── immeuble-cherche-location.png
-│       ├── bungalow-cherche-location.png
-│       ├── autre-cherche-location.png
-│       ├── appartement-cherche-achat.png
-│       ├── local-cherche-achat.png
-│       ├── villa-cherche-achat.png
-│       ├── terrain-cherche-achat.png
-│       ├── terrain-agricole-cherche-achat.png
-│       ├── immeuble-cherche-achat.png
-│       ├── bungalow-cherche-achat.png
-│       ├── hangar-usine-cherche-achat.png
-│       └── autre-cherche-achat.png
-├── electromenager/
-│   ├── level1/
-│   │   └── electromenager.png
-│   ├── level2/
-│   │   ├── televiseurs.png
-│   │   ├── demodulateurs-box-tv.png
-│   │   ├── paraboles-switch-tv.png
-│   │   ├── abonnements-iptv.png
-│   │   ├── cameras-accessories.png
-│   │   ├── audio.png
-│   │   ├── aspirateurs-nettoyeurs.png
-│   │   ├── repassage.png
-│   │   ├── beaute-hygiene.png
-│   │   ├── machines-coudre.png
-│   │   ├── telecommandes.png
-│   │   ├── securite-gps.png
-│   │   ├── composants-electroniques.png
-│   │   ├── pieces-rechange.png
-│   │   ├── autre-electromenager.png
-│   │   ├── refrigerateurs-congelateurs.png
-│   │   ├── machines-a-laver.png
-│   │   ├── lave-vaisselles.png
-│   │   ├── fours-cuisson.png
-│   │   ├── chauffage-climatisation.png
-│   │   └── appareils-cuisine.png
-│   └── level3/
-│       ├── tv-led.png
-│       ├── tv-oled.png
-│       ├── tv-4k.png
-│       ├── tv-smart.png
-│       ├── box-tv-orange.png
-│       ├── box-tv-free.png
-│       ├── demodulateur-hd.png
-│       ├── parabole-hd.png
-│       ├── switch-tv-4k.png
-│       ├── enceintes-bluetooth.png
-│       ├── home-cinema.png
-│       ├── soundbar.png
-│       ├── aspirateur-sans-sac.png
-│       ├── aspirateur-robot.png
-│       ├── nettoyeur-vapeur.png
-│       ├── refrigerateur.png
-│       ├── congelateur.png
-│       ├── refrigerateur-congelateur.png
-│       ├── cave-vin.png
-│       ├── lave-linge.png
-│       ├── seche-linge.png
-│       ├── lave-linge-seche-linge.png
-│       ├── lave-linge-essorage.png
-│       ├── lave-vaisselle-encastrable.png
-│       ├── lave-vaisselle-pose-libre.png
-│       ├── lave-vaisselle-compact.png
-│       ├── four-electrique.png
-│       ├── four-gaz.png
-│       ├── four-micro-ondes.png
-│       ├── plaque-cuisson.png
-│       ├── cuisiniere.png
-│       ├── climatiseur.png
-│       ├── ventilateur.png
-│       ├── radiateur.png
-│       ├── chauffe-eau.png
-│       ├── pompe-chaleur.png
-│       ├── robot-cuisine.png
-│       ├── mixeur.png
-│       ├── bouilloire.png
-│       ├── cafetiere.png
-│       └── grille-pain.png
-├── vehicules/
-│   ├── level1/
-│   │   └── vehicules.png
-│   └── level2/
-│       ├── voitures.png
-│       ├── utilitaire.png
-│       ├── motos-scooters.png
-│       ├── quads.png
-│       ├── fourgon.png
-│       ├── camion.png
-│       ├── bus.png
-│       ├── engin.png
-│       ├── tracteurs.png
-│       ├── remorques.png
-│       └── bateaux-barques.png
-├── informatique/
-│   ├── level1/
-│   │   └── informatique.png
-│   ├── level2/
-│   │   ├── ordinateurs-portables.png
-│   │   ├── ordinateurs-bureau.png
-│   │   ├── composants-pc-fixe.png
-│   │   ├── composants-pc-portable.png
-│   │   ├── composants-serveur.png
-│   │   ├── imprimantes-cartouches.png
-│   │   ├── reseau-connexion.png
-│   │   ├── stockage-externe.png
-│   │   ├── serveurs.png
-│   │   ├── ecrans.png
-│   │   ├── onduleurs-stabilisateurs.png
-│   │   ├── compteuses-billets.png
-│   │   ├── claviers-souris.png
-│   │   ├── casques-son.png
-│   │   ├── webcam-videoconference.png
-│   │   ├── data-shows.png
-│   │   ├── cables-adaptateurs.png
-│   │   ├── stylers-tablettes.png
-│   │   ├── cartables-sacoches.png
-│   │   ├── manettes-simulateurs.png
-│   │   ├── vr.png
-│   │   ├── logiciels-abonnements.png
-│   │   ├── bureautique.png
-│   │   └── autre-informatique.png
-│   └── level3/
-│       ├── pc-portable.png
-│       ├── macbooks.png
-│       ├── pc-bureau.png
-│       ├── unites-centrales.png
-│       ├── all-in-one.png
-│       ├── cartes-mere.png
-│       ├── processeurs.png
-│       ├── ram.png
-│       ├── disques-dur.png
-│       ├── cartes-graphique.png
-│       ├── alimentations-boitiers.png
-│       ├── refroidissement.png
-│       ├── lecteurs-graveurs-cd.png
-│       ├── autres-composants-fixe.png
-│       ├── chargeurs.png
-│       ├── batteries.png
-│       ├── ecrans-portable.png
-│       ├── claviers-touchpads.png
-│       ├── disques-dur-portable.png
-│       ├── ram-portable.png
-│       ├── refroidissement-portable.png
-│       ├── cartes-mere-portable.png
-│       ├── processeurs-portable.png
-│       ├── cartes-graphique-portable.png
-│       ├── lecteurs-graveurs-portable.png
-│       ├── baffles-webcams.png
-│       ├── autres-composants-portable.png
-│       ├── cartes-mere-serveur.png
-│       ├── processeurs-serveur.png
-│       ├── ram-serveur.png
-│       ├── disques-dur-serveur.png
-│       ├── cartes-reseau-serveur.png
-│       ├── alimentations-serveur.png
-│       ├── refroidissement-serveur.png
-│       ├── cartes-graphique-serveur.png
-│       ├── autres-composants-serveur.png
-│       ├── imprimantes-jet-encre.png
-│       ├── imprimantes-laser.png
-│       ├── imprimantes-matricielles.png
-│       ├── codes-barre-etiqueteuses.png
-│       ├── imprimantes-photo-badges.png
-│       ├── photocopieuses-professionnelles.png
-│       ├── imprimantes-3d.png
-│       ├── cartouches-toners.png
-│       ├── autre-imprimantes.png
-│       ├── modems-routeurs.png
-│       ├── switchs.png
-│       ├── point-acces-wifi.png
-│       ├── repeater-wifi.png
-│       ├── cartes-reseau-connexion.png
-│       ├── autre-reseau.png
-│       ├── disques-durs-externes.png
-│       ├── flash-disque.png
-│       ├── carte-memoire.png
-│       └── rack.png
-├── alimentaires/
-│   ├── level1/
-│   │   └── alimentaires.png
-│   └── level2/
-│       ├── produits-laitiers.png
-│       ├── fruits-secs.png
-│       ├── graines-riz-cereales.png
-│       ├── sucres-produits-sucres.png
-│       ├── boissons.png
-│       ├── viandes-poissons.png
-│       ├── cafe-the-infusion.png
-│       ├── complements-alimentaires.png
-│       ├── miel-derives.png
-│       ├── fruits-legumes.png
-│       ├── ble-farine.png
-│       ├── bonbons-chocolat.png
-│       ├── boulangerie-viennoiserie.png
-│       ├── ingredients-cuisine-patisserie.png
-│       ├── noix-graines.png
-│       ├── plats-cuisines.png
-│       ├── sauces-epices-condiments.png
-│       ├── oeufs.png
-│       ├── huiles.png
-│       ├── pates.png
-│       ├── gateaux.png
-│       ├── emballage.png
-│       ├── aliments-bebe.png
-│       ├── aliments-dietetiques.png
-│       └── autre-alimentaires.png
-├── pieces-detachees/
-│   ├── level1/
-│   │   └── pieces-detachees.png
-│   ├── level2/
-│   │   ├── pieces-automobiles.png
-│   │   ├── pieces-moto.png
-│   │   ├── pieces-bateaux.png
-│   │   ├── alarme-securite.png
-│   │   ├── nettoyage-entretien.png
-│   │   ├── outils-diagnostics.png
-│   │   ├── lubrifiants.png
-│   │   ├── pieces-vehicules.png
-│   │   └── autres-pieces.png
-│   └── level3/
-│       ├── moteur-transmission.png
-│       ├── suspension-direction.png
-│       ├── pieces-interieur.png
-│       ├── carrosserie.png
-│       ├── optiques-eclairage.png
-│       ├── vitres-pare-brise.png
-│       ├── pneus-jantes.png
-│       ├── housses-tapis.png
-│       ├── batteries.png
-│       ├── sono-multimedia.png
-│       ├── sieges-auto.png
-│       ├── autre-pieces-auto.png
-│       ├── casques-protections.png
-│       ├── pneus-jantes-moto.png
-│       ├── optiques-eclairage-moto.png
-│       ├── accessoires-moto.png
-│       ├── autre-pieces-moto.png
-│       ├── moteurs-bateaux.png
-│       ├── pieces-bateaux.png
-│       ├── accessoires-bateaux.png
-│       └── autre-pieces-bateaux.png
-├── services/
-│   ├── level1/
-│   │   └── services.png
-│   └── level2/
-│       ├── construction-travaux.png
-│       ├── ecoles-formations.png
-│       ├── industrie-fabrication.png
-│       ├── transport-demenagement.png
-│       ├── decoration-amenagement.png
-│       ├── publicite-communication.png
-│       ├── nettoyage-jardinage.png
-│       ├── froid-climatisation.png
-│       ├── traiteurs-gateaux.png
-│       ├── medecine-sante.png
-│       ├── reparation-auto-diagnostic.png
-│       ├── securite-alarme.png
-│       ├── projets-etudes.png
-│       ├── bureautique-internet.png
-│       ├── location-vehicules.png
-│       ├── menuiserie-meubles.png
-│       ├── impression-edition.png
-│       ├── hotellerie-restauration-salles.png
-│       ├── esthetique-beaute.png
-│       ├── image-son.png
-│       ├── comptabilite-economie.png
-│       ├── couture-confection.png
-│       ├── maintenance-informatique.png
-│       ├── reparation-electromenager.png
-│       ├── evenements-divertissement.png
-│       ├── paraboles-demos.png
-│       ├── reparation-electronique.png
-│       ├── services-etranger.png
-│       ├── flashage-reparation-telephones.png
-│       ├── flashage-installation-jeux.png
-│       ├── juridique.png
-│       └── autres-services.png
-├── sante-beaute/
-│   ├── level1/
-│   │   └── sante-beaute.png
-│   ├── level2/
-│   │   ├── cosmetiques-beaute.png
-│   │   ├── parapharmacie-sante.png
-│   │   ├── parfums-deodorants-femme.png
-│   │   ├── parfums-deodorants-homme.png
-│   │   ├── accessoires-beaute.png
-│   │   ├── soins-cheveux.png
-│   │   └── autre-sante-beaute.png
-│   └── level3/
-│       ├── soins-corps.png
-│       ├── savons-gels-douche.png
-│       ├── soins-visage.png
-│       ├── maquillage.png
-│       ├── produits-solaires-bronzage.png
-│       ├── instruments-outils-beaute.png
-│       ├── manucure-pedicure.png
-│       ├── rasage-epilation.png
-│       ├── hygiene.png
-│       ├── coiffure.png
-│       ├── soins-bebe.png
-│       ├── autres-produits-cosmetiques.png
-│       ├── dispositifs-medicaux.png
-│       ├── complement-alimentaire.png
-│       ├── materiel-medical.png
-│       └── aliments-dietetiques.png
-├── voyages/
-│   ├── level1/
-│   │   └── voyages.png
-│   └── level2/
-│       ├── voyage-organise.png
-│       ├── location-vacances.png
-│       ├── hajj-omra.png
-│       ├── reservations-visa.png
-│       ├── sejour.png
-│       ├── croisiere.png
-│       └── autre-voyages.png
-├── sport/
-│   ├── level1/
-│   │   └── sport.png
-│   ├── level2/
-│   │   ├── football.png
-│   │   ├── hand-voley-basket.png
-│   │   ├── sport-combat.png
-│   │   ├── fitness-musculation.png
-│   │   ├── natation.png
-│   │   ├── velos-trotinettes.png
-│   │   ├── sports-raquette.png
-│   │   ├── sport-aquatiques.png
-│   │   ├── equitation.png
-│   │   ├── petanque.png
-│   │   └── autres-sports.png
-│   └── level3/
-│       ├── ballons-buts.png
-│       ├── equipements-accessoires-foot.png
-│       ├── chaussures-football.png
-│       ├── vetements-football.png
-│       ├── equipements-accessoires-basket.png
-│       ├── ballons-buts-filets.png
-│       ├── chaussures-basket.png
-│       ├── vetements-basket.png
-│       ├── tenue-combat.png
-│       ├── gants-casques.png
-│       ├── autres-accessoires-combat.png
-│       ├── bancs-presses.png
-│       ├── poids-halteres.png
-│       ├── tapis-roulants.png
-│       ├── velos-rameurs.png
-│       ├── autres-equipements-fitness.png
-│       ├── lunettes-natation.png
-│       ├── bonnets.png
-│       ├── palmes.png
-│       ├── planches-flotteurs.png
-│       ├── maillots-combinaisons.png
-│       ├── autres-accessoires-natation.png
-│       ├── vetements-chaussures-velo.png
-│       ├── velos.png
-│       ├── trotinettes.png
-│       ├── equipements-accessoires-velo.png
-│       ├── tennis.png
-│       ├── tennis-table.png
-│       └── autre-raquette.png
-├── meubles/
-│   ├── level1/
-│   │   └── meubles.png
-│   ├── level2/
-│   │   ├── salon.png
-│   │   ├── chambres-coucher.png
-│   │   ├── tables.png
-│   │   ├── armoires-commodes.png
-│   │   ├── lits.png
-│   │   ├── meubles-cuisine.png
-│   │   ├── bibliotheques-etageres.png
-│   │   ├── chaises-fauteuils.png
-│   │   ├── dressings.png
-│   │   ├── meubles-salle-bain.png
-│   │   ├── buffet.png
-│   │   ├── tables-tv.png
-│   │   ├── table-pliante.png
-│   │   ├── tables-manger.png
-│   │   ├── tables-pc-bureaux.png
-│   │   ├── canape.png
-│   │   ├── table-basse.png
-│   │   ├── rangement-organisation.png
-│   │   ├── accessoires-cuisine.png
-│   │   ├── meuble-entree.png
-│   │   ├── decoration.png
-│   │   ├── vaisselle.png
-│   │   ├── meubles-bureau.png
-│   │   ├── puericulture.png
-│   │   ├── luminaire.png
-│   │   ├── rideaux.png
-│   │   ├── literie-linge.png
-│   │   ├── tapis-moquettes.png
-│   │   ├── meubles-exterieur.png
-│   │   ├── fournitures-scolaires.png
-│   │   └── autre-meubles.png
-│   └── level3/
-│       ├── peinture-calligraphie.png
-│       ├── decoration-cuisine.png
-│       ├── coussins-housses.png
-│       ├── deco-bain.png
-│       ├── art-revetement-mural.png
-│       ├── figurines-miniatures.png
-│       ├── cadres.png
-│       ├── horloges.png
-│       ├── autres-decoration.png
-│       ├── poeles-casseroles-marmites.png
-│       ├── cocottes.png
-│       ├── plats-four-plateaux.png
-│       ├── assiettes-bols.png
-│       ├── couverts-ustensiles.png
-│       ├── services-boissons.png
-│       ├── boites-bocaux.png
-│       ├── accessoires-patisserie.png
-│       ├── vaisselles-artisanales.png
-│       ├── gadget-cuisine.png
-│       ├── vaisselle-enfants.png
-│       ├── bureaux-caissons.png
-│       ├── chaises-bureau.png
-│       ├── armoires-rangements-bureau.png
-│       ├── accessoires-bureaux.png
-│       ├── tables-reunion.png
-│       ├── poussette.png
-│       ├── siege-auto.png
-│       ├── meubles-bebe.png
-│       ├── lit-bebe.png
-│       ├── chaise-bebe.png
-│       ├── autres-puericulture.png
-│       ├── lustre.png
-│       ├── lampadaire.png
-│       ├── eclairage-exterieur.png
-│       └── autres-luminaire.png
-├── materiaux/
-│   ├── level1/
-│   │   └── materiaux.png
-│   ├── level2/
-│   │   ├── materiel-professionnel.png
-│   │   ├── outillage-professionnel.png
-│   │   ├── materiel-agricole.png
-│   │   ├── materiaux-construction.png
-│   │   ├── matieres-premieres.png
-│   │   ├── produits-hygiene.png
-│   │   └── autre-materiaux.png
-│   └── level3/
-│       ├── industrie-fabrication.png
-│       ├── alimentaire-restauration.png
-│       ├── medical.png
-│       ├── batiment-construction.png
-│       ├── materiel-electrique.png
-│       ├── ateliers.png
-│       ├── stockage-magasinage.png
-│       ├── equipement-protection.png
-│       ├── agriculture.png
-│       ├── reparation-diagnostic.png
-│       ├── commerce-detail.png
-│       ├── coiffure-cosmetologie.png
-│       ├── autres-materiel-pro.png
-│       ├── perceuse.png
-│       ├── meuleuse.png
-│       ├── outillage-main.png
-│       ├── scie.png
-│       ├── autres-outillage.png
-│       ├── equipement-agricole.png
-│       ├── arbres.png
-│       ├── terrain-agricole.png
-│       └── autre-agricole.png
-├── loisirs/
-│   ├── level1/
-│   │   └── loisirs.png
-│   ├── level2/
-│   │   ├── animalerie.png
-│   │   ├── consoles-jeux-videos.png
-│   │   ├── livres-magazines.png
-│   │   ├── instruments-musique.png
-│   │   ├── jouets.png
-│   │   ├── chasse-peche.png
-│   │   ├── jardinage.png
-│   │   ├── jeux-loisirs.png
-│   │   ├── barbecue-grillades.png
-│   │   ├── vapes-chichas.png
-│   │   ├── produits-accessoires-ete.png
-│   │   ├── antiquites-collections.png
-│   │   └── autres-loisirs.png
-│   └── level3/
-│       ├── produits-soin-animal.png
-│       ├── chien.png
-│       ├── oiseau.png
-│       ├── animaux-ferme.png
-│       ├── chat.png
-│       ├── cheval.png
-│       ├── poisson.png
-│       ├── accessoire-animaux.png
-│       ├── nourriture-animaux.png
-│       ├── autres-animaux.png
-│       ├── consoles.png
-│       ├── jeux-videos.png
-│       ├── accessoires-jeux.png
-│       ├── litterature-philosophie.png
-│       ├── romans.png
-│       ├── scolaire-parascolaire.png
-│       ├── sciences-techniques-medecine.png
-│       ├── traduction.png
-│       ├── religion-spiritualites.png
-│       ├── historique.png
-│       ├── cuisine.png
-│       ├── essais-documents.png
-│       ├── fiction.png
-│       ├── enfants.png
-│       ├── mangas-bande-dessinee.png
-│       ├── instruments-electriques.png
-│       ├── instruments-percussion.png
-│       ├── instruments-vent.png
-│       ├── instruments-cordes.png
-│       ├── autre-instruments.png
-│       ├── jeux-eveil.png
-│       ├── poupees-peluches.png
-│       ├── personnages-deguisements.png
-│       ├── jeux-educatifs-puzzle.png
-│       ├── vehicules-circuits.png
-│       ├── jeux-electroniques.png
-│       ├── construction-outils.png
-│       ├── jeux-plein-air.png
-│       ├── animaux-jouets.png
-│       ├── canne-peche.png
-│       ├── moulinets.png
-│       ├── sondeurs-gps.png
-│       ├── vetements-chasse-peche.png
-│       ├── accessoires-peche.png
-│       ├── materiel-plongee.png
-│       ├── equipements-chasse.png
-│       ├── mobilier-jardin.png
-│       ├── semence.png
-│       ├── outillage-arrosage.png
-│       ├── plantes-fleurs.png
-│       ├── equipements-materiels-jardin.png
-│       ├── insecticide.png
-│       ├── decoration-jardin.png
-│       ├── livres-agriculture-jardin.png
-│       ├── babyfoot.png
-│       ├── billiard.png
-│       ├── ping-pong.png
-│       ├── echecs.png
-│       ├── jeux-societe.png
-│       ├── autres-jeux-loisirs.png
-│       ├── barbecue.png
-│       ├── charbon.png
-│       ├── accessoires-barbecue.png
-│       ├── vapes-cigarettes-electroniques.png
-│       ├── chichas.png
-│       ├── consommables.png
-│       ├── accessoires-vapes.png
-│       ├── piscines.png
-│       ├── matelas-gonflables.png
-│       ├── parasols.png
-│       ├── transats-chaises-pliables.png
-│       ├── tables-ete.png
-│       └── autres-accessoires-ete.png
-├── emploi/
-│   ├── level1/
-│   │   └── emploi.png
-│   └── level2/
-│       ├── offres-emploi.png
-│       ├── demandes-emploi.png
-│       └── autres-emploi.png
-└── boutiques/
-    ├── level1/
-    │   └── boutiques.png
-    └── level2/
-        ├── basic-50.png
-        ├── basic-100.png
-        ├── silver-200.png
-        ├── silver-500.png
-        ├── gold-1000.png
-        └── gold-6000.png
+public/
+  uploads/
+    categories/
+      ├── immobilier/
+      │   ├── level1/
+      │   │   └── immobilier.png
+      │   ├── level2/
+      │   │   ├── vente.png
+      │   │   ├── location.png
+      │   │   ├── location-vacances.png
+      │   │   ├── cherche-location.png
+      │   │   └── cherche-achat.png
+      │   └── level3/
+      │       ├── appartement.png
+      │       ├── local.png
+      │       ├── villa.png
+      │       ├── terrain.png
+      │       ├── terrain-agricole.png
+      │       ├── immeuble.png
+      │       ├── bungalow.png
+      │       ├── hangar-usine.png
+      │       └── autre.png
+      ├── automobiles-vehicules/
+      │   ├── level1/
+      │   │   └── automobiles.png
+      │   └── level2/
+      │       ├── voitures.png
+      │       ├── utilitaire.png
+      │       ├── motos-scooters.png
+      │       ├── quads.png
+      │       ├── fourgon.png
+      │       ├── camion.png
+      │       ├── bus.png
+      │       ├── engin.png
+      │       ├── tracteurs.png
+      │       ├── remorques.png
+      │       └── bateaux-barques.png
+      ├── pieces-detachees/
+      │   ├── level1/
+      │   │   └── pieces-detachees.png
+      │   ├── level2/
+      │   │   ├── pieces-automobiles.png
+      │   │   ├── pieces-moto.png
+      │   │   ├── pieces-bateaux.png
+      │   │   ├── alarme-securite.png
+      │   │   ├── nettoyage-entretien.png
+      │   │   ├── outils-diagnostics.png
+      │   │   ├── lubrifiants.png
+      │   │   ├── pieces-vehicules.png
+      │   │   └── autres-pieces.png
+      │   └── level3/
+      │       ├── moteur-transmission.png
+      │       ├── suspension-direction.png
+      │       ├── pieces-interieur.png
+      │       ├── carrosserie.png
+      │       ├── optiques-eclairage.png
+      │       ├── vitres-pare-brise.png
+      │       ├── pneus-jantes.png
+      │       ├── housses-tapis.png
+      │       ├── batteries.png
+      │       ├── sono-multimedia.png
+      │       ├── sieges-auto.png
+      │       └── autre-pieces-auto.png
+      ├── telephones-accessoires/
+      │   ├── level1/
+      │   │   └── telephones.png
+      │   ├── level2/
+      │   │   ├── smartphones.png
+      │   │   ├── telephones-cellulaires.png
+      │   │   ├── tablettes.png
+      │   │   ├── fixes-fax.png
+      │   │   ├── smartwatchs.png
+      │   │   ├── accessoires.png
+      │   │   ├── pieces-rechange.png
+      │   │   ├── offres-abonnements.png
+      │   │   ├── protection-antichoc.png
+      │   │   ├── ecouteurs-son.png
+      │   │   ├── chargeurs-cables.png
+      │   │   ├── supports-stabilisateurs.png
+      │   │   ├── manettes.png
+      │   │   ├── vr.png
+      │   │   ├── power-banks.png
+      │   │   ├── stylets.png
+      │   │   ├── cartes-memoire.png
+      │   │   └── accessoires-divers.png
+      │   └── level3/
+      │       ├── protections-ecran.png
+      │       ├── coques-antichoc.png
+      │       ├── films-protection.png
+      │       ├── etuis.png
+      │       ├── protections-camera.png
+      │       ├── ecouteurs-filaires.png
+      │       ├── ecouteurs-bluetooth.png
+      │       ├── casques-audio.png
+      │       ├── hauts-parleurs-portables.png
+      │       ├── adaptateurs-audio.png
+      │       ├── chargeurs-mur.png
+      │       ├── chargeurs-voiture.png
+      │       ├── chargeurs-sans-fil.png
+      │       ├── cables-usb.png
+      │       ├── cables-lightning.png
+      │       ├── cables-type-c.png
+      │       ├── hubs-chargeurs.png
+      │       ├── supports.png
+      │       ├── stabilisateurs.png
+      │       ├── barres-selfies.png
+      │       ├── pieds-telephone.png
+      │       ├── ventouses-voiture.png
+      │       ├── manettes-bluetooth.png
+      │       ├── manettes-filaires.png
+      │       ├── manettes-telephone.png
+      │       ├── manettes-tablette.png
+      │       ├── accessoires-manettes.png
+      │       ├── casques-vr.png
+      │       ├── lunettes-vr.png
+      │       ├── accessoires-vr.png
+      │       ├── controleurs-vr.png
+      │       ├── jeux-vr.png
+      │       ├── power-bank-10000mah.png
+      │       ├── power-bank-20000mah.png
+      │       ├── power-bank-solaire.png
+      │       ├── power-bank-rapide.png
+      │       ├── power-bank-compact.png
+      │       ├── stylets-actifs.png
+      │       ├── stylets-passifs.png
+      │       ├── stylets-bluetooth.png
+      │       ├── stylets-tablette.png
+      │       ├── recharges-stylet.png
+      │       ├── sd-cards.png
+      │       ├── micro-sd-cards.png
+      │       ├── sdhc-cards.png
+      │       ├── sdxc-cards.png
+      │       ├── adaptateurs-carte.png
+      │       └── lecteurs-carte.png
+      ├── informatique/
+      │   ├── level1/
+      │   │   └── informatique.png
+      │   ├── level2/
+      │   │   ├── ordinateurs-portables.png
+      │   │   ├── ordinateurs-bureau.png
+      │   │   ├── composants-pc-fixe.png
+      │   │   ├── composants-pc-portable.png
+      │   │   ├── composants-serveur.png
+      │   │   ├── imprimantes-cartouches.png
+      │   │   ├── reseau-connexion.png
+      │   │   ├── stockage-externe.png
+      │   │   ├── serveurs.png
+      │   │   ├── ecrans.png
+      │   │   ├── onduleurs-stabilisateurs.png
+      │   │   ├── compteuses-billets.png
+      │   │   ├── claviers-souris.png
+      │   │   ├── casques-son.png
+      │   │   ├── webcam-videoconference.png
+      │   │   ├── data-shows.png
+      │   │   ├── cables-adaptateurs.png
+      │   │   ├── stylers-tablettes.png
+      │   │   ├── cartables-sacoches.png
+      │   │   ├── manettes-simulateurs.png
+      │   │   ├── vr.png
+      │   │   ├── logiciels-abonnements.png
+      │   │   ├── bureautique.png
+      │   │   └── autre-informatique.png
+      │   └── level3/
+      │       ├── pc-portable.png
+      │       ├── macbooks.png
+      │       ├── pc-bureau.png
+      │       ├── unites-centrales.png
+      │       ├── all-in-one.png
+      │       ├── cartes-mere.png
+      │       ├── processeurs.png
+      │       ├── ram.png
+      │       ├── disques-dur.png
+      │       ├── cartes-graphique.png
+      │       ├── alimentations-boitiers.png
+      │       ├── refroidissement.png
+      │       ├── lecteurs-graveurs-cd.png
+      │       ├── autres-composants-fixe.png
+      │       ├── chargeurs.png
+      │       ├── batteries.png
+      │       ├── ecrans-portable.png
+      │       ├── claviers-touchpads.png
+      │       ├── disques-dur-portable.png
+      │       ├── ram-portable.png
+      │       ├── refroidissement-portable.png
+      │       ├── cartes-mere-portable.png
+      │       ├── processeurs-portable.png
+      │       ├── cartes-graphique-portable.png
+      │       ├── lecteurs-graveurs-portable.png
+      │       ├── baffles-webcams.png
+      │       ├── autres-composants-portable.png
+      │       ├── cartes-mere-serveur.png
+      │       ├── processeurs-serveur.png
+      │       ├── ram-serveur.png
+      │       ├── disques-dur-serveur.png
+      │       ├── cartes-reseau-serveur.png
+      │       ├── alimentations-serveur.png
+      │       ├── refroidissement-serveur.png
+      │       ├── cartes-graphique-serveur.png
+      │       ├── autres-composants-serveur.png
+      │       ├── imprimantes-jet-encre.png
+      │       ├── imprimantes-laser.png
+      │       ├── imprimantes-matricielles.png
+      │       ├── codes-barre-etiqueteuses.png
+      │       ├── imprimantes-photo-badges.png
+      │       ├── photocopieuses-professionnelles.png
+      │       ├── imprimantes-3d.png
+      │       ├── cartouches-toners.png
+      │       ├── autre-imprimantes.png
+      │       ├── modems-routeurs.png
+      │       ├── switchs.png
+      │       ├── point-acces-wifi.png
+      │       ├── repeater-wifi.png
+      │       ├── cartes-reseau-connexion.png
+      │       ├── autre-reseau.png
+      │       ├── disques-durs-externes.png
+      │       ├── flash-disque.png
+      │       ├── carte-memoire.png
+      │       └── rack.png
+      ├── electromenager-electronique/
+      │   ├── level1/
+      │   │   └── electromenager.png
+      │   ├── level2/
+      │   │   ├── televiseurs.png
+      │   │   ├── demodulateurs-box-tv.png
+      │   │   ├── paraboles-switch-tv.png
+      │   │   ├── abonnements-iptv.png
+      │   │   ├── cameras-accessories.png
+      │   │   ├── audio.png
+      │   │   ├── aspirateurs-nettoyeurs.png
+      │   │   ├── repassage.png
+      │   │   ├── beaute-hygiene.png
+      │   │   ├── machines-coudre.png
+      │   │   ├── telecommandes.png
+      │   │   ├── securite-gps.png
+      │   │   ├── composants-electroniques.png
+      │   │   ├── pieces-rechange.png
+      │   │   ├── autre-electromenager.png
+      │   │   ├── refrigerateurs-congelateurs.png
+      │   │   ├── machines-a-laver.png
+      │   │   ├── lave-vaisselles.png
+      │   │   ├── fours-cuisson.png
+      │   │   ├── chauffage-climatisation.png
+      │   │   └── appareils-cuisine.png
+      │   └── level3/
+      │       ├── refrigerateur.png
+      │       ├── congelateur.png
+      │       ├── refrigerateur-congelateur.png
+      │       ├── cave-vin.png
+      │       ├── lave-linge.png
+      │       ├── seche-linge.png
+      │       ├── lave-linge-seche-linge.png
+      │       ├── lave-linge-essorage.png
+      │       ├── lave-vaisselle-encastrable.png
+      │       ├── lave-vaisselle-pose-libre.png
+      │       ├── lave-vaisselle-compact.png
+      │       ├── four-electrique.png
+      │       ├── four-gaz.png
+      │       ├── four-micro-ondes.png
+      │       ├── plaque-cuisson.png
+      │       ├── cuisiniere.png
+      │       ├── climatiseur.png
+      │       ├── ventilateur.png
+      │       ├── radiateur.png
+      │       ├── chauffe-eau.png
+      │       ├── pompe-chaleur.png
+      │       ├── robot-cuisine.png
+      │       ├── mixeur.png
+      │       ├── bouilloire.png
+      │       ├── cafetiere.png
+      │       └── grille-pain.png
+      ├── vetements-mode/
+      │   ├── level1/
+      │   │   └── vetements.png
+      │   ├── level2/
+      │   │   ├── vetements-homme.png
+      │   │   ├── vetements-femme.png
+      │   │   ├── chaussures-homme.png
+      │   │   ├── chaussures-femme.png
+      │   │   ├── garcons.png
+      │   │   ├── filles.png
+      │   │   ├── bebe.png
+      │   │   ├── tenues-professionnelles.png
+      │   │   ├── sacs-valises.png
+      │   │   ├── montres.png
+      │   │   ├── lunettes.png
+      │   │   └── bijoux.png
+      │   └── level3/
+      │       ├── hauts-chemises-homme.png
+      │       ├── jeans-pantalons-homme.png
+      │       ├── shorts-pantacourts-homme.png
+      │       ├── vestes-gilets-homme.png
+      │       ├── costumes-blazers-homme.png
+      │       ├── survetements-homme.png
+      │       ├── kamiss-homme.png
+      │       ├── sous-vetements-homme.png
+      │       ├── pyjamas-homme.png
+      │       ├── maillots-bain-homme.png
+      │       ├── casquettes-chapeaux-homme.png
+      │       ├── chaussettes-homme.png
+      │       ├── ceintures-homme.png
+      │       ├── gants-homme.png
+      │       ├── cravates-homme.png
+      │       ├── autre-vetements-homme.png
+      │       ├── hauts-chemises-femme.png
+      │       ├── jeans-pantalons-femme.png
+      │       ├── shorts-pantacourts-femme.png
+      │       ├── vestes-gilets-femme.png
+      │       ├── ensembles-femme.png
+      │       ├── abayas-hijabs-femme.png
+      │       ├── mariages-fetes-femme.png
+      │       ├── maternite-femme.png
+      │       ├── robes-femme.png
+      │       ├── jupes-femme.png
+      │       ├── joggings-survetements-femme.png
+      │       ├── leggings-femme.png
+      │       ├── sous-vetements-lingerie-femme.png
+      │       ├── pyjamas-femme.png
+      │       ├── peignoirs-femme.png
+      │       ├── maillots-bain-femme.png
+      │       ├── casquettes-chapeaux-femme.png
+      │       ├── chaussettes-collants-femme.png
+      │       ├── foulards-echarpes-femme.png
+      │       ├── ceintures-femme.png
+      │       ├── gants-femme.png
+      │       ├── autre-vetements-femme.png
+      │       ├── basquettes-homme.png
+      │       ├── bottes-homme.png
+      │       ├── classiques-homme.png
+      │       ├── mocassins-homme.png
+      │       ├── sandales-homme.png
+      │       ├── tangues-pantoufles-homme.png
+      │       ├── autre-chaussures-homme.png
+      │       ├── basquettes-femme.png
+      │       ├── sandales-femme.png
+      │       ├── bottes-femme.png
+      │       ├── escarpins-femme.png
+      │       ├── ballerines-femme.png
+      │       ├── tangues-pantoufles-femme.png
+      │       ├── autre-chaussures-femme.png
+      │       ├── chaussures-garcons.png
+      │       ├── hauts-chemises-garcons.png
+      │       ├── pantalons-shorts-garcons.png
+      │       ├── vestes-gilets-garcons.png
+      │       ├── costumes-garcons.png
+      │       ├── survetements-joggings-garcons.png
+      │       ├── pyjamas-garcons.png
+      │       ├── sous-vetements-garcons.png
+      │       ├── maillots-bain-garcons.png
+      │       ├── kamiss-garcons.png
+      │       ├── casquettes-chapeaux-garcons.png
+      │       ├── autre-garcons.png
+      │       ├── chaussures-filles.png
+      │       ├── hauts-chemises-filles.png
+      │       ├── pantalons-shorts-filles.png
+      │       ├── vestes-gilets-filles.png
+      │       ├── robes-filles.png
+      │       ├── jupes-filles.png
+      │       ├── ensembles-filles.png
+      │       ├── joggings-survetements-filles.png
+      │       ├── pyjamas-filles.png
+      │       ├── sous-vetements-filles.png
+      │       ├── leggings-collants-filles.png
+      │       ├── maillots-bain-filles.png
+      │       ├── casquettes-chapeaux-filles.png
+      │       ├── autre-filles.png
+      │       ├── vetements-bebe.png
+      │       ├── chaussures-bebe.png
+      │       ├── accessoires-bebe.png
+      │       ├── pochettes-portefeuilles.png
+      │       ├── sacs-main.png
+      │       ├── sacs-dos.png
+      │       ├── sacs-professionnels.png
+      │       ├── valises.png
+      │       ├── cabas-sport.png
+      │       ├── autre-sacs.png
+      │       ├── montres-hommes.png
+      │       ├── montres-femmes.png
+      │       ├── lunettes-vue-hommes.png
+      │       ├── lunettes-vue-femmes.png
+      │       ├── lunettes-soleil-hommes.png
+      │       ├── lunettes-soleil-femmes.png
+      │       ├── lunettes-vue-enfants.png
+      │       ├── lunettes-soleil-enfants.png
+      │       ├── accessoires-lunettes.png
+      │       ├── parures.png
+      │       ├── colliers-pendentifs.png
+      │       ├── bracelets.png
+      │       ├── bagues.png
+      │       ├── boucles.png
+      │       ├── chevilleres.png
+      │       ├── piercings.png
+      │       ├── accessoires-cheveux.png
+      │       ├── broches.png
+      │       └── autre-bijoux.png
+      ├── sante-beaute/
+      │   ├── level1/
+      │   │   └── sante-beaute.png
+      │   ├── level2/
+      │   │   ├── cosmetiques-beaute.png
+      │   │   ├── parapharmacie-sante.png
+      │   │   ├── parfums-deodorants-femme.png
+      │   │   ├── parfums-deodorants-homme.png
+      │   │   ├── accessoires-beaute.png
+      │   │   ├── soins-cheveux.png
+      │   │   └── autre-sante-beaute.png
+      │   └── level3/
+      │       ├── soins-corps.png
+      │       ├── savons-gels-douche.png
+      │       ├── soins-visage.png
+      │       ├── maquillage.png
+      │       ├── produits-solaires-bronzage.png
+      │       ├── instruments-outils-beaute.png
+      │       ├── manucure-pedicure.png
+      │       ├── rasage-epilation.png
+      │       ├── hygiene.png
+      │       ├── coiffure.png
+      │       ├── soins-bebe.png
+      │       ├── autres-produits-cosmetiques.png
+      │       ├── dispositifs-medicaux.png
+      │       ├── complement-alimentaire.png
+      │       ├── materiel-medical.png
+      │       └── aliments-dietetiques.png
+      ├── meubles-maison/
+      │   ├── level1/
+      │   │   └── meubles.png
+      │   ├── level2/
+      │   │   ├── salon.png
+      │   │   ├── chambres-coucher.png
+      │   │   ├── tables.png
+      │   │   ├── armoires-commodes.png
+      │   │   ├── lits.png
+      │   │   ├── meubles-cuisine.png
+      │   │   ├── bibliotheques-etageres.png
+      │   │   ├── chaises-fauteuils.png
+      │   │   ├── dressings.png
+      │   │   ├── meubles-salle-bain.png
+      │   │   ├── buffet.png
+      │   │   ├── tables-tv.png
+      │   │   ├── table-pliante.png
+      │   │   ├── tables-manger.png
+      │   │   ├── tables-pc-bureaux.png
+      │   │   ├── canape.png
+      │   │   ├── table-basse.png
+      │   │   ├── rangement-organisation.png
+      │   │   ├── accessoires-cuisine.png
+      │   │   ├── meuble-entree.png
+      │   │   ├── decoration.png
+      │   │   ├── vaisselle.png
+      │   │   ├── meubles-bureau.png
+      │   │   ├── puericulture.png
+      │   │   ├── luminaire.png
+      │   │   ├── rideaux.png
+      │   │   ├── literie-linge.png
+      │   │   ├── tapis-moquettes.png
+      │   │   ├── meubles-exterieur.png
+      │   │   ├── fournitures-scolaires.png
+      │   │   └── autre-meubles.png
+      │   └── level3/
+      │       ├── peinture-calligraphie.png
+      │       ├── decoration-cuisine.png
+      │       ├── coussins-housses.png
+      │       ├── deco-bain.png
+      │       ├── art-revetement-mural.png
+      │       ├── figurines-miniatures.png
+      │       ├── cadres.png
+      │       ├── horloges.png
+      │       ├── autres-decoration.png
+      │       ├── poeles-casseroles-marmites.png
+      │       ├── cocottes.png
+      │       ├── plats-four-plateaux.png
+      │       ├── assiettes-bols.png
+      │       ├── couverts-ustensiles.png
+      │       ├── services-boissons.png
+      │       ├── boites-bocaux.png
+      │       ├── accessoires-patisserie.png
+      │       ├── vaisselles-artisanales.png
+      │       ├── gadget-cuisine.png
+      │       ├── vaisselle-enfants.png
+      │       ├── bureaux-caissons.png
+      │       ├── chaises-bureau.png
+      │       ├── armoires-rangements-bureau.png
+      │       ├── accessoires-bureaux.png
+      │       ├── tables-reunion.png
+      │       ├── poussette.png
+      │       ├── siege-auto.png
+      │       ├── meubles-bebe.png
+      │       ├── lit-bebe.png
+      │       ├── chaise-bebe.png
+      │       ├── autres-puericulture.png
+      │       ├── lustre.png
+      │       ├── lampadaire.png
+      │       ├── eclairage-exterieur.png
+      │       └── autres-luminaire.png
+      ├── loisirs-divertissements/
+      │   ├── level1/
+      │   │   └── loisirs.png
+      │   ├── level2/
+      │   │   ├── animalerie.png
+      │   │   ├── consoles-jeux-videos.png
+      │   │   ├── livres-magazines.png
+      │   │   ├── instruments-musique.png
+      │   │   ├── jouets.png
+      │   │   ├── chasse-peche.png
+      │   │   ├── jardinage.png
+      │   │   ├── jeux-loisirs.png
+      │   │   ├── barbecue-grillades.png
+      │   │   ├── vapes-chichas.png
+      │   │   ├── produits-accessoires-ete.png
+      │   │   ├── antiquites-collections.png
+      │   │   └── autres-loisirs.png
+      │   └── level3/
+      │       ├── produits-soin-animal.png
+      │       ├── chien.png
+      │       ├── oiseau.png
+      │       ├── animaux-ferme.png
+      │       ├── chat.png
+      │       ├── cheval.png
+      │       ├── poisson.png
+      │       ├── accessoire-animaux.png
+      │       ├── nourriture-animaux.png
+      │       ├── autres-animaux.png
+      │       ├── consoles.png
+      │       ├── jeux-videos.png
+      │       ├── accessoires-jeux.png
+      │       ├── litterature-philosophie.png
+      │       ├── romans.png
+      │       ├── scolaire-parascolaire.png
+      │       ├── sciences-techniques-medecine.png
+      │       ├── traduction.png
+      │       ├── religion-spiritualites.png
+      │       ├── historique.png
+      │       ├── cuisine.png
+      │       ├── essais-documents.png
+      │       ├── fiction.png
+      │       ├── enfants.png
+      │       ├── mangas-bande-dessinee.png
+      │       ├── instruments-electriques.png
+      │       ├── instruments-percussion.png
+      │       ├── instruments-vent.png
+      │       ├── instruments-cordes.png
+      │       ├── autre-instruments.png
+      │       ├── jeux-eveil.png
+      │       ├── poupees-peluches.png
+      │       ├── personnages-deguisements.png
+      │       ├── jeux-educatifs-puzzle.png
+      │       ├── vehicules-circuits.png
+      │       ├── jeux-electroniques.png
+      │       ├── construction-outils.png
+      │       ├── jeux-plein-air.png
+      │       ├── animaux-jouets.png
+      │       ├── canne-peche.png
+      │       ├── moulinets.png
+      │       ├── sondeurs-gps.png
+      │       ├── vetements-chasse-peche.png
+      │       ├── accessoires-peche.png
+      │       ├── materiel-plongee.png
+      │       ├── equipements-chasse.png
+      │       ├── mobilier-jardin.png
+      │       ├── semence.png
+      │       ├── outillage-arrosage.png
+      │       ├── plantes-fleurs.png
+      │       ├── equipements-materiels-jardin.png
+      │       ├── insecticide.png
+      │       ├── decoration-jardin.png
+      │       ├── livres-agriculture-jardin.png
+      │       ├── babyfoot.png
+      │       ├── billiard.png
+      │       ├── ping-pong.png
+      │       ├── echecs.png
+      │       ├── jeux-societe.png
+      │       ├── autres-jeux-loisirs.png
+      │       ├── barbecue.png
+      │       ├── charbon.png
+      │       ├── accessoires-barbecue.png
+      │       ├── vapes-cigarettes-electroniques.png
+      │       ├── chichas.png
+      │       ├── consommables.png
+      │       ├── accessoires-vapes.png
+      │       ├── piscines.png
+      │       ├── matelas-gonflables.png
+      │       ├── parasols.png
+      │       ├── transats-chaises-pliables.png
+      │       ├── tables-ete.png
+      │       └── autres-accessoires-ete.png
+      ├── offres-demandes-emploi/
+      │   ├── level1/
+      │   │   └── emploi.png
+      │   └── level2/
+      │       ├── offres-emploi.png
+      │       ├── demandes-emploi.png
+      │       └── autres-emploi.png
+      ├── sport/
+      │   ├── level1/
+      │   │   └── sport.png
+      │   ├── level2/
+      │   │   ├── football.png
+      │   │   ├── hand-voley-basket.png
+      │   │   ├── sport-combat.png
+      │   │   ├── fitness-musculation.png
+      │   │   ├── natation.png
+      │   │   ├── velos-trotinettes.png
+      │   │   ├── sports-raquette.png
+      │   │   ├── sport-aquatiques.png
+      │   │   ├── equitation.png
+      │   │   ├── petanque.png
+      │   │   └── autres-sports.png
+      │   └── level3/
+      │       ├── ballons-buts.png
+      │       ├── equipements-accessoires-foot.png
+      │       ├── chaussures-football.png
+      │       ├── vetements-football.png
+      │       ├── equipements-accessoires-basket.png
+      │       ├── ballons-buts-filets.png
+      │       ├── chaussures-basket.png
+      │       ├── vetements-basket.png
+      │       ├── tenue-combat.png
+      │       ├── gants-casques.png
+      │       ├── autres-accessoires-combat.png
+      │       ├── bancs-presses.png
+      │       ├── poids-halteres.png
+      │       ├── tapis-roulants.png
+      │       ├── velos-rameurs.png
+      │       ├── autres-equipements-fitness.png
+      │       ├── lunettes-natation.png
+      │       ├── bonnets.png
+      │       ├── palmes.png
+      │       ├── planches-flotteurs.png
+      │       ├── maillots-combinaisons.png
+      │       ├── autres-accessoires-natation.png
+      │       ├── vetements-chaussures-velo.png
+      │       ├── velos.png
+      │       ├── trotinettes.png
+      │       ├── equipements-accessoires-velo.png
+      │       ├── tennis.png
+      │       ├── tennis-table.png
+      │       └── autre-raquette.png
+      ├── alimentaires/
+      │   ├── level1/
+      │   │   └── alimentaires.png
+      │   └── level2/
+      │       ├── produits-laitiers.png
+      │       ├── fruits-secs.png
+      │       ├── graines-riz-cereales.png
+      │       ├── sucres-produits-sucres.png
+      │       ├── boissons.png
+      │       ├── viandes-poissons.png
+      │       ├── cafe-the-infusion.png
+      │       ├── complements-alimentaires.png
+      │       ├── miel-derives.png
+      │       ├── fruits-legumes.png
+      │       ├── ble-farine.png
+      │       ├── bonbons-chocolat.png
+      │       ├── boulangerie-viennoiserie.png
+      │       ├── ingredients-cuisine-patisserie.png
+      │       ├── noix-graines.png
+      │       ├── plats-cuisines.png
+      │       ├── sauces-epices-condiments.png
+      │       ├── oeufs.png
+      │       ├── huiles.png
+      │       ├── pates.png
+      │       ├── gateaux.png
+      │       ├── emballage.png
+      │       ├── aliments-bebe.png
+      │       ├── aliments-dietetiques.png
+      │       └── autre-alimentaires.png
+      ├── materiaux-equipement/
+      │   ├── level1/
+      │   │   └── materiaux.png
+      │   ├── level2/
+      │   │   ├── materiel-professionnel.png
+      │   │   ├── outillage-professionnel.png
+      │   │   ├── materiel-agricole.png
+      │   │   ├── materiaux-construction.png
+      │   │   ├── matieres-premieres.png
+      │   │   ├── produits-hygiene.png
+      │   │   └── autre-materiaux.png
+      │   └── level3/
+      │       ├── industrie-fabrication.png
+      │       ├── alimentaire-restauration.png
+      │       ├── medical.png
+      │       ├── batiment-construction.png
+      │       ├── materiel-electrique.png
+      │       ├── ateliers.png
+      │       ├── stockage-magasinage.png
+      │       ├── equipement-protection.png
+      │       ├── agriculture.png
+      │       ├── reparation-diagnostic.png
+      │       ├── commerce-detail.png
+      │       ├── coiffure-cosmetologie.png
+      │       ├── autres-materiel-pro.png
+      │       ├── perceuse.png
+      │       ├── meuleuse.png
+      │       ├── outillage-main.png
+      │       ├── scie.png
+      │       ├── autres-outillage.png
+      │       ├── equipement-agricole.png
+      │       ├── arbres.png
+      │       ├── terrain-agricole.png
+      │       └── autre-agricole.png
+      ├── services/
+      │   ├── level1/
+      │   │   └── services.png
+      │   └── level2/
+      │       ├── construction-travaux.png
+      │       ├── ecoles-formations.png
+      │       ├── industrie-fabrication.png
+      │       ├── transport-demenagement.png
+      │       ├── decoration-amenagement.png
+      │       ├── publicite-communication.png
+      │       ├── nettoyage-jardinage.png
+      │       ├── froid-climatisation.png
+      │       ├── traiteurs-gateaux.png
+      │       ├── medecine-sante.png
+      │       ├── reparation-auto-diagnostic.png
+      │       ├── securite-alarme.png
+      │       ├── projets-etudes.png
+      │       ├── bureautique-internet.png
+      │       ├── location-vehicules.png
+      │       ├── menuiserie-meubles.png
+      │       ├── impression-edition.png
+      │       ├── hotellerie-restauration-salles.png
+      │       ├── esthetique-beaute.png
+      │       ├── image-son.png
+      │       ├── comptabilite-economie.png
+      │       ├── couture-confection.png
+      │       ├── maintenance-informatique.png
+      │       ├── reparation-electromenager.png
+      │       ├── evenements-divertissement.png
+      │       ├── paraboles-demos.png
+      │       ├── reparation-electronique.png
+      │       ├── services-etranger.png
+      │       ├── flashage-reparation-telephones.png
+      │       ├── flashage-installation-jeux.png
+      │       ├── juridique.png
+      │       └── autres-services.png
+      └── voyages/
+          ├── level1/
+          │   └── voyages.png
+          └── level2/
+              ├── voyage-organise.png
+              ├── location-vacances.png
+              ├── hajj-omra.png
+              ├── reservations-visa.png
+              ├── sejour.png
+              ├── croisiere.png
+              └── autre-voyages.png

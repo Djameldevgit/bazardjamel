@@ -103,15 +103,7 @@ const CategorySlider = ({ categories = [], onCategoryClick }) => {
 
   return (
     <div className="cs-slider-final">
-      <div className="cs-slider-header">
-        <h2 className="cs-slider-title">Catégories Principales</h2>
-        <div className="cs-page-indicator">
-          <span className="cs-current-page">{currentPage + 1}</span>
-          <span className="cs-separator">/</span>
-          <span className="cs-total-pages">{totalPages}</span>
-        </div>
-      </div>
-      
+   
       <div className="cs-slider-container">
         {pages.length > 0 && (
           <div className="cs-slider-page cs-active">
@@ -243,11 +235,7 @@ const CategorySlider = ({ categories = [], onCategoryClick }) => {
           </div>
         )}
       </div>
-      
-      {/* Contador de categorías */}
-      <div className="cs-categories-counter">
-        {categories.length} catégories disponibles • Page {currentPage + 1} sur {totalPages}
-      </div>
+    
     </div>
   );
 };

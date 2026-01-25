@@ -1,0 +1,156 @@
+const fs = require('fs');
+const path = require('path');
+
+// Estructura de carpetas e imágenes (igual que la anterior)
+const structure = {
+  "public/uploads/categories/immobilier/level1": ["immobilier.png"],
+  "public/uploads/categories/immobilier/level2": [
+    "vente.png",
+    "location.png",
+    "location-vacances.png",
+    "cherche-location.png",
+    "cherche-achat.png"
+  ],
+  "public/uploads/categories/immobilier/level3": [
+    "appartement.png",
+    "local.png",
+    "villa.png",
+    "terrain.png",
+    "terrain-agricole.png",
+    "immeuble.png",
+    "bungalow.png",
+    "hangar-usine.png",
+    "autre.png"
+  ],
+
+  "public/uploads/categories/automobiles-vehicules/level1": ["automobiles.png"],
+  "public/uploads/categories/automobiles-vehicules/level2": [
+    "voitures.png",
+    "utilitaire.png",
+    "motos-scooters.png",
+    "quads.png",
+    "fourgon.png",
+    "camion.png",
+    "bus.png",
+    "engin.png",
+    "tracteurs.png",
+    "remorques.png",
+    "bateaux-barques.png"
+  ],
+
+  "public/uploads/categories/pieces-detachees/level1": ["pieces-detachees.png"],
+  "public/uploads/categories/pieces-detachees/level2": [
+    "pieces-automobiles.png",
+    "pieces-moto.png",
+    "pieces-bateaux.png",
+    "alarme-securite.png",
+    "nettoyage-entretien.png",
+    "outils-diagnostics.png",
+    "lubrifiants.png",
+    "pieces-vehicules.png",
+    "autres-pieces.png"
+  ],
+
+  "public/uploads/categories/pieces-detachees/level3": [
+    "moteur-transmission.png",
+    "suspension-direction.png",
+    "pieces-interieur.png",
+    "carrosserie.png",
+    "optiques-eclairage.png",
+    "vitres-pare-brise.png",
+    "pneus-jantes.png",
+    "housses-tapis.png",
+    "batteries.png",
+    "sono-multimedia.png",
+    "sieges-auto.png",
+    "autre-pieces-auto.png"
+  ],
+
+  "public/uploads/categories/telephones-accessoires/level1": ["telephones.png"],
+  "public/uploads/categories/telephones-accessoires/level2": [
+    "smartphones.png",
+    "telephones-cellulaires.png",
+    "tablettes.png",
+    "fixes-fax.png",
+    "smartwatchs.png",
+    "accessoires.png",
+    "pieces-rechange.png",
+    "offres-abonnements.png",
+    "protection-antichoc.png",
+    "ecouteurs-son.png",
+    "chargeurs-cables.png",
+    "supports-stabilisateurs.png",
+    "manettes.png",
+    "vr.png",
+    "power-banks.png",
+    "stylets.png",
+    "cartes-memoire.png",
+    "accessoires-divers.png"
+  ],
+  "public/uploads/categories/telephones-accessoires/level3": [
+    "protections-ecran.png",
+    "coques-antichoc.png",
+    "films-protection.png",
+    "etuis.png",
+    "protections-camera.png",
+    "ecouteurs-filaires.png",
+    "ecouteurs-bluetooth.png",
+    "casques-audio.png",
+    "hauts-parleurs-portables.png",
+    "adaptateurs-audio.png",
+    "chargeurs-mur.png",
+    "chargeurs-voiture.png",
+    "chargeurs-sans-fil.png",
+    "cables-usb.png",
+    "cables-lightning.png",
+    "cables-type-c.png",
+    "hubs-chargeurs.png",
+    "supports.png",
+    "stabilisateurs.png",
+    "barres-selfies.png",
+    "pieds-telephone.png",
+    "ventouses-voiture.png",
+    "manettes-bluetooth.png",
+    "manettes-filaires.png",
+    "manettes-telephone.png",
+    "manettes-tablette.png",
+    "accessoires-manettes.png",
+    "casques-vr.png",
+    "lunettes-vr.png",
+    "accessoires-vr.png",
+    "controleurs-vr.png",
+    "jeux-vr.png",
+    "power-bank-10000mah.png",
+    "power-bank-20000mah.png",
+    "power-bank-solaire.png",
+    "power-bank-rapide.png",
+    "power-bank-compact.png",
+    "stylets-actifs.png",
+    "stylets-passifs.png",
+    "stylets-bluetooth.png",
+    "stylets-tablette.png",
+    "recharges-stylet.png",
+    "sd-cards.png",
+    "micro-sd-cards.png",
+    "sdhc-cards.png",
+    "sdxc-cards.png",
+    "adaptateurs-carte.png",
+    "lecteurs-carte.png"
+  ]
+};
+
+// ----------------- CREAR PLACEHOLDERS TRANSPARENTES -----------------
+const placeholder = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIW2NgYGD4DwABBAEAxFTGJwAAAABJRU5ErkJggg==",
+  "base64"
+); // 1x1 px PNG transparente
+
+for (const dir in structure) {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  structure[dir].forEach(file => {
+    const filePath = path.join(dir, file);
+    if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, placeholder);
+  });
+}
+
+console.log("✅ Placeholders transparentes creados en todas las carpetas.");
