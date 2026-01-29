@@ -1,177 +1,63 @@
-// Carousel.jsx
-import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'react-bootstrap-icons';
+import React from 'react'
+import { useSelector } from 'react-redux'
 
-const Carousel = ({ images, id, isMobile, isTablet, isDesktop }) => {
-    const [currentIndex, setCurrentIndex] = useState(0);
+const Carousel = ({images, id}) => {
+    const isActive = index => {
+        if(index === 0) return "active";
+    }
 
-    const prevSlide = () => {
-        setCurrentIndex((prevIndex) => 
-            prevIndex === 0 ? images.length - 1 : prevIndex - 1
-        );
-    };
-
-    const nextSlide = () => {
-        setCurrentIndex((prevIndex) => 
-            prevIndex === images.length - 1 ? 0 : prevIndex + 1
-        );
-    };
-
-    const getImageSize = () => {
-        if (isMobile) return '200px';
-        if (isTablet) return '250px';
-        return '300px';
-    };
+    const { theme } = useSelector(state => state)
 
     return (
-        <div style={{ 
-            position: 'relative',
-            width: '100%',
-            height: getImageSize(),
-            overflow: 'hidden',
-            borderRadius: isMobile ? '4px' : '6px'
-        }}>
-            {images.map((img, index) => (
-                <div
-                    key={index}
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: `${(index - currentIndex) * 100}%`,
-                        width: '100%',
-                        height: '100%',
-                        transition: 'left 0.3s ease-in-out',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <img
-                        src={img}
-                        alt={`${id}-image-${index}`}
-                        style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover',
-                            borderRadius: isMobile ? '4px' : '6px'
-                        }}
-                        onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = 'https://via.placeholder.com/300x200?text=No+Image';
-                        }}
-                    />
-                </div>
-            ))}
+        <div id={`image${id}`} className="carousel slide" data-ride="carousel">
+            <ol className="carousel-indicators" style={{zIndex: 1}}>
+                {
+                    images.map((img, index) => (
+                        <li key={index} data-target={`#image${id}`} 
+                        data-slide-to={index} className={isActive(index)} />
+                    ))
+                }
+                
+            </ol>
 
-            {/* Botones de navegación */}
-            {images.length > 1 && (
+            <div className="carousel-inner">
+                {
+                    images.map((img, index) => (
+                        <div key={index} className={`carousel-item ${isActive(index)}`}>
+                            {
+                                img.url.match(/video/i)
+                                ? <video controls src={img.url} className="d-block w-100" alt={img.url}
+                                style={{filter: theme ? 'invert(1)' : 'invert(0)'}} />
+
+                                : <img src={img.url} className="d-block w-100" alt={img.url}
+                                style={{filter: theme ? 'invert(1)' : 'invert(0)'}} />
+                            }
+                           
+                        </div>
+                    ))
+                }
+                
+            </div>
+            
+            {
+                images.length > 1 &&
                 <>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            prevSlide();
-                        }}
-                        style={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '10px',
-                            transform: 'translateY(-50%)',
-                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                            border: 'none',
-                            borderRadius: '50%',
-                            width: isMobile ? '28px' : '36px',
-                            height: isMobile ? '28px' : '36px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                            zIndex: 2,
-                        }}
-                        aria-label="Previous image"
-                    >
-                        <ChevronLeft size={isMobile ? 16 : 20} />
-                    </button>
+                    <a className="carousel-control-prev" href={`#image${id}`} role="button" data-slide="prev"
+                    style={{width: '5%'}}>
+                        <span className="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span className="sr-only">Previous</span>
+                    </a>
 
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            nextSlide();
-                        }}
-                        style={{
-                            position: 'absolute',
-                            top: '50%',
-                            right: '10px',
-                            transform: 'translateY(-50%)',
-                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                            border: 'none',
-                            borderRadius: '50%',
-                            width: isMobile ? '28px' : '36px',
-                            height: isMobile ? '28px' : '36px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                            zIndex: 2,
-                        }}
-                        aria-label="Next image"
-                    >
-                        <ChevronRight size={isMobile ? 16 : 20} />
-                    </button>
-
-                    {/* Indicadores */}
-                    <div style={{
-                        position: 'absolute',
-                        bottom: '10px',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        display: 'flex',
-                        gap: '6px',
-                        zIndex: 2,
-                    }}>
-                        {images.map((_, index) => (
-                            <button
-                                key={index}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setCurrentIndex(index);
-                                }}
-                                style={{
-                                    width: isMobile ? '6px' : '8px',
-                                    height: isMobile ? '6px' : '8px',
-                                    borderRadius: '50%',
-                                    border: 'none',
-                                    backgroundColor: index === currentIndex ? '#007bff' : 'rgba(255, 255, 255, 0.5)',
-                                    cursor: 'pointer',
-                                    padding: 0,
-                                    transition: 'all 0.2s ease',
-                                }}
-                                aria-label={`Go to image ${index + 1}`}
-                            />
-                        ))}
-                    </div>
+                    <a className="carousel-control-next" href={`#image${id}`} role="button" data-slide="next"
+                    style={{width: '5%'}}>
+                        <span className="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span className="sr-only">Next</span>
+                    </a>
                 </>
-            )}
-
-            {/* Contador de imágenes */}
-            {images.length > 1 && (
-                <div style={{
-                    position: 'absolute',
-                    top: '10px',
-                    right: '10px',
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    color: 'white',
-                    padding: '4px 8px',
-                    borderRadius: '12px',
-                    fontSize: isMobile ? '10px' : '12px',
-                    zIndex: 2,
-                }}>
-                    {currentIndex + 1} / {images.length}
-                </div>
-            )}
+            }
+            
         </div>
-    );
-};
+    )
+}
 
-export default Carousel;
+export default Carousel

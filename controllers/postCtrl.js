@@ -23,92 +23,171 @@ const postCtrl = {
   // =====================================================
   // 🧩 CREAR NUEVO POST
   // =====================================================
-  createPost: async (req, res) => {
+  // controllers/postController.js
+  createPost :async (req, res) => {
     try {
       const {
-        title,
-        description,
-        price,
         categorie,
         subCategory,
         articleType,
+        // Campos comunes
+        title,
+        description,
+        price,
+        etat = 'occasion',
         phone,
         email,
-        wilaya,
-        commune,
-        address,
-        etat = 'occasion',
-        livraison = false,
-        echange = false,
-        marque = '',
-        modele = '',
-        gross_detail = '',
-        unite = '',
-        categorySpecificData = {},
-        boutiqueData = {},
-        images = []
+        // Campos específicos
+        ...otherFields
       } = req.body;
-
-      if (!title || !description || !price) {
-        return res.status(400).json({ success: false, message: 'Título, descripción y precio son requeridos' });
-      }
-
+  
+      console.log('📥 Datos recibidos del frontend:', req.body);
+  
+      // Validaciones básicas
       if (!categorie || !subCategory) {
-        return res.status(400).json({ success: false, message: 'Categoría y subcategoría son requeridas' });
+        return res.status(400).json({
+          success: false,
+          error: "Catégorie et sous-catégorie sont requises"
+        });
       }
-
-      // 🔍 Buscar la categoría final
-      let finalCategory =
-        (articleType && await Category.findOne({ slug: articleType, level: 3, isActive: true })) ||
-        (await Category.findOne({ slug: subCategory, level: 2, isActive: true })) ||
-        (await Category.findOne({ slug: categorie, level: 1, isActive: true }));
-
-      if (!finalCategory) {
-        return res.status(404).json({ success: false, message: 'Categoría no encontrada' });
-      }
-
-      if (!req.user || !req.user._id) {
-        return res.status(401).json({ success: false, message: 'Usuario no autenticado' });
-      }
-
-      const postData = {
-        title: title.trim(),
-        description: description.trim(),
+  
+      // Crear el objeto del post
+      const newPost = {
+        categorie,
+        subCategory,
+        articleType: articleType || '',
+        
+        // Campos comunes
+        title: title || '',
+        description: description || '',
         price: parseFloat(price) || 0,
-        category: finalCategory._id,
-        user: req.user._id,
-        images: Array.isArray(images) ? images.map(img => img.url || img) : [],
-        status: 'active',
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        etat: etat || 'occasion',
+        phone: phone || '',
+        email: email || '',
+        
+        // Campos de ubicación
+        wilaya: req.body.wilaya || '',
+        commune: req.body.commune || '',
+        address: req.body.address || '',
+        
+        // User info
+        user: req.user.id,
+        
+        // Campos específicos
+        categorySpecificData: {}
       };
-
-      // Agregar atributos
-      const attributes = {
-        etat, livraison, echange, marque, modele, gross_detail, unite,
-        phone, email, wilaya, commune, address
-      };
-      Object.assign(attributes, categorySpecificData, boutiqueData);
-      postData.attributes = attributes;
-
-      const newPost = new Post(postData);
-      const created = await newPost.save();
-
-      await Category.findByIdAndUpdate(finalCategory._id, {
-        $inc: { postCount: 1 },
-        lastPostDate: new Date()
-      });
-
+  
+      // Extraer categorySpecificData si viene separado
+      if (req.body.categorySpecificData) {
+        newPost.categorySpecificData = req.body.categorySpecificData;
+      } else {
+        // Si no viene categorySpecificData, extraer campos que no son del post principal
+        const postFields = [
+          'categorie', 'subCategory', 'articleType',
+          'title', 'description', 'price', 'etat',
+          'phone', 'email', 'wilaya', 'commune', 'address',
+          'user', 'images'
+        ];
+        
+        Object.keys(req.body).forEach(key => {
+          if (!postFields.includes(key) && req.body[key] !== undefined) {
+            newPost.categorySpecificData[key] = req.body[key];
+          }
+        });
+      }
+  
+      console.log('📝 Post a guardar:', newPost);
+  
+      // Guardar en la base de datos
+      const post = await Post.create(newPost);
+      
+      // Guardar imágenes si existen
+      if (req.body.images && req.body.images.length > 0) {
+        // Lógica para guardar imágenes
+      }
+  
       res.status(201).json({
         success: true,
-        message: 'Post creado exitosamente',
-        post: created
+        data: post
       });
+  
     } catch (error) {
-      console.error('Error en createPost:', error);
-      res.status(500).json({ success: false, message: 'Error al crear post', error: error.message });
+      console.error('❌ Error en createPost:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || "Erreur lors de la création du post"
+      });
     }
   },
-
+  updatePost: async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      console.log('📝 Actualizando post ID:', id);
+      console.log('📥 Nuevos datos:', req.body);
+      
+      // Buscar el post existente
+      let post = await Post.findById(id);
+      
+      if (!post) {
+        return res.status(404).json({
+          success: false,
+          error: "Post non trouvé"
+        });
+      }
+      
+      // Verificar que el usuario sea el propietario
+      if (post.user.toString() !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          error: "Non autorisé à modifier ce post"
+        });
+      }
+      
+      // Extraer datos para actualizar
+      const updateData = { ...req.body };
+      
+      // Manejar categorySpecificData
+      if (req.body.categorySpecificData) {
+        // Si viene un Map o un objeto, convertirlo a Map
+        if (req.body.categorySpecificData instanceof Map) {
+          updateData.categorySpecificData = req.body.categorySpecificData;
+        } else if (typeof req.body.categorySpecificData === 'object') {
+          const map = new Map();
+          Object.entries(req.body.categorySpecificData).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              map.set(key, value);
+            }
+          });
+          updateData.categorySpecificData = map;
+        }
+      }
+      
+      // Convertir price a número si existe
+      if (updateData.price) {
+        updateData.price = parseFloat(updateData.price);
+      }
+      
+      // Actualizar el post
+      post = await Post.findByIdAndUpdate(
+        id,
+        updateData,
+        { new: true, runValidators: true }
+      );
+      
+      res.status(200).json({
+        success: true,
+        data: post
+      });
+      
+    } catch (error) {
+      console.error('❌ Error en updatePost:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || "Erreur lors de la mise à jour du post"
+      });
+    }
+  },
   // =====================================================
   // 🔍 FILTRAR POSTS
   // =====================================================
@@ -117,235 +196,107 @@ const postCtrl = {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 12;
       const skip = (page - 1) * limit;
-  
-      const { category, sub, article } = req.query;
-  
-      console.log('🔍 FILTERPOSTS - Parámetros recibidos:', {
-        category,
-        sub,
-        article,
-        page,
-        limit
-      });
-  
-      if (!category) {
-        return res.json({ 
-          success: true, 
-          posts: [], 
-          total: 0, 
-          page, 
-          hasMore: false, 
-          message: 'Se requiere categoría' 
+
+      const { category: categoryParam, sub } = req.query;
+
+      if (!categoryParam) {
+        return res.json({
+          success: true,
+          posts: [],
+          total: 0,
+          page,
+          hasMore: false,
+          message: 'Se requiere categoría'
         });
       }
-  
-      // 1️⃣ Buscar categoría principal por SLUG
-      let categoryDoc = await Category.findOne({ slug: category }).lean();
-      
-      // Debug: Ver qué encontramos
-   
-  
-      if (!categoryDoc && mongoose.Types.ObjectId.isValid(category)) {
-        categoryDoc = await Category.findById(category).lean();
+
+      // 🔹 1️⃣ Obtener la categoría principal
+      let categoryDoc = await Category.findOne({ slug: categoryParam }).lean();
+      if (!categoryDoc && mongoose.Types.ObjectId.isValid(categoryParam)) {
+        categoryDoc = await Category.findById(categoryParam).lean();
       }
-      
       if (!categoryDoc) {
-        return res.json({ 
-          success: true, 
-          posts: [], 
-          total: 0, 
-          page, 
-          hasMore: false, 
-          message: 'Categoría no encontrada' 
+        return res.json({
+          success: true,
+          posts: [],
+          total: 0,
+          page,
+          hasMore: false,
+          message: 'Categoría no encontrada'
         });
       }
-  
-      // 2️⃣ Obtener todos los IDs de categorías hijos
-      let todasCategoriasIds = [categoryDoc._id];
+
+      // 🔹 2️⃣ Función helper para obtener IDs de hijos recursivamente
+      const getChildCategories = async (catId) => {
+        const children = await Category.find({ parent: catId, isActive: true })
+          .select('_id level name slug emoji icon iconType iconColor bgColor hasChildren isLeaf order')
+          .sort({ order: 1 })
+          .lean();
+
+        let allIds = children.map(c => c._id);
+
+        for (const child of children) {
+          const subIds = await getChildCategories(child._id);
+          allIds = [...allIds, ...subIds];
+        }
+
+        return allIds;
+      };
+
+      // 🔹 3️⃣ Determinar categorías a filtrar según nivel
       let children = [];
-  
-      // ⭐⭐ CASO 1: NIVEL 1 (categoría principal)
-      if (categoryDoc.level === 1) {
-        console.log('📍 CASO 1: Nivel 1 - Categoría principal');
-        
-        // Si viene subcategoría específica
-        if (sub) {
-          console.log('🔍 Buscando subcategoría específica:', sub);
-          
-          // Buscar subcategoría
-          const subcatDoc = await Category.findOne({
-            slug: sub,
-            parent: categoryDoc._id,
-            level: 2,
-            isActive: true
-          }).lean();
-          
-          if (subcatDoc) {
-            console.log('✅ Subcategoría encontrada:', subcatDoc.name);
-            
-            // ⭐⭐ IMPORTANTE: Ahora buscar ARTÍCULOS de esta subcategoría
-            const articulos = await Category.find({
-              parent: subcatDoc._id,
-              level: 3,
-              isActive: true
-            })
-              .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf')
-              .sort({ order: 1 })
-              .lean();
-            
-            console.log('📁 Artículos encontrados para subcategoría:', {
-              subcategoria: subcatDoc.name,
-              totalArticulos: articulos.length,
-              nombres: articulos.map(a => a.name)
-            });
-            
-            children = articulos;
-            todasCategoriasIds = [subcatDoc._id, ...articulos.map(a => a._id)];
-            
-          } else {
-            console.log('⚠️ Subcategoría no encontrada, mostrando todas las subcategorías');
-            // Fallback: mostrar subcategorías
-            const subcategorias = await Category.find({
-              parent: categoryDoc._id,
-              level: 2,
-              isActive: true
-            })
-              .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf')
-              .sort({ order: 1 })
-              .lean();
-            
-            children = subcategorias;
-            todasCategoriasIds = [categoryDoc._id, ...subcategorias.map(s => s._id)];
-          }
-          
-        } else {
-          // Sin sub: mostrar subcategorías
-          console.log('📋 Mostrando subcategorías de', categoryDoc.name);
-          const subcategorias = await Category.find({
-            parent: categoryDoc._id,
-            level: 2,
-            isActive: true
-          })
-            .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf')
+      let allCategoryIds = [categoryDoc._id];
+
+      if (categoryDoc.level === 1 && sub) {
+        // Buscar subcategoría específica si existe
+        const subDoc = await Category.findOne({ slug: sub, parent: categoryDoc._id, level: 2, isActive: true }).lean();
+        if (subDoc) {
+          const articleIds = await getChildCategories(subDoc._id);
+          children = await Category.find({ parent: subDoc._id, level: 3, isActive: true })
+            .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf order')
             .sort({ order: 1 })
             .lean();
-          
-          children = subcategorias;
-          todasCategoriasIds = [categoryDoc._id, ...subcategorias.map(s => s._id)];
+          allCategoryIds = [subDoc._id, ...articleIds];
+        } else {
+          // fallback: todas las subcategorías
+          children = await Category.find({ parent: categoryDoc._id, level: 2, isActive: true })
+            .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf order')
+            .sort({ order: 1 })
+            .lean();
+          allCategoryIds = [categoryDoc._id, ...children.map(c => c._id)];
         }
-        
-      } 
-      // ⭐⭐ CASO 2: NIVEL 2 (subcategoría) - ESTO ES LO QUE NECESITAS FIJAR
-      else if (categoryDoc.level === 2) {
-        console.log('📍 CASO 2: Nivel 2 - Subcategoría DIRECTA');
-        console.log('🔍 Subcategoría encontrada:', {
-          nombre: categoryDoc.name,
-          id: categoryDoc._id,
-          slug: categoryDoc.slug
-        });
-        
-        // ⭐⭐ BUSCAR ARTÍCULOS (nivel 3)
-        const articulos = await Category.find({ 
-          parent: categoryDoc._id, 
-          level: 3, 
-          isActive: true 
-        })
+      } else {
+        // 🔹 CASO: Nivel 2 o 3
+        const childIds = await getChildCategories(categoryDoc._id);
+      
+        children = await Category.find({ parent: categoryDoc._id, isActive: true })
           .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf order')
           .sort({ order: 1 })
           .lean();
-        
-        console.log('📊 Resultado búsqueda de artículos:', {
-          subcategoria: categoryDoc.name,
-          queryUsado: { parent: categoryDoc._id, level: 3 },
-          articulosEncontrados: articulos.length,
-          nombres: articulos.map(a => a.name)
-        });
-        
-        // ⭐⭐ SI NO ENCUENTRA ARTÍCULOS NIVEL 3, VERIFICAR ESTRUCTURA
-        if (articulos.length === 0) {
-          console.warn('⚠️ NO SE ENCONTRARON ARTÍCULOS NIVEL 3. Verificando estructura...');
-          
-          // Opción A: Buscar cualquier hijo sin filtrar por level
-          const hijosCualquierNivel = await Category.find({ 
-            parent: categoryDoc._id,
-            isActive: true 
-          })
-            .select('_id name slug level emoji icon hasChildren isLeaf')
-            .sort({ order: 1 })
-            .lean();
-          
-          console.log('🔍 Hijos encontrados (cualquier nivel):', {
-            total: hijosCualquierNivel.length,
-            niveles: hijosCualquierNivel.map(h => h.level),
-            nombres: hijosCualquierNivel.map(h => h.name)
-          });
-          
-          if (hijosCualquierNivel.length > 0) {
-            children = hijosCualquierNivel;
-            todasCategoriasIds = [categoryDoc._id, ...hijosCualquierNivel.map(h => h._id)];
-          } else {
-            // Opción B: Si no tiene hijos, verificar si es leaf
-            if (categoryDoc.isLeaf) {
-              console.log('ℹ️ La subcategoría está marcada como leaf - no tiene hijos');
-              children = [];
-              todasCategoriasIds = [categoryDoc._id];
-            } else {
-              // Opción C: Mostrar la categoría actual como única opción
-              children = [];
-              todasCategoriasIds = [categoryDoc._id];
-            }
-          }
-        } else {
-          // ✅ Encontró artículos nivel 3
-          children = articulos;
-          todasCategoriasIds = [categoryDoc._id, ...articulos.map(a => a._id)];
-        }
-      }
-      // ⭐⭐ CASO 3: NIVEL 3 (artículo)
-      else if (categoryDoc.level === 3) {
-        console.log('📍 CASO 3: Nivel 3 - Artículo');
-        
-        // Para artículo: mostrar TODOS los artículos de la misma subcategoría
-        const subcategoriaPadre = await Category.findById(categoryDoc.parent).lean();
-        
-        if (subcategoriaPadre) {
-          const todosArticulos = await Category.find({
-            parent: subcategoriaPadre._id,
-            level: 3,
-            isActive: true
-          })
-            .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf')
-            .sort({ order: 1 })
-            .lean();
-          
-          children = todosArticulos;
-          todasCategoriasIds = [categoryDoc._id]; // Solo posts del artículo actual
-        } else {
-          children = [];
-          todasCategoriasIds = [categoryDoc._id];
-        }
-      }
-  
-      console.log('🎯 Resultado final children:', {
-        totalChildren: children.length,
-        children: children.map(c => ({
-          nombre: c.name,
-          nivel: c.level,
-          slug: c.slug
-        }))
-      });
-  
-      // 3️⃣ Buscar posts
-      const filter = { 
-        category: { $in: todasCategoriasIds }, 
-        status: 'active' 
-      };
       
-      console.log('🔍 Query para posts:', {
-        categoriasIds: todasCategoriasIds.map(id => String(id).substring(0, 8)),
-        totalIds: todasCategoriasIds.length
-      });
-  
+        allCategoryIds = [categoryDoc._id, ...childIds];
+      
+        // 🧩 Fallback: si no existen artículos hijos, devolvemos un "artículo genérico"
+        if (children.length === 0 && categoryDoc.level === 2) {
+          console.log(`⚠️ Sin artículos nivel 3 para ${categoryDoc.name}, creando placeholder`);
+          children = [{
+            _id: categoryDoc._id,
+            name: `Todos los ${categoryDoc.name}`,
+            slug: categoryDoc.slug,
+            level: 3,
+            emoji: categoryDoc.emoji || '',
+            icon: categoryDoc.icon || '',
+            iconType: categoryDoc.iconType || 'image-png',
+            iconColor: categoryDoc.iconColor || '#666666',
+            bgColor: categoryDoc.bgColor || '#FFFFFF',
+            isLeaf: true,
+            hasChildren: false
+          }];
+        }
+      }
+      // 🔹 4️⃣ Consultar posts activos
+      const filter = { category: { $in: allCategoryIds }, status: 'active' };
+
       const [posts, total] = await Promise.all([
         Post.find(filter)
           .sort({ createdAt: -1 })
@@ -357,20 +308,12 @@ const postCtrl = {
           .lean(),
         Post.countDocuments(filter)
       ]);
-  
+
       const hasMore = page * limit < total;
       const totalPages = Math.ceil(total / limit);
-  
-      console.log('📦 Posts obtenidos:', {
-        postsEncontrados: posts.length,
-        totalPosts: total,
-        page,
-        totalPages,
-        hasMore
-      });
-  
-      // 4️⃣ Preparar respuesta
-      const response = {
+
+      // 🔹 5️⃣ Respuesta final
+      return res.json({
         success: true,
         posts,
         total,
@@ -378,14 +321,13 @@ const postCtrl = {
         limit,
         hasMore,
         totalPages,
-        categoryInfo: {  // ⭐ Cambié de "category" a "categoryInfo" para coincidir con frontend
+        categoryInfo: {
           _id: categoryDoc._id,
           name: categoryDoc.name,
           slug: categoryDoc.slug,
           level: categoryDoc.level,
           emoji: categoryDoc.emoji || '',
           description: categoryDoc.description || '',
-          // ⭐ Añadir campos de icono
           icon: categoryDoc.icon || '',
           iconType: categoryDoc.iconType || 'image-png',
           iconColor: categoryDoc.iconColor || '#666666',
@@ -399,108 +341,57 @@ const postCtrl = {
           emoji: c.emoji || '',
           hasChildren: c.hasChildren || false,
           isLeaf: c.isLeaf || false,
-          // ⭐ Añadir campos de icono para children también
           icon: c.icon || '',
           iconType: c.iconType || 'image-png',
           iconColor: c.iconColor || categoryDoc.iconColor || '#666666',
           bgColor: c.bgColor || categoryDoc.bgColor || '#FFFFFF'
         }))
-      };
-  
-      console.log('✅ Response final:', {
-        categoryName: response.categoryInfo.name,
-        categoryLevel: response.categoryInfo.level,
-        childrenCount: response.children.length,
-        childrenNiveles: response.children.map(c => c.level),
-        childrenNombres: response.children.map(c => c.name)
       });
-  
-      return res.json(response);
-  
-    } catch (error) {
-      console.error('❌ Error crítico en filterPosts:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Error al filtrar posts', 
-        error: error.message 
-      });
-    }
-  },
 
-  // =====================================================
-  // 📄 OBTENER POSTS PAGINADOS
-  // =====================================================
+    } catch (error) {
+      console.error('❌ Error en filterPosts optimizado:', error);
+      res.status(500).json({ success: false, message: 'Error al filtrar posts', error: error.message });
+    }
+
+
+  },
   getPosts: async (req, res) => {
     try {
-      const {
-        page = 1,
-        limit = 12,
-        category,
-        subCategory,
-        article,
-        sortBy = 'createdAt',
-        sortOrder = 'desc',
-        minPrice,
-        maxPrice,
-        location,
-        search
-      } = req.query;
+        const { page = 1, limit = 9, category } = req.query;
+        const skip = (page - 1) * limit;
 
-      const skip = (page - 1) * limit;
-      const query = { status: 'active' };
-      const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+        // Construir query
+        let query = { isActive: true };
 
-      // Filtros
-      if (minPrice || maxPrice) {
-        query.price = {};
-        if (minPrice) query.price.$gte = parseFloat(minPrice);
-        if (maxPrice) query.price.$lte = parseFloat(maxPrice);
-      }
-
-      if (location) {
-        query['attributes.wilaya'] = { $regex: location, $options: 'i' };
-      }
-
-      if (search) {
-        query.$or = [
-          { title: { $regex: search, $options: 'i' } },
-          { description: { $regex: search, $options: 'i' } }
-        ];
-      }
-
-      // Filtro categoría
-      if (category) {
-        const regex = new RegExp(category, 'i');
-        const foundCategory = await Category.findOne({ slug: regex });
-        if (foundCategory) query.category = foundCategory._id;
-      }
-
-      const [posts, total] = await Promise.all([
-        Post.find(query)
-          .populate('category', 'name slug emoji path')
-          .populate('user', 'name username avatar')
-          .sort(sort)
-          .skip(skip)
-          .limit(limit)
-          .lean(),
-        Post.countDocuments(query)
-      ]);
-
-      res.json({
-        success: true,
-        posts,
-        pagination: {
-          currentPage: parseInt(page),
-          totalPages: Math.ceil(total / limit),
-          totalPosts: total,
-          hasMore: page * limit < total
+        // Si hay categoría, filtrar
+        if (category && category !== 'all') {
+            query.categorie = category;
         }
-      });
-    } catch (error) {
-      console.error('Error en getPosts:', error);
-      res.status(500).json({ success: false, message: 'Error al obtener posts', error: error.message });
+
+        // Obtener posts
+        const posts = await Posts.find(query)
+            .skip(skip)
+            .limit(parseInt(limit))
+            .sort('-createdAt')
+            .populate("user", "avatar username");
+
+        // Contar total
+        const total = await Posts.countDocuments(query);
+
+        res.json({
+            msg: 'Success!',
+            result: posts.length,
+            total,
+            page: parseInt(page),
+            totalPages: Math.ceil(total / limit),
+            posts
+        });
+
+    } catch (err) {
+        console.error('❌ Error en getPosts:', err);
+        return res.status(500).json({ msg: err.message });
     }
-  },
+},
 
   // =====================================================
   // 🔍 OBTENER POST DETALLADO
@@ -649,37 +540,7 @@ const postCtrl = {
   // =====================================================
   // ✏️ ACTUALIZAR POST
   // =====================================================
-  updatePost: async (req, res) => {
-    try {
-      const { id } = req.params;
-      const updates = req.body;
-
-      const post = await Post.findById(id);
-      if (!post) return res.status(404).json({ success: false, message: 'Post no encontrado' });
-
-      if (req.user && post.user.toString() !== req.user._id.toString()) {
-        return res.status(403).json({ success: false, message: 'No autorizado' });
-      }
-
-      updates.updatedAt = new Date();
-      if (updates.status === 'active' && post.status !== 'active') {
-        updates.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-      }
-
-      const updatedPost = await Post.findByIdAndUpdate(
-        id,
-        { $set: updates },
-        { new: true, runValidators: true }
-      )
-        .populate('category', 'name slug emoji')
-        .populate('user', 'name username');
-
-      res.json({ success: true, message: 'Post actualizado', post: updatedPost });
-    } catch (error) {
-      console.error('Error en updatePost:', error);
-      res.status(500).json({ success: false, message: 'Error al actualizar post', error: error.message });
-    }
-  },
+  
 
   // =====================================================
   // 🗑️ ELIMINAR POST (SOFT DELETE)

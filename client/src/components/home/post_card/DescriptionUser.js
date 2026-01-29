@@ -211,12 +211,12 @@ const DescriptionUser = ({ user, post = null }) => {
           <Card.Body>
             <Row>
               {/* TELÉFONO */}
-              {user.phone && (
+              {user.telephone && (
                 <Col xs={12} md={6}>
                   <UserInfoLine
                     icon="📞"
                     label={t('descripcion:phone')}
-                    value={user.phone}
+                    value={user.telephonephone}
                     badge={{
                       color: 'success',
                       text: t('descripcion:verified')
@@ -224,7 +224,7 @@ const DescriptionUser = ({ user, post = null }) => {
                     action={{
                       icon: '📲',
                       text: t('descripcion:call'),
-                      onClick: () => window.location.href = `tel:${user.phone}`
+                      onClick: () => window.location.href = `tel:${user.telephone}`
                     }}
                   />
                 </Col>

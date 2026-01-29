@@ -1,0 +1,668 @@
+// 📂 pages/CreateAnnoncePage.js - VERSIÓN CORREGIDA
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useHistory, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { 
+  Container, Button, Alert, Spinner, Row, Col, Badge 
+} from 'react-bootstrap';
+import { motion, AnimatePresence } from 'framer-motion';
+import { createPost, updatePost } from '../redux/actions/postAction';
+import CategoryAccordion from '../components/CATEGORIES/CategoryAccordion';
+import DynamicFieldManager from '../components/CATEGORIES/DynamicFieldManager';
+import ImagesStep from '../components/CATEGORIES/camposComun/ImagesStep';
+
+const CreateAnnoncePage = () => {
+  const { auth } = useSelector((state) => state);
+  const dispatch = useDispatch();
+  const history = useHistory();
+  const location = useLocation();
+  const { t, i18n } = useTranslation();
+  
+  const isRTL = i18n.language === 'ar';
+  const isEdit = location.state?.isEdit || false;
+  const postToEdit = location.state?.postData || null;
+
+  // 🎯 ESTADOS SIMPLIFICADOS
+  const [currentStep, setCurrentStep] = useState(1);
+  const [categoryData, setCategoryData] = useState({
+    categorie: '',
+    subCategory: '',
+    articleType: '',
+  });
+  const [specificData, setSpecificData] = useState({});
+  const [images, setImages] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [alert, setAlert] = useState({ 
+    show: false, 
+    message: '', 
+    variant: 'info' 
+  });
+
+  // 🔍 DEBUG: Para ver los datos en tiempo real
+  useEffect(() => {
+    console.log('🔍 Current state:', {
+      currentStep,
+      categoryData,
+      specificData,
+      imagesCount: images.length
+    });
+  }, [currentStep, categoryData, specificData, images]);
+
+  // 📥 CARGAR DATOS DE EDICIÓN (SIMPLIFICADO)
+  useEffect(() => {
+    if (isEdit && postToEdit) {
+      console.log('📥 Loading edit data:', postToEdit);
+      
+      // Cargar datos básicos
+      setCategoryData({
+        categorie: postToEdit.categorie || '',
+        subCategory: postToEdit.subCategory || '',
+        articleType: postToEdit.articleType || '',
+      });
+
+      // Cargar datos específicos - solo los que necesitamos
+      const loadedData = {};
+      
+      // Campos directos del post
+      const directFields = ['title', 'description', 'price', 'telephone',  'wilaya', 'commune'];
+      directFields.forEach(field => {
+        if (postToEdit[field] !== undefined && postToEdit[field] !== null && postToEdit[field] !== '') {
+          loadedData[field] = postToEdit[field];
+        }
+      });
+
+      // Si hay categorySpecificData, combinarlo
+      if (postToEdit.categorySpecificData && typeof postToEdit.categorySpecificData === 'object') {
+        Object.entries(postToEdit.categorySpecificData).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            loadedData[key] = value;
+          }
+        });
+      }
+
+      console.log('📋 Loaded specific data:', loadedData);
+      setSpecificData(loadedData);
+
+      // Cargar imágenes
+      if (postToEdit.images?.length > 0) {
+        const loadedImages = postToEdit.images.map(img => ({
+          url: typeof img === 'string' ? img : (img.url || img),
+          public_id: img.public_id || '',
+          isExisting: true
+        }));
+        setImages(loadedImages);
+      }
+
+      // Si ya tiene categoría, empezar desde paso 2
+      if (postToEdit.categorie) {
+        setCurrentStep(2);
+      }
+    }
+  }, [isEdit, postToEdit]);
+
+  // 🎯 HANDLER SIMPLIFICADO PARA CAMBIOS
+  const handleInputChange = useCallback((e) => {
+    const { name, value, type, checked } = e.target;
+    const val = type === 'checkbox' ? checked : value;
+
+    console.log('📝 Input change:', { name, value: val });
+
+    // Si es campo de categoría
+    if (['categorie', 'subCategory', 'articleType'].includes(name)) {
+      setCategoryData(prev => {
+        const newData = { ...prev, [name]: val };
+        
+        // Si cambia la categoría principal, resetear subcategorías y datos
+        if (name === 'categorie') {
+          newData.subCategory = '';
+          newData.articleType = '';
+          setSpecificData({});
+        }
+        
+        return newData;
+      });
+    } 
+    // Si es campo específico
+    else {
+      setSpecificData(prev => {
+        // Si el valor está vacío, eliminar la propiedad
+        if (val === '' || val === undefined || val === null) {
+          const { [name]: removed, ...rest } = prev;
+          console.log('🗑️ Removing empty field:', name);
+          return rest;
+        }
+        
+        const newData = { ...prev, [name]: val };
+        console.log('💾 Updating field:', { name, val, newData });
+        return newData;
+      });
+    }
+  }, []);
+
+  // 🔄 FUNCIÓN PARA CAMBIAR DE PASO
+  const handleStepChange = useCallback((newStep) => {
+    console.log('🔄 Changing step:', { from: currentStep, to: newStep });
+    setCurrentStep(newStep);
+  }, [currentStep]);
+
+  // 📢 FUNCIÓN PARA MOSTRAR ALERTAS
+  const showAlertMessage = useCallback((message, variant = 'info', duration = 4000) => {
+    setAlert({ show: true, message, variant });
+    setTimeout(() => {
+      setAlert({ show: false, message: '', variant: 'info' });
+    }, duration);
+  }, []);
+
+  // ✅ VALIDACIÓN MEJORADA CON DEBUG
+  const validateStep = (step) => {
+    const allData = { ...categoryData, ...specificData };
+    
+    console.log('🔍 Validating step:', {
+      step,
+      telephone: allData.telephone,
+      wilaya: allData.wilaya,
+      telephoneType: typeof allData.telephone,
+      wilayaType: typeof allData.wilaya
+    });
+    
+    switch(step) {
+      case 1:
+        return categoryData.categorie && categoryData.subCategory;
+      
+      case 2:
+        const hasTitle = allData.title && allData.title.toString().trim() !== '';
+        const hasDescription = allData.description && allData.description.toString().trim() !== '';
+        return hasTitle && hasDescription;
+      
+      case 3:
+        const price = parseFloat(allData.price);
+        return !isNaN(price) && price > 0;
+      
+      case 4:
+        // Validar que telephone y wilaya no estén vacíos
+        const telephone = allData.telephone;
+        const wilaya = allData.wilaya;
+        
+        const hasTelephone = telephone !== undefined && 
+                            telephone !== null && 
+                            telephone.toString().trim() !== '';
+        
+        const hasWilaya = wilaya !== undefined && 
+                         wilaya !== null && 
+                         wilaya.toString().trim() !== '';
+        
+        console.log('📞 Step 4 validation:', { 
+          telephone, 
+          wilaya, 
+          hasTelephone, 
+          hasWilaya,
+          isValid: hasTelephone && hasWilaya
+        });
+        
+        return hasTelephone && hasWilaya;
+      
+      case 5:
+        return images.length > 0;
+      
+      default:
+        return true;
+    }
+  };
+
+  // 🚀 ENVIAR DATOS - VERSIÓN SIMPLIFICADA
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+
+    try {
+      // ✅ VALIDACIONES FINALES
+      if (!categoryData.categorie) {
+        showAlertMessage("❌ Sélectionnez une catégorie", "danger");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!specificData.title?.trim()) {
+        showAlertMessage("❌ Le titre est requis", "danger");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!specificData.description?.trim()) {
+        showAlertMessage("❌ La description est requise", "danger");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!specificData.price || parseFloat(specificData.price) <= 0) {
+        showAlertMessage("❌ Un prix valide est requis", "danger");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!specificData.telephone?.trim()) {
+        showAlertMessage("❌ Le téléphone est requis", "danger");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!specificData.wilaya?.trim()) {
+        showAlertMessage("❌ La wilaya est requise", "danger");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (images.length === 0) {
+        showAlertMessage("❌ Ajoutez au moins une image", "danger");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // ✅ PREPARAR DATOS PARA EL BACKEND
+      const postData = {
+        // Datos de categoría
+        categorie: categoryData.categorie,
+        subCategory: categoryData.subCategory || null,
+        articleType: categoryData.articleType || null,
+        
+        // Datos comunes
+        title: specificData.title,
+        description: specificData.description,
+        price: parseFloat(specificData.price),
+        telephone: specificData.telephone,
+        
+        wilaya: specificData.wilaya,
+        commune: specificData.commune || '',
+        
+        // Datos específicos (todos los demás campos)
+        ...Object.keys(specificData)
+          .filter(key => !['title', 'description', 'price', 'telephone',   'wilaya', 'commune'].includes(key))
+          .reduce((acc, key) => {
+            acc[key] = specificData[key];
+            return acc;
+          }, {})
+      };
+
+      console.log('📦 Final post data to send:', postData);
+
+      // ✅ PREPARAR IMÁGENES
+      const formattedImages = images.map(img => ({
+        url: img.url,
+        public_id: img.public_id || '',
+        isExisting: img.isExisting || false
+      }));
+
+      // ✅ EJECUTAR ACCIÓN
+      let result;
+      
+      if (isEdit && postToEdit) {
+        result = await dispatch(updatePost(
+          postToEdit._id,
+          postData,
+          auth
+        ));
+      } else {
+        result = await dispatch(createPost({
+          postData,
+          images: formattedImages,
+          auth
+        }));
+      }
+
+      // ✅ VERIFICAR RESULTADO
+      if (result && result.success === false) {
+        throw new Error(result.error || 'Erreur inconnue');
+      }
+
+      // ✅ ÉXITO - REDIRIGIR
+      showAlertMessage(
+        isEdit 
+          ? '✅ Annonce mise à jour avec succès!' 
+          : '✅ Annonce créée avec succès!',
+        "success"
+      );
+
+      setTimeout(() => {
+        history.push(isEdit ? `/post/${postToEdit._id}` : '/');
+      }, 1500);
+
+    } catch (error) {
+      console.error('❌ ERROR:', error);
+      showAlertMessage(`❌ ${error.message || 'Erreur lors de la publication'}`, "danger", 6000);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // 🎨 RENDERIZAR CONTENIDO DEL PASO
+  const renderStepContent = () => {
+    const allData = { ...categoryData, ...specificData };
+    
+    console.log('🎨 Rendering step:', { currentStep, allData });
+    
+    switch(currentStep) {
+      case 1:
+        return (
+          <motion.div
+            key="step1"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="p-4"
+          >
+            <div className="text-center mb-4">
+              <h4 className="fw-bold">
+                {isEdit ? '✏️ Modifier la catégorie' : '🏷️ Choisissez une catégorie'}
+              </h4>
+              <p className="text-muted">
+                La catégorie détermine les champs spécifiques à remplir
+              </p>
+            </div>
+            
+            <CategoryAccordion
+              postData={categoryData}
+              handleChangeInput={handleInputChange}
+              isEdit={isEdit}
+            />
+            
+            {categoryData.categorie && (
+              <div className="text-center mt-4">
+                <div className="alert alert-success py-2 d-inline-block">
+                  <i className="fas fa-check-circle me-2"></i>
+                  <strong>{categoryData.categorie}</strong>
+                  {categoryData.subCategory && <span> → <strong>{categoryData.subCategory}</strong></span>}
+                  {categoryData.articleType && <span> (<strong>{categoryData.articleType}</strong>)</span>}
+                </div>
+              </div>
+            )}
+          </motion.div>
+        );
+        
+      case 2:
+      case 3:
+      case 4:
+        return (
+          <motion.div
+            key={`step${currentStep}`}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="p-4"
+          >
+            {/* Debug info para paso 4 */}
+            {currentStep === 4 && (
+              <div className="alert alert-info mb-3">
+                <small>
+                  <i className="fas fa-info-circle me-2"></i>
+                  Données de contact: 
+                  Téléphone: <strong>{specificData.telephone || 'Non renseigné'}</strong> | 
+                  Wilaya: <strong>{specificData.wilaya || 'Non renseignée'}</strong>
+                </small>
+              </div>
+            )}
+            
+            <DynamicFieldManager
+              mainCategory={categoryData.categorie}
+              subCategory={categoryData.subCategory}
+              articleType={categoryData.articleType}
+              currentStep={currentStep}
+              onStepChange={handleStepChange}
+              showNavigation={false}
+              isEdit={isEdit}
+              postData={allData}
+              handleChangeInput={handleInputChange}
+              isRTL={isRTL}
+            />
+          </motion.div>
+        );
+        
+      case 5:
+        return (
+          <motion.div
+            key="step5"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="p-4"
+          >
+            <ImagesStep
+              images={images}
+              setImages={setImages}
+              isRTL={isRTL}
+              onComplete={handleSubmit}
+              onBack={() => handleStepChange(4)}
+              isEdit={isEdit}
+              isSubmitting={isSubmitting}
+            />
+          </motion.div>
+        );
+        
+      default:
+        return null;
+    }
+  };
+
+  // 📊 CONFIGURACIÓN DE PASOS
+  const steps = [
+    { id: 1, title: 'Catégorie', icon: '🏷️' },
+    { id: 2, title: 'Détails', icon: '📝' },
+    { id: 3, title: 'Prix', icon: '💰' },
+    { id: 4, title: 'Contact', icon: '📍' },
+    { id: 5, title: 'Photos', icon: '🖼️' }
+  ];
+
+  // ✅ Validación actual para el botón
+  const isNextButtonEnabled = validateStep(currentStep) && !isSubmitting;
+  
+  console.log('🔘 Next button state:', {
+    currentStep,
+    isEnabled: isNextButtonEnabled,
+    validationResult: validateStep(currentStep)
+  });
+
+  return (
+    <Container className="py-4" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* ALERTAS */}
+      <AnimatePresence>
+        {alert.show && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            <Alert 
+              variant={alert.variant} 
+              dismissible 
+              onClose={() => setAlert({ ...alert, show: false })}
+              className="mb-4"
+            >
+              <div className="d-flex align-items-center">
+                <i className={`fas fa-${alert.variant === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2`}></i>
+                <span>{alert.message}</span>
+              </div>
+            </Alert>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ENCABEZADO */}
+      <div className="text-center mb-4">
+        <h1 className="fw-bold mb-2">
+          {isEdit ? '✏️ Modifier une annonce' : '➕ Publier une annonce'}
+        </h1>
+        <p className="text-muted mb-0">
+          {isEdit ? 'Modifiez les détails de votre annonce' : 'Remplissez les étapes pour publier'}
+        </p>
+        
+        {isEdit && (
+          <Badge bg="warning" className="mt-2 px-3 py-2">
+            <i className="fas fa-edit me-1"></i>
+            Mode édition
+          </Badge>
+        )}
+      </div>
+
+      {/* INDICADOR DE PASOS */}
+      <div className="mb-4">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          {steps.map((step, index) => (
+            <React.Fragment key={step.id}>
+              <div className="text-center">
+                <button
+                  className={`step-btn ${currentStep === step.id ? 'active' : ''} ${currentStep > step.id ? 'completed' : ''}`}
+                  onClick={() => handleStepChange(step.id)}
+                  disabled={isSubmitting}
+                >
+                  <div className="step-icon">
+                    {currentStep > step.id ? '✅' : step.icon}
+                  </div>
+                  <div className="step-title mt-1">
+                    <small className="fw-medium">{step.title}</small>
+                  </div>
+                </button>
+              </div>
+              
+              {index < steps.length - 1 && (
+                <div className="step-line flex-grow-1">
+                  <div className={`line ${currentStep > step.id ? 'active' : ''}`}></div>
+                </div>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+        
+        {/* Barra de progreso */}
+        <div className="progress" style={{ height: '4px' }}>
+          <div 
+            className="progress-bar bg-primary" 
+            style={{ width: `${(currentStep / steps.length) * 100}%` }}
+          ></div>
+        </div>
+      </div>
+
+      {/* CONTENIDO PRINCIPAL */}
+      <div className="border rounded shadow-sm bg-white">
+        <AnimatePresence mode="wait">
+          {renderStepContent()}
+        </AnimatePresence>
+      </div>
+
+      {/* NAVEGACIÓN (solo para pasos 1-4) */}
+      {currentStep < 5 && (
+        <div className="mt-4 pt-3 border-top">
+          <Row className="g-3">
+            <Col xs={6}>
+              <Button
+                variant="outline-secondary"
+                onClick={() => handleStepChange(currentStep - 1)}
+                disabled={currentStep === 1 || isSubmitting}
+                className="w-100 py-2"
+              >
+                <i className="fas fa-arrow-left me-2"></i>
+                Retour
+              </Button>
+            </Col>
+            
+            <Col xs={6}>
+              <Button
+                variant="primary"
+                onClick={() => handleStepChange(currentStep + 1)}
+                disabled={!isNextButtonEnabled}
+                className="w-100 py-2"
+              >
+                Suivant
+                <i className="fas fa-arrow-right ms-2"></i>
+              </Button>
+            </Col>
+          </Row>
+          
+          {/* Mensaje de validación */}
+          {!validateStep(currentStep) && (
+            <div className="alert alert-warning mt-3 py-2 text-center">
+              <small>
+                <i className="fas fa-exclamation-circle me-1"></i>
+                {currentStep === 1 && 'Sélectionnez une catégorie et sous-catégorie'}
+                {currentStep === 2 && 'Complétez le titre et la description'}
+                {currentStep === 3 && 'Indiquez un prix valide'}
+                {currentStep === 4 && 'Renseignez le téléphone et la wilaya'}
+              </small>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ESTILOS */}
+      <style jsx>{`
+        .step-btn {
+          background: none;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        
+        .step-btn.active .step-icon {
+          background: #4f46e5;
+          color: white;
+          transform: scale(1.1);
+          box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+        
+        .step-btn.completed .step-icon {
+          background: #10b981;
+          color: white;
+        }
+        
+        .step-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: #f8f9fa;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto;
+          font-size: 20px;
+          transition: all 0.3s ease;
+          border: 3px solid white;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        
+        .step-title {
+          font-size: 0.85rem;
+          white-space: nowrap;
+        }
+        
+        .step-line {
+          padding: 0 10px;
+        }
+        
+        .line {
+          height: 2px;
+          background: #e9ecef;
+          transition: all 0.3s ease;
+        }
+        
+        .line.active {
+          background: #4f46e5;
+        }
+        
+        @media (max-width: 768px) {
+          .step-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+          }
+          
+          .step-title {
+            font-size: 0.75rem;
+          }
+        }
+      `}</style>
+    </Container>
+  );
+};
+
+export default CreateAnnoncePage;

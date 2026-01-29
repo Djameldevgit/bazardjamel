@@ -132,7 +132,7 @@ const CardFooter = ({ post }) => {
     // 📞 FUNCIÓN DE LLAMADA
     const handleCallOwner = () => {
         const phoneNumber = postData.telefono || postData.contactPhone || 
-                           postData.numeroTelephone || post.user?.phone;
+                           postData.numeroTelephone || post.user?.telephone;
         
         if (!phoneNumber) {
             dispatch({ 
@@ -195,7 +195,7 @@ const CardFooter = ({ post }) => {
 
     // 🔍 VERIFICAR DISPONIBILIDAD
     const canMakeCall = postData.telefono || postData.contactPhone || 
-                      postData.numeroTelephone || post.user?.phone;
+                      postData.numeroTelephone || post.user?.telephone;
     const canChat = auth.user && post.user && post.user._id;
 
     return (

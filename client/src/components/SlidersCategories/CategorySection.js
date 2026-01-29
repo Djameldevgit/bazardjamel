@@ -101,8 +101,10 @@ const CategorySection = ({ category, onViewMore, onPostClick }) => {
                         }}
                         onError={(e) => {
                           e.target.onerror = null;
-                          e.target.src = `https://via.placeholder.com/300x225/6c757d/ffffff?text=${category.name?.charAt(0)}`;
-                        }}
+
+
+                          
+                          }}
                       />
                       
                       {/* Efecto hover en imagen */}

@@ -5,7 +5,7 @@ import React from 'react';
 
  
 import ImmobiliersFields from './specificFields/ImmobiliersFields';
-import VehiculesFields from './specificFields/VehiculesFields';
+ 
 import VetementsFields from './specificFields/VetementsFields';
 import TelephonesFields from './specificFields/TelephonesFields';
 import InformatiqueFields from './specificFields/InformatiqueFields';
@@ -21,6 +21,7 @@ import ServicesField from './specificFields/ServicesFields';
 import VoyagesFields from './specificFields/VoyagesFields';
 import EmploiFields from './specificFields/EmploiFields';
 import BoutiqueSelector from '../boutique/BoutiqueSelectorField';
+import VehiculesFields from './specificFields/VehiculesFields';
  
  
 // 🔥 MAPA DE CATEGORÍA → COMPONENTE
@@ -45,6 +46,7 @@ const CATEGORY_COMPONENTS = {
 
 };
 
+
 const FieldRendererUniversal = ({
   fieldName,
   mainCategory,
@@ -55,56 +57,90 @@ const FieldRendererUniversal = ({
   isRTL,
   t
 }) => {
-  console.log('🔍 FieldRendererUniversal:', {
-    fieldName,
-    mainCategory,
-    subCategory
-  });
-
-  // 1. Validar parámetros
-  if (!fieldName || !mainCategory) {
-    console.warn('⚠️ Parámetros inválidos para FieldRendererUniversal');
-    return null; // ⚠️ IMPORTANTE: Retornar null, no un div vacío
+  console.log('🎯 FieldRendererUniversal:', { fieldName, mainCategory, subCategory });
+  
+  // 1. PRIMERO intentar con BaseCategoryField (campos comunes)
+  try {
+    const baseField = BaseCategoryField({
+      fieldName,
+      mainCategory,
+      subCategory,
+      postData,
+      handleChangeInput,
+      isRTL,
+      t
+    });
+    
+    if (baseField) {
+      console.log('✅ BaseCategoryField maneja:', fieldName);
+      return baseField;
+    }
+  } catch (error) {
+    console.log('⚠️ BaseCategoryField no pudo manejar:', fieldName, error);
   }
-
-  // 2. Buscar componente de categoría
+  
+  // 2. SI NO ES CAMPO COMÚN, buscar componente específico
   const CategoryComponent = CATEGORY_COMPONENTS[mainCategory];
   
   if (!CategoryComponent) {
-    console.error(`❌ No hay componente para la categoría: ${mainCategory}`);
-    return null; // ⚠️ Retornar null, no alerta
-  }
-
-  // 3. Renderizar el componente de categoría - ÉL manejará el campo específico
-  try {
+    console.error(`❌ No hay componente para: ${mainCategory}`);
+    
+    // Usar FieldFallback como último recurso
     return (
-      <CategoryComponent
-        fieldName={fieldName} // Pasar el fieldName específico
-        mainCategory={mainCategory}
-        subCategory={subCategory}
-        articleType={articleType}
+      <FieldFallback
+        fieldName={fieldName}
         postData={postData}
         handleChangeInput={handleChangeInput}
         isRTL={isRTL}
         t={t}
       />
     );
-  } catch (error) {
-    console.error(`❌ Error en FieldRendererUniversal:`, error);
-    return null; // ⚠️ Retornar null en caso de error
   }
-};
-
-// Propiedades por defecto
-FieldRendererUniversal.defaultProps = {
-  fieldName: '',
-  mainCategory: null,
-  subCategory: null,
-  articleType: null,
-  postData: {},
-  handleChangeInput: () => {},
-  isRTL: false,
-  t: null
+  
+  // 3. Usar el componente específico de la categoría
+  try {
+    const specificField = CategoryComponent({
+      fieldName,
+      mainCategory,
+      subCategory,
+      articleType,
+      postData,
+      handleChangeInput,
+      isRTL,
+      t
+    });
+    
+    if (specificField) {
+      console.log('✅ Componente específico maneja:', fieldName);
+      return specificField;
+    }
+    
+    // 4. Si el componente específico no maneja este campo, usar FieldFallback
+    console.log(`🔄 ${mainCategory} no maneja ${fieldName}, usando FieldFallback`);
+    
+    return (
+      <FieldFallback
+        fieldName={fieldName}
+        postData={postData}
+        handleChangeInput={handleChangeInput}
+        isRTL={isRTL}
+        t={t}
+      />
+    );
+    
+  } catch (error) {
+    console.error(`❌ Error en ${mainCategory}:`, error);
+    
+    return (
+      <FieldFallback
+        fieldName={fieldName}
+        postData={postData}
+        handleChangeInput={handleChangeInput}
+        isRTL={isRTL}
+        t={t}
+      />
+    );
+  }
 };
 
 export default FieldRendererUniversal;

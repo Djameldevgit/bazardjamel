@@ -5,7 +5,7 @@ import axios from 'axios';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 // ✅ 1. ACCIÓN PARA HOME: Obtener categorías principales
-export const getAllCategoriesWithPosts = (page = 1, limit = 8) => async (dispatch) => {
+export const getAllCategoriesWithPosts = (page = 1, limit = 2) => async (dispatch) => {
   try {
     dispatch({ type: types.GET_ALL_CATEGORIES_WITH_POSTS });
     

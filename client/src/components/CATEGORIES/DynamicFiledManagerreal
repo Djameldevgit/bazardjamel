@@ -1,45 +1,9 @@
-// 📂 components/CATEGORIES/DynamicFieldManager.js - VERSIÓN COMPLETA SIN DEPENDENCIAS LOCALES
+// 📂 components/CATEGORIES/DynamicFieldManager.js
 import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSelector } from 'react-redux';
 import { getFieldsForCategory } from './FieldConfig';
 import FieldRendererUniversal from './FiledRendererUniversal';
-
-// Función para formatear un string a ID (igual que en CategoryAccordion)
-const formatToId = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, '_');
-
-// Función para formatear un ID a nombre para mostrar
-const formatDisplayName = (id) => {
-  if (!id) return '';
-  return id
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-};
-
-// Emojis por defecto para categorías principales
-const getDefaultEmoji = (categoryId) => {
-  const emojis = {
-    'immobilier': '🏠',
-    'vehicules': '🚗',
-    'telephones': '📱',
-    'informatique': '💻',
-    'electromenager': '🔌',
-    'piecesDetachees': '⚙️',
-    'vetements': '👕',
-    'alimentaires': '🍎',
-    'santebeaute': '💄',
-    'meubles': '🛋️',
-    'services': '🛠️',
-    'materiaux': '🧱',
-    'loisirs': '🎮',
-    'emploi': '💼',
-    'sport': '⚽',
-    'voyages': '✈️',
-    'boutiques': '🏪'
-  };
-  return emojis[categoryId] || '📁';
-};
+import { categoryHierarchy } from './index';
 
 const DynamicFieldManager = ({
   mainCategory,
@@ -57,119 +21,85 @@ const DynamicFieldManager = ({
   const [visibleFields, setVisibleFields] = useState([]);
   const [categoryInfo, setCategoryInfo] = useState({
     categoryName: '',
-    categoryEmoji: '',
     articleTypeName: '',
-    articleTypeEmoji: '',
-    subCategoryName: '',
-    subCategoryEmoji: ''
+    subCategoryName: ''
   });
   const [loadingFields, setLoadingFields] = useState(false);
-  
-  // Obtener categorías de Redux (MongoDB)
-  const { categories: mongoCategories = [] } = useSelector((state) => ({
-    categories: state.category?.categories || []
-  }));
 
-  // Efecto para actualizar la información de la categoría desde MongoDB
+  // 🔍 OBTENER INFORMACIÓN DE CATEGORÍA CON NOMBRES AMIGABLES
   useEffect(() => {
     if (mainCategory) {
-      // Si no hay categorías de MongoDB, usar los valores por defecto
-      if (mongoCategories.length === 0) {
-        setCategoryInfo({
-          categoryName: formatDisplayName(mainCategory),
-          categoryEmoji: getDefaultEmoji(mainCategory),
-          articleTypeName: articleType ? formatDisplayName(articleType) : '',
-          articleTypeEmoji: articleType ? getDefaultEmoji(articleType) : '',
-          subCategoryName: subCategory ? formatDisplayName(subCategory) : '',
-          subCategoryEmoji: subCategory ? getDefaultEmoji(subCategory) : ''
-        });
-        return;
-      }
-
-      // 1. Encontrar la categoría principal (nivel 1)
-      const mainCat = mongoCategories.find(cat => 
-        cat.level === 1 && 
-        formatToId(cat.name) === mainCategory
-      );
-
-      if (mainCat) {
+      const hierarchy = categoryHierarchy[mainCategory];
+      if (hierarchy) {
         let newCategoryInfo = {
-          categoryName: mainCat.name,
-          categoryEmoji: mainCat.emoji || getDefaultEmoji(mainCategory),
+          categoryName: getCategoryDisplayName(mainCategory),
           articleTypeName: '',
-          articleTypeEmoji: '',
-          subCategoryName: '',
-          subCategoryEmoji: ''
+          subCategoryName: ''
         };
 
-        // Función para buscar un nodo por ID en los hijos de mainCat
-        const findNodeInHierarchy = (targetId) => {
-          // Buscar en nivel 2
-          for (const child of mainCat.children || []) {
-            if (formatToId(child.name) === targetId) {
-              return child;
-            }
-            // Buscar en nivel 3
-            for (const grandChild of child.children || []) {
-              if (formatToId(grandChild.name) === targetId) {
-                return grandChild;
-              }
-            }
+        // OBTENER NOMBRE DEL articleType
+        if (articleType && hierarchy.levels === 2) {
+          // Para categorías de 2 niveles (electromenager, vetements)
+          const articleTypeItem = hierarchy.articleTypes?.find(
+            item => item.id === articleType
+          ) || hierarchy.categories?.find(item => item.id === articleType);
+          
+          if (articleTypeItem) {
+            newCategoryInfo.articleTypeName = articleTypeItem.name;
           }
-          return null;
-        };
-
-        // 2. Buscar articleType
-        if (articleType) {
-          const articleTypeNode = findNodeInHierarchy(articleType);
-          if (articleTypeNode) {
-            newCategoryInfo.articleTypeName = articleTypeNode.name;
-            newCategoryInfo.articleTypeEmoji = articleTypeNode.emoji || getDefaultEmoji(articleType);
-          } else {
-            newCategoryInfo.articleTypeName = formatDisplayName(articleType);
-            newCategoryInfo.articleTypeEmoji = getDefaultEmoji(articleType);
+        } else if (articleType && hierarchy.levels === 1) {
+          // Para categorías de 1 nivel (vehicules, telephones)
+          const subcatItem = hierarchy.subcategories?.find(
+            item => item.id === articleType
+          );
+          if (subcatItem) {
+            newCategoryInfo.articleTypeName = subcatItem.name;
           }
         }
 
-        // 3. Buscar subCategory
+        // OBTENER NOMBRE DEL subCategory
         if (subCategory) {
-          const subCategoryNode = findNodeInHierarchy(subCategory);
-          if (subCategoryNode) {
-            newCategoryInfo.subCategoryName = subCategoryNode.name;
-            newCategoryInfo.subCategoryEmoji = subCategoryNode.emoji || getDefaultEmoji(subCategory);
-          } else {
+          if (hierarchy.levels === 2 && articleType) {
+            // Buscar en subcategories del articleType
+            const subCategories = hierarchy.subcategories?.[articleType] || [];
+            const subCatItem = subCategories.find(item => item.id === subCategory);
+            if (subCatItem) {
+              newCategoryInfo.subCategoryName = subCatItem.name;
+            }
+          } else if (hierarchy.levels === 1) {
+            // Para categorías de 1 nivel
+            const subcatItem = hierarchy.subcategories?.find(
+              item => item.id === subCategory
+            );
+            if (subcatItem) {
+              newCategoryInfo.subCategoryName = subcatItem.name;
+            }
+          }
+          
+          // Si no encontramos el nombre, usar el ID
+          if (!newCategoryInfo.subCategoryName && subCategory) {
             newCategoryInfo.subCategoryName = formatDisplayName(subCategory);
-            newCategoryInfo.subCategoryEmoji = getDefaultEmoji(subCategory);
           }
         }
 
-        console.log('📊 Información de categoría desde MongoDB:', newCategoryInfo);
+        // Si articleTypeName sigue vacío, usar el ID formateado
+        if (!newCategoryInfo.articleTypeName && articleType) {
+          newCategoryInfo.articleTypeName = formatDisplayName(articleType);
+        }
+
         setCategoryInfo(newCategoryInfo);
-      } else {
-        // Si no encontramos la categoría principal, usar los valores por defecto
-        setCategoryInfo({
-          categoryName: formatDisplayName(mainCategory),
-          categoryEmoji: getDefaultEmoji(mainCategory),
-          articleTypeName: articleType ? formatDisplayName(articleType) : '',
-          articleTypeEmoji: articleType ? getDefaultEmoji(articleType) : '',
-          subCategoryName: subCategory ? formatDisplayName(subCategory) : '',
-          subCategoryEmoji: subCategory ? getDefaultEmoji(subCategory) : ''
+
+        console.log('📊 Información de categoría actualizada:', {
+          mainCategory,
+          articleType,
+          subCategory,
+          categoryInfo: newCategoryInfo
         });
       }
-    } else {
-      // Si no hay mainCategory, resetear la info
-      setCategoryInfo({
-        categoryName: '',
-        categoryEmoji: '',
-        articleTypeName: '',
-        articleTypeEmoji: '',
-        subCategoryName: '',
-        subCategoryEmoji: ''
-      });
     }
-  }, [mainCategory, subCategory, articleType, mongoCategories]);
+  }, [mainCategory, articleType, subCategory]);
 
-  // 🔥 OBTENER CAMPOS SEGÚN CATEGORÍA (FieldConfig local)
+  // 🔥 OBTENER CAMPOS SEGÚN CATEGORÍA Y NIVELES
   useEffect(() => {
     console.log('🔄 DynamicFieldManager - Actualizando campos:', {
       mainCategory,
@@ -194,7 +124,7 @@ const DynamicFieldManager = ({
     // STEP 2, 3, 4: CAMPOS DINÁMICOS
     else if (currentStep >= 2 && currentStep <= 4) {
       if (mainCategory) {
-        // Obtener campos específicos para la categoría (desde FieldConfig local)
+        // Obtener campos específicos para la categoría
         fields = getFieldsForCategory(
           mainCategory,
           subCategory,
@@ -274,9 +204,9 @@ const DynamicFieldManager = ({
       .filter(Boolean);
   }, [visibleFields, mainCategory, subCategory, articleType, categoryInfo, postData, handleChangeInput, isRTL, t]);
 
-  // 🎨 RENDERIZAR CONTENIDO DEL STEP - ACTUALIZADO PARA USAR categoryInfo
+  // 🎨 RENDERIZAR CONTENIDO DEL STEP
   const renderStepContent = () => {
-    // STEP 1: Información de categoría seleccionada
+    // STEP 1: Información de categoría
     if (currentStep === 1) {
       return (
         <div className="step-content">
@@ -291,10 +221,10 @@ const DynamicFieldManager = ({
                 <div className="col-12">
                   <div className="d-flex align-items-center mb-3">
                     <div className="category-icon me-3" style={{ fontSize: '2.5rem' }}>
-                      {categoryInfo.categoryEmoji}
+                      {getCategoryEmoji(mainCategory)}
                     </div>
                     <div>
-                      <h6 className="mb-1 fw-bold">{categoryInfo.categoryName || 'Sélectionnez une catégorie'}</h6>
+                      <h6 className="mb-1 fw-bold">{categoryInfo.categoryName || getCategoryDisplayName(mainCategory)}</h6>
                       <small className="text-muted">
                         {mainCategory ? 'Catégorie principale' : 'Sélectionnez une catégorie'}
                       </small>
@@ -314,7 +244,7 @@ const DynamicFieldManager = ({
                               Type d'article
                             </small>
                             <div className="fw-medium">
-                              <span className="me-2">{categoryInfo.articleTypeEmoji}</span>
+                              <span className="me-2">{getEmojiForType(articleType)}</span>
                               {categoryInfo.articleTypeName}
                             </div>
                           </div>
@@ -331,7 +261,7 @@ const DynamicFieldManager = ({
                               Sous-catégorie
                             </small>
                             <div className="fw-medium">
-                              <span className="me-2">{categoryInfo.subCategoryEmoji}</span>
+                              <span className="me-2">{getEmojiForSubCategory(subCategory)}</span>
                               {categoryInfo.subCategoryName}
                             </div>
                           </div>
@@ -400,7 +330,7 @@ const DynamicFieldManager = ({
                   <div className="d-flex align-items-center justify-content-between">
                     <div className="d-flex align-items-center flex-wrap">
                       <span className="path-step">
-                        <span className="path-emoji">{categoryInfo.categoryEmoji}</span>
+                        <span className="path-emoji">{getCategoryEmoji(mainCategory)}</span>
                         <span className="path-name">{categoryInfo.categoryName}</span>
                       </span>
 
@@ -410,7 +340,7 @@ const DynamicFieldManager = ({
                             <i className="fas fa-arrow-right text-muted"></i>
                           </span>
                           <span className="path-step">
-                            <span className="path-emoji">{categoryInfo.articleTypeEmoji}</span>
+                            <span className="path-emoji">{getEmojiForType(articleType)}</span>
                             <span className="path-name">{categoryInfo.articleTypeName}</span>
                           </span>
                         </>
@@ -422,7 +352,7 @@ const DynamicFieldManager = ({
                             <i className="fas fa-arrow-right text-muted"></i>
                           </span>
                           <span className="path-step">
-                            <span className="path-emoji">{categoryInfo.subCategoryEmoji}</span>
+                            <span className="path-emoji">{getEmojiForSubCategory(subCategory)}</span>
                             <span className="path-name">{categoryInfo.subCategoryName}</span>
                           </span>
                         </>
@@ -456,6 +386,91 @@ const DynamicFieldManager = ({
         )}
       </div>
     );
+  };
+
+  // 🎯 FUNCIONES HELPER
+  const getCategoryEmoji = (category) => {
+    const emojis = {
+      'immobilier': '🏠',
+      'vehicules': '🚗',
+      'telephones': '📱',
+      'informatique': '💻',
+      'electromenager': '🔌',
+      'piecesDetachees': '⚙️',
+      'vetements': '👕',
+      'alimentaires': '🍎',
+      'santebeaute': '💄',
+      'meubles': '🛋️',
+      'services': '🛠️',
+      'materiaux': '🧱',
+      'loisirs': '🎮',
+      'emploi': '💼',
+      'sport': '⚽',
+      'voyages': '✈️',
+      'boutiques': '🏪'
+    };
+    return emojis[category] || '📁';
+  };
+
+  const getCategoryDisplayName = (category) => {
+    const names = {
+      'immobilier': 'Immobilier',
+      'vehicules': 'Véhicules',
+      'telephones': 'Téléphones',
+      'informatique': 'Informatique',
+      'electromenager': 'Électroménager',
+      'piecesDetachees': 'Pièces Détachées',
+      'vetements': 'Vêtements & Mode',
+      'alimentaires': 'Alimentaires',
+      'santebeaute': 'Santé & Beauté',
+      'meubles': 'Meubles',
+      'services': 'Services',
+      'materiaux': 'Matériaux',
+      'loisirs': 'Loisirs',
+      'emploi': 'Emploi',
+      'sport': 'Sport',
+      'voyages': 'Voyages',
+      'boutiques': 'Boutiques'
+    };
+    return names[category] || category;
+  };
+
+  const formatDisplayName = (id) => {
+    if (!id) return '';
+    return id
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  const getEmojiForType = (typeId) => {
+    // Emojis comunes para articleTypes
+    const emojis = {
+      'cameras_accessories': '📹',
+      'audio': '🔊',
+      'machines_laver': '🧺',
+      'refrigerateurs_congelateurs': '❄️',
+      'televiseurs': '📺',
+      'fours_cuisson': '🔥',
+      'chauffage_climatisation': '🌡️',
+      'appareils_cuisine': '🍳'
+    };
+    return emojis[typeId] || '📋';
+  };
+
+  const getEmojiForSubCategory = (subCatId) => {
+    // Emojis comunes para subCategories
+    const emojis = {
+      'appareils_photo': '📷',
+      'cameras_video': '🎥',
+      'ecouteurs_baffles': '🎧',
+      'home_cinema': '🎬',
+      'lave_linge': '👚',
+      'seche_linge': '🌞',
+      'refrigerateur': '🧊',
+      'congelateur': '❄️'
+    };
+    return emojis[subCatId] || '📦';
   };
 
   // ✅ VALIDAR SI SE PUEDE CONTINUAR
@@ -521,14 +536,14 @@ const DynamicFieldManager = ({
               {mainCategory && (
                 <div className="d-flex align-items-center flex-wrap">
                   <span className="category-badge me-2 mb-1">
-                    {categoryInfo.categoryEmoji} {categoryInfo.categoryName}
+                    {getCategoryEmoji(mainCategory)} {categoryInfo.categoryName}
                   </span>
 
                   {categoryInfo.articleTypeName && (
                     <>
                       <i className="fas fa-chevron-right text-muted mx-1 mb-1"></i>
                       <span className="category-badge me-2 mb-1">
-                        {categoryInfo.articleTypeEmoji} {categoryInfo.articleTypeName}
+                        {getEmojiForType(articleType)} {categoryInfo.articleTypeName}
                       </span>
                     </>
                   )}
@@ -537,7 +552,7 @@ const DynamicFieldManager = ({
                     <>
                       <i className="fas fa-chevron-right text-muted mx-1 mb-1"></i>
                       <span className="category-badge mb-1">
-                        {categoryInfo.subCategoryEmoji} {categoryInfo.subCategoryName}
+                        {getEmojiForSubCategory(subCategory)} {categoryInfo.subCategoryName}
                       </span>
                     </>
                   )}

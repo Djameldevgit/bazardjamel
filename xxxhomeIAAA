@@ -1,0 +1,1815 @@
+// src/pages/Home.jsx - VERSIÓN OPTIMIZADA Y CORREGIDA
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useHistory } from 'react-router-dom';
+import { getAllCategoriesWithPosts, loadMoreCategories } from '../redux/actions/categoryAction';
+import { 
+  Container, 
+  Spinner, 
+  Alert,
+  Button,
+  Row,
+  Col,
+  Card
+} from 'react-bootstrap';
+import InfiniteScroll from 'react-infinite-scroll-component';
+// ✅ ELIMINADO: CategorySection no se usa
+import MainCategorySlider from '../components/SlidersCategories/CategorySlider';
+import Header from '../components/SlidersCategories/HeaderCarousel';
+import { 
+  ArrowRight, 
+  ChevronRight,
+  Star,
+  StarFill,
+  Heart,
+  HeartFill,
+  Eye,
+  Clock
+} from 'react-bootstrap-icons';
+
+const Home = () => {
+  const dispatch = useDispatch();
+  const history = useHistory();
+  
+  const [page, setPage] = useState(1);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [hoveredCard, setHoveredCard] = useState(null);
+  const hasLoadedRef = useRef(false);
+  
+  const { theme = 'light' } = useSelector(state => state.theme || {});
+  
+  const {
+    categories = [],
+    loading,
+    error,
+    hasMoreCategories,
+    currentPage
+  } = useSelector((state) => state.category || {});
+
+  useEffect(() => {
+    if (hasLoadedRef.current || loading) return;
+    
+    console.log('🏠 Home: Disparando acción getAllCategoriesWithPosts...');
+    hasLoadedRef.current = true;
+    dispatch(getAllCategoriesWithPosts(1, 8));
+    
+    const timer = setTimeout(() => setInitialLoadDone(true), 1500);
+    return () => clearTimeout(timer);
+  }, [dispatch, loading]);
+
+  const fetchMoreData = useCallback(() => {
+    if (hasMoreCategories && !loading && initialLoadDone) {
+      const nextPage = currentPage + 1;
+      setPage(nextPage);
+      dispatch(loadMoreCategories(nextPage));
+    }
+  }, [dispatch, hasMoreCategories, loading, currentPage, initialLoadDone]);
+
+  // ✅ CORREGIDO: Maneja objeto completo O parámetros separados
+  const handleCategoryClick = (slugOrObject, categoryNameParam) => {
+    let slug, categoryName;
+    
+    if (typeof slugOrObject === 'object' && slugOrObject !== null) {
+      // Es objeto completo desde CategorySlider
+      slug = slugOrObject.slug;
+      categoryName = slugOrObject.name || 'Categoría';
+    } else if (typeof slugOrObject === 'string') {
+      // Es string slug (compatibilidad)
+      slug = slugOrObject;
+      categoryName = categoryNameParam || 'Categoría';
+    } else {
+      console.error('❌ Parámetro inválido:', slugOrObject);
+      return;
+    }
+    
+    if (!slug) {
+      console.error('❌ Slug vacío');
+      return;
+    }
+    
+    console.log(`🔗 Navegando a: ${categoryName} (/${slug})`);
+    history.push(`/category/${slug}`);
+  };
+
+  const handleViewMore = (slug, categoryName) => {
+    console.log(`🔗 Ver más de: ${categoryName}`);
+    history.push(`/category/${slug}`, { fromHome: true, categoryName });
+  };
+
+  const handlePostClick = (postId, postTitle) => {
+    console.log(`🔗 Click en post: ${postTitle}`);
+    history.push(`/post/${postId}`, { fromHome: true, postTitle });
+  };
+
+  const getCategoryPlaceholder = (categorySlug) => {
+    const placeholders = {
+      'immobilier': '🏠', 'vehicules': '🚗', 'electronique': '📱',
+      'mode': '👕', 'maison': '🛋️', 'loisirs': '🎮',
+      'emploi': '💼', 'services': '🛠️', 'animaux': '🐶',
+      'alimentation': '🍎'
+    };
+    return placeholders[categorySlug] || '📦';
+  };
+
+  const formatPrice = (price) => {
+    if (!price && price !== 0) return 'Precio no disponible';
+    return new Intl.NumberFormat('es-ES', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(price);
+  };
+
+  const calculateDiscount = (originalPrice, salePrice) => {
+    if (!originalPrice || !salePrice || salePrice >= originalPrice) return null;
+    return Math.round(((originalPrice - salePrice) / originalPrice) * 100);
+  };
+
+  // Render condicional
+  if (loading && categories.length === 0 && !initialLoadDone) {
+    return (
+      <div className="min-vh-100 d-flex flex-column bg-gradient-light">
+        <Header />
+        <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
+          <div className="text-center">
+            <Spinner animation="border" variant="primary" size="lg" />
+            <p className="mt-3 text-muted">Cargando experiencias únicas...</p>
+          </div>
+        </Container>
+      </div>
+    );
+  }
+
+  if (error && categories.length === 0 && initialLoadDone) {
+    return (
+      <div className="min-vh-100 d-flex flex-column">
+        <Header />
+        <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
+          <Alert variant="danger" className="shadow-lg border-0 text-center">
+            <i className="fas fa-exclamation-circle fa-3x text-danger mb-3"></i>
+            <h4 className="h5 mb-2">Error de conexión</h4>
+            <p className="text-muted mb-4">No pudimos cargar el contenido</p>
+            <Button 
+              variant="gradient-primary" 
+              onClick={() => {
+                hasLoadedRef.current = false;
+                dispatch(getAllCategoriesWithPosts(1, 8));
+              }}
+              className="rounded-pill px-4"
+            >
+              <i className="fas fa-redo me-2"></i>
+              Reintentar
+            </Button>
+          </Alert>
+        </Container>
+      </div>
+    );
+  }
+
+  if (!loading && categories.length === 0 && initialLoadDone) {
+    return (
+      <div className="min-vh-100 d-flex flex-column">
+        <Header />
+        <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
+          <div className="text-center">
+            <i className="fas fa-search fa-4x text-muted mb-4"></i>
+            <h4 className="h5 mb-2">Marketplace vacío</h4>
+            <p className="text-muted mb-4">Aún no hay productos publicados</p>
+            <Button variant="outline-primary" className="rounded-pill px-4">
+              <i className="fas fa-plus me-2"></i>
+              Publicar primer producto
+            </Button>
+          </div>
+        </Container>
+      </div>
+    );
+  }
+
+  
+
+  return (
+    <div className={`min-vh-100 d-flex flex-column ${theme === 'dark' ? 'bg-dark text-light' : 'bg-light'}`}>
+      <Header />
+      
+      <main className="flex-grow-1">
+      
+       
+        <section  >
+          <Container>
+          
+         
+            <MainCategorySlider 
+              categories={categories}  
+              onCategoryClick={handleCategoryClick}  
+            />
+          </Container>
+        </section>
+
+        {/* Secciones de categorías */}
+        <Container className="py-5">
+          <InfiniteScroll
+            dataLength={categories.length}
+            next={fetchMoreData}
+            hasMore={hasMoreCategories}
+            loader={
+              <div className="text-center py-5">
+                <Spinner animation="border" variant="primary" />
+                <p className="mt-3 text-muted">Buscando más tesoros...</p>
+              </div>
+            }
+            endMessage={
+              <div className="text-center py-5">
+                <i className="fas fa-flag-checkered fa-2x text-success mb-3"></i>
+                <h4 className="h5 mb-2">¡Llegaste al final!</h4>
+                <p className="text-muted">Has explorado todas nuestras categorías</p>
+              </div>
+            }
+            scrollThreshold={0.9}
+          >
+            {categories.map((category, index) => (
+              <section key={category._id} className="mb-5">
+                <div className="d-flex justify-content-between align-items-center mb-4">
+                  <div>
+                    <div className="d-flex align-items-center gap-3 mb-2">
+                      <div className="category-icon bg-primary bg-opacity-10 rounded-3 p-3">
+                        <i className="fas fa-tag text-primary"></i>
+                      </div>
+                      <div>
+                        <h3 className="h4 fw-bold mb-0">{category.name}</h3>
+                        <p className="text-muted mb-0">
+                          {category.posts?.length || 0} productos
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    variant="outline-primary"
+                    className="rounded-pill px-4"
+                    onClick={() => handleViewMore(category.slug, category.name)}
+                  >
+                    Ver todos
+                    <ArrowRight className="ms-2" size={16} />
+                  </Button>
+                </div>
+
+                {category.posts && category.posts.length > 0 ? (
+                  <Row>
+                    {category.posts.slice(0, 6).map((post) => {
+                      const discount = calculateDiscount(post.originalPrice, post.price);
+                      
+                      return (
+                        <Col key={post._id} xs={6} md={4} lg={2} className="mb-4">
+                          <Card 
+                            className="h-100 border-0 shadow-sm hover-lift"
+                            onMouseEnter={() => setHoveredCard(post._id)}
+                            onMouseLeave={() => setHoveredCard(null)}
+                            onClick={() => handlePostClick(post._id, post.title)}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <div className="position-relative overflow-hidden" style={{ paddingTop: '75%' }}>
+                              {post.images && post.images[0] ? (
+                                <>
+                                  <Card.Img
+                                    variant="top"
+                                    src={post.images[0]}
+                                    alt={post.title}
+                                    className="position-absolute top-0 start-0 w-100 h-100 object-fit-cover"
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.src = `https://via.placeholder.com/300x225/6c757d/ffffff?text=${getCategoryPlaceholder(category.slug)}`;
+                                    }}
+                                  />
+                                  {discount && (
+                                    <div className="position-absolute top-0 start-0 m-2">
+                                      <span className="badge bg-danger rounded-pill px-2 py-1">
+                                        -{discount}%
+                                      </span>
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                <div className="position-absolute top-0 start-0 w-100 h-100 bg-light d-flex align-items-center justify-content-center">
+                                  <div className="display-4 text-muted mb-2">
+                                    {getCategoryPlaceholder(category.slug)}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            <Card.Body className="d-flex flex-column p-3">
+                              <Card.Title className="h6 mb-2 text-truncate">
+                                {post.title}
+                              </Card.Title>
+                              
+                              <div className="mt-auto">
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                  <div>
+                                    <span className="h5 fw-bold text-primary mb-0">
+                                      {formatPrice(post.price)}
+                                    </span>
+                                    {post.originalPrice && discount && (
+                                      <small className="text-decoration-line-through text-muted d-block">
+                                        {formatPrice(post.originalPrice)}
+                                      </small>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </Col>
+                      );
+                    })}
+                  </Row>
+                ) : (
+                  <Alert variant="info" className="text-center">
+                    <i className="fas fa-info-circle me-2"></i>
+                    Aún no hay productos en esta categoría
+                  </Alert>
+                )}
+              </section>
+            ))}
+          </InfiniteScroll>
+        </Container>
+
+        <section className="py-5 bg-gradient-primary text-white position-relative overflow-hidden">
+          <div className="position-absolute top-0 start-0 w-100 h-100 bg-pattern"></div>
+          <Container className="position-relative z-1">
+            <Row className="align-items-center">
+              <Col lg={6} className="mb-4 mb-lg-0">
+                <h1 className="display-4 fw-bold mb-3">Descubre lo extraordinario</h1>
+                <p className="lead mb-4 opacity-75">
+                  Miles de productos únicos esperándote. Desde lo esencial hasta lo exclusivo.
+                </p>
+                <div className="d-flex gap-3">
+                  <Button 
+                    variant="light" 
+                    size="lg"
+                    className="rounded-pill px-4 fw-semibold"
+                    onClick={() => window.scrollTo({ top: 600, behavior: 'smooth' })}
+                  >
+                    <i className="fas fa-rocket me-2"></i>
+                    Explorar ahora
+                  </Button>
+                  <Button variant="outline-light" size="lg" className="rounded-pill px-4">
+                    <i className="fas fa-question-circle me-2"></i>
+                    Cómo funciona
+                  </Button>
+                </div>
+              </Col>
+              <Col lg={6}>
+                <div className="hero-image-placeholder rounded-4 overflow-hidden shadow-lg">
+                  <div className="bg-dark bg-opacity-25 p-5 text-center">
+                    <i className="fas fa-store fa-5x mb-3 opacity-50"></i>
+                    <p className="mb-0">Tu mercado digital</p>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          </Container>
+        </section>
+
+
+
+
+
+      </main>
+
+      <style jsx>{`
+        .bg-gradient-primary {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .hover-lift {
+          transition: all 0.3s ease;
+        }
+        
+        .hover-lift:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default Home;
+import React, { useState, useEffect } from "react";
+import { useHistory } from "react-router-dom";
+
+const CategorySlider = ({ categories = [], onCategoryClick }) => {
+  const history = useHistory();
+  const [imageErrors, setImageErrors] = useState({});
+  const [currentPage, setCurrentPage] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(8);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  // Detectar cambios en el tamaño de la ventana 
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Determinar cuántos iconos mostrar según el ancho de pantalla
+  useEffect(() => {
+    if (windowWidth <= 767) {
+      setItemsPerPage(8);
+    } else if (windowWidth <= 1023) {
+      setItemsPerPage(6);
+    } else if (windowWidth <= 1439) {
+      setItemsPerPage(8);
+    } else {
+      setItemsPerPage(10);
+    }
+  }, [windowWidth]);
+
+  // Calcular columnas por fila
+  const columnsPerRow = itemsPerPage / 2;
+
+  // Crear páginas con exactamente 2 filas cada una
+  const createPages = () => {
+    const pages = [];
+    
+    for (let i = 0; i < categories.length; i += itemsPerPage) {
+      const pageCategories = categories.slice(i, i + itemsPerPage);
+      
+      const row1 = pageCategories.slice(0, columnsPerRow);
+      const row2 = pageCategories.slice(columnsPerRow, itemsPerPage);
+      
+      const filledRow2 = [...row2];
+      while (filledRow2.length < columnsPerRow) {
+        filledRow2.push(null);
+      }
+      
+      pages.push({
+        row1,
+        row2: filledRow2,
+        pageNumber: pages.length + 1
+      });
+    }
+    
+    return pages;
+  };
+
+  const pages = createPages();
+  const totalPages = pages.length;
+
+  // Navegación
+  const goToNextPage = () => {
+    setCurrentPage(prev => (prev < totalPages - 1 ? prev + 1 : 0));
+  };
+
+  const goToPrevPage = () => {
+    setCurrentPage(prev => (prev > 0 ? prev - 1 : totalPages - 1));
+  };
+
+  const goToPage = (pageIndex) => {
+    setCurrentPage(pageIndex);
+  };
+
+  const handleClick = (category) => {
+    if (!category) return;
+    
+    if (onCategoryClick) {
+      onCategoryClick(category);
+    } else {
+      history.push(`/category/${category.slug}`);
+    }
+  };
+
+  const handleImageError = (categoryId, imageUrl) => {
+    console.error(`Error cargando imagen: ${imageUrl}`);
+    setImageErrors(prev => ({ ...prev, [categoryId]: true }));
+  };
+
+  // Si no hay categorías
+  if (!categories || categories.length === 0) {
+    return (
+      <div className="cs-no-categories">
+        <div className="cs-empty-icon">📦</div>
+        <h3 className="cs-no-categories-title">Aucune catégorie disponible</h3>
+        <p className="cs-no-categories-description">Les catégories seront bientôt ajoutées</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="cs-slider-final">
+   
+      <div className="cs-slider-container">
+        {pages.length > 0 && (
+          <div className="cs-slider-page cs-active">
+            {/* Primera fila */}
+            <div className="cs-category-row cs-first-row">
+              {pages[currentPage].row1.map((cat, index) => (
+                <div
+                  key={cat?._id || `cs-empty-${index}`}
+                  className={`cs-category-item ${cat ? '' : 'cs-empty-item'}`}
+                  onClick={() => handleClick(cat)}
+                  style={{ 
+                    '--cs-item-delay': index,
+                    '--cs-icon-bg-color': cat?.iconColor || '#f8f9fa'
+                  }}
+                >
+                  {cat ? (
+                    <>
+                      <div className="cs-image-container">
+                        {cat.icon && !imageErrors[cat._id] ? (
+                          <img 
+                            src={cat.icon}
+                            alt={cat.name || "Catégorie"}
+                            className="cs-category-image"
+                            onError={() => handleImageError(cat._id, cat.icon)}
+                          />
+                        ) : (
+                          <div className="cs-image-fallback">
+                            {cat.name ? cat.name.charAt(0).toUpperCase() : "C"}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="cs-category-name">
+                        {cat.name || "Sans nom"}
+                      </div>
+                      
+                      {cat.posts && cat.posts.length > 0 && (
+                        <div className="cs-product-count">
+                          {cat.posts.length}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="cs-empty-space"></div>
+                  )}
+                </div>
+              ))}
+            </div>
+            
+            {/* Segunda fila */}
+            <div className="cs-category-row cs-second-row">
+              {pages[currentPage].row2.map((cat, index) => (
+                <div
+                  key={cat?._id || `cs-empty2-${index}`}
+                  className={`cs-category-item ${cat ? '' : 'cs-empty-item'}`}
+                  onClick={() => handleClick(cat)}
+                  style={{ 
+                    '--cs-item-delay': index + columnsPerRow,
+                    '--cs-icon-bg-color': cat?.iconColor || '#f8f9fa'
+                  }}
+                >
+                  {cat ? (
+                    <>
+                      <div className="cs-image-container">
+                        {cat.icon && !imageErrors[cat._id] ? (
+                          <img 
+                            src={cat.icon}
+                            alt={cat.name || "Catégorie"}
+                            className="cs-category-image"
+                            onError={() => handleImageError(cat._id, cat.icon)}
+                          />
+                        ) : (
+                          <div className="cs-image-fallback">
+                            {cat.name ? cat.name.charAt(0).toUpperCase() : "C"}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="cs-category-name">
+                        {cat.name || "Sans nom"}
+                      </div>
+                      
+                      {cat.posts && cat.posts.length > 0 && (
+                        <div className="cs-product-count">
+                          {cat.posts.length}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="cs-empty-space"></div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Navegación */}
+        {totalPages > 1 && (
+          <div className="cs-slider-controls">
+            <button 
+              className="cs-nav-btn cs-prev-btn"
+              onClick={goToPrevPage}
+              aria-label="Página anterior"
+            >
+              ‹
+            </button>
+            
+            <div className="cs-page-indicators">
+              {pages.map((_, index) => (
+                <button
+                  key={index}
+                  className={`cs-page-indicator-btn ${index === currentPage ? 'cs-active' : ''}`}
+                  onClick={() => goToPage(index)}
+                  aria-label={`Ir a página ${index + 1}`}
+                >
+                  {index + 1}
+                </button>
+              ))}
+            </div>
+            
+            <button 
+              className="cs-nav-btn cs-next-btn"
+              onClick={goToNextPage}
+              aria-label="Página siguiente"
+            >
+              ›
+            </button>
+          </div>
+        )}
+      </div>
+    
+    </div>
+  );
+};
+
+export default CategorySlider;
+
+
+export const getAllCategoriesWithPosts = (page = 1, limit = 8) => async (dispatch) => {
+    try {
+      dispatch({ type: types.GET_ALL_CATEGORIES_WITH_POSTS });
+      
+      console.log('📡 Llamando a /api/categories/main?posts=true...');
+  
+      // ⭐ CRÍTICO: Agregar posts=true en los parámetros
+      const { data } = await axios.get(API_URL + '/api/categories/main', {
+        params: { 
+          page: page, 
+          limit: limit,
+          posts: true  // ⭐ ESTE PARÁMETRO ES ESENCIAL
+        }
+      });
+  
+      // ⭐ DEBUG DETALLADO (sintaxis compatible)
+      console.log('✅ Datos recibidos:');
+      console.log({
+        success: data.success,
+        categoriesCount: data.categories ? data.categories.length : 0,
+        primeraCategoria: data.categories && data.categories[0] ? data.categories[0].name : null,
+        postsEnPrimera: data.categories && data.categories[0] && data.categories[0].posts ? 
+                       data.categories[0].posts.length : 0,
+        estructuraPosts: data.categories && data.categories[0] && data.categories[0].posts ? 
+                        data.categories[0].posts[0] : null
+      });
+  
+      // ⭐ VERIFICAR SI HAY POSTS
+      const categoriesWithPosts = data.categories || [];
+      
+      categoriesWithPosts.forEach(function(cat, index) {
+        console.log('📦 Categoría ' + (index + 1) + ': ' + cat.name);
+        console.log({
+          tienePosts: !!(cat.posts),
+          postsCount: cat.posts ? cat.posts.length : 0,
+          esArray: Array.isArray(cat.posts)
+        });
+      });
+  
+      dispatch({
+        type: types.GET_ALL_CATEGORIES_WITH_POSTS_SUCCESS,
+        payload: {
+          categories: categoriesWithPosts,
+          currentPage: page,
+          hasMore: data.pagination && data.pagination.hasNextPage ? data.pagination.hasNextPage : false,
+          totalPages: data.pagination && data.pagination.totalPages ? data.pagination.totalPages : 1
+        }
+      });
+  
+      return data;
+  
+    } catch (error) {
+      console.error('❌ Error en getAllCategoriesWithPosts:');
+      console.log({
+        message: error.message,
+        response: error.response ? error.response.data : null,
+        url: error.config ? error.config.url : null,
+        params: error.config ? error.config.params : null
+      });
+  
+      const errorMessage = error.response && error.response.data && error.response.data.message 
+                         ? error.response.data.message 
+                         : error.message || 'Error al obtener categorías principales';
+  
+      dispatch({
+        type: types.GET_ALL_CATEGORIES_WITH_POSTS_FAIL,
+        payload: errorMessage
+      });
+  
+      return { 
+        success: false, 
+        categories: [], 
+        pagination: { hasNextPage: false } 
+      };
+    }
+  };
+  
+  // ✅ 2. ACCIÓN PARA CATEGORÍA ESPECÍFICA CON POSTS - CORREGIDA COMPLETAMENTE
+  // ✅ ACCIÓN COMPLETA Y CORREGIDA PARA CATEGORYPAGE
+  // src/redux/actions/categoryAction.js - VERSIÓN ACTUALIZADA
+  export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = null, page = 1, limit = 12) => async (dispatch) => {
+    try {
+      dispatch({ type: types.GET_CATEGORY_POSTS });
+  
+      console.log('🚀 Action getCategoryPosts - INICIANDO:', {
+        categorySlug,
+        subSlug,
+        articleSlug,
+        page,
+        limit
+      });
+  
+      // ⭐ DECISIÓN CRÍTICA: ¿Qué necesitamos obtener?
+      let endpoint = '';
+      let params = {};
+      
+      // ⭐⭐ CAMBIO IMPORTANTE: USAR SIEMPRE EL ENDPOINT filterPosts
+      // Este endpoint ahora devuelve todo: categoría, hijos (children) y posts
+      endpoint = `${API_URL}/api/posts/filter`;
+      params = { 
+        category: categorySlug,
+        page: page,
+        limit: limit
+      };
+      
+      // Añadir sub y article si existen
+      if (subSlug) params.sub = subSlug;
+      if (articleSlug) params.article = articleSlug;
+      
+      console.log('🎯 Endpoint único - filterPosts:', endpoint);
+      console.log('📋 Params:', params);
+  
+      // ⭐ LLAMADA A LA API
+      console.log('📡 Llamando a API (filterPosts)...');
+      const { data } = await axios.get(endpoint, { params });
+  
+      // ⭐ DEBUG COMPLETO DE LA RESPUESTA
+      console.log('✅ Action getCategoryPosts - RESPUESTA COMPLETA:', {
+        success: data.success,
+        endpoint: endpoint,
+        
+        // Información de categoría (viene en categoryInfo ahora)
+        categoryInfo: data.categoryInfo ? '✅ SÍ' : '❌ NO',
+        categoryName: data.categoryInfo?.name,
+        categorySlug: data.categoryInfo?.slug,
+        categoryLevel: data.categoryInfo?.level,
+        
+        // ⭐ CRÍTICO: Verificar HIJOS (vienen en children)
+        childrenCount: data.children ? data.children.length : 0,
+        childrenFromData: data.children ? '✅ SÍ' : '❌ NO',
+        childrenLevels: data.children?.map(c => c.level) || [],
+        
+        // ⭐ MEGA CRÍTICO: Verificar si los hijos tienen ICONOS
+        primerHijo: data.children?.[0] || null,
+        tieneIconoPrimerHijo: data.children?.[0]?.icon ? '✅ SÍ' : '❌ NO',
+        iconoPrimerHijo: data.children?.[0]?.icon || 'NO TIENE',
+        
+        // Verificar TODOS los campos del primer hijo
+        camposPrimerHijo: data.children?.[0] ? Object.keys(data.children[0]) : [],
+        
+        // Información de posts
+        postsCount: data.posts ? data.posts.length : 0,
+        hasMore: data.hasMore !== undefined ? data.hasMore : false,
+        totalPosts: data.total || 0
+      });
+  
+      // ⭐ SI HAY HIJOS, MOSTRAR TODOS CON SUS ICONOS
+      const childrenList = data.children || [];
+      if (childrenList.length > 0) {
+        console.log('📋 LISTA COMPLETA DE HIJOS DEL FILTERPOSTS:');
+        childrenList.forEach((child, i) => {
+          console.log(`${i}. ${child.name || 'Sin nombre'} (Nivel ${child.level}):`, {
+            icon: child.icon || '❌ NO TIENE',
+            iconType: child.iconType || 'NO',
+            iconColor: child.iconColor || 'NO',
+            bgColor: child.bgColor || 'NO',
+            slug: child.slug,
+            hasChildren: child.hasChildren,
+            isLeaf: child.isLeaf
+          });
+        });
+        
+        // Contar cuántos tienen icono
+        const conIcono = childrenList.filter(c => c.icon).length;
+        const sinIcono = childrenList.filter(c => !c.icon).length;
+        console.log(`📊 ESTADÍSTICAS ICONOS: ${conIcono} con icono | ${sinIcono} sin icono`);
+      }
+  
+      // ⭐ DETERMINAR HAS_MORE CORRECTAMENTE
+      let hasMoreValue = false;
+      let totalPagesValue = 1;
+      let totalPostsValue = 0;
+  
+      // El controlador filterPosts devuelve hasMore directamente
+      if (data.hasMore !== undefined) {
+        hasMoreValue = data.hasMore;
+      } else if (data.totalPages !== undefined) {
+        // Si tiene totalPages, calcular hasMore
+        hasMoreValue = page < data.totalPages;
+        totalPagesValue = data.totalPages;
+      }
+  
+      // Total de posts
+      if (data.total !== undefined) {
+        totalPostsValue = data.total;
+      }
+  
+      console.log('📊 PAGINACIÓN CALCULADA:', {
+        page,
+        hasMoreValue,
+        totalPagesValue,
+        totalPostsValue
+      });
+  
+      // ⭐ ACTUALIZAR ESTADO ACTIVO (siempre se ejecuta)
+      if (categorySlug) {
+        dispatch({ type: types.SET_ACTIVE_CATEGORY, payload: categorySlug });
+      }
+      if (subSlug) {
+        dispatch({ type: types.SET_ACTIVE_SUBCATEGORY, payload: subSlug });
+      }
+      if (articleSlug) {
+        dispatch({ type: types.SET_ACTIVE_ARTICLE, payload: articleSlug });
+      }
+  
+      // ⭐ PREPARAR PAYLOAD - UNIFICAR ESTRUCTURA
+      const payload = {
+        // La categoría viene en categoryInfo
+        categoryInfo: data.categoryInfo || {},
+        
+        // Los hijos vienen en children
+        children: data.children || [],
+        
+        // Posts
+        posts: data.posts || [],
+        
+        // Paginación
+        currentPage: page,
+        hasMore: hasMoreValue,
+        totalPages: data.totalPages || totalPagesValue,
+        totalPosts: totalPostsValue,
+        
+        // Para compatibilidad
+        total: totalPostsValue
+      };
+  
+      console.log('📤 Action getCategoryPosts - PAYLOAD FINAL:', {
+        categoryName: payload.categoryInfo.name,
+        categoryLevel: payload.categoryInfo.level,
+        childrenCount: payload.children.length,
+        childrenLevels: payload.children.map(c => c.level),
+        postsCount: payload.posts.length,
+        hasMore: payload.hasMore,
+        currentPage: payload.currentPage,
+        totalPosts: payload.totalPosts
+      });
+  
+      // ⭐ DESPACHAR AL REDUCER
+      // Para la primera página, reemplazamos todo
+      // Para páginas siguientes, el reducer debe concatenar posts (ver reducer)
+      dispatch({
+        type: types.GET_CATEGORY_POSTS_SUCCESS,
+        payload: payload
+      });
+  
+      return {
+        success: true,
+        ...payload,
+        // Mantener compatibilidad
+        category: payload.categoryInfo,
+        pagination: {
+          hasMore: payload.hasMore,
+          totalPages: payload.totalPages,
+          totalPosts: payload.totalPosts,
+          currentPage: payload.currentPage
+        }
+      };
+  
+    } catch (error) {
+      console.error('❌ Action getCategoryPosts - ERROR COMPLETO:', {
+        message: error.message,
+        response: error.response ? {
+          status: error.response.status,
+          data: error.response.data,
+          url: error.response.config?.url,
+          params: error.response.config?.params
+        } : null,
+        config: error.config ? {
+          url: error.config.url,
+          params: error.config.params,
+          method: error.config.method
+        } : null
+      });
+      
+      const errorMessage = error.response?.data?.message || 
+                          error.message || 
+                          `Error al obtener datos para ${categorySlug}`;
+  
+      dispatch({
+        type: types.GET_CATEGORY_POSTS_FAIL,
+        payload: errorMessage
+      });
+  
+      // Retornar estructura vacía pero consistente
+      return {
+        success: false,
+        categoryInfo: {},
+        children: [],
+        posts: [],
+        hasMore: false,
+        total: 0
+      };
+    }
+  };
+
+  postAction//
+
+export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = null, page = 1, limit = 12) => async (dispatch) => {
+    try {
+      console.log('🎯 CATEGORY ACTION: getCategoryPosts', { 
+        categorySlug, 
+        subSlug, 
+        articleSlug, 
+        page, 
+        limit 
+      });
+  
+      const params = { 
+        page, 
+        limit, 
+        category: categorySlug 
+      };
+      
+      if (subSlug) params.sub = subSlug;
+      if (articleSlug) params.article = articleSlug;
+  
+      console.log('📡 Llamando API con params:', params);
+      
+      // ⭐ IMPORTANTE: La URL correcta
+      const { data } = await getDataAPI(`${API_URL}/posts/filter`, { params });
+      
+      console.log('✅ Respuesta recibida:', { 
+        success: data.success,
+        postsCount: data.posts?.length || 0,
+        total: data.total,
+        hasMore: data.hasMore,
+        category: data.category?.name
+      });
+  
+      // Dispatch al reducer de CATEGORÍAS (no al de posts)
+      dispatch({
+        type: types.GET_CATEGORY_POSTS_SUCCESS,
+        payload: {
+          categoryInfo: data.category || {},
+          children: data.children || [],
+          posts: data.posts || [],
+          currentPage: page,
+          hasMore: data.hasMore || false,
+          totalPages: data.totalPages || 1,
+          totalPosts: data.total || 0
+        }
+      });
+  
+      return data;
+  
+    } catch (error) {
+      console.error('❌ Error en getCategoryPosts:', {
+        message: error.message,
+        response: error.response?.data,
+        url: error.config?.url
+      });
+      
+      dispatch({
+        type: types.GET_CATEGORY_POSTS_FAIL,
+        payload: error.response?.data?.message || 'Error al obtener posts de categoría'
+      });
+  
+      throw error;
+    }
+  };
+
+  // redux/reducers/categoryReducer.js - VERSIÓN SIMPLIFICADA
+const initialState = {
+    categories: [],
+    loading: false,
+    error: null,
+    currentPage: 1,
+    hasMoreCategories: true,
+    
+    activeCategory: null,
+    activeSubcategory: null,
+    activeArticle: null,
+    categoryInfo: {},
+    children: [],
+    posts: [],
+    postsLoading: false,
+    postsError: null,
+    postsCurrentPage: 1,
+    hasMorePosts: false,
+    postsTotal: 0
+  };
+  
+  export const categoryReducer = (state = initialState, action) => {
+    switch (action.type) {
+      // Home
+      case 'LOADING':
+        return { ...state, loading: action.payload };
+        
+      case 'GET_ALL_CATEGORIES_WITH_POSTS':
+        return { ...state, loading: true, error: null };
+        
+      case 'GET_ALL_CATEGORIES_WITH_POSTS_SUCCESS':
+        return {
+          ...state,
+          loading: false,
+          categories: action.payload.categories || [],
+          currentPage: action.payload.currentPage || 1,
+          hasMoreCategories: action.payload.hasMore || false,
+          error: null
+        };
+        
+      case 'GET_ALL_CATEGORIES_WITH_POSTS_FAIL':
+        return {
+          ...state,
+          loading: false,
+          error: action.payload,
+          categories: []
+        };
+        
+      // Category Page
+      case 'GET_CATEGORY_POSTS':
+        return { ...state, postsLoading: true, postsError: null };
+        
+      case 'GET_CATEGORY_POSTS_SUCCESS':
+        const isFirstPage = (action.payload.currentPage || 1) === 1;
+        
+        return {
+          ...state,
+          postsLoading: false,
+          postsError: null,
+          categoryInfo: isFirstPage 
+            ? (action.payload.categoryInfo || {}) 
+            : state.categoryInfo,
+          children: isFirstPage 
+            ? (action.payload.children || []) 
+            : state.children,
+          posts: isFirstPage 
+            ? (action.payload.posts || []) 
+            : [...state.posts, ...(action.payload.posts || [])],
+          postsCurrentPage: action.payload.currentPage || 1,
+          hasMorePosts: action.payload.hasMore || false,
+          postsTotal: action.payload.totalPosts || action.payload.total || 0
+        };
+        
+      case 'GET_CATEGORY_POSTS_FAIL':
+        return {
+          ...state,
+          postsLoading: false,
+          postsError: action.payload
+        };
+        
+      case 'LOAD_MORE_POSTS':
+        return { ...state, postsLoading: true };
+        
+      // Navegación
+      case 'SET_ACTIVE_CATEGORY':
+        return {
+          ...state,
+          activeCategory: action.payload,
+          activeSubcategory: null,
+          activeArticle: null,
+          categoryInfo: {},
+          children: [],
+          posts: [],
+          postsCurrentPage: 1,
+          hasMorePosts: false,
+          postsLoading: false,
+          postsError: null
+        };
+        
+      case 'SET_ACTIVE_SUBCATEGORY':
+        return {
+          ...state,
+          activeSubcategory: action.payload,
+          activeArticle: null,
+          posts: [],
+          postsCurrentPage: 1,
+          hasMorePosts: false,
+          postsLoading: false,
+          postsError: null
+        };
+        
+      case 'SET_ACTIVE_ARTICLE':
+        return {
+          ...state,
+          activeArticle: action.payload,
+          posts: [],
+          postsCurrentPage: 1,
+          hasMorePosts: false,
+          postsLoading: false,
+          postsError: null
+        };
+        
+      case 'RESET_CATEGORY_STATE':
+        return {
+          ...state,
+          categoryInfo: {},
+          children: [],
+          posts: [],
+          postsCurrentPage: 1,
+          hasMorePosts: false,
+          postsLoading: false,
+          postsError: null
+        };
+        
+      case 'CLEAR_ERRORS':
+        return {
+          ...state,
+          error: null,
+          postsError: null
+        };
+        
+      default:
+        return state;
+    }
+  };
+  
+  export default categoryReducer;
+
+
+// 📂 routes/categoryRoutes.js - ORDEN CORRECTO
+const express = require('express');
+const router = express.Router();
+const {
+  obtenerCategoriasPrincipales,
+  obtenerCategoriaPorId,
+  obtenerArbolDeCategorias,
+  obtenerMasPostsDeCategoria,
+  obtenerSubcategorias,
+  buscarCategorias,
+  obtenerEstadisticasDeCategorias,
+  obtenerPostsFiltradosPorCategoria,
+
+  getCategoryChildren
+} = require('../controllers/categoryCtrl');
+
+
+
+router.get('/:slug/:subSlug/children', getCategoryChildren);
+// ⭐⭐ RUTAS ESPECÍFICAS PRIMERO (antes de parámetros dinámicos)
+router.get('/filter', obtenerPostsFiltradosPorCategoria);
+// 1. Rutas fijas
+router.get('/main', obtenerCategoriasPrincipales);
+router.get('/tree', obtenerArbolDeCategorias);
+router.get('/stats', obtenerEstadisticasDeCategorias);
+router.get('/search/:query', buscarCategorias);
+
+// ⭐⭐ IMPORTANTE: /filter DEBE IR ANTES que /:slug
+ 
+
+// ⭐⭐ RUTAS CON PARÁMETROS AL FINAL
+router.get('/:slug/posts', obtenerMasPostsDeCategoria);
+router.get('/:slug/children', obtenerSubcategorias);
+router.get('/:identifier', obtenerCategoriaPorId);  // ⭐ ÚLTIMA
+
+module.exports = router;
+
+// 📂 routes/postRoutes.js - CORRECCIÓN COMPLETA
+const express = require('express');
+const router = express.Router();
+const postCtrl = require('../controllers/postCtrl');
+const auth = require('../middleware/auth');
+
+// ⭐⭐ CORRECCIÓN: Todas las rutas NO deben comenzar con /posts
+// Porque ya estás en router.use('/api/posts', postRoutes) en server.js
+
+// ========== RUTAS CORRECTAS ==========
+
+// 1. RUTAS FIJAS (sin /posts delante)
+router.get('/health', postCtrl.healthCheck);              // ✅ CORRECTO: /api/posts/health
+// router.get('/posts/health', ...)                       // ❌ INCORRECTO (duplicaría /api/posts/posts/health)
+
+// ⭐⭐ CRÍTICO: /filter correcto
+router.get('/posts/filter', postCtrl.filterPosts);              // ✅ CORRECTO: /api/posts/filter
+
+// 2. RUTAS RESTANTES (sin /posts delante)
+router.get('/featured', postCtrl.getFeaturedPosts);       // ✅ /api/posts/featured
+router.get('/recent', postCtrl.getRecentPosts);           // ✅ /api/posts/recent
+  // ✅ /api/posts/post_discover
+router.get('/getSavePosts', auth, postCtrl.getSavePosts); // ✅ /api/posts/getSavePosts
+router.get('/search/:query', postCtrl.searchPosts);       // ✅ /api/posts/search/:query
+router.get('/user_posts/:id', auth, postCtrl.getUserPosts); // ✅ /api/posts/user_posts/:id
+router.get('/', postCtrl.getPosts);                       // ✅ /api/posts/
+router.get('/:id', postCtrl.getPostById);                 // ✅ /api/posts/:id
+router.get('/post/:id', postCtrl.getPost);                // ✅ /api/posts/post/:id
+
+// Rutas protegidas
+router.post('/posts', auth, postCtrl.createPost);              // ✅ /api/posts/
+router.put('/:id', auth, postCtrl.updatePost);            // ✅ /api/posts/:id
+router.delete('/:id', auth, postCtrl.deletePost);         // ✅ /api/posts/:id
+router.put('/:id/sold', auth, postCtrl.markAsSold);       // ✅ /api/posts/:id/sold
+router.patch('/post/:id/like', auth, postCtrl.likePost);  // ✅ /api/posts/post/:id/like
+router.patch('/post/:id/unlike', auth, postCtrl.unLikePost); // ✅ /api/posts/post/:id/unlike
+router.patch('/savePost/:id', auth, postCtrl.savePost);   // ✅ /api/posts/savePost/:id
+router.patch('/unSavePost/:id', auth, postCtrl.unSavePost); // ✅ /api/posts/unSavePost/:id
+
+// Debug
+      // ✅ /api/posts/debug-create
+router.get('/posts/similar', postCtrl.getSimilarPosts);
+router.get('/user_posts/:id', auth, postCtrl.getUserPosts)
+
+module.exports = router;
+
+
+
+const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
+    const incluirPosts = req.query.posts === 'true';
+    const ahora = Date.now();
+  
+    // 🔹 Caché solo para nivel 1 sin posts
+    if (!incluirPosts && cacheCategoriasPrincipales && ahora - cacheCategoriasPrincipalesEn < 5 * 60 * 1000) {
+      return res.json(cacheCategoriasPrincipales);
+    }
+  
+    // 1️⃣ Traer categorías activas
+    const [nivel1, nivel2, nivel3] = await Promise.all([
+      Category.find({ level: 1, isActive: true })
+        .select('_id name slug icon emoji order hasChildren postCount')
+        .sort({ order: 1 })
+        .lean(),
+      Category.find({ level: 2, isActive: true })
+        .select('_id name slug parent emoji order hasChildren isLeaf')
+        .sort({ order: 1 })
+        .lean(),
+      Category.find({ level: 3, isActive: true })
+        .select('_id name slug parent emoji order isLeaf')
+        .sort({ order: 1 })
+        .lean(),
+    ]);
+  
+    // 2️⃣ Armar relaciones padre-hijo en memoria
+    const nivel3PorPadre = {};
+    nivel3.forEach(cat => {
+      const idPadre = String(cat.parent);
+      if (!nivel3PorPadre[idPadre]) nivel3PorPadre[idPadre] = [];
+      nivel3PorPadre[idPadre].push(cat);
+    });
+  
+    nivel2.forEach(subcat => {
+      const clave = String(subcat._id);
+      subcat.children = nivel3PorPadre[clave] || [];
+      subcat.hasChildren = subcat.children.length > 0;
+    });
+  
+    const nivel2PorPadre = {};
+    nivel2.forEach(subcat => {
+      const idPadre = String(subcat.parent);
+      if (!nivel2PorPadre[idPadre]) nivel2PorPadre[idPadre] = [];
+      nivel2PorPadre[idPadre].push(subcat);
+    });
+  
+    nivel1.forEach(cat => {
+      const clave = String(cat._id);
+      cat.children = nivel2PorPadre[clave] || [];
+      cat.hasChildren = cat.children.length > 0;
+    });
+  
+    // 3️⃣ Traer posts si se piden
+    if (incluirPosts) {
+      // Crear lista de todos los ids de categorías (nivel1, nivel2, nivel3)
+      const todosIds = [
+        ...nivel1.map(c => c._id),
+        ...nivel2.map(c => c._id),
+        ...nivel3.map(c => c._id),
+      ];
+  
+      // 🔹 UNA SOLA CONSULTA a Post
+      const posts = await Post.find({ category: { $in: todosIds }, status: 'active' })
+        .select('_id title price images createdAt location category')
+        .sort({ createdAt: -1 })
+        .lean();
+  
+      // 🔹 Map para asignar posts a su categoría
+      const postsMap = {};
+      posts.forEach(post => {
+        const key = String(post.category);
+        if (!postsMap[key]) postsMap[key] = [];
+        if (postsMap[key].length < 8) postsMap[key].push(post); // limitar a 8 por categoría
+      });
+  
+      // 🔹 Asignar posts a nivel3
+      nivel3.forEach(cat => {
+        cat.posts = postsMap[String(cat._id)] || [];
+      });
+  
+      // 🔹 Asignar posts a nivel2 sumando hijos nivel3
+      nivel2.forEach(cat => {
+        const hijosPosts = cat.children.flatMap(c => c.posts || []);
+        cat.posts = [...(postsMap[String(cat._id)] || []), ...hijosPosts].slice(0, 8);
+      });
+  
+      // 🔹 Asignar posts a nivel1 sumando hijos nivel2
+      nivel1.forEach(cat => {
+        const hijosPosts = cat.children.flatMap(c => c.posts || []);
+        cat.posts = [...(postsMap[String(cat._id)] || []), ...hijosPosts].slice(0, 8);
+      });
+    }
+  
+    const respuesta = { success: true, categories: nivel1 };
+  
+    // 🔹 Guardar caché si no se piden posts
+    if (!incluirPosts) {
+      cacheCategoriasPrincipales = respuesta;
+      cacheCategoriasPrincipalesEn = ahora;
+    }
+  
+    return res.json(respuesta);
+  });
+  
+  // 📂 controllers/categoryCtrl.js - VERSIÓN SIMPLIFICADA
+  // 📂 controllers/categoryCtrl.js - VERSIÓN SIMPLIFICADA
+  const obtenerPostsFiltradosPorCategoria = asyncHandler(async (req, res) => {
+    try {
+      const { category, sub, article, page = 1, limit = 12 } = req.query;
+      
+      console.log('=== INICIO OBTENER POSTS ===');
+      console.log('Parámetros:', { category, sub, article, page, limit });
+  
+      // 1. BUSCAR CATEGORÍA PRINCIPAL (nivel 1)
+      const categoriaPrincipal = await Category.findOne({ 
+        slug: category, 
+        level: 1 
+      });
+      
+      if (!categoriaPrincipal) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Categoría principal no encontrada' 
+        });
+      }
+  
+      let currentCategory = categoriaPrincipal;
+      let children = [];
+      let postQuery = {};
+  
+      // 2. DETERMINAR NIVEL Y BUSCAR
+      if (!sub && !article) {
+        // NIVEL 1: Subcategorías
+        console.log('📍 NIVEL 1: Buscando subcategorías');
+        children = await Category.find({ 
+          parent: categoriaPrincipal._id,
+          level: 2 
+        }).sort({ order: 1 }).lean();
+        
+        postQuery = {
+          $or: [
+            { category: categoriaPrincipal._id },
+            { category: { $in: children.map(c => c._id) } }
+          ],
+          status: 'active'
+        };
+        
+      } else if (sub && !article) {
+        // NIVEL 2: Buscar subcategoría y luego sus artículos
+        console.log('📍 NIVEL 2: Buscando subcategoría:', sub);
+        
+        const subcategoria = await Category.findOne({
+          slug: sub,
+          parent: categoriaPrincipal._id,
+          level: 2
+        });
+        
+        if (!subcategoria) {
+          return res.status(404).json({ 
+            success: false, 
+            message: 'Subcategoría no encontrada' 
+          });
+        }
+        
+        currentCategory = subcategoria;
+        
+        // ⭐⭐ BUSCAR ARTÍCULOS (esto es lo crítico)
+        console.log('🔍 Buscando artículos para subcategoría:', subcategoria.name);
+        
+        // PRIMERO: Buscar nivel 3 (artículos)
+        children = await Category.find({ 
+          parent: subcategoria._id,
+          level: 3 
+        }).sort({ order: 1 }).lean();
+        
+        console.log('📊 Resultado búsqueda nivel 3:', {
+          encontrados: children.length,
+          nombres: children.map(c => c.name)
+        });
+        
+        // SEGUNDO: Si no hay nivel 3, buscar cualquier hijo
+        if (children.length === 0) {
+          console.log('⚠️ No se encontraron artículos nivel 3. Buscando cualquier hijo...');
+          children = await Category.find({ 
+            parent: subcategoria._id 
+          }).sort({ order: 1 }).lean();
+          
+          console.log('📊 Hijos encontrados (cualquier nivel):', {
+            encontrados: children.length,
+            niveles: children.map(c => c.level),
+            nombres: children.map(c => c.name)
+          });
+        }
+        
+        // TERCERO: Si aún no hay hijos, verificar si es leaf
+        if (children.length === 0 && subcategoria.isLeaf) {
+          console.log('ℹ️ Subcategoría marcada como leaf - no tiene hijos');
+        }
+        
+        postQuery = {
+          category: subcategoria._id,
+          status: 'active'
+        };
+        
+      } else if (sub && article) {
+        // NIVEL 3: Artículo específico
+        console.log('📍 NIVEL 3: Buscando artículo:', article);
+        
+        // Buscar subcategoría primero
+        const subcategoria = await Category.findOne({
+          slug: sub,
+          parent: categoriaPrincipal._id,
+          level: 2
+        });
+        
+        if (!subcategoria) {
+          return res.status(404).json({ 
+            success: false, 
+            message: 'Subcategoría no encontrada' 
+          });
+        }
+        
+        // Buscar artículo
+        const articulo = await Category.findOne({
+          slug: article,
+          parent: subcategoria._id,
+          level: 3
+        });
+        
+        if (!articulo) {
+          return res.status(404).json({ 
+            success: false, 
+            message: 'Artículo no encontrada' 
+          });
+        }
+        
+        currentCategory = articulo;
+        
+        // Para nivel 3: Mostrar TODOS los artículos de la misma subcategoría
+        // (para mantener el slider funcional)
+        children = await Category.find({ 
+          parent: subcategoria._id,
+          level: 3 
+        }).sort({ order: 1 }).lean();
+        
+        console.log('📁 Artículos para slider:', children.map(a => a.name));
+        
+        postQuery = {
+          category: articulo._id,
+          status: 'active'
+        };
+      }
+  
+      // 3. DEBUG COMPLETO
+      console.log('=== DEBUG COMPLETO ===');
+      console.log('Categoría actual:', {
+        nombre: currentCategory.name,
+        nivel: currentCategory.level,
+        id: currentCategory._id
+      });
+      console.log('Children encontrados:', {
+        total: children.length,
+        items: children.map(c => ({
+          nombre: c.name,
+          nivel: c.level,
+          slug: c.slug,
+          icon: c.icon ? 'Sí' : 'No'
+        }))
+      });
+      console.log('Query para posts:', postQuery);
+  
+      // 4. OBTENER POSTS
+      const skip = (page - 1) * limit;
+      const posts = await Post.find(postQuery)
+        .populate('user', 'name avatar')
+        .populate('category', 'name slug level')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean();
+  
+      const total = await Post.countDocuments(postQuery);
+      const hasMore = page * limit < total;
+  
+      // 5. RESPONSE
+      const response = {
+        success: true,
+        categoryInfo: {
+          _id: currentCategory._id,
+          name: currentCategory.name,
+          slug: currentCategory.slug,
+          level: currentCategory.level,
+          icon: currentCategory.icon || '',
+          iconType: currentCategory.iconType || 'image-png',
+          iconColor: currentCategory.iconColor || '#666666',
+          bgColor: currentCategory.bgColor || '#FFFFFF'
+        },
+        children: children.map(child => ({
+          _id: child._id,
+          name: child.name,
+          slug: child.slug,
+          level: child.level,
+          icon: child.icon || '',
+          iconType: child.iconType || 'image-png',
+          iconColor: child.iconColor || currentCategory.iconColor || '#666666',
+          bgColor: child.bgColor || currentCategory.bgColor || '#FFFFFF',
+          postCount: child.postCount || 0
+        })),
+        posts,
+        total,
+        hasMore,
+        currentPage: parseInt(page)
+      };
+  
+      console.log('✅ Response enviada:', {
+        nivel: response.categoryInfo.level,
+        childrenCount: response.children.length,
+        postsCount: response.posts.length
+      });
+  
+      return res.json(response);
+  
+    } catch (error) {
+      console.error('❌ Error crítico:', error);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Error del servidor',
+        error: error.message 
+      });
+    }
+  });
+
+
+  const mongoose = require('mongoose');
+
+const categorySchema = new mongoose.Schema({
+  // Identificación básica
+  name: { 
+    type: String, 
+    required: true,
+    trim: true
+  },
+  slug: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    lowercase: true,
+    trim: true
+  },
+  
+  // Jerarquía
+  level: { 
+    type: Number, 
+    required: true,
+    enum: [1, 2, 3],
+    index: true
+  },
+  parent: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Category',
+    default: null,
+    index: true
+  },
+  ancestors: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Category' 
+  }],
+  path: { 
+    type: String, 
+    index: true 
+  },
+  
+  // Metadata de UI
+  icon: String,
+  iconType: String,   // 'image-png', 'emoji', 'svg', etc.
+  iconColor: String,  // color del icono
+  bgColor: String,    // color de fondo
+  order: { 
+    type: Number, 
+    default: 0 
+  },
+  
+  // Configuración
+  hasChildren: { 
+    type: Boolean, 
+    default: false 
+  },
+  isLeaf: { 
+    type: Boolean, 
+    default: false 
+  },
+  
+  // Stats
+  postCount: { 
+    type: Number, 
+    default: 0 
+  },
+  
+  // Control
+  isActive: { 
+    type: Boolean, 
+    default: true 
+  }
+}, {
+  timestamps: true
+});
+
+// Índices
+categorySchema.index({ slug: 1 });
+categorySchema.index({ level: 1, parent: 1 });
+categorySchema.index({ path: 1 });
+categorySchema.index({ isActive: 1, level: 1 });
+
+module.exports = mongoose.model('Category', categorySchema);
+
+
+// models/Post.js
+const mongoose = require('mongoose');
+
+const postSchema = new mongoose.Schema({
+  // Información básica
+  title: {
+    type: String,
+    //required: [true, 'El título es requerido'],
+    trim: true,
+    maxlength: [200, 'El título no puede exceder 200 caracteres']
+  },
+  description: {
+    type: String,
+   // required: [true, 'La descripción es requerida'],
+    trim: true,
+    maxlength: [2000, 'La descripción no puede exceder 2000 caracteres']
+  },
+  price: {
+    type: Number,
+   // required: [true, 'El precio es requerido'],
+    min: [0, 'El precio no puede ser negativo']
+  },
+  
+  // Relaciones
+  category: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    required: [true, 'La categoría es requerida'],
+    index: true
+  },
+  categoryPath: {
+    level1: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+      index: true
+    },
+    level2: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+      index: true
+    },
+    level3: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+      index: true
+    }
+  },
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'user',
+    required: true,
+    index: true
+  },
+  
+  // Multimedia
+  images: [{
+    type: String,
+    required: [true, 'Al menos una imagen es requerida']
+  }],
+  
+  // Ubicación
+  location: {
+    city: String,
+    address: String,
+    coordinates: {
+      lat: Number,
+      lng: Number
+    }
+  },
+  
+  // Atributos dinámicos
+  attributes: {
+    type: Map,
+    of: mongoose.Schema.Types.Mixed
+  },
+  
+  // Estado
+  status: {
+    type: String,
+    enum: ['active', 'sold', 'reserved', 'inactive'],
+    default: 'active',
+    index: true
+  },
+  
+  // Características especiales
+  featured: {
+    type: Boolean,
+    default: false
+  },
+  urgent: {
+    type: Boolean,
+    default: false
+  },
+  
+  // Estadísticas
+  views: {
+    type: Number,
+    default: 0
+  },
+  favorites: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'user'
+  }],
+  
+  // Metadatos
+  expiresAt: {
+    type: Date,
+    default: () => new Date(+new Date() + 30*24*60*60*1000) // 30 días
+  }
+}, {
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Índices compuestos para búsquedas rápidas
+postSchema.index({ status: 1, createdAt: -1 });
+postSchema.index({ 'categoryPath.level1': 1, createdAt: -1 });
+postSchema.index({ 'categoryPath.level2': 1, createdAt: -1 });
+postSchema.index({ price: 1 });
+postSchema.index({ title: 'text', description: 'text' });
+
+// Middleware para establecer categoryPath antes de guardar
+postSchema.pre('save', async function(next) {
+  if (this.isModified('category')) {
+    try {
+      const category = await mongoose.model('Category').findById(this.category);
+      
+      if (category) {
+        this.categoryPath = {
+          level1: category.ancestors[0] || category._id,
+          level2: category.ancestors[1] || null,
+          level3: category.level === 3 ? category._id : null
+        };
+      }
+    } catch (error) {
+      return next(error);
+    }
+  }
+  next();
+});
+
+// Virtual para obtener URL del post
+postSchema.virtual('url').get(function() {
+  return `/post/${this._id}`;
+});
+
+// Virtual para obtener precio formateado
+postSchema.virtual('priceFormatted').get(function() {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(this.price);
+});
+
+// Método para verificar si está expirado
+postSchema.methods.isExpired = function() {
+  return new Date() > this.expiresAt;
+};
+
+module.exports = mongoose.model('post', postSchema);

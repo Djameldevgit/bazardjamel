@@ -1,9 +1,4 @@
-// 📂 components/CATEGORIES/categoryFieldMapping.js
-
-/**
- * 🎯 MAPEO UNIFICADO PARA TODAS LAS CATEGORÍAS
- * Define QUÉ campo de BD corresponde a CADA nivel visual
- */
+ 
 
  export const CATEGORY_FIELD_MAPPING = {
     // ========== CONFIGURACIÓN POR DEFECTO ==========

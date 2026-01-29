@@ -3,46 +3,19 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { 
-  Container, Button, Alert, Spinner, Card, 
-  Row, Col, Badge, ProgressBar 
-} from 'react-bootstrap';
+import { Container, Button, Alert, Spinner, Card, Row, Col, Badge } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  createPost, 
-  updatePost 
-} from '../redux/actions/postAction';
+import { createPost, updatePost } from '../redux/actions/postAction';
 import CategoryAccordion from '../components/CATEGORIES/CategoryAccordion';
 import DynamicFieldManager from '../components/CATEGORIES/DynamicFieldManager';
 import ImagesStep from '../components/CATEGORIES/camposComun/ImagesStep';
-// ✅ Función para corregir campos invertidos (opcional)
-const correctCategoryFields = (data) => {
-  if (!data) return data;
-  
-  const corrected = { ...data };
-  const invertedPatterns = {
-    'appareils_photo': 'cameras_accessories',
-    'maison_cuisine': 'electromenager',
-    'jardin_bricolage': 'outils_jardinage'
-  };
-  
-  if (corrected.subCategory && invertedPatterns[corrected.subCategory]) {
-    if (!corrected.articleType || Object.values(invertedPatterns).includes(corrected.articleType)) {
-      const temp = corrected.subCategory;
-      corrected.subCategory = corrected.articleType || invertedPatterns[corrected.subCategory];
-      corrected.articleType = temp;
-    }
-  }
-  
-  return corrected;
-};
 
 const CreateAnnoncePage = () => {
-  const { auth, socket } = useSelector((state) => state);
+  const { auth } = useSelector((state) => state);
   const dispatch = useDispatch();
   const history = useHistory();
   const location = useLocation();
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   
   const isRTL = i18n.language === 'ar';
   const isEdit = location.state?.isEdit || false;
@@ -51,85 +24,90 @@ const CreateAnnoncePage = () => {
   const autoAdvanceTimeout = useRef(null);
   const [currentStep, setCurrentStep] = useState(1);
   
-  // 🎯 ESTADOS PRINCIPALES
-  const [formData, setFormData] = useState({
+  // 🎯 ESTADOS SEPARADOS
+  const [categoryData, setCategoryData] = useState({
     categorie: '',
     articleType: '',
-    subCategory: '',
+    subCategory: ''
   });
 
+  // 🎯 Campos específicos de cada categoría
   const [specificData, setSpecificData] = useState({});
+
+  // 🎯 Campos comunes que siempre están presentes
+  const [commonData, setCommonData] = useState({
+    wilaya: '',
+    commune: '',
+    price: '',
+    description: ''
+  });
+
   const [images, setImages] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [alert, setAlert] = useState({ 
-    show: false, 
-    message: '', 
-    variant: 'info' 
-  });
+  const [alert, setAlert] = useState({ show: false, message: '', variant: 'info' });
   const [isLoadingEditData, setIsLoadingEditData] = useState(true);
   const [hasManuallyGoneBack, setHasManuallyGoneBack] = useState(false);
-  const [hasShownInvertedWarning, setHasShownInvertedWarning] = useState(false);
 
-  // 🔍 DEBUG: Monitorizar cambios
-  useEffect(() => {
-    console.log('🔍 DEBUG Estado actual:', {
-      step: currentStep,
-      categorie: formData.categorie,
-      subCategory: formData.subCategory,
-      articleType: formData.articleType,
-      imagesCount: images.length,
-      specificDataKeys: Object.keys(specificData)
-    });
-  }, [formData, currentStep, images, specificData]);
+  // 🔍 COMBINAR TODOS LOS DATOS PARA DynamicFieldManager
+  const getAllPostData = useCallback(() => ({
+    ...categoryData,
+    ...commonData,
+    ...specificData
+  }), [categoryData, commonData, specificData]);
 
-  // 📥 CARGAR DATOS DE EDICIÓN
+  // 📥 CARGAR DATOS DE EDICIÓN - SEPARADOS
   useEffect(() => {
     if (isEdit && postToEdit) {
-      const correctedPostData = correctCategoryFields(postToEdit);
+      console.log('📥 Cargando datos de edición:', postToEdit);
       
-      const loadedBaseData = {
-        categorie: correctedPostData.categorie || '',
-        subCategory: correctedPostData.subCategory || '',
-        articleType: correctedPostData.articleType || '',
+      // 1. Cargar datos de categoría
+      const loadedCategoryData = {
+        categorie: postToEdit.categorie || '',
+        subCategory: postToEdit.subCategory || '',
+        articleType: postToEdit.articleType || ''
       };
-
+      
+      // 2. Cargar datos comunes
+      const loadedCommonData = {
+        wilaya: postToEdit.wilaya || '',
+        commune: postToEdit.commune || '',
+        price: postToEdit.price || '',
+        description: postToEdit.description || ''
+      };
+      
+      // 3. Cargar datos específicos (excluyendo campos comunes y de categoría)
       const loadedSpecificData = {};
-
-      // Cargar categorySpecificData
-      if (correctedPostData.categorySpecificData) {
-        if (correctedPostData.categorySpecificData instanceof Map) {
-          correctedPostData.categorySpecificData.forEach((value, key) => {
-            if (value !== undefined && value !== null && value !== '') {
-              loadedSpecificData[key] = value;
-            }
-          });
-        } else if (typeof correctedPostData.categorySpecificData === 'object') {
-          Object.entries(correctedPostData.categorySpecificData).forEach(([key, value]) => {
-            if (value !== undefined && value !== null && value !== '') {
+      
+      // Extraer de categorySpecificData
+      if (postToEdit.categorySpecificData) {
+        if (typeof postToEdit.categorySpecificData === 'object') {
+          Object.entries(postToEdit.categorySpecificData).forEach(([key, value]) => {
+            // Solo cargar si no es campo común ni de categoría
+            if (value !== undefined && value !== null && value !== '' && 
+                !['wilaya', 'commune', 'price', 'description', 'categorie', 'subCategory', 'articleType'].includes(key)) {
               loadedSpecificData[key] = value;
             }
           });
         }
       }
-
-      // Campos directos
-      const directFields = [
-        'title', 'description', 'price', 'phone', 'telephone', 
-        'email', 'wilaya', 'commune', 'address', 'etat',
-        'livraison', 'echange', 'marque', 'modele', 'gross_detail', 'unite'
+      
+      // También revisar campos directos que no sean comunes
+      const excludeFields = [
+        'categorie', 'subCategory', 'articleType', 
+        'wilaya', 'commune', 'price', 'description',
+        'images', '_id', 'createdAt', 'updatedAt', 'user',
+        'categorySpecificData', 'location'
       ];
       
-      directFields.forEach(field => {
-        if (correctedPostData[field]) {
-          loadedSpecificData[field] = correctedPostData[field];
+      Object.entries(postToEdit).forEach(([key, value]) => {
+        if (!excludeFields.includes(key) && value !== undefined && value !== null && value !== '') {
+          loadedSpecificData[key] = value;
         }
       });
-
-      setFormData(loadedBaseData);
-      setSpecificData(loadedSpecificData);
-
-      if (correctedPostData.images?.length > 0) {
-        const loadedImages = correctedPostData.images.map(img => ({
+      
+      // 4. Cargar imágenes
+      if (postToEdit.images?.length > 0) {
+        const loadedImages = postToEdit.images.map(img => ({
           url: img.url || img,
           public_id: img.public_id || '',
           isExisting: true
@@ -137,14 +115,23 @@ const CreateAnnoncePage = () => {
         setImages(loadedImages);
       }
 
-      const hasCompleteCategory = loadedBaseData.categorie && loadedBaseData.subCategory;
-      
-      if (hasCompleteCategory) {
+      // Actualizar estados
+      setCategoryData(loadedCategoryData);
+      setCommonData(loadedCommonData);
+      setSpecificData(loadedSpecificData);
+
+      // Si tiene categoría completa, ir al paso 2
+      if (loadedCategoryData.categorie && loadedCategoryData.subCategory) {
         setCurrentStep(2);
         setHasManuallyGoneBack(true);
       }
       
       setIsLoadingEditData(false);
+      console.log('✅ Datos cargados separados:', {
+        category: loadedCategoryData,
+        common: loadedCommonData,
+        specific: loadedSpecificData
+      });
     } else {
       setIsLoadingEditData(false);
     }
@@ -152,31 +139,25 @@ const CreateAnnoncePage = () => {
 
   // ⚡ AVANCE AUTOMÁTICO AL STEP 2
   useEffect(() => {
-    const currentStepWhenScheduled = currentStep;
-    const hasCategory = formData.categorie;
-    const hasSubCategory = formData.subCategory;
-    const isCategoryComplete = hasCategory && hasSubCategory;
-    
-    if (hasManuallyGoneBack || isEdit || currentStepWhenScheduled !== 1) {
+    if (hasManuallyGoneBack || isEdit || currentStep !== 1) {
       if (autoAdvanceTimeout.current) {
         clearTimeout(autoAdvanceTimeout.current);
       }
       return;
     }
     
-    if (isCategoryComplete) {
+    const hasCategory = categoryData.categorie && categoryData.subCategory;
+    
+    if (hasCategory) {
       if (autoAdvanceTimeout.current) {
         clearTimeout(autoAdvanceTimeout.current);
       }
       
       autoAdvanceTimeout.current = setTimeout(() => {
-        const stillHasCategory = formData.categorie && formData.subCategory;
-        const stillInStep1 = currentStep === 1;
-        const stillNoManualBack = !hasManuallyGoneBack;
+        const stillHasCategory = categoryData.categorie && categoryData.subCategory;
         
-        if (stillHasCategory && stillInStep1 && stillNoManualBack) {
+        if (stillHasCategory && currentStep === 1 && !hasManuallyGoneBack) {
           setCurrentStep(2);
-          
           setAlert({
             show: true,
             message: "✅ Catégorie sélectionnée. Complétez les détails.",
@@ -184,53 +165,54 @@ const CreateAnnoncePage = () => {
           });
         }
       }, 500);
-      
-      return () => {
-        if (autoAdvanceTimeout.current) {
-          clearTimeout(autoAdvanceTimeout.current);
-        }
-      };
-    } else {
+    }
+    
+    return () => {
       if (autoAdvanceTimeout.current) {
         clearTimeout(autoAdvanceTimeout.current);
       }
-    }
-  }, [formData.categorie, formData.subCategory, currentStep, hasManuallyGoneBack, isEdit]);
+    };
+  }, [categoryData.categorie, categoryData.subCategory, currentStep, hasManuallyGoneBack, isEdit]);
 
-  // 🎯 HANDLER PARA CAMBIOS DE INPUT
+  // 🎯 HANDLER ÚNICO PARA CAMBIOS DE INPUT
   const handleInputChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
     const val = type === 'checkbox' ? checked : value;
 
-    const BASE_FIELDS = ['categorie', 'subCategory', 'articleType'];
-    
-    if (BASE_FIELDS.includes(name)) {
-      setFormData(prev => {
+    console.log('📝 Cambio en campo:', name, '=', val);
+
+    // 1. Campos de categoría
+    const CATEGORY_FIELDS = ['categorie', 'articleType', 'subCategory'];
+    if (CATEGORY_FIELDS.includes(name)) {
+      setCategoryData(prev => {
         const newData = { ...prev, [name]: val };
         
+        // Resetear si cambia la categoría principal
         if (name === 'categorie') {
-          newData.subCategory = '';
           newData.articleType = '';
-          setSpecificData({});
+          newData.subCategory = '';
+          setSpecificData({}); // Resetear datos específicos
           if (currentStep === 1) {
             setHasManuallyGoneBack(false);
           }
-          setHasShownInvertedWarning(false);
-        } else if (name === 'articleType') {
-          if (prev.articleType !== val) {
-            setSpecificData({});
-          }
-          newData.subCategory = prev.subCategory;
-        } else if (name === 'subCategory') {
-          if (prev.subCategory !== val) {
-            setSpecificData({});
-          }
-          newData.articleType = prev.articleType;
+        } else if (name === 'articleType' && prev.articleType !== val) {
+          setSpecificData({}); // Resetear datos específicos
+        } else if (name === 'subCategory' && prev.subCategory !== val) {
+          setSpecificData({}); // Resetear datos específicos
         }
         
         return newData;
       });
-    } else {
+    }
+    // 2. Campos comunes
+    else if (['wilaya', 'commune', 'price', 'description'].includes(name)) {
+      setCommonData(prev => ({
+        ...prev,
+        [name]: val
+      }));
+    }
+    // 3. Campos específicos
+    else {
       setSpecificData(prev => {
         if (val === '' || val === undefined || val === null) {
           const { [name]: removed, ...rest } = prev;
@@ -239,41 +221,6 @@ const CreateAnnoncePage = () => {
         return { ...prev, [name]: val };
       });
     }
-  }, [currentStep]);
-
-  // 🎯 HANDLER PARA CAMBIOS DE CATEGORÍA
-  const handleCategoryChange = useCallback((e) => {
-    const { name, value } = e.target;
-    
-    if (autoAdvanceTimeout.current) {
-      clearTimeout(autoAdvanceTimeout.current);
-    }
-    
-    setFormData(prev => {
-      const newData = { ...prev, [name]: value };
-      
-      if (name === 'categorie') {
-        newData.articleType = '';
-        newData.subCategory = '';
-        setSpecificData({});
-        if (currentStep === 1) {
-          setHasManuallyGoneBack(false);
-        }
-        setHasShownInvertedWarning(false);
-      } else if (name === 'articleType') {
-        newData.subCategory = prev.subCategory;
-        if (prev.articleType !== value) {
-          setSpecificData({});
-        }
-      } else if (name === 'subCategory') {
-        newData.articleType = prev.articleType;
-        if (prev.subCategory !== value) {
-          setSpecificData({});
-        }
-      }
-      
-      return newData;
-    });
   }, [currentStep]);
 
   // 🔄 FUNCIÓN PARA CAMBIAR DE PASO
@@ -299,222 +246,210 @@ const CreateAnnoncePage = () => {
     }, duration);
   }, []);
 
-  // ✅ VALIDACIÓN DE PASOS
+  // ✅ VALIDACIÓN DE PASOS - CORREGIDA
   const canProceedToNextStep = () => {
-    const allData = { ...formData, ...specificData };
+    const allData = getAllPostData();
+    
+    console.log(`🔍 Validación paso ${currentStep}:`, {
+      wilaya: allData.wilaya,
+      commune: allData.commune,
+      title: allData.title,
+      description: allData.description,
+      price: allData.price
+    });
     
     switch(currentStep) {
       case 1:
-        return allData.categorie && allData.subCategory;
-      
+        return categoryData.categorie && categoryData.subCategory;
+      case 2:
+        // Validar título y descripción
+        return allData.title && allData.title.trim() !== '' && 
+               allData.description && allData.description.trim() !== '';
+      case 3:
+        // Validar precio
+        return allData.price && allData.price.toString().trim() !== '';
+      case 4:
+        // ✅ SOLO wilaya y commune son obligatorios
+        const hasWilaya = allData.wilaya && allData.wilaya.toString().trim() !== '';
+        const hasCommune = allData.commune && allData.commune.toString().trim() !== '';
+        console.log(`✅ Validación paso 4: wilaya=${hasWilaya}, commune=${hasCommune}`);
+        return hasWilaya && hasCommune;
       case 5:
         return images.length > 0;
-      
       default:
         return true;
     }
   };
 
-  // 🚀 FUNCIÓN PRINCIPAL: ENVIAR POST - VERSIÓN SIMPLIFICADA Y FUNCIONAL
-  const handleSubmit = async () => {
-    console.log('=== 🚀 INICIANDO handleSubmit ===');
-    
-    if (isSubmitting) {
-      console.log('⏸️ Ya está enviando, abortando...');
+  // 🚀 FUNCIÓN PARA ENVIAR EL FORMULARIO
+// 📂 pages/CreateAnnoncePage.js - VERSIÓN FINAL COINCIDENTE
+// En handleSubmit, ajustar la estructura de datos:
+
+const handleSubmit = async () => {
+  if (isSubmitting) return;
+  
+  setIsSubmitting(true);
+  
+  try {
+    // Validaciones básicas (según el modelo)
+    if (!categoryData.categorie || !categoryData.subCategory) {
+      showAlertMessage("❌ Sélectionnez une catégorie et sous-catégorie", "danger");
+      setIsSubmitting(false);
       return;
     }
-
-    setIsSubmitting(true);
-
-    try {
-      // ✅ VALIDACIONES BÁSICAS
-      if (!formData.categorie || !formData.subCategory) {
-        showAlertMessage("❌ Sélectionnez une catégorie et sous-catégorie", "danger");
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (!specificData.title || specificData.title.trim() === '') {
-        showAlertMessage("❌ Le titre est requis", "danger");
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (!specificData.description || specificData.description.trim() === '') {
-        showAlertMessage("❌ La description est requise", "danger");
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (!specificData.price || parseFloat(specificData.price) <= 0) {
-        showAlertMessage("❌ Un prix valide est requis", "danger");
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (images.length === 0) {
-        showAlertMessage("❌ Ajoutez au moins une image", "danger");
-        setIsSubmitting(false);
-        return;
-      }
-
-      console.log('✅ Validaciones pasadas');
-
-      // ✅ PREPARAR DATOS COMO TU ACTION ESPERA
-      const postDataForBackend = {
-        ...formData,
-        ...specificData,
-        categorySpecificData: specificData // Tu action espera categorySpecificData
-      };
-
-      console.log('📦 Datos preparados:', {
-        categorie: postDataForBackend.categorie,
-        subCategory: postDataForBackend.subCategory,
-        title: postDataForBackend.title,
-        price: postDataForBackend.price
-      });
-
-      // ✅ PREPARAR IMÁGENES
-      const imagesForBackend = images.map(img => ({
-        url: img.url || img,
-        public_id: img.public_id || '',
-        isExisting: img.isExisting || false
-      }));
-
-      console.log('🖼️ Imágenes preparadas:', imagesForBackend.length);
-
-      // ✅ CREAR ACTION DATA - ESTRUCTURA QUE TU ACTION ESPERA
-      const actionData = {
-        postData: postDataForBackend,  // Objeto plano con todo
-        images: imagesForBackend,
-        auth,  // ← ¡IMPORTANTE! Tu action original espera auth completo
-        socket: socket
-      };
-
-      console.log('🔐 Datos de auth:', {
-        token: auth.token ? 'PRESENTE' : 'AUSENTE',
-        user: auth.user?._id
-      });
-
-      // ✅ EJECUTAR ACCIÓN DE REDUX
-      let result;
-      
-      if (isEdit && postToEdit) {
-        console.log('✏️ Ejecutando updatePost...');
-        // Tu updatePost original espera (id, postData, auth, socket)
-        result = await dispatch(updatePost(
-          postToEdit._id,
-          postDataForBackend,
-          auth,
-          socket
-        ));
-      } else {
-        console.log('➕ Ejecutando createPost...');
-        // Tu createPost original espera ({ postData, images, auth, socket })
-        result = await dispatch(createPost(actionData));
-      }
-
-      console.log('✅ Resultado de la acción:', result);
-
-      // ✅ VERIFICAR RESULTADO
-      if (result && result.success === false) {
-        console.error('❌ Action retornó error:', result.error);
-        throw new Error(result.error);
-      }
-
-      // ✅ MOSTRAR ALERTA DE ÉXITO
-      showAlertMessage(
-        isEdit 
-          ? '✅ Annonce mise à jour avec succès!' 
-          : '✅ Annonce créée avec succès!',
-        "success"
-      );
-
-      // ✅ REDIRIGIR DESPUÉS DE 1.5 SEGUNDOS
-      setTimeout(() => {
-        history.push('/');
-      }, 1500);
-
-    } catch (error) {
-      console.error('❌ ERROR en handleSubmit:', {
-        message: error.message,
-        name: error.name,
-        stack: error.stack
-      });
-      
-      let errorMessage = 'Erreur lors de la publication';
-      
-      if (error.message.includes('404')) {
-        errorMessage = 'Serveur non disponible. Vérifiez la connexion.';
-      } else if (error.message.includes('network')) {
-        errorMessage = 'Problème de connexion réseau.';
-      } else if (error.message.includes('token')) {
-        errorMessage = 'Session expirée. Veuillez vous reconnecter.';
-      } else {
-        errorMessage = error.message;
-      }
-      
-      showAlertMessage(`❌ ${errorMessage}`, "danger", 6000);
-      
-    } finally {
+    
+    const allData = getAllPostData();
+    
+    if (!allData.title) {
+      showAlertMessage("❌ Le titre est requis", "danger");
       setIsSubmitting(false);
+      return;
     }
-  };
-
-  // 🎨 RENDERIZAR BOTÓN DE EDICIÓN DE CATEGORÍA
-  const renderCategoryEditButton = () => {
-    if (currentStep > 1 && isEdit) {
-      return (
-        <div className="text-center mb-3">
-          <Button
-            variant="outline-warning"
-            size="sm"
-            onClick={() => handleStepChange(1)}
-            className="px-3"
-          >
-            <i className="fas fa-edit me-1"></i>
-            Modifier la catégorie
-          </Button>
-          <div className="mt-1">
-            <small className="text-muted">
-              Catégorie actuelle: <strong>{formData.categorie}</strong> → <strong>{formData.subCategory}</strong>
-              {formData.articleType && <span> (<strong>{formData.articleType}</strong>)</span>}
-            </small>
-          </div>
-        </div>
-      );
+    
+    if (!allData.description) {
+      showAlertMessage("❌ La description est requise", "danger");
+      setIsSubmitting(false);
+      return;
     }
-    return null;
-  };
-
-  // 🎨 RENDERIZAR BOTÓN PARA VOLVER A CATEGORÍA
-  const renderBackToCategoryButton = () => {
-    if (currentStep > 1 && !isEdit && !hasManuallyGoneBack) {
-      return (
-        <div className="text-center mb-3">
-          <Button
-            variant="outline-info"
-            size="sm"
-            onClick={() => {
-              setHasManuallyGoneBack(true);
-              handleStepChange(1);
-            }}
-            className="px-3"
-          >
-            <i className="fas fa-undo me-1"></i>
-            Changer de catégorie
-          </Button>
-          <div className="mt-1">
-            <small className="text-muted">
-              Catégorie: <strong>{formData.categorie}</strong> → <strong>{formData.subCategory}</strong>
-              {formData.articleType && <span> (<strong>{formData.articleType}</strong>)</span>}
-            </small>
-          </div>
-        </div>
-      );
+    
+    if (!allData.price || parseFloat(allData.price) <= 0) {
+      showAlertMessage("❌ Un prix valide est requis", "danger");
+      setIsSubmitting(false);
+      return;
     }
-    return null;
-  };
+    
+    if (!allData.wilaya || !allData.commune) {
+      showAlertMessage("❌ La wilaya et la commune sont requises", "danger");
+      setIsSubmitting(false);
+      return;
+    }
+    
+    if (images.length === 0) {
+      showAlertMessage("❌ Ajoutez au moins une image", "danger");
+      setIsSubmitting(false);
+      return;
+    }
+    
+    // 🔥 ESTRUCTURA QUE ESPERA EL BACKEND
+    const postDataForBackend = {
+      // 1. Campos de categoría
+      categorie: categoryData.categorie,
+      subCategory: categoryData.subCategory,
+      articleType: categoryData.articleType || '',
+      
+      // 2. Campos comunes obligatorios
+      title: allData.title || '',
+      description: allData.description || '',
+      price: parseFloat(allData.price) || 0,
+      etat: allData.etat || 'occasion',
+      
+      // 3. Campos de contacto (opcionales)
+      phone: allData.telephone || allData.phone || '',
+      email: allData.email || '',
+      
+      // 4. Campos de ubicación obligatorios
+      wilaya: allData.wilaya || '',
+      commune: allData.commune || '',
+      address: allData.address || '',
+      
+      // 5. Campos específicos de categoría
+      categorySpecificData: {}
+    };
+    
+    console.log('📤 Datos preparados para backend:', postDataForBackend);
+    
+    // 🔥 Separar campos que van en categorySpecificData
+    // Campos que NO van en categorySpecificData (van en el nivel principal)
+    const mainFields = [
+      'categorie', 'subCategory', 'articleType',
+      'title', 'description', 'price', 'etat',
+      'phone', 'email', 'wilaya', 'commune', 'address',
+      'telephone' // también en nivel principal como 'phone'
+    ];
+    
+    // Agregar campos específicos a categorySpecificData
+    Object.keys(specificData).forEach(key => {
+      if (!mainFields.includes(key) && 
+          specificData[key] !== undefined && 
+          specificData[key] !== null && 
+          specificData[key] !== '') {
+        postDataForBackend.categorySpecificData[key] = specificData[key];
+      }
+    });
+    
+    // 🔥 También agregar algunos campos de commonData a categorySpecificData si son específicos
+    // Por ejemplo, si hay campos en commonData que son específicos de categoría
+    const specificCommonFields = ['marque', 'modele', 'annee', 'kilometrage', 'couleur'];
+    specificCommonFields.forEach(field => {
+      if (commonData[field] && commonData[field] !== '') {
+        postDataForBackend.categorySpecificData[field] = commonData[field];
+      }
+    });
+    
+    console.log('📦 categorySpecificData:', postDataForBackend.categorySpecificData);
+    
+    // Preparar imágenes
+    const imagesForBackend = images.map((img, index) => ({
+      url: img.url || img,
+      public_id: img.public_id || '',
+      isMain: index === 0,
+      isExisting: img.isExisting || false
+    }));
+    
+    // Ejecutar acción
+    let result;
+    
+    if (isEdit && postToEdit) {
+      result = await dispatch(updatePost(
+        postToEdit._id,
+        postDataForBackend,
+        auth
+      ));
+    } else {
+      result = await dispatch(createPost({
+        postData: postDataForBackend,
+        images: imagesForBackend,
+        auth
+      }));
+    }
+    
+    if (result && result.success === false) {
+      throw new Error(result.error);
+    }
+    
+    showAlertMessage(
+      isEdit 
+        ? '✅ Annonce mise à jour avec succès!' 
+        : '✅ Annonce créée avec succès!',
+      "success"
+    );
+    
+    setTimeout(() => {
+      history.push('/');
+    }, 1500);
+    
+  } catch (error) {
+    console.error('❌ Error:', error);
+    
+    // Manejar errores específicos del backend
+    let errorMessage = 'Erreur lors de la publication';
+    
+    if (error.response && error.response.data) {
+      const backendError = error.response.data;
+      if (backendError.error) {
+        errorMessage = backendError.error;
+      } else if (backendError.message) {
+        errorMessage = backendError.message;
+      }
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    showAlertMessage(`❌ ${errorMessage}`, "danger", 6000);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   // 🎨 RENDERIZAR CONTENIDO DEL PASO ACTUAL
   const renderCurrentStep = () => {
@@ -527,63 +462,53 @@ const CreateAnnoncePage = () => {
       );
     }
 
-    const commonProps = {
-      postData: { ...formData, ...specificData },
-      handleChangeInput: handleInputChange,
-      isRTL
-    };
-
-    const stepVariants = {
-      enter: { opacity: 0, x: 20 },
-      center: { opacity: 1, x: 0 },
-      exit: { opacity: 0, x: -20 }
-    };
+    const allPostData = getAllPostData();
 
     switch(currentStep) {
       case 1:
         return (
           <motion.div
             key="step1"
-            variants={stepVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
             className="step-content"
           >
             <Card className="border-0">
-             
+              <Card.Body>
                 <h5 className="text-center mb-3">
                   {isEdit ? '✏️ Modifier la catégorie' : '🏷️ Sélectionnez une catégorie'}
                 </h5>
                 
-                {/* Info de categoría actual */}
-                {((formData.categorie && formData.subCategory) || hasManuallyGoneBack) && (
+                {/* Mostrar categoría actual si existe */}
+                {(categoryData.categorie && categoryData.subCategory) && (
                   <div className={`alert ${hasManuallyGoneBack ? 'alert-info' : 'alert-success'} py-2 mb-3`}>
                     <div className="d-flex align-items-center justify-content-between">
                       <div>
                         <i className={`fas fa-${hasManuallyGoneBack ? 'info-circle' : 'check-circle'} me-2`}></i>
                         <small>
-                          {formData.categorie && <strong>{formData.categorie}</strong>}
-                          {formData.subCategory && <span> → {formData.subCategory}</span>}
-                          {formData.articleType && <span> ({formData.articleType})</span>}
+                          <strong>{categoryData.categorie}</strong>
+                          {categoryData.subCategory && <span> → {categoryData.subCategory}</span>}
+                          {categoryData.articleType && <span> ({categoryData.articleType})</span>}
                         </small>
                       </div>
                       <Button 
                         variant="outline-primary" 
                         size="sm"
                         onClick={() => {
-                          setFormData({
+                          setCategoryData({
                             categorie: '',
                             articleType: '',
-                            subCategory: '',
+                            subCategory: ''
                           });
                           setSpecificData({});
+                          setCommonData({
+                            wilaya: '',
+                            commune: '',
+                            price: '',
+                            description: ''
+                          });
                           setHasManuallyGoneBack(false);
-                          setHasShownInvertedWarning(false);
-                          
-                          if (autoAdvanceTimeout.current) {
-                            clearTimeout(autoAdvanceTimeout.current);
-                          }
                         }}
                       >
                         <i className="fas fa-sync-alt me-1"></i>
@@ -594,12 +519,12 @@ const CreateAnnoncePage = () => {
                 )}
                 
                 <CategoryAccordion
-                  postData={formData}
-                  handleChangeInput={handleCategoryChange}
+                  postData={categoryData}
+                  handleChangeInput={handleInputChange}
                 />
                 
                 {/* Botón manual para avanzar */}
-                {formData.categorie && formData.subCategory && hasManuallyGoneBack && (
+                {categoryData.categorie && categoryData.subCategory && hasManuallyGoneBack && (
                   <div className="text-center mt-3">
                     <Button
                       variant="primary"
@@ -611,7 +536,7 @@ const CreateAnnoncePage = () => {
                     </Button>
                   </div>
                 )}
-            
+              </Card.Body>
             </Card>
           </motion.div>
         );
@@ -622,24 +547,37 @@ const CreateAnnoncePage = () => {
         return (
           <motion.div
             key={`step${currentStep}`}
-            variants={stepVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
             className="step-content"
           >
-            {renderCategoryEditButton()}
-            {renderBackToCategoryButton()}
+            {/* Botón para volver a categoría en modo edición */}
+            {isEdit && currentStep > 1 && (
+              <div className="text-center mb-3">
+                <Button
+                  variant="outline-warning"
+                  size="sm"
+                  onClick={() => handleStepChange(1)}
+                  className="px-3"
+                >
+                  <i className="fas fa-edit me-1"></i>
+                  Modifier la catégorie
+                </Button>
+              </div>
+            )}
             
             <DynamicFieldManager
-              mainCategory={formData.categorie}
-              subCategory={formData.subCategory}
-              articleType={formData.articleType}
+              mainCategory={categoryData.categorie}
+              subCategory={categoryData.subCategory}
+              articleType={categoryData.articleType}
               currentStep={currentStep}
               onStepChange={handleStepChange}
               showNavigation={false}
               isEdit={isEdit}
-              {...commonProps}
+              postData={allPostData}
+              handleChangeInput={handleInputChange}
+              isRTL={isRTL}
             />
           </motion.div>
         );
@@ -648,15 +586,11 @@ const CreateAnnoncePage = () => {
         return (
           <motion.div
             key="step5"
-            variants={stepVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
             className="step-content"
           >
-            {renderCategoryEditButton()}
-            {renderBackToCategoryButton()}
-            
             <ImagesStep
               images={images}
               setImages={setImages}
@@ -757,18 +691,11 @@ const CreateAnnoncePage = () => {
       </div>
 
       {/* CONTENIDO DEL PASO */}
-      <motion.div
-        key={currentStep}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
-        <div className="border-0 shadow-sm overflow-hidden rounded">
-          <AnimatePresence mode="wait">
-            {renderCurrentStep()}
-          </AnimatePresence>
-        </div>
-      </motion.div>
+      <div className="border-0 shadow-sm overflow-hidden rounded">
+        <AnimatePresence mode="wait">
+          {renderCurrentStep()}
+        </AnimatePresence>
+      </div>
 
       {/* NAVEGACIÓN INFERIOR */}
       <motion.div 
@@ -795,8 +722,22 @@ const CreateAnnoncePage = () => {
               <Button
                 variant="primary"
                 size="lg"
-                onClick={() => handleStepChange(currentStep + 1)}
-                disabled={!canProceedToNextStep() || isSubmitting}
+                onClick={() => {
+                  if (canProceedToNextStep()) {
+                    handleStepChange(currentStep + 1);
+                  } else {
+                    // Mostrar mensaje específico según el paso
+                    let message = '';
+                    switch(currentStep) {
+                      case 1: message = "Sélectionnez une catégorie et sous-catégorie"; break;
+                      case 2: message = "Complétez le titre et la description"; break;
+                      case 3: message = "Indiquez un prix valide"; break;
+                      case 4: message = "Renseignez la wilaya et la commune"; break;
+                    }
+                    showAlertMessage(`❌ ${message}`, "warning", 3000);
+                  }
+                }}
+                disabled={isSubmitting}
                 className="w-100 py-2"
               >
                 Suivant
@@ -825,6 +766,14 @@ const CreateAnnoncePage = () => {
             )}
           </Col>
         </Row>
+        
+        {/* Mensaje de validación específico para paso 4 */}
+        {currentStep === 4 && !canProceedToNextStep() && (
+          <div className="alert alert-warning mt-3 mb-0 py-2">
+            <i className="fas fa-exclamation-circle me-2"></i>
+            <small>Veuillez remplir la wilaya et la commune pour continuer.</small>
+          </div>
+        )}
       </motion.div>
 
       {/* ESTILOS CSS */}

@@ -8,14 +8,14 @@ const TitleField = ({
   postData,
   handleChangeInput,
   isRTL,
-  t,
+ 
   ...props
 }) => {
   
   return (
-    <div className="form-field mb-3">
+    <div className="form-field">
       <label htmlFor="title" className="form-label fw-bold">
-        {t ? t('title') : 'Titre'} 
+       Titre
         <span className="text-danger">*</span>
       </label>
       <input
@@ -25,16 +25,12 @@ const TitleField = ({
         value={postData?.title || ''}
         onChange={handleChangeInput}
         required
-        placeholder={t ? t('enterTitle') : 'Entrez le titre de l\'annonce'}
-        dir={isRTL ? 'rtl' : 'ltr'}
+        placeholder={ 'Entrez le titre de l\'annonce'}
+   
         className="form-control form-control-lg"
-        style={{
-          textAlign: isRTL ? 'right' : 'left'
-        }}
+       
       />
-      <div className="form-text text-muted">
-        {t ? t('titleHelp') : 'Un titre clair et descriptif augmente la visibilité'}
-      </div>
+     
     </div>
   );
 };

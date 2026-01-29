@@ -2,160 +2,112 @@
 const mongoose = require('mongoose');
 
 const postSchema = new mongoose.Schema({
-  // Información básica
+  // Campos básicos (REQUERIDOS)
+  categorie: {
+    type: String,
+    required: [true, 'La catégorie est requise']
+  },
+  subCategory: {
+    type: String,
+    required: [true, 'La sous-catégorie est requise']
+  },
+  articleType: {
+    type: String,
+    default: ''
+  },
+  
+  // Campos comunes obligatorios
   title: {
     type: String,
-    //required: [true, 'El título es requerido'],
-    trim: true,
-    maxlength: [200, 'El título no puede exceder 200 caracteres']
+    required: [true, 'Le titre est requis'],
+    trim: true
   },
   description: {
     type: String,
-   // required: [true, 'La descripción es requerida'],
-    trim: true,
-    maxlength: [2000, 'La descripción no puede exceder 2000 caracteres']
+    required: [true, 'La description est requise'],
+    trim: true
   },
   price: {
     type: Number,
-   // required: [true, 'El precio es requerido'],
-    min: [0, 'El precio no puede ser negativo']
+    required: [true, 'Le prix est requis'],
+    min: [0, 'Le prix ne peut pas être négatif']
+  },
+  etat: {
+    type: String,
+    enum: ['neuf', 'occasion', 'reconditionné'],
+    default: 'occasion'
   },
   
-  // Relaciones
-  category: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Category',
-    required: [true, 'La categoría es requerida'],
-    index: true
+  // Campos de contacto
+  phone: {
+    type: String,
+    trim: true
   },
-  categoryPath: {
-    level1: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Category',
-      index: true
-    },
-    level2: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Category',
-      index: true
-    },
-    level3: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Category',
-      index: true
+  email: {
+    type: String,
+    trim: true,
+    lowercase: true
+  },
+  
+  // Campos de ubicación
+  wilaya: {
+    type: String,
+    required: [true, 'La wilaya est requise']
+  },
+  commune: {
+    type: String,
+    required: [true, 'La commune est requise']
+  },
+  address: {
+    type: String,
+    trim: true
+  },
+  
+  // Campos específicos por categoría
+  categorySpecificData: {
+    type: Map,
+    of: mongoose.Schema.Types.Mixed,
+    default: new Map()
+  },
+  
+  // Imágenes
+  images: [{
+    url: String,
+    public_id: String,
+    isMain: {
+      type: Boolean,
+      default: false
     }
-  },
+  }],
+  
+  // Información del usuario
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'user',
-    required: true,
-    index: true
+    required: true
   },
   
-  // Multimedia
-  images: [{
-    type: String,
-    required: [true, 'Al menos una imagen es requerida']
-  }],
-  
-  // Ubicación
-  location: {
-    city: String,
-    address: String,
-    coordinates: {
-      lat: Number,
-      lng: Number
-    }
-  },
-  
-  // Atributos dinámicos
-  attributes: {
-    type: Map,
-    of: mongoose.Schema.Types.Mixed
-  },
-  
-  // Estado
-  status: {
-    type: String,
-    enum: ['active', 'sold', 'reserved', 'inactive'],
-    default: 'active',
-    index: true
-  },
-  
-  // Características especiales
-  featured: {
-    type: Boolean,
-    default: false
-  },
-  urgent: {
-    type: Boolean,
-    default: false
-  },
-  
-  // Estadísticas
+  // Metadatos
   views: {
     type: Number,
     default: 0
   },
-  favorites: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'user'
-  }],
-  
-  // Metadatos
+  isActive: {
+    type: Boolean,
+    default: true
+  },
   expiresAt: {
     type: Date,
-    default: () => new Date(+new Date() + 30*24*60*60*1000) // 30 días
+    default: () => new Date(+new Date() + 30 * 24 * 60 * 60 * 1000) // 30 días
   }
 }, {
-  timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  timestamps: true
 });
 
-// Índices compuestos para búsquedas rápidas
+// Índices para mejor rendimiento
 postSchema.index({ status: 1, createdAt: -1 });
-postSchema.index({ 'categoryPath.level1': 1, createdAt: -1 });
-postSchema.index({ 'categoryPath.level2': 1, createdAt: -1 });
+postSchema.index({ category: 1, createdAt: -1 });
+postSchema.index({ user: 1, createdAt: -1 });
 postSchema.index({ price: 1 });
-postSchema.index({ title: 'text', description: 'text' });
 
-// Middleware para establecer categoryPath antes de guardar
-postSchema.pre('save', async function(next) {
-  if (this.isModified('category')) {
-    try {
-      const category = await mongoose.model('Category').findById(this.category);
-      
-      if (category) {
-        this.categoryPath = {
-          level1: category.ancestors[0] || category._id,
-          level2: category.ancestors[1] || null,
-          level3: category.level === 3 ? category._id : null
-        };
-      }
-    } catch (error) {
-      return next(error);
-    }
-  }
-  next();
-});
-
-// Virtual para obtener URL del post
-postSchema.virtual('url').get(function() {
-  return `/post/${this._id}`;
-});
-
-// Virtual para obtener precio formateado
-postSchema.virtual('priceFormatted').get(function() {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR'
-  }).format(this.price);
-});
-
-// Método para verificar si está expirado
-postSchema.methods.isExpired = function() {
-  return new Date() > this.expiresAt;
-};
-
-module.exports = mongoose.model('post', postSchema);
+module.exports = mongoose.model('Post', postSchema);

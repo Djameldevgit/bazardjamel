@@ -1,55 +1,135 @@
-public/
-└── uploads/
-    └── categories/
-        ├── level1/
-        │   ├── electromenager.png
-        │   ├── smartphone.png
-        │   ├── house.png
-        │   ├── computer.png
-        │   ├── car.png
-        │   └── fashion.png
-        │
-        ├── level2/
-        │   ├── tv.png
-        │   ├── tv-box.png
-        │   ├── satellite.png
-        │   ├── audio.png
-        │   ├── vacuum.png
-        │   ├── fridge.png
-        │   ├── washing-machine.png
-        │   ├── tablet.png
-        │   ├── phone-accessories.png
-        │   ├── charger.png
-        │   ├── sell.png
-        │   ├── rent.png
-        │   ├── vacation-rental.png
-        │   ├── laptop.png
-        │   ├── desktop.png
-        │   ├── printer.png
-        │   ├── motorcycle.png
-        │   ├── boat.png
-        │   ├── mens-clothing.png
-        │   ├── womens-clothing.png
-        │   ├── shoes.png
-        │   └── bag.png
-        │
-        └── level3/
-            ├── tv-led.png
-            ├── tv-oled.png
-            ├── tv-4k.png
-            ├── refrigerator.png
-            ├── freezer.png
-            ├── fridge-freezer.png
-            ├── washing-machine.png
-            ├── dryer.png
-            ├── iphone.png
-            ├── samsung.png
-            ├── xiaomi.png
-            ├── bluetooth-earbuds.png
-            ├── power-bank.png
-            ├── phone-case.png
-            ├── apartment.png
-            ├── villa.png
-            ├── land.png
-            ├── studio.png
-            └── apartment-rent.png
+🧭 Home.jsx monta
+       ↓
+useEffect → dispatch(getAllCategoriesWithPosts)
+       ↓
+Acción Redux → llama al backend con posts=true
+       ↓
+Controlador → usa Category.find() y Post.find()
+       ↓
+Une las categorías y posts en memoria
+       ↓
+Responde con JSON completo
+       ↓
+Reducer → guarda categories en Redux
+       ↓
+Home.jsx → muestra slider (usa name, icon)
+       ↓
+Home.jsx → muestra body (usa posts)
+       ↓
+Usuario hace scroll → repite el flujo con page=2
+
+
+Flujo del Home — línea por línea con el código clave (breve) antes de pasar a la siguiente línea
+
+Iré paso a paso: cada fila es la línea de tu diagrama, y justo debajo pongo el snippet esencial (mínimo y claro) que implementa esa etapa.
+
+🧭 Home.jsx monta
+
+// src/pages/Home.jsx
+useEffect(() => { /* monta componente */ }, []);
+
+
+↓
+
+useEffect → dispatch(getAllCategoriesWithPosts)
+
+// Home.jsx
+useEffect(() => {
+  dispatch(getAllCategoriesWithPosts(1, 8));
+}, [dispatch]);
+
+
+↓
+
+Acción Redux → llama al backend con posts=true
+
+// redux/actions/categoryAction.js
+export const getAllCategoriesWithPosts = (page=1, limit=8) => async (dispatch) => {
+  dispatch({ type: 'GET_ALL_CATEGORIES_WITH_POSTS' });
+  const { data } = await axios.get('/api/categories/main', {
+    params: { page, limit, posts: true }
+  });
+  dispatch({ type: 'GET_ALL_CATEGORIES_WITH_POSTS_SUCCESS', payload: data });
+};
+
+
+↓
+
+Controlador → usa Category.find() y Post.find()
+
+// controllers/categoryCtrl.js
+const nivel1 = await Category.find({ level:1, isActive:true }).lean();
+const nivel2 = await Category.find({ level:2, isActive:true }).lean();
+const nivel3 = await Category.find({ level:3, isActive:true }).lean();
+
+const todosIds = [...nivel1.map(c=>c._id), ...nivel2.map(c=>c._1d), ...nivel3.map(c=>c._id)];
+const posts = await Post.find({ category: { $in: todosIds }, status:'active' }).lean();
+
+
+↓
+
+Une las categorías y posts en memoria
+
+// controllers/categoryCtrl.js (resumen)
+const postsMap = {};
+posts.forEach(p => (postsMap[String(p.category)] = postsMap[String(p.category)] || []).push(p));
+
+// asignar a nivel3, luego agregar a nivel2 y nivel1 (limitar a 8)
+nivel3.forEach(c => c.posts = postsMap[String(c._id)] || []);
+nivel2.forEach(c => c.posts = [...(postsMap[String(c._id)]||[]), ...c.children.flatMap(ch=>ch.posts||[])].slice(0,8));
+nivel1.forEach(c => c.posts = [...(postsMap[String(c._id)]||[]), ...c.children.flatMap(ch=>ch.posts||[])].slice(0,8));
+
+
+↓
+
+Responde con JSON completo
+
+// controllers/categoryCtrl.js
+return res.json({ success: true, categories: nivel1, pagination: { page, limit, hasNextPage } });
+
+
+↓
+
+Reducer → guarda categories en Redux
+
+// redux/reducers/categoryReducer.js
+case 'GET_ALL_CATEGORIES_WITH_POSTS_SUCCESS':
+  return {
+    ...state,
+    loading: false,
+    categories: action.payload.categories,
+    currentPage: action.payload.currentPage || 1,
+    hasMoreCategories: action.payload.hasMore || false
+  };
+
+
+↓
+
+Home.jsx → muestra slider (usa name, icon)
+
+// Home.jsx (render)
+<MainCategorySlider categories={categories} onCategoryClick={handleCategoryClick} />
+// MainCategorySlider usa category.name, category.icon, category.slug
+
+
+↓
+
+Home.jsx → muestra body (usa posts)
+
+// Home.jsx (render)
+{categories.map(cat => (
+  <section key={cat._id}>
+    <h3>{cat.name}</h3>
+    {cat.posts?.slice(0,6).map(p => (<Card key={p._id}>{p.title}{p.price}</Card>))}
+  </section>
+))}
+
+
+↓
+
+Usuario hace scroll → repite el flujo con page=2
+
+// Home.jsx - fetchMoreData
+const fetchMoreData = () => {
+  if (hasMoreCategories) dispatch(loadMoreCategories(currentPage + 1)); // loadMoreCategories llama al mismo endpoint con page++
+};

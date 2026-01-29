@@ -40,13 +40,13 @@ export const DYNAMIC_FIELDS_CONFIG = {
   'vehicules': {
     step2: ['title', 'description', 'etat', 'reference', 'marque', 'modele', 'annee', 'kilometrage', 'carburant', 'boiteVitesse'],
     step3: ['price', 'unite', 'typeOffre', 'echange', 'puissance', 'couleur', 'options'],
-    step4: ['wilaya', 'adresse', 'telephone', 'email'],
+    step4: ['wilaya',   'telephone', 'commune'],
     step5: ['images'],
     subCategories: {
       'automobiles': {
         step2: [  'marque', 'modele', 'annee', , 'couleur','kilometrage', 'carburant', 'boiteVitesse' , 'optionduvoiture' ],
         step3: ['price','unite', 'typeOffre', 'echange'],
-        step4: ['wilaya', 'adresse', 'telephone', 'email'],
+        step4: ['wilaya', 'telephone', 'commune'],
         step5: ['images']
       },
       'utilitaires': {

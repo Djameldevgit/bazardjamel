@@ -227,9 +227,7 @@ const HeaderCarousel = memo(() => {
               transition: 'transform 0.5s ease',
               borderRadius: '12px'
             }}
-            onError={(e) => {
-              e.target.src = `https://via.placeholder.com/1200x350/8b5cf6/ffffff`;     }}
-          />
+               />
         </div>
      
         <Carousel.Caption 

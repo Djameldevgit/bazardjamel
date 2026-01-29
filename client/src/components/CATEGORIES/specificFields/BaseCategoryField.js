@@ -15,7 +15,7 @@ import GrossDetailField from '../camposComun/GrossDetailField';
 import WilayaField from '../camposComun/WilayaCommuneField';
  
 import TelephoneField from '../camposComun/PhoneField';
-import EmailField from '../camposComun/EmailField';
+ 
 import EtatField from '../camposComun/EtatField';
 
 // Importar configuración
@@ -198,19 +198,7 @@ const BaseCategoryField = ({
         t={t}
       />
     ),
-    
-    'email': (
-      <EmailField
-        key="email"
-        mainCategory={mainCategory}
-        subCategory={subCategory}
-        postData={postData}
-        handleChangeInput={handleChangeInput}
-        fieldName="email"
-        isRTL={isRTL}
-        t={t}
-      />
-    ),
+ 
     
     'etat': (
       <EtatField
