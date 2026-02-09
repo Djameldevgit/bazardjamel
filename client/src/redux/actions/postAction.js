@@ -24,7 +24,7 @@ export const POST_TYPES = {
   GET_SIMILAR_POSTS: 'GET_SIMILAR_POSTS',
   LOADING_SIMILAR_POSTS: 'LOADING_SIMILAR_POSTS',
   CLEAR_SIMILAR_POSTS: 'CLEAR_SIMILAR_POSTS',
-  
+  SET_POST_FILTERS:'SET_POST_FILTERS',
   // Errores
   ERROR_POST: 'ERROR_POST',
   CLEAR_POST_ERROR: 'CLEAR_POST_ERROR',
@@ -39,9 +39,10 @@ export const POST_TYPES = {
   UNSAVE_POST: 'UNSAVE_POST'
 };
 
-// 📂 actions/categoryAction.js - Debe tener
-// 📂 actions/categoryAction.js - getCategoryPosts CORREGIDO
-// 📂 actions/categoryAction.js
+export const setPostFilters = (filters) => ({
+  type: POST_TYPES.SET_POST_FILTERS,
+  payload: filters
+});
 export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = null, page = 1, limit = 12) => async (dispatch) => {
     try {
       dispatch({ type: types.GET_CATEGORY_POSTS });

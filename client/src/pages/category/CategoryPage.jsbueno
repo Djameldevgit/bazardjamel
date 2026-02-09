@@ -1,0 +1,164 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useParams, useHistory } from 'react-router-dom';
+import { getCategoryPosts } from '../../redux/actions/categoryAction';
+import { Container, Spinner, Badge, Row, Col } from 'react-bootstrap';
+import InfiniteScroll from 'react-infinite-scroll-component';
+import Header from '../../components/SlidersCategories/HeaderCarousel';
+import BreadcrumbNav from '../../components/BreadcrumbNav';
+import SubCategorySlider from '../../components/SlidersCategories/SubCategoriesSlider';
+import ArticleSlider from '../../components/SlidersCategories/SliderArticle';
+import PostCard from '../../components/PostCard';
+
+const CategoryPage = () => {
+  const dispatch = useDispatch();
+  const history = useHistory();
+  const { slug, subSlug, articleSlug } = useParams();
+
+  const { categoryInfo, children, posts, postsLoading, postsError, hasMorePosts } = useSelector(state => state.category || {});
+
+  const [allChildren, setAllChildren] = useState([]);        // Slider completo (nivel 2 con hijos nivel 3)
+  const [currentSub, setCurrentSub] = useState(null);        // Subcategoría seleccionada (nivel 2)
+  const [currentArticle, setCurrentArticle] = useState(null);// Artículo seleccionado (nivel 3)
+
+  const initialLoadRef = useRef(false);
+  const isFetchingRef = useRef(false);
+  const prevParamsRef = useRef({ slug: null, subSlug: null, articleSlug: null });
+
+  const currentLevel = articleSlug ? 3 : subSlug ? 2 : 1;
+
+  // ================= Cargar posts y sliders =================
+  useEffect(() => {
+    if (!slug) return;
+
+    const currentParams = { slug, subSlug, articleSlug };
+    const prevParams = prevParamsRef.current;
+    const paramsChanged = slug !== prevParams.slug || subSlug !== prevParams.subSlug || articleSlug !== prevParams.articleSlug;
+
+    if ((!initialLoadRef.current || paramsChanged) && !postsLoading && !isFetchingRef.current) {
+      initialLoadRef.current = true;
+      isFetchingRef.current = true;
+
+      dispatch(getCategoryPosts(slug, subSlug || null, articleSlug || null, 1, 12))
+        .then(res => {
+          if (res && res.children) setAllChildren(res.children);
+        })
+        .finally(() => { isFetchingRef.current = false; });
+
+      prevParamsRef.current = currentParams;
+    }
+  }, [slug, subSlug, articleSlug, dispatch, postsLoading]);
+
+  // ================= Actualizar sub y article al cambiar URL =================
+  useEffect(() => {
+    if (subSlug && allChildren.length > 0) {
+      const foundSub = allChildren.find(c => c.slug === subSlug);
+      setCurrentSub(foundSub || null);
+
+      if (articleSlug && foundSub?.articles) {
+        const foundArticle = foundSub.articles.find(a => a.slug === articleSlug);
+        setCurrentArticle(foundArticle || null);
+      } else {
+        setCurrentArticle(null);
+      }
+    } else {
+      setCurrentSub(null);
+      setCurrentArticle(null);
+    }
+  }, [subSlug, articleSlug, allChildren]);
+
+  // ================= Click en sliders =================
+  const handleSubClick = sub => {
+    history.push(`/category/${slug}/${sub.slug}`);
+  };
+
+  const handleArticleClick = article => {
+    if (!currentSub) return;
+    history.push(`/category/${slug}/${currentSub.slug}/${article.slug}`);
+  };
+
+  // ================= Preparar sliders =================
+  const subcategoriesSlider = allChildren;                 // Nivel 2
+  const articlesSlider = currentSub?.articles || [];       // Nivel 3
+
+  // ================= Breadcrumb y título =================
+  const getPageTitle = () => {
+    if (currentLevel === 1) return categoryInfo?.name || slug;
+    if (currentLevel === 2) return currentSub?.name || subSlug;
+    if (currentLevel === 3) return currentArticle?.name || articleSlug;
+    return '';
+  };
+
+  const buildBreadcrumbItems = () => {
+    const items = [{ label: 'Inicio', path: '/' }];
+    if (slug) items.push({ label: categoryInfo?.name || slug, path: `/category/${slug}` });
+    if (currentSub) items.push({ label: currentSub.name, path: `/category/${slug}/${currentSub.slug}` });
+    if (currentArticle) items.push({ label: currentArticle.name, path: `/category/${slug}/${currentSub.slug}/${currentArticle.slug}` });
+    return items;
+  };
+
+  // ================= Render =================
+  return (
+    <div className="min-vh-100 d-flex flex-column">
+      <Header />
+      <main className="flex-grow-1">
+        <Container className="py-4">
+          <BreadcrumbNav items={buildBreadcrumbItems()} />
+          <h1 className="h2 mb-4">
+            {getPageTitle()}
+            <Badge bg={currentLevel === 1 ? 'primary' : currentLevel === 2 ? 'success' : 'info'} className="ms-2">
+              Nivel {currentLevel}
+            </Badge>
+            {currentArticle && <Badge bg="warning" className="ms-2">Filtrado por: {currentArticle.name}</Badge>}
+          </h1>
+
+          {/* SubCategory Slider (nivel 2) */}
+          {subcategoriesSlider.length > 0 && (
+            <SubCategorySlider
+              subcategories={subcategoriesSlider}
+              currentCategory={categoryInfo}
+              onSubcategoryClick={handleSubClick}
+            />
+          )}
+
+          {/* Article Slider (nivel 3) */}
+          {articlesSlider.length > 0 && (
+            <ArticleSlider
+              articles={articlesSlider}
+              currentSubcategory={currentSub}
+              currentArticle={currentArticle}
+              onArticleClick={handleArticleClick}
+            />
+          )}
+
+          {/* Posts */}
+          <section className="mt-4">
+            {postsLoading && (!posts || posts.length === 0) && !postsError ? (
+              <div className="d-flex justify-content-center py-5">
+                <Spinner animation="border" />
+              </div>
+            ) : posts && posts.length > 0 ? (
+              <InfiniteScroll
+                dataLength={posts.length}
+                hasMore={hasMorePosts}
+                loader={<Spinner animation="border" size="sm" className="d-block mx-auto my-3"/>}
+              >
+                <Row xs={1} md={2} lg={3} xl={4} className="g-4">
+                  {posts.map(post => (
+                    <Col key={post._id}><PostCard post={post} /></Col>
+                  ))}
+                </Row>
+              </InfiniteScroll>
+            ) : (
+              <div className="text-center py-5">
+                {currentArticle ? `No hay resultados para "${currentArticle.name}"` : 'No hay productos disponibles'}
+              </div>
+            )}
+          </section>
+        </Container>
+      </main>
+    </div>
+  );
+};
+
+export default CategoryPage;

@@ -132,17 +132,12 @@ export const categoryReducer = (state = initialState, action) => {
         postsError: null
       };
       
-    case 'SET_ACTIVE_SUBCATEGORY':
-      return {
-        ...state,
-        activeSubcategory: action.payload,
-        activeArticle: null,
-        posts: [],
-        postsCurrentPage: 1,
-        hasMorePosts: false,
-        postsLoading: false,
-        postsError: null
-      };
+      case 'SET_ACTIVE_SUBCATEGORY':
+        return {
+          ...state,
+          activeSubcategory: action.payload,
+          activeArticle: null
+        };
       
     case 'SET_ACTIVE_ARTICLE':
       return {
@@ -174,7 +169,13 @@ export const categoryReducer = (state = initialState, action) => {
         postsError: null,
         accordionError: null
       };
-      
+      case "CATEGORY_RESET_POSTS":
+  return {
+    ...state,
+    posts: [],
+    hasMorePosts: true,
+    postsLoading: false,
+  };
     default:
       return state;
   }

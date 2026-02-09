@@ -1,17 +1,17 @@
 // 📂 redux/reducers/postReducer.js - VERSIÓN LIMPIA
 import { POST_TYPES } from '../actions/postAction';
 import { GLOBALTYPES } from '../actions/globalTypes';
-import {   DeleteData } from '../actions/globalTypes'
+import { DeleteData } from '../actions/globalTypes'
 const initialState = {
   // Estados básicos
   loading: false,
   posts: [],          // Posts generales
   result: 0,          // Total de posts
   page: 1,            // Página actual
-  
+
   // Post específico
   detailPost: null,
-  
+
   // Posts similares
   similarPosts: {
     posts: [],
@@ -20,13 +20,15 @@ const initialState = {
     total: 0,
     loading: false
   },
-  
+
   // Errores
   error: null,
-  
+
   // Filtros (opcional, si necesitas mantener estado de filtrado)
   filters: {
-    category: null,
+    categoryId: null,
+    subcategory: null,
+    article: null,
     priceRange: null,
     location: null
   },
@@ -50,48 +52,62 @@ const initialState = {
 const postReducer = (state = initialState, action) => {
   switch (action.type) {
     case POST_TYPES.GET_CATEGORY_POSTS:
-  return {
-    ...state,
-    postsLoading: true,
-    postsError: null
-  };
-  case POST_TYPES.GET_POST_BY_ID:
-  return {
-    ...state,
-    postToEdit: action.payload // Guardamos el post completo para edición
-  };
-case POST_TYPES.GET_CATEGORY_POSTS_SUCCESS:
-  console.log('✅ Reducer: GET_CATEGORY_POSTS_SUCCESS', {
-    postsCount: action.payload.posts.length,
-    hasMore: action.payload.hasMore
-  });
-  
-  return {
-    ...state,
-    postsLoading: false,
-    categoryInfo: action.payload.categoryInfo || {},
-    children: action.payload.children || [],
-    posts: action.payload.posts || [],
-    postsCurrentPage: action.payload.currentPage || 1,
-    postsTotalPages: action.payload.totalPages || 1,
-    hasMorePosts: action.payload.hasMore || false,
-    postsError: null
-  };
-  
-case POST_TYPES.GET_CATEGORY_POSTS_FAIL:
-  return {
-    ...state,
-    postsLoading: false,
-    postsError: action.payload,
-    posts: []
-  };
+      return {
+        ...state,
+        postsLoading: true,
+        postsError: null
+      };
+    case POST_TYPES.GET_POST_BY_ID:
+      return {
+        ...state,
+        postToEdit: action.payload // Guardamos el post completo para edición
+      };
+
+    case POST_TYPES.SET_POST_FILTERS:
+      return {
+        ...state,
+        filters: {
+          ...state.filters,
+          ...action.payload
+        },
+        posts: [],
+        page: 1,
+        result: 0
+      };
+
+
+
+    case POST_TYPES.GET_CATEGORY_POSTS_SUCCESS:
+      console.log('✅ Reducer: GET_CATEGORY_POSTS_SUCCESS', {
+        postsCount: action.payload.posts.length,
+        hasMore: action.payload.hasMore
+      });
+
+      return {
+        ...state,
+        postsLoading: false,
+       
+        posts: action.payload.posts || [],
+        postsCurrentPage: action.payload.currentPage || 1,
+        postsTotalPages: action.payload.totalPages || 1,
+        hasMorePosts: action.payload.hasMore || false,
+        postsError: null
+      };
+
+    case POST_TYPES.GET_CATEGORY_POSTS_FAIL:
+      return {
+        ...state,
+        postsLoading: false,
+        postsError: action.payload,
+        posts: []
+      };
     // ================ LOADING STATES ================
     case POST_TYPES.LOADING_POST:
       return {
         ...state,
         loading: action.payload
       };
-      
+
     case POST_TYPES.LOADING_SIMILAR_POSTS:
       return {
         ...state,
@@ -134,16 +150,16 @@ case POST_TYPES.GET_CATEGORY_POSTS_FAIL:
         posts: state.posts.map(post =>
           post._id === action.payload._id ? action.payload : post
         ),
-        detailPost: state.detailPost?._id === action.payload._id 
-          ? action.payload 
+        detailPost: state.detailPost?._id === action.payload._id
+          ? action.payload
           : state.detailPost
       };
 
-      case POST_TYPES.DELETE_POST:
-        return {
-            ...state,
-            posts: DeleteData(state.posts, action.payload._id)
-        };
+    case POST_TYPES.DELETE_POST:
+      return {
+        ...state,
+        posts: DeleteData(state.posts, action.payload._id)
+      };
 
     // ================ SIMILAR POSTS ================
     case POST_TYPES.GET_SIMILAR_POSTS:
@@ -172,8 +188,8 @@ case POST_TYPES.GET_CATEGORY_POSTS_FAIL:
         posts: state.posts.map(post =>
           post._id === action.payload._id ? action.payload : post
         ),
-        detailPost: state.detailPost?._id === action.payload._id 
-          ? action.payload 
+        detailPost: state.detailPost?._id === action.payload._id
+          ? action.payload
           : state.detailPost
       };
 
@@ -184,8 +200,8 @@ case POST_TYPES.GET_CATEGORY_POSTS_FAIL:
       return {
         ...state,
         posts: state.posts.map(post =>
-          post._id === action.payload.postId 
-            ? { ...post, saved: [...(post.saved || []), action.payload.userId] } 
+          post._id === action.payload.postId
+            ? { ...post, saved: [...(post.saved || []), action.payload.userId] }
             : post
         )
       };
@@ -194,11 +210,11 @@ case POST_TYPES.GET_CATEGORY_POSTS_FAIL:
       return {
         ...state,
         posts: state.posts.map(post =>
-          post._id === action.payload.postId 
-            ? { 
-                ...post, 
-                saved: (post.saved || []).filter(id => id !== action.payload.userId) 
-              } 
+          post._id === action.payload.postId
+            ? {
+              ...post,
+              saved: (post.saved || []).filter(id => id !== action.payload.userId)
+            }
             : post
         )
       };
@@ -239,36 +255,36 @@ case POST_TYPES.GET_CATEGORY_POSTS_FAIL:
       return state;
 
 
-  // ==================== POSTS SIMILARES (de postAction) ====================
-  case POST_TYPES.GET_SIMILAR_POSTS: {
-    const { 
+    // ==================== POSTS SIMILARES (de postAction) ====================
+    case POST_TYPES.GET_SIMILAR_POSTS: {
+      const {
         posts: newSimilarPosts = [],
         page: newSimilarPage = 1,
         total: newSimilarTotal = 0,
         totalPages: newSimilarTotalPages = 1,
         hasMore: newSimilarHasMore = false,
-        currentPostId: newCurrentPostId 
-    } = action.payload;
-    
-    const safeSimilarPosts = Array.isArray(newSimilarPosts) 
-        ? newSimilarPosts 
+        currentPostId: newCurrentPostId
+      } = action.payload;
+
+      const safeSimilarPosts = Array.isArray(newSimilarPosts)
+        ? newSimilarPosts
         : [];
-    
-    if (newSimilarPage === 1 || newCurrentPostId !== state.currentSimilarPostId) {
+
+      if (newSimilarPage === 1 || newCurrentPostId !== state.currentSimilarPostId) {
         return {
-            ...state,
-            similarPosts: safeSimilarPosts,
-            similarPostsTotal: newSimilarTotal,
-            similarPostsPage: newSimilarPage,
-            similarPostsTotalPages: newSimilarTotalPages,
-            similarPostsHasMore: newSimilarHasMore,
-            similarLoading: false,
-            currentSimilarPostId: newCurrentPostId,
-            error: null
+          ...state,
+          similarPosts: safeSimilarPosts,
+          similarPostsTotal: newSimilarTotal,
+          similarPostsPage: newSimilarPage,
+          similarPostsTotalPages: newSimilarTotalPages,
+          similarPostsHasMore: newSimilarHasMore,
+          similarLoading: false,
+          currentSimilarPostId: newCurrentPostId,
+          error: null
         };
-    }
-    
-    return {
+      }
+
+      return {
         ...state,
         similarPosts: [...state.similarPosts, ...safeSimilarPosts],
         similarPostsTotal: newSimilarTotal,
@@ -277,11 +293,11 @@ case POST_TYPES.GET_CATEGORY_POSTS_FAIL:
         similarPostsHasMore: newSimilarHasMore,
         similarLoading: false,
         error: null
-    };
-}
+      };
+    }
 
-case POST_TYPES.CLEAR_SIMILAR_POSTS:
-    return {
+    case POST_TYPES.CLEAR_SIMILAR_POSTS:
+      return {
         ...state,
         similarPosts: [],
         similarPostsTotal: 0,
@@ -290,7 +306,7 @@ case POST_TYPES.CLEAR_SIMILAR_POSTS:
         similarPostsHasMore: false,
         similarLoading: false,
         currentSimilarPostId: null
-    };
+      };
 
 
 

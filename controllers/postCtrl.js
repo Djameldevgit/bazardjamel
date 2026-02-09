@@ -100,63 +100,41 @@ const postCtrl = {
     res.status(500).json({ msg: "Erreur serveur" });
   }
 },
-   
+
+
+
+   /*bueno
 filterPosts: async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 12;
     const skip = (page - 1) * limit;
 
-    const { category: categorySlug, sub } = req.query;
+    const { category: categorySlug, sub, article } = req.query;
 
-    // 🔹 1️⃣ Validación básica
     if (!categorySlug) {
-      return res.json({
-        success: true,
-        posts: [],
-        total: 0,
-        page,
-        hasMore: false,
-        message: 'Se requiere categoría'
-      });
+      return res.json({ success: true, posts: [], total: 0, page, hasMore: false, message: 'Se requiere categoría' });
     }
 
-    // 🔹 2️⃣ Obtener categoría principal (LEVEL 1)
-    const categoryDoc = await Category.findOne({
-      slug: categorySlug,
-      level: 1,
-      isActive: true
-    }).lean();
+    // Nivel 1
+    const categoryDoc = await Category.findOne({ slug: categorySlug, level: 1, isActive: true }).lean();
+    if (!categoryDoc) return res.json({ success: true, posts: [], total: 0, page, hasMore: false, message: 'Categoría no encontrada' });
 
-    if (!categoryDoc) {
-      return res.json({
-        success: true,
-        posts: [],
-        total: 0,
-        page,
-        hasMore: false,
-        message: 'Categoría no encontrada'
-      });
-    }
+    const filter = { category: categoryDoc._id, isActive: true };
 
-    // 🔹 3️⃣ Construir filtro REAL según tu modelo
-    const filter = {
-      category: categoryDoc._id, // 🔥 SIEMPRE level 1
-      isActive: true
-    };
+    // Nivel 2
+    if (sub) filter.subCategory = sub;
 
-    // 👉 Si viene subcategoría (LEVEL 2)
-    if (sub) {
-      filter.subCategory = sub;
-    }
+    // Nivel 3
+    if (article) filter.articleType = article;
 
-    // 🔹 4️⃣ Consultar posts + total
+    // Obtener posts
     const [posts, total] = await Promise.all([
       Post.find(filter)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .select('_id title price images createdAt wilaya commune description etat views')
+        .select('_id title price images createdAt wilaya commune description etat views category subCategory articleType')
         .populate('user', 'username avatar')
         .lean(),
       Post.countDocuments(filter)
@@ -165,17 +143,18 @@ filterPosts: async (req, res) => {
     const hasMore = page * limit < total;
     const totalPages = Math.ceil(total / limit);
 
-    // 🔹 5️⃣ Obtener subcategorías (LEVEL 2) para UI
-    const children = await Category.find({
-      parent: categoryDoc._id,
-      level: 2,
-      isActive: true
-    })
+    // Subcategorías (nivel 2)
+    const children = await Category.find({ parent: categoryDoc._id, level: 2, isActive: true })
       .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf')
       .sort({ order: 1 })
       .lean();
 
-    // 🔹 6️⃣ Respuesta final
+    // Hijos de nivel 3 para cada subcategoría (solo para sliders)
+    const articles = await Category.find({ parent: { $in: children.map(c => c._id) }, level: 3, isActive: true })
+      .select('_id name slug level parent emoji icon iconType iconColor bgColor hasChildren isLeaf')
+      .sort({ order: 1 })
+      .lean();
+
     return res.json({
       success: true,
       posts,
@@ -196,30 +175,114 @@ filterPosts: async (req, res) => {
         bgColor: categoryDoc.bgColor || '#FFFFFF'
       },
       children: children.map(c => ({
-        _id: c._id,
-        name: c.name,
-        slug: c.slug,
-        level: c.level,
-        emoji: c.emoji || '',
-        hasChildren: c.hasChildren || false,
-        isLeaf: c.isLeaf || false,
-        icon: c.icon || '',
-        iconType: c.iconType || 'image-png',
-        iconColor: c.iconColor || '#666666',
-        bgColor: c.bgColor || '#FFFFFF'
+        ...c,
+        articles: articles.filter(a => String(a.parent) === String(c._id)) // nivel 3 hijos de esta subcategoria
       }))
     });
 
   } catch (error) {
     console.error('❌ Error en filterPosts:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al filtrar posts',
-      error: error.message
+    res.status(500).json({ success: false, message: 'Error al filtrar posts', error: error.message });
+  }
+},*/
+filterPosts: async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
+
+    const { category: categorySlug, sub, article } = req.query;
+
+    if (!categorySlug) {
+      return res.json({
+        success: true,
+        posts: [],
+        total: 0,
+        page,
+        hasMore: false,
+        message: 'Se requiere categoría'
+      });
+    }
+
+    // Nivel 1: categoría principal
+    const categoryDoc = await Category.findOne({ slug: categorySlug, level: 1, isActive: true }).lean();
+    if (!categoryDoc) {
+      return res.json({
+        success: true,
+        posts: [],
+        total: 0,
+        page,
+        hasMore: false,
+        message: 'Categoría no encontrada'
+      });
+    }
+
+    const filter = { category: categoryDoc._id, isActive: true };
+
+    // Nivel 2: subcategoría (slug directo)
+    if (sub) filter.subCategory = sub;
+
+    // Nivel 3: artículo (slug directo)
+    if (article) filter.articleType = article;
+
+    // Obtener posts
+    const [posts, total] = await Promise.all([
+      Post.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .select('_id title price images createdAt wilaya commune description etat views category subCategory articleType')
+        .populate('user', 'username avatar')
+        .lean(),
+      Post.countDocuments(filter)
+    ]);
+
+    const hasMore = page * limit < total;
+    const totalPages = Math.ceil(total / limit);
+
+    // Subcategorías (nivel 2)
+    const children = await Category.find({ parent: categoryDoc._id, level: 2, isActive: true })
+      .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf')
+      .sort({ order: 1 })
+      .lean();
+
+    // Hijos de nivel 3 para cada subcategoría (solo para sliders)
+    const articles = await Category.find({ parent: { $in: children.map(c => c._id) }, level: 3, isActive: true })
+      .select('_id name slug level parent emoji icon iconType iconColor bgColor hasChildren isLeaf')
+      .sort({ order: 1 })
+      .lean();
+
+    return res.json({
+      success: true,
+      posts,
+      total,
+      page,
+      limit,
+      hasMore,
+      totalPages,
+      categoryInfo: {
+        _id: categoryDoc._id,
+        name: categoryDoc.name,
+        slug: categoryDoc.slug,
+        level: categoryDoc.level,
+        emoji: categoryDoc.emoji || '',
+        icon: categoryDoc.icon || '',
+        iconType: categoryDoc.iconType || 'image-png',
+        iconColor: categoryDoc.iconColor || '#666666',
+        bgColor: categoryDoc.bgColor || '#FFFFFF'
+      },
+      children: children.map(c => ({
+        ...c,
+        articles: articles.filter(a => String(a.parent) === String(c._id)) // nivel 3 hijos de esta subcategoría
+      }))
     });
+
+  } catch (error) {
+    console.error('❌ Error en filterPosts:', error);
+    res.status(500).json({ success: false, message: 'Error al filtrar posts', error: error.message });
   }
 },
- 
+
  
 
 

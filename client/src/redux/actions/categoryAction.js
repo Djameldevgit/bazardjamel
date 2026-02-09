@@ -5,7 +5,9 @@ import axios from 'axios';
  
 import { BASE_URL } from '../../utils/config'
  
-// En tu controller de posts
+export const resetCategoryPosts = () => (dispatch) => {
+  dispatch({ type: "CATEGORY_RESET_POSTS" });
+};
  
 export const getAllCategoriesWithPosts = (page = 1, limit = 2) => async (dispatch) => {
   try {
