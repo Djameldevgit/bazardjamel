@@ -12,121 +12,156 @@ const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
   const incluirPosts = req.query.posts === 'true';
   const ahora = Date.now();
 
-  // 🔹 Caché solo para nivel 1 sin posts
-  if (!incluirPosts && cacheCategoriasPrincipales && ahora - cacheCategoriasPrincipalesEn < 5 * 60 * 1000) {
+  // 🔹 Cache con posts (1 min)
+  if (
+    incluirPosts &&
+    cacheCategoriasPrincipales &&
+    ahora - cacheCategoriasPrincipalesEn < 60 * 1000
+  ) {
     return res.json(cacheCategoriasPrincipales);
   }
 
-  // 1️⃣ Traer categorías activas
+  // 🔹 Cache sin posts (5 min)
+  if (
+    !incluirPosts &&
+    cacheCategoriasPrincipales &&
+    ahora - cacheCategoriasPrincipalesEn < 5 * 60 * 1000
+  ) {
+    return res.json(cacheCategoriasPrincipales);
+  }
+
+  // 1️⃣ Cargar categorías
   const [nivel1, nivel2, nivel3] = await Promise.all([
     Category.find({ level: 1, isActive: true })
       .select('_id name slug icon emoji order hasChildren postCount')
       .sort({ order: 1 })
       .lean(),
+
     Category.find({ level: 2, isActive: true })
       .select('_id name slug parent emoji order hasChildren isLeaf')
       .sort({ order: 1 })
       .lean(),
+
     Category.find({ level: 3, isActive: true })
       .select('_id name slug parent emoji order isLeaf')
       .sort({ order: 1 })
       .lean(),
   ]);
 
-  // 2️⃣ Armar relaciones padre-hijo en memoria
+  // 2️⃣ Relacionar nivel 3 → nivel 2
   const nivel3PorPadre = {};
-  nivel3.forEach(cat => {
+  for (let i = 0; i < nivel3.length; i++) {
+    const cat = nivel3[i];
     const idPadre = String(cat.parent);
-    if (!nivel3PorPadre[idPadre]) nivel3PorPadre[idPadre] = [];
-    nivel3PorPadre[idPadre].push(cat);
-  });
 
-  nivel2.forEach(subcat => {
+    if (!nivel3PorPadre[idPadre]) {
+      nivel3PorPadre[idPadre] = [];
+    }
+    nivel3PorPadre[idPadre].push(cat);
+  }
+
+  for (let i = 0; i < nivel2.length; i++) {
+    const subcat = nivel2[i];
     const clave = String(subcat._id);
+
     subcat.children = nivel3PorPadre[clave] || [];
     subcat.hasChildren = subcat.children.length > 0;
-  });
+  }
 
+  // 3️⃣ Relacionar nivel 2 → nivel 1
   const nivel2PorPadre = {};
-  nivel2.forEach(subcat => {
+  for (let i = 0; i < nivel2.length; i++) {
+    const subcat = nivel2[i];
     const idPadre = String(subcat.parent);
-    if (!nivel2PorPadre[idPadre]) nivel2PorPadre[idPadre] = [];
-    nivel2PorPadre[idPadre].push(subcat);
-  });
 
-  nivel1.forEach(cat => {
+    if (!nivel2PorPadre[idPadre]) {
+      nivel2PorPadre[idPadre] = [];
+    }
+    nivel2PorPadre[idPadre].push(subcat);
+  }
+
+  for (let i = 0; i < nivel1.length; i++) {
+    const cat = nivel1[i];
     const clave = String(cat._id);
+
     cat.children = nivel2PorPadre[clave] || [];
     cat.hasChildren = cat.children.length > 0;
-  });
+  }
 
-  // 3️⃣ Traer posts si se piden
+  // 4️⃣ Posts (misma lógica)
   if (incluirPosts) {
-    // Crear lista de todos los ids de categorías (nivel1, nivel2, nivel3)
-    const todosIds = [
-      ...nivel1.map(c => c._id),
-      ...nivel2.map(c => c._id),
-      ...nivel3.map(c => c._id),
-    ];
+    const todosIds = []
+      .concat(nivel1.map(c => c._id))
+      .concat(nivel2.map(c => c._id))
+      .concat(nivel3.map(c => c._id));
 
-    // 🔹 UNA SOLA CONSULTA a Post
-    const posts = await Post.find({ 
+    const posts = await Post.find({
       category: { $in: todosIds },
-  $or: [{ isActive: true }, { status: 'active' }] 
-     })
-      .select('_id title price images createdAt location category')
+      $or: [{ isActive: true }, { status: 'active' }],
+    })
       .sort({ createdAt: -1 })
-      .lean()
-       
-    // 🔹 Map para asignar posts a su categoría
+      .limit(300)
+      .select('_id title price images category createdAt')
+      .lean();
+
     const postsMap = {};
-    posts.forEach(post => {
+
+    for (let i = 0; i < posts.length; i++) {
+      const post = posts[i];
       const key = String(post.category);
-      if (!postsMap[key]) postsMap[key] = [];
-      if (postsMap[key].length < 8) postsMap[key].push(post); // limitar a 8 por categoría
-    });
 
-    // 🔹 Asignar posts a nivel3
-    nivel3.forEach(cat => {
+      if (!postsMap[key]) {
+        postsMap[key] = [];
+      }
+
+      if (postsMap[key].length < 8) {
+        postsMap[key].push(post);
+      }
+    }
+
+    // nivel 3
+    for (let i = 0; i < nivel3.length; i++) {
+      const cat = nivel3[i];
       cat.posts = postsMap[String(cat._id)] || [];
-    });
+    }
 
-    // 🔹 Asignar posts a nivel2 sumando hijos nivel3
-    nivel2.forEach(cat => {
-      const hijosPosts = cat.children.flatMap(c => c.posts || []);
-      cat.posts = [...(postsMap[String(cat._id)] || []), ...hijosPosts].slice(0, 8);
-    });
+    // nivel 2
+    for (let i = 0; i < nivel2.length; i++) {
+      const cat = nivel2[i];
+      const hijosPosts = [];
 
-    // 🔹 Asignar posts a nivel1 sumando hijos nivel2
-    nivel1.forEach(cat => {
-      const hijosPosts = cat.children.flatMap(c => c.posts || []);
-      cat.posts = [...(postsMap[String(cat._id)] || []), ...hijosPosts].slice(0, 8);
-    });
+      for (let j = 0; j < cat.children.length; j++) {
+        hijosPosts.push.apply(hijosPosts, cat.children[j].posts || []);
+      }
+
+      cat.posts = (postsMap[String(cat._id)] || [])
+        .concat(hijosPosts)
+        .slice(0, 8);
+    }
+
+    // nivel 1
+    for (let i = 0; i < nivel1.length; i++) {
+      const cat = nivel1[i];
+      const hijosPosts = [];
+
+      for (let j = 0; j < cat.children.length; j++) {
+        hijosPosts.push.apply(hijosPosts, cat.children[j].posts || []);
+      }
+
+      cat.posts = (postsMap[String(cat._id)] || [])
+        .concat(hijosPosts)
+        .slice(0, 8);
+    }
   }
 
   const respuesta = { success: true, categories: nivel1 };
 
-  // 🔹 Guardar caché si no se piden posts
-  if (!incluirPosts) {
-    cacheCategoriasPrincipales = respuesta;
-    cacheCategoriasPrincipalesEn = ahora;
-  }
+  // 🧠 Guardar cache
+  cacheCategoriasPrincipales = respuesta;
+  cacheCategoriasPrincipalesEn = ahora;
 
   return res.json(respuesta);
 });
-
- 
-const getChildren = async (parentId, nivel = null, limit = 0) => {
-  const query = { parent: parentId };
-  if (nivel) query.level = nivel;
-  const children = await Category.find(query)
-    .sort({ order: 1 })
-    .limit(limit)
-    .lean();
-
-  return children;
-};
-
  
 const getPostsByCategoryIds = async (categoryIds, limitPerCategory = 8, page = 1) => {
   const skip = (page - 1) * limitPerCategory;

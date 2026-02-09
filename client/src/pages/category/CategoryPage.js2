@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams, useHistory } from 'react-router-dom';
-import { getCategoryPosts, resetCategoryState } from '../../redux/actions/categoryAction';
+import { useParams, useHistory, useLocation } from 'react-router-dom';
+import { 
+  getCategoryPosts, 
+  resetCategoryState 
+} from '../../redux/actions/categoryAction';
 import { Container, Row, Col, Spinner, Badge } from 'react-bootstrap';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import Header from '../../components/SlidersCategories/HeaderCarousel';
@@ -15,35 +18,39 @@ const CategoryPage = () => {
   const history = useHistory();
   const { slug, subSlug, articleSlug } = useParams();
 
-  const [allChildren, setAllChildren] = useState([]); // Todos los hijos originales para sliders
   const [currentArticle, setCurrentArticle] = useState(null);
+  const [childrenToShow, setChildrenToShow] = useState([]);
 
   const initialLoadRef = useRef(false);
   const isFetchingRef = useRef(false);
   const prevParamsRef = useRef({ slug: null, subSlug: null, articleSlug: null });
 
   const { categoryInfo, children, posts, postsLoading, postsError, hasMorePosts } = useSelector(state => state.category || {});
+
   const currentLevel = articleSlug ? 3 : subSlug ? 2 : 1;
 
-  // 🌟 Guardar todos los hijos originales al cargar la categoría
+  // 🌟 Filtrar children según nivel
   useEffect(() => {
     if (!children || children.length === 0) {
-      setAllChildren([]);
+      setChildrenToShow([]);
       setCurrentArticle(null);
       return;
     }
-    setAllChildren(children);
-  }, [children]);
 
-  // 🌟 Actualizar currentArticle según URL
-  useEffect(() => {
-    if (articleSlug && allChildren.length > 0) {
-      const found = allChildren.find(c => c.slug === articleSlug);
-      setCurrentArticle(found || null);
-    } else {
-      setCurrentArticle(null);
+    if (currentLevel === 1) {
+      // Nivel 1: mostrar subcategorías
+      setChildrenToShow(children.filter(c => c.level === 2));
+    } else if (currentLevel === 2) {
+      // Nivel 2: mostrar artículos
+      const articles = children.filter(c => c.level === 3);
+      setChildrenToShow(articles);
+    } else if (currentLevel === 3) {
+      const articles = children.filter(c => c.level === 3);
+      setChildrenToShow(articles);
+      const foundArticle = articles.find(a => a.slug === articleSlug);
+      setCurrentArticle(foundArticle || null);
     }
-  }, [articleSlug, allChildren]);
+  }, [children, currentLevel, articleSlug]);
 
   // 🌟 Cargar posts al cambiar de URL evitando bucle
   useEffect(() => {
@@ -63,32 +70,30 @@ const CategoryPage = () => {
       initialLoadRef.current = true;
       isFetchingRef.current = true;
 
-      dispatch(getCategoryPosts(slug, subSlug || null, articleSlug || (currentArticle ? currentArticle.slug : null), 1, 12))
+      dispatch(getCategoryPosts(slug, subSlug || null, articleSlug || null, 1, 12))
         .finally(() => { isFetchingRef.current = false; });
 
       prevParamsRef.current = currentParams;
     }
-  }, [slug, subSlug, articleSlug, currentArticle, postsLoading, dispatch]);
+  }, [slug, subSlug, articleSlug, postsLoading, dispatch]);
 
-  // 🌟 Click en sliders
+  // 🌟 Handlers de click
   const handleSubcategoryClick = subcategory => {
     history.push(`/category/${slug}/${subcategory.slug}`);
   };
 
   const handleArticleClick = article => {
-    setCurrentArticle(article); // Filtrar posts
-    dispatch(resetCategoryState());
-    dispatch(getCategoryPosts(slug, subSlug || null, article.slug, 1, 12));
+    history.push(`/category/${slug}/${subSlug}/${article.slug}`);
   };
 
   // 🌟 Sliders
-  const subcategoriesSlider = allChildren.filter(c => c.level === 2);
-  const articlesSlider = allChildren.filter(c => c.level === 3);
+  const shouldShowSubcategorySlider = currentLevel === 1 && childrenToShow.length > 0;
+  const shouldShowArticleSlider = (currentLevel === 2 || currentLevel === 3) && childrenToShow.length > 0;
 
   // 🌟 Breadcrumb y título
   const getPageTitle = () => {
     if (currentLevel === 1) return categoryInfo?.name || slug;
-    if (currentLevel === 2) return allChildren?.find(c => c.slug === subSlug)?.name || subSlug;
+    if (currentLevel === 2) return children?.find(c => c.slug === subSlug)?.name || subSlug;
     if (currentLevel === 3) return currentArticle?.name || articleSlug;
     return '';
   };
@@ -96,7 +101,7 @@ const CategoryPage = () => {
   const buildBreadcrumbItems = () => {
     const items = [{ label: 'Inicio', path: '/' }];
     if (slug) items.push({ label: categoryInfo?.name || slug, path: `/category/${slug}` });
-    if (subSlug && currentLevel >= 2) items.push({ label: allChildren?.find(c => c.slug === subSlug)?.name || subSlug, path: `/category/${slug}/${subSlug}` });
+    if (subSlug && currentLevel >= 2) items.push({ label: children?.find(c => c.slug === subSlug)?.name || subSlug, path: `/category/${slug}/${subSlug}` });
     if (articleSlug && currentLevel === 3) items.push({ label: currentArticle?.name || articleSlug, path: `/category/${slug}/${subSlug}/${articleSlug}` });
     return items;
   };
@@ -128,19 +133,19 @@ const CategoryPage = () => {
           </h1>
 
           {/* 🔹 SubCategory Slider */}
-          {subcategoriesSlider.length > 0 && (
+          {shouldShowSubcategorySlider && (
             <SubCategorySlider 
-              subcategories={subcategoriesSlider}
+              subcategories={childrenToShow}
               currentCategory={categoryInfo}
               onSubcategoryClick={handleSubcategoryClick}
             />
           )}
 
           {/* 🔹 Article Slider */}
-          {articlesSlider.length > 0 && (
+          {shouldShowArticleSlider && (
             <ArticleSlider
-              articles={articlesSlider}
-              currentSubcategory={{ slug: subSlug, name: allChildren?.find(c => c.slug === subSlug)?.name }}
+              articles={childrenToShow}
+              currentSubcategory={{ slug: subSlug, name: children?.find(c => c.slug === subSlug)?.name }}
               currentArticle={currentArticle}
               onArticleClick={handleArticleClick}
             />
@@ -161,9 +166,7 @@ const CategoryPage = () => {
                 </Row>
               </InfiniteScroll>
             ) : (
-              <div className="text-center py-5">
-                {currentArticle ? `No hay resultados para "${currentArticle.name}"` : 'No hay productos disponibles'}
-              </div>
+              <div className="text-center py-5">No hay productos disponibles</div>
             )}
           </section>
         </Container>

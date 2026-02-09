@@ -101,180 +101,130 @@ const postCtrl = {
   }
 },
    
-  filterPosts: async (req, res) => {
-    try {
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 12;
-      const skip = (page - 1) * limit;
+filterPosts: async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
 
-      const { category: categoryParam, sub } = req.query;
+    const { category: categorySlug, sub } = req.query;
 
-      if (!categoryParam) {
-        return res.json({
-          success: true,
-          posts: [],
-          total: 0,
-          page,
-          hasMore: false,
-          message: 'Se requiere categoría'
-        });
-      }
-
-      // 🔹 1️⃣ Obtener la categoría principal
-      let categoryDoc = await Category.findOne({ slug: categoryParam }).lean();
-      if (!categoryDoc && mongoose.Types.ObjectId.isValid(categoryParam)) {
-        categoryDoc = await Category.findById(categoryParam).lean();
-      }
-      if (!categoryDoc) {
-        return res.json({
-          success: true,
-          posts: [],
-          total: 0,
-          page,
-          hasMore: false,
-          message: 'Categoría no encontrada'
-        });
-      }
-
-      // 🔹 2️⃣ Función helper para obtener IDs de hijos recursivamente
-      const getChildCategories = async (catId) => {
-        const children = await Category.find({ parent: catId, isActive: true })
-          .select('_id level name slug emoji icon iconType iconColor bgColor hasChildren isLeaf order')
-          .sort({ order: 1 })
-          .lean();
-
-        let allIds = children.map(c => c._id);
-
-        for (const child of children) {
-          const subIds = await getChildCategories(child._id);
-          allIds = [...allIds, ...subIds];
-        }
-
-        return allIds;
-      };
-
-      // 🔹 3️⃣ Determinar categorías a filtrar según nivel
-      let children = [];
-      let allCategoryIds = [categoryDoc._id];
-
-      if (categoryDoc.level === 1 && sub) {
-        // Buscar subcategoría específica si existe
-        const subDoc = await Category.findOne({
-          slug: sub,
-          parent: categoryDoc._id,
-          level: 2,
-          isActive: true
-        }).lean();
-
-        if (subDoc) {
-          const articleIds = await getChildCategories(subDoc._id);
-          children = await Category.find({
-            parent: subDoc._id,
-            level: 3,
-            isActive: true
-          })
-            .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf order')
-            .sort({ order: 1 })
-            .lean();
-          allCategoryIds = [subDoc._id, ...articleIds];
-        } else {
-          // fallback: todas las subcategorías
-          children = await Category.find({
-            parent: categoryDoc._id,
-            level: 2,
-            isActive: true
-          })
-            .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf order')
-            .sort({ order: 1 })
-            .lean();
-          allCategoryIds = [categoryDoc._id, ...children.map(c => c._id)];
-        }
-      } else {
-        // 🔹 CASO: Nivel 2 o 3
-        const childIds = await getChildCategories(categoryDoc._id);
-
-        children = await Category.find({
-          parent: categoryDoc._id,
-          isActive: true
-        })
-          .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf order')
-          .sort({ order: 1 })
-          .lean();
-
-        allCategoryIds = [categoryDoc._id, ...childIds];
-      }
-
-      // 🔹 4️⃣ Consultar posts activos
-      const filter = {
-        category: { $in: allCategoryIds },
-        isActive: true,
-        status: 'active'
-      };
-
-      const [posts, total] = await Promise.all([
-        Post.find(filter)
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .select('_id title price images createdAt wilaya commune user description etat views')
-          .populate('user', 'username avatar')
-          .populate('categoryRef', 'name slug icon level')
-          .lean(),
-        Post.countDocuments(filter)
-      ]);
-
-      const hasMore = page * limit < total;
-      const totalPages = Math.ceil(total / limit);
-
-      // 🔹 5️⃣ Respuesta final
+    // 🔹 1️⃣ Validación básica
+    if (!categorySlug) {
       return res.json({
         success: true,
-        posts,
-        total,
+        posts: [],
+        total: 0,
         page,
-        limit,
-        hasMore,
-        totalPages,
-        categoryInfo: {
-          _id: categoryDoc._id,
-          name: categoryDoc.name,
-          slug: categoryDoc.slug,
-          level: categoryDoc.level,
-          emoji: categoryDoc.emoji || '',
-          description: categoryDoc.description || '',
-          icon: categoryDoc.icon || '',
-          iconType: categoryDoc.iconType || 'image-png',
-          iconColor: categoryDoc.iconColor || '#666666',
-          bgColor: categoryDoc.bgColor || '#FFFFFF'
-        },
-        children: children.map(c => ({
-          _id: c._id,
-          name: c.name,
-          slug: c.slug,
-          level: c.level,
-          emoji: c.emoji || '',
-          hasChildren: c.hasChildren || false,
-          isLeaf: c.isLeaf || false,
-          icon: c.icon || '',
-          iconType: c.iconType || 'image-png',
-          iconColor: c.iconColor || categoryDoc.iconColor || '#666666',
-          bgColor: c.bgColor || categoryDoc.bgColor || '#FFFFFF'
-        }))
-      });
-
-    } catch (error) {
-      console.error('❌ Error en filterPosts optimizado:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error al filtrar posts',
-        error: error.message
+        hasMore: false,
+        message: 'Se requiere categoría'
       });
     }
-  },
 
-  /**
-   * 📄 OBTENER TODOS LOS POSTS (PAGINADOS)
-   */
+    // 🔹 2️⃣ Obtener categoría principal (LEVEL 1)
+    const categoryDoc = await Category.findOne({
+      slug: categorySlug,
+      level: 1,
+      isActive: true
+    }).lean();
+
+    if (!categoryDoc) {
+      return res.json({
+        success: true,
+        posts: [],
+        total: 0,
+        page,
+        hasMore: false,
+        message: 'Categoría no encontrada'
+      });
+    }
+
+    // 🔹 3️⃣ Construir filtro REAL según tu modelo
+    const filter = {
+      category: categoryDoc._id, // 🔥 SIEMPRE level 1
+      isActive: true
+    };
+
+    // 👉 Si viene subcategoría (LEVEL 2)
+    if (sub) {
+      filter.subCategory = sub;
+    }
+
+    // 🔹 4️⃣ Consultar posts + total
+    const [posts, total] = await Promise.all([
+      Post.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .select('_id title price images createdAt wilaya commune description etat views')
+        .populate('user', 'username avatar')
+        .lean(),
+      Post.countDocuments(filter)
+    ]);
+
+    const hasMore = page * limit < total;
+    const totalPages = Math.ceil(total / limit);
+
+    // 🔹 5️⃣ Obtener subcategorías (LEVEL 2) para UI
+    const children = await Category.find({
+      parent: categoryDoc._id,
+      level: 2,
+      isActive: true
+    })
+      .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf')
+      .sort({ order: 1 })
+      .lean();
+
+    // 🔹 6️⃣ Respuesta final
+    return res.json({
+      success: true,
+      posts,
+      total,
+      page,
+      limit,
+      hasMore,
+      totalPages,
+      categoryInfo: {
+        _id: categoryDoc._id,
+        name: categoryDoc.name,
+        slug: categoryDoc.slug,
+        level: categoryDoc.level,
+        emoji: categoryDoc.emoji || '',
+        icon: categoryDoc.icon || '',
+        iconType: categoryDoc.iconType || 'image-png',
+        iconColor: categoryDoc.iconColor || '#666666',
+        bgColor: categoryDoc.bgColor || '#FFFFFF'
+      },
+      children: children.map(c => ({
+        _id: c._id,
+        name: c.name,
+        slug: c.slug,
+        level: c.level,
+        emoji: c.emoji || '',
+        hasChildren: c.hasChildren || false,
+        isLeaf: c.isLeaf || false,
+        icon: c.icon || '',
+        iconType: c.iconType || 'image-png',
+        iconColor: c.iconColor || '#666666',
+        bgColor: c.bgColor || '#FFFFFF'
+      }))
+    });
+
+  } catch (error) {
+    console.error('❌ Error en filterPosts:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al filtrar posts',
+      error: error.message
+    });
+  }
+},
+ 
+ 
+
+
+
+   
   getPosts: async (req, res) => {
     try {
       const { page = 1, limit = 9, category } = req.query;
