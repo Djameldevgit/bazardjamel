@@ -2,86 +2,139 @@
 import * as types from '../constants/categoryConstants';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-
-// ✅ 1. ACCIÓN PARA HOME: Obtener categorías principales
+ 
+import { BASE_URL } from '../../utils/config'
+ 
+// En tu controller de posts
+ 
 export const getAllCategoriesWithPosts = (page = 1, limit = 2) => async (dispatch) => {
   try {
-    dispatch({ type: types.GET_ALL_CATEGORIES_WITH_POSTS });
+    dispatch({ type: 'LOADING_HOME', payload: true });
+    dispatch({ type: 'GET_ALL_CATEGORIES_WITH_POSTS' });
     
-    console.log('📡 Llamando a /api/categories/main?posts=true...');
-
-    // ⭐ CRÍTICO: Agregar posts=true en los parámetros
-    const { data } = await axios.get(API_URL + '/api/categories/main', {
-      params: { 
-        page: page, 
-        limit: limit,
-        posts: true  // ⭐ ESTE PARÁMETRO ES ESENCIAL
-      }
+    const { data } = await axios.get(`${BASE_URL}/api/categories/main`, {
+      params: { page, limit, posts: true }
     });
-
-    // ⭐ DEBUG DETALLADO (sintaxis compatible)
-    console.log('✅ Datos recibidos:');
-    console.log({
-      success: data.success,
-      categoriesCount: data.categories ? data.categories.length : 0,
-      primeraCategoria: data.categories && data.categories[0] ? data.categories[0].name : null,
-      postsEnPrimera: data.categories && data.categories[0] && data.categories[0].posts ? 
-                     data.categories[0].posts.length : 0,
-      estructuraPosts: data.categories && data.categories[0] && data.categories[0].posts ? 
-                      data.categories[0].posts[0] : null
-    });
-
-    // ⭐ VERIFICAR SI HAY POSTS
-    const categoriesWithPosts = data.categories || [];
     
-    categoriesWithPosts.forEach(function(cat, index) {
-      console.log('📦 Categoría ' + (index + 1) + ': ' + cat.name);
-      console.log({
-        tienePosts: !!(cat.posts),
-        postsCount: cat.posts ? cat.posts.length : 0,
-        esArray: Array.isArray(cat.posts)
-      });
-    });
-
+    
+    console.log(data);
+    
     dispatch({
-      type: types.GET_ALL_CATEGORIES_WITH_POSTS_SUCCESS,
+      type: 'GET_ALL_CATEGORIES_WITH_POSTS_SUCCESS',
       payload: {
-        categories: categoriesWithPosts,
+        categories: data.categories || [],
         currentPage: page,
-        hasMore: data.pagination && data.pagination.hasNextPage ? data.pagination.hasNextPage : false,
-        totalPages: data.pagination && data.pagination.totalPages ? data.pagination.totalPages : 1
+        hasMore: data.categories?.length >= limit
       }
     });
-
-    return data;
-
+    
+    return { success: true, categories: data.categories };
+    
   } catch (error) {
-    console.error('❌ Error en getAllCategoriesWithPosts:');
-    console.log({
-      message: error.message,
-      response: error.response ? error.response.data : null,
-      url: error.config ? error.config.url : null,
-      params: error.config ? error.config.params : null
-    });
-
-    const errorMessage = error.response && error.response.data && error.response.data.message 
-                       ? error.response.data.message 
-                       : error.message || 'Error al obtener categorías principales';
-
+    console.error('❌ Error en getAllCategoriesWithPosts:', error);
     dispatch({
-      type: types.GET_ALL_CATEGORIES_WITH_POSTS_FAIL,
-      payload: errorMessage
+      type: 'GET_ALL_CATEGORIES_WITH_POSTS_FAIL',
+      payload: error.response?.data?.message || error.message
     });
-
-    return { 
-      success: false, 
-      categories: [], 
-      pagination: { hasNextPage: false } 
-    };
+    return { success: false };
   }
 };
+ 
 
+ 
+// 🔥 NUEVA ACCIÓN: Para obtener categorías jerárquicas (para accordion)
+export const getCategoriesForAccordion = () => async (dispatch) => {
+  try {
+    dispatch({ type: 'LOADING_CATEGORIES_ACCORDION', payload: true });
+    
+    console.log('📡 Obteniendo categorías para accordion...');
+    
+    // IMPORTANTE: Este endpoint debe devolver la estructura jerárquica completa
+    // Si no existe, debes crearlo en tu backend
+    const { data } = await axios.get(`${BASE_URL}/api/categories/accordion`);
+    
+    console.log('✅ Categorías para accordion recibidas:', {
+      count: data.categories?.length || 0,
+      estructura: data.categories?.[0]
+    });
+    
+    dispatch({
+      type: 'GET_CATEGORIES_FOR_ACCORDION_SUCCESS',
+      payload: data.categories || []
+    });
+    
+    return { success: true, categories: data.categories };
+    
+  } catch (error) {
+    console.error('❌ Error en getCategoriesForAccordion:', error);
+    
+    // Si el endpoint no existe, podrías usar el endpoint existente
+    // pero necesitas transformar los datos
+    if (error.response?.status === 404) {
+      console.log('⚠️ Endpoint /accordion no existe, usando alternativa...');
+      
+      try {
+        // Intentar con el endpoint existente y transformar datos
+        const { data } = await axios.get(`${BASE_URL}/api/categories/main`, {
+          params: { page: 1, limit: 100, hierarchical: true }
+        });
+        
+        if (data.categories) {
+          dispatch({
+            type: 'GET_CATEGORIES_FOR_ACCORDION_SUCCESS',
+            payload: data.categories
+          });
+          return { success: true, categories: data.categories };
+        }
+      } catch (fallbackError) {
+        console.error('❌ Error en fallback:', fallbackError);
+      }
+    }
+    
+    dispatch({
+      type: 'GET_CATEGORIES_FOR_ACCORDION_FAIL',
+      payload: error.response?.data?.message || error.message
+    });
+    
+    return { 
+      success: false, 
+      error: error.response?.data?.message || error.message 
+    };
+  }
+}
+
+// 📂 actions/postAction.js - Action para Posts Recientes
+export const getRecentPosts = (page = 1, limit = 12) => async (dispatch) => {
+  try {
+    dispatch({ type: POST_TYPES.GET_RECENT_POSTS });
+    
+    const { data } = await axios.get(`${BASE_URL}/api/posts/recent`, {
+      params: { page, limit }
+    });
+    
+    console.log('📦 Posts recientes recibidos:', data.recentPosts?.length || 0);
+    
+    dispatch({
+      type: POST_TYPES.GET_RECENT_POSTS_SUCCESS,
+      payload: {
+        posts: data.recentPosts || [],
+        page,
+        hasMore: (data.recentPosts?.length || 0) >= limit,
+        total: data.total || data.recentPosts?.length || 0
+      }
+    });
+    
+    return { success: true, posts: data.recentPosts };
+    
+  } catch (error) {
+    console.error('❌ Error en getRecentPosts:', error);
+    dispatch({
+      type: POST_TYPES.GET_RECENT_POSTS_FAIL,
+      payload: error.response?.data?.message || error.message
+    });
+    return { success: false };
+  }
+};
 // ✅ 2. ACCIÓN PARA CATEGORÍA ESPECÍFICA CON POSTS - CORREGIDA COMPLETAMENTE
 // ✅ ACCIÓN COMPLETA Y CORREGIDA PARA CATEGORYPAGE
 // src/redux/actions/categoryAction.js - VERSIÓN ACTUALIZADA
@@ -89,21 +142,14 @@ export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = nul
   try {
     dispatch({ type: types.GET_CATEGORY_POSTS });
 
-    console.log('🚀 Action getCategoryPosts - INICIANDO:', {
-      categorySlug,
-      subSlug,
-      articleSlug,
-      page,
-      limit
-    });
-
+   
     // ⭐ DECISIÓN CRÍTICA: ¿Qué necesitamos obtener?
     let endpoint = '';
     let params = {};
     
     // ⭐⭐ CAMBIO IMPORTANTE: USAR SIEMPRE EL ENDPOINT filterPosts
     // Este endpoint ahora devuelve todo: categoría, hijos (children) y posts
-    endpoint = `${API_URL}/api/posts/filter`;
+    endpoint = `${BASE_URL}/api/posts/filter`;
     params = { 
       category: categorySlug,
       page: page,
@@ -114,47 +160,13 @@ export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = nul
     if (subSlug) params.sub = subSlug;
     if (articleSlug) params.article = articleSlug;
     
-    console.log('🎯 Endpoint único - filterPosts:', endpoint);
-    console.log('📋 Params:', params);
-
-    // ⭐ LLAMADA A LA API
-    console.log('📡 Llamando a API (filterPosts)...');
     const { data } = await axios.get(endpoint, { params });
-
-    // ⭐ DEBUG COMPLETO DE LA RESPUESTA
-    console.log('✅ Action getCategoryPosts - RESPUESTA COMPLETA:', {
-      success: data.success,
-      endpoint: endpoint,
-      
-      // Información de categoría (viene en categoryInfo ahora)
-      categoryInfo: data.categoryInfo ? '✅ SÍ' : '❌ NO',
-      categoryName: data.categoryInfo?.name,
-      categorySlug: data.categoryInfo?.slug,
-      categoryLevel: data.categoryInfo?.level,
-      
-      // ⭐ CRÍTICO: Verificar HIJOS (vienen en children)
-      childrenCount: data.children ? data.children.length : 0,
-      childrenFromData: data.children ? '✅ SÍ' : '❌ NO',
-      childrenLevels: data.children?.map(c => c.level) || [],
-      
-      // ⭐ MEGA CRÍTICO: Verificar si los hijos tienen ICONOS
-      primerHijo: data.children?.[0] || null,
-      tieneIconoPrimerHijo: data.children?.[0]?.icon ? '✅ SÍ' : '❌ NO',
-      iconoPrimerHijo: data.children?.[0]?.icon || 'NO TIENE',
-      
-      // Verificar TODOS los campos del primer hijo
-      camposPrimerHijo: data.children?.[0] ? Object.keys(data.children[0]) : [],
-      
-      // Información de posts
-      postsCount: data.posts ? data.posts.length : 0,
-      hasMore: data.hasMore !== undefined ? data.hasMore : false,
-      totalPosts: data.total || 0
-    });
+ 
 
     // ⭐ SI HAY HIJOS, MOSTRAR TODOS CON SUS ICONOS
     const childrenList = data.children || [];
     if (childrenList.length > 0) {
-      console.log('📋 LISTA COMPLETA DE HIJOS DEL FILTERPOSTS:');
+     
       childrenList.forEach((child, i) => {
         console.log(`${i}. ${child.name || 'Sin nombre'} (Nivel ${child.level}):`, {
           icon: child.icon || '❌ NO TIENE',
@@ -331,7 +343,7 @@ export const loadMorePosts = () => async (dispatch, getState) => {
     if (activeSubcategory) params.sub = activeSubcategory;
     if (activeArticle) params.article = activeArticle;
 
-    const { data } = await axios.get(`${API_URL}/api/posts/filter`, { params });
+    const { data } = await axios.get(`${BASE_URL}/api/posts/filter`, { params });
 
     console.log('✅ Action loadMorePosts - Respuesta:', {
       postsNuevos: data.posts ? data.posts.length : 0,
@@ -387,7 +399,7 @@ export const loadMoreCategories = (nextPage) => async (dispatch, getState) => {
 
     dispatch({ type: types.LOAD_MORE_CATEGORIES });
 
-    const { data } = await axios.get(`${API_URL}/api/categories/main`, {
+    const { data } = await axios.get(`${BASE_URL}/api/categories/main`, {
       params: { page: pageToLoad, limit: 8 }
     });
 
@@ -420,7 +432,7 @@ export const getCategoryTree = () => async (dispatch) => {
     dispatch({ type: types.LOADING, payload: true });
     dispatch({ type: types.GET_CATEGORY_TREE });
 
-    const { data } = await axios.get(`${API_URL}/api/categories/tree`);
+    const { data } = await axios.get(`${BASE_URL}/api/categories/tree`);
 
     console.log('✅ Category tree data:', data);
 
@@ -436,7 +448,7 @@ export const getCategoryTree = () => async (dispatch) => {
     console.error('❌ Error en getCategoryTree:', {
       message: error.message,
       response: error.response?.data,
-      url: `${API_URL}/api/categories/tree`
+      url: `${BASE_URL}/api/categories/tree`
     });
 
     const errorMessage = error.response?.data?.message || 

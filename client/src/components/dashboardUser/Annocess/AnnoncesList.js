@@ -38,7 +38,7 @@ const AnnoncesList = () => {
             likes: 34,
             messages: 12,
             date: '2024-01-15',
-            image: 'https://via.placeholder.com/100x100/007bff/ffffff?text=IP'
+            
         },
         {
             id: 2,
@@ -50,7 +50,7 @@ const AnnoncesList = () => {
             likes: 12,
             messages: 3,
             date: '2024-01-14',
-            image: 'https://via.placeholder.com/100x100/28a745/ffffff?text=AP'
+            
         },
         {
             id: 3,
@@ -62,7 +62,7 @@ const AnnoncesList = () => {
             likes: 23,
             messages: 8,
             date: '2024-01-13',
-            image: 'https://via.placeholder.com/100x100/dc3545/ffffff?text=VO'
+         
         },
         {
             id: 4,
@@ -74,7 +74,7 @@ const AnnoncesList = () => {
             likes: 9,
             messages: 5,
             date: '2024-01-12',
-            image: 'https://via.placeholder.com/100x100/ffc107/ffffff?text=SE'
+             
         }
     ];
 

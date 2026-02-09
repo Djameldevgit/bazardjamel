@@ -22,6 +22,7 @@ import VoyagesFields from './specificFields/VoyagesFields';
 import EmploiFields from './specificFields/EmploiFields';
 import BoutiqueSelector from '../boutique/BoutiqueSelectorField';
 import VehiculesFields from './specificFields/VehiculesFields';
+import BaseCategoryField from './specificFields/BaseCategoryField';
  
  
 // 🔥 MAPA DE CATEGORÍA → COMPONENTE
@@ -42,7 +43,8 @@ const CATEGORY_COMPONENTS = {
   'materiaux': MateriauxFields,
   'voyages': VoyagesFields,
   'emploi': EmploiFields,
-  'boutiques': BoutiqueSelector
+  'boutiques': BoutiqueSelector,
+   
 
 };
 
@@ -57,7 +59,6 @@ const FieldRendererUniversal = ({
   isRTL,
   t
 }) => {
-  console.log('🎯 FieldRendererUniversal:', { fieldName, mainCategory, subCategory });
   
   // 1. PRIMERO intentar con BaseCategoryField (campos comunes)
   try {
@@ -72,7 +73,7 @@ const FieldRendererUniversal = ({
     });
     
     if (baseField) {
-      console.log('✅ BaseCategoryField maneja:', fieldName);
+     
       return baseField;
     }
   } catch (error) {

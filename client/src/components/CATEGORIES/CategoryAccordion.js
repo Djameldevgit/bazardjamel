@@ -1,127 +1,186 @@
 // 📂 components/CATEGORIES/CategoryAccordion.js
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSelector } from 'react-redux';
 import { Accordion, Form, Badge, Card, Button, Spinner, Alert } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, ChevronDown, ChevronUp, CheckCircle, ArrowRightCircle } from 'react-bootstrap-icons';
+import { useSelector, useDispatch } from 'react-redux';
+import { getCategoriesForAccordion } from '../../redux/actions/categoryAction';
 
-const CategoryAccordion = ({ postData, handleChangeInput, onComplete }) => {
+const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => {
   const { t } = useTranslation(['categories', 'subcategories']);
+  
+  const dispatch = useDispatch();
+  const { 
+    accordionCategories = [],
+    accordionLoading = false,
+    accordionError = null 
+  } = useSelector((state) => ({
+    accordionCategories: state.category?.accordionCategories || [],
+    accordionLoading: state.category?.accordionLoading || false,
+    accordionError: state.category?.accordionError || null
+  }));
+
+  // Estados locales
   const [searchTerm, setSearchTerm] = useState('');
   const [activeMainCategory, setActiveMainCategory] = useState(null);
   const [expandedSubcategories, setExpandedSubcategories] = useState({});
-  const [isMobile, setIsMobile] = useState(false);
-
   const [selectedItems, setSelectedItems] = useState({
     category: null,
     level1: null,
     level2: null
   });
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // 🔄 OBTENER CATEGORÍAS DESDE MONGODB
-  const { categories = [], loading, error } = useSelector((state) => ({
-    categories: state.category?.categories || [],
-    loading: state.category?.loading || false,
-    error: state.category?.error || null
-  }));
-
+  // 🔄 DEBUG
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+    console.log('=== CATEGORYACCORDION DEBUG ===');
+    console.log('📥 Props recibidos:', postData);
+    console.log('🎯 selectedItems actual:', selectedItems);
+  }, [postData, selectedItems]);
 
-  // 🎯 TRANSFORMAR DATOS MONGODB A ESTRUCTURA QUE TU ACCORDION ESPERA
-  const { mainCategories, categoryHierarchy } = useMemo(() => {
-    const mainCats = [];
+  // 🔄 CARGAR CATEGORÍAS
+  useEffect(() => {
+    if (accordionCategories.length === 0 && !accordionLoading) {
+      dispatch(getCategoriesForAccordion());
+    }
+  }, [dispatch, accordionCategories.length, accordionLoading]);
+
+  // 🎯 TRANSFORMACIÓN SIMPLIFICADA
+  const categoryHierarchy = useMemo(() => {
+    if (!accordionCategories || accordionCategories.length === 0) return {};
+
     const hierarchy = {};
 
-    categories.forEach(cat => {
-      if (cat.level === 1) {
-        mainCats.push({
-          id: cat.name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
-          name: cat.name,
-          emoji: cat.emoji || '🏷️'
-        });
+    accordionCategories.forEach(mainCat => {
+      const hasChildren = mainCat.children && mainCat.children.length > 0;
+      const hasDeepChildren = hasChildren && mainCat.children.some(child => 
+        child.children && child.children.length > 0
+      );
 
-        hierarchy[cat.name.toLowerCase().replace(/[^a-z0-9]/g, '_')] = {
-          levels: 2,
-          level1: 'categorie',
-          requiresLevel2: cat.children?.some(child => child.children?.length > 0) || false,
-          categories: cat.children?.map(child => ({
-            id: child.name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
-            name: child.name,
-            emoji: child.emoji || '📁',
-            hasSublevel: child.children?.length > 0
-          })) || [],
-          subcategories: {}
-        };
+      hierarchy[mainCat.slug] = {
+        name: mainCat.name,
+        emoji: mainCat.emoji || '📦',
+        levels: hasDeepChildren ? 2 : 1,
+        level1: 'type',
+        requiresLevel2: hasDeepChildren,
+        
+        // Nivel 2
+        subcategories: hasChildren ? mainCat.children.map(child => ({
+          id: child.slug,
+          name: child.name,
+          emoji: child.emoji || '📄',
+          hasSublevel: child.children && child.children.length > 0
+        })) : [],
+        
+        // Nivel 3
+        subcategories2: {},
+        properties: {}
+      };
 
-        cat.children?.forEach(child => {
-          if (child.children?.length > 0) {
-            const catId = cat.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-            const childId = child.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-            
-            hierarchy[catId].subcategories[childId] = child.children.map(grandChild => ({
-              id: grandChild.name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+      // Nivel 3
+      if (hasDeepChildren) {
+        const level3Map = {};
+        mainCat.children.forEach(child => {
+          if (child.children) {
+            level3Map[child.slug] = child.children.map(grandChild => ({
+              id: grandChild.slug,
               name: grandChild.name,
-              emoji: grandChild.emoji || '📄'
+              emoji: grandChild.emoji || '📋'
             }));
           }
         });
+
+        hierarchy[mainCat.slug].subcategories2 = level3Map;
+        hierarchy[mainCat.slug].properties = level3Map;
       }
     });
 
-    return { mainCategories: mainCats, categoryHierarchy: hierarchy };
-  }, [categories]);
+    return hierarchy;
+  }, [accordionCategories]);
 
-  // 🎯 FUNCIÓN PARA OBTENER ITEMS (compatible con tu accordion original)
+  // 🎨 CATEGORÍAS PRINCIPALES
+  const categories = useMemo(() => {
+    if (!accordionCategories || accordionCategories.length === 0) return [];
+    return accordionCategories.map(cat => ({
+      id: cat.slug,
+      name: cat.name,
+      emoji: cat.emoji || '📦'
+    }));
+  }, [accordionCategories]);
+
+  // 🎯 FUNCIONES PARA OBTENER ITEMS
   const getCategoryItems = (categoryId) => {
     const category = categoryHierarchy[categoryId];
-    return category?.categories || [];
+    return category?.subcategories || [];
   };
 
-  // 🎯 INICIALIZAR CON POSTDATA
+  const getLevel2Items = (categoryId, level1Id) => {
+    const category = categoryHierarchy[categoryId];
+    return category?.subcategories2?.[level1Id] || category?.properties?.[level1Id] || [];
+  };
+
+  // 🔄 INICIALIZAR CON POSTDATA
   useEffect(() => {
-    if (postData && postData.categorie && mainCategories.length > 0) {
-      const categoryId = postData.categorie.toLowerCase().replace(/[^a-z0-9]/g, '_');
-      const subCategoryId = postData.subCategory?.toLowerCase().replace(/[^a-z0-9]/g, '_');
-      const articleTypeId = postData.articleType?.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    if (!isInitialized && !accordionLoading && categories.length > 0 && categoryHierarchy) {
+      const { categorie, subCategory, articleType } = postData;
       
-      setSelectedItems({
-        category: categoryId,
-        level1: subCategoryId || null,
-        level2: articleTypeId || null
-      });
-      
-      setActiveMainCategory(categoryId);
-      
-      if (subCategoryId) {
-        const category = categoryHierarchy[categoryId];
-        const item = category?.categories?.find(cat => cat.id === subCategoryId);
+      if (categorie || subCategory) {
+        // Buscar categoría principal
+        let mainCategory = categories.find(cat => cat.id === categorie || cat.name === categorie);
         
-        if (item?.hasSublevel) {
-          setExpandedSubcategories({
-            [`${categoryId}-${subCategoryId}`]: true
-          });
+        if (mainCategory) {
+          setActiveMainCategory(mainCategory.id);
+          
+          const categoryData = categoryHierarchy[mainCategory.id];
+          if (categoryData) {
+            const level1Items = getCategoryItems(mainCategory.id);
+            
+            // Buscar subcategoría
+            let level1Item = null;
+            if (subCategory) {
+              level1Item = level1Items.find(item => 
+                item.id === subCategory || item.name === subCategory
+              );
+            }
+            
+            if (level1Item) {
+              const newSelected = {
+                category: mainCategory.id,
+                level1: level1Item.id,
+                level2: null
+              };
+              
+              // Buscar artículo específico
+              if (articleType && level1Item.hasSublevel) {
+                const level2Items = getLevel2Items(mainCategory.id, level1Item.id);
+                const level2Item = level2Items.find(item => 
+                  item.id === articleType || item.name === articleType
+                );
+                
+                if (level2Item) {
+                  newSelected.level2 = level2Item.id;
+                  setExpandedSubcategories({
+                    [`${mainCategory.id}-${level1Item.id}`]: true
+                  });
+                }
+              }
+              
+              setSelectedItems(newSelected);
+            }
+          }
         }
       }
+      
+      setIsInitialized(true);
     }
-  }, [postData, mainCategories, categoryHierarchy]);
+  }, [accordionLoading, categories, categoryHierarchy, postData, isInitialized]);
 
-  // 🎯 HANDLERS (iguales a tu accordion original)
+  // 🎯 HANDLERS ACTUALIZADOS PARA CONECTAR CON COMPONENTES
   const handleMainCategoryToggle = (categoryId) => {
     if (activeMainCategory === categoryId) {
       setActiveMainCategory(null);
-      if (selectedItems.category === categoryId) {
-        handleResetSelection();
-      }
     } else {
       setActiveMainCategory(categoryId);
-      if (selectedItems.category && selectedItems.category !== categoryId) {
-        handleResetSelection();
-      }
     }
   };
 
@@ -129,6 +188,7 @@ const CategoryAccordion = ({ postData, handleChangeInput, onComplete }) => {
     const category = categoryHierarchy[categoryId];
     if (!category) return;
 
+    // Actualizar selección
     const newSelected = {
       category: categoryId,
       level1: level1Id,
@@ -136,54 +196,78 @@ const CategoryAccordion = ({ postData, handleChangeInput, onComplete }) => {
     };
     setSelectedItems(newSelected);
 
+    // 🎯 CRÍTICO: Para categorías SIN subniveles (2 niveles totales)
     if (!level1Item.hasSublevel) {
+      console.log('✅ Selección de 2 niveles completada');
+      console.log('🎯 Datos a enviar:', {
+        categorie: categoryId,          // Ej: "vetements"
+        subCategory: level1Id,         // Ej: "vetements-homme"
+        articleType: level1Id          // Mismo que subCategory
+      });
+      
+      // 🔄 CONEXIÓN CON COMPONENTES: Enviar datos para DynamicFieldManager
       handleChangeInput({ target: { name: 'categorie', value: categoryId } });
       handleChangeInput({ target: { name: 'subCategory', value: level1Id } });
       handleChangeInput({ target: { name: 'articleType', value: level1Id } });
 
+      // Llamar a onComplete para avanzar al siguiente paso
       setTimeout(() => onComplete && onComplete(), 150);
       return;
-    } else {
-      const key = `${categoryId}-${level1Id}`;
-      if (expandedSubcategories[key]) {
-        setExpandedSubcategories(prev => ({ ...prev, [key]: false }));
-      } else {
-        const newExpanded = Object.keys(expandedSubcategories).reduce((acc, curr) => {
-          acc[curr] = false;
-          return acc;
-        }, {});
-        newExpanded[key] = true;
-        setExpandedSubcategories(newExpanded);
-      }
-
-      handleChangeInput({ target: { name: 'articleType', value: level1Id } });
     }
+
+    // 🎯 Para categorías CON subniveles (3 niveles)
+    const key = `${categoryId}-${level1Id}`;
+    setExpandedSubcategories(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+
+    // Solo actualizar articleType temporalmente
+    handleChangeInput({ target: { name: 'articleType', value: level1Id } });
   };
 
   const handleLevel2Select = (categoryId, level1Id, level2Id) => {
     const category = categoryHierarchy[categoryId];
     if (!category || !level1Id || !level2Id) return;
 
+    // Obtener nombres
+    const level1Items = getCategoryItems(categoryId);
+    const level1Item = level1Items.find(item => item.id === level1Id);
+    const level1Name = level1Item?.name || level1Id;
+    
+    const level2Items = getLevel2Items(categoryId, level1Id);
+    const level2Item = level2Items.find(item => item.id === level2Id);
+    const level2Name = level2Item?.name || level2Id;
+
+    console.log('✅ Selección de 3 niveles completada');
+    console.log('🎯 Datos a enviar:', {
+      categorie: categoryId,          // Ej: "vetements"
+      subCategory: level2Name,        // Ej: "Hauts & Chemises" (NOMBRE del nivel 3)
+      articleType: level2Id,          // Ej: "vetements-hauts-chemises-homme" (SLUG del nivel 3)
+      level1Name: level1Name          // Para referencia
+    });
+
+    // Actualizar estado
     setSelectedItems({
       category: categoryId,
       level1: level1Id,
       level2: level2Id
     });
 
+    // 🔄 CONEXIÓN CON COMPONENTES: Enviar datos CORRECTOS
+    // DynamicFieldManager usa subCategory (NOMBRE) para cargar componentes
     handleChangeInput({ target: { name: 'categorie', value: categoryId } });
-    handleChangeInput({ target: { name: 'subCategory', value: level2Id } });
-    handleChangeInput({ target: { name: 'articleType', value: level2Id } });
+    handleChangeInput({ target: { name: 'subCategory', value: level2Name } }); // ← NOMBRE del nivel 3
+    handleChangeInput({ target: { name: 'articleType', value: level2Id } });   // ← SLUG del nivel 3
 
+    // Llamar a onComplete para avanzar
     setTimeout(() => onComplete && onComplete(), 150);
   };
 
   const handleResetSelection = () => {
-    setSelectedItems({
-      category: null,
-      level1: null,
-      level2: null
-    });
+    setSelectedItems({ category: null, level1: null, level2: null });
     setExpandedSubcategories({});
+    setActiveMainCategory(null);
 
     handleChangeInput({ target: { name: 'categorie', value: '' } });
     handleChangeInput({ target: { name: 'subCategory', value: '' } });
@@ -193,102 +277,52 @@ const CategoryAccordion = ({ postData, handleChangeInput, onComplete }) => {
   // 🎨 RENDERIZAR CONTENIDO
   const renderCategoryContent = (categoryId) => {
     const category = categoryHierarchy[categoryId];
-    if (!category) return null;
+    if (!category) return <div className="text-center p-3 text-muted">Données non disponibles</div>;
 
     const items = getCategoryItems(categoryId);
-
-    if (items.length === 0) {
-      return (
-        <div className="no-items-message p-3 text-center">
-          <p className="text-muted mb-0">Aucune option disponible</p>
-        </div>
-      );
-    }
+    if (items.length === 0) return <div className="text-center p-3 text-muted">Aucune option disponible</div>;
 
     return (
-      <div className="category-content p-2">
+      <div className="category-content">
         <div className="subcategories-list">
           {items.map((item) => {
             const isSelected = selectedItems.category === categoryId &&
               selectedItems.level1 === item.id;
-            const hasSublevel = item.hasSublevel || category.requiresLevel2;
+            const hasSublevel = item.hasSublevel;
             const isExpanded = expandedSubcategories[`${categoryId}-${item.id}`];
 
             return (
-              <div key={item.id} className="subcategory-wrapper mb-2">
-                {/* NIVEL 1 */}
+              <div key={item.id} className="subcategory-wrapper">
+                {/* NIVEL 2 */}
                 <div
-                  className={`subcategory-item p-3 rounded ${isSelected ? 'selected' : ''} ${hasSublevel ? 'has-sublevel' : ''}`}
-                  style={{
-                    border: isSelected ? '2px solid #10B981' : '1px solid #e2e8f0',
-                    backgroundColor: isSelected ? '#f0fdf4' : 'white',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    position: 'relative'
-                  }}
+                  className={`subcategory-item ${isSelected ? 'selected' : ''} ${hasSublevel ? 'has-sublevel' : ''}`}
                   onClick={() => handleSubcategoryClick(categoryId, item.id, item)}
                 >
-                  <div className="subcategory-content d-flex align-items-center justify-content-between">
-                    <div className="d-flex align-items-center" style={{ flex: 1 }}>
-                      <div className="subcategory-icon me-3 position-relative">
-                        <span className="item-emoji" style={{ fontSize: '24px' }}>{item.emoji}</span>
-                        
-                        {/* PUNTO VERDE ESTILIZADO PARA SUBNIVELES */}
-                        {hasSublevel && (
-                          <div className="sublevel-indicator" style={{
-                            position: 'absolute',
-                            top: '-5px',
-                            right: '-5px',
-                            width: '18px',
-                            height: '18px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}>
-                            <div className="animated-dot" style={{
-                              width: '12px',
-                              height: '12px',
-                              backgroundColor: '#10B981',
-                              borderRadius: '50%',
-                              position: 'relative',
-                              animation: 'pulse 2s infinite'
-                            }}>
-                              <div style={{
-                                position: 'absolute',
-                                top: '50%',
-                                left: '50%',
-                                transform: 'translate(-50%, -50%)',
-                                width: '6px',
-                                height: '6px',
-                                backgroundColor: '#34D399',
-                                borderRadius: '50%'
-                              }}></div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="subcategory-info" style={{ flex: 1 }}>
-                        <div className="subcategory-name fw-medium" style={{
-                          color: isSelected ? '#065f46' : '#1e293b',
-                          fontSize: isMobile ? '14px' : '15px'
-                        }}>
-                          {item.name}
-                        </div>
-                        {isSelected && !hasSublevel && (
-                          <div className="selection-hint mt-1">
-                            <small className="text-success d-flex align-items-center">
-                              <CheckCircle size={12} className="me-1" />
-                              Prêt pour l'étape 2
-                            </small>
-                          </div>
-                        )}
-                      </div>
+                  <div className="subcategory-content">
+                    <div className="subcategory-icon">
+                      <span className="item-emoji">{item.emoji}</span>
+                      {hasSublevel && (
+                        <span className="sublevel-indicator">
+                          <ArrowRightCircle size={14} />
+                        </span>
+                      )}
                     </div>
 
-                    <div className="subcategory-actions d-flex align-items-center">
+                    <div className="subcategory-info">
+                      <div className="subcategory-name">{item.name}</div>
+                      {isSelected && !hasSublevel && (
+                        <div className="selection-hint">
+                          <small className="text-success">
+                            <CheckCircle size={12} className="me-1" />
+                            Prêt pour l'étape 2
+                          </small>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="subcategory-actions">
                       {hasSublevel ? (
-                        <span className={`chevron ${isExpanded ? 'expanded' : ''} ms-2`}>
+                        <span className={`chevron ${isExpanded ? 'expanded' : ''}`}>
                           {isExpanded ? <ChevronUp /> : <ChevronDown />}
                         </span>
                       ) : (
@@ -296,31 +330,32 @@ const CategoryAccordion = ({ postData, handleChangeInput, onComplete }) => {
                       )}
                     </div>
                   </div>
+
+                  {hasSublevel && (
+                    <div className="subcategory-badge">
+                      <Badge bg="warning" className="badge-sm">
+                        + options
+                      </Badge>
+                    </div>
+                  )}
                 </div>
 
-                {/* NIVEL 2 */}
+                {/* NIVEL 3 */}
                 {hasSublevel && isExpanded && (
-                  <div className="level2-container mt-2 ms-4" style={{
-                    borderLeft: '2px solid #e2e8f0',
-                    paddingLeft: '16px'
-                  }}>
-                    <div className="level2-content bg-light rounded p-3">
-                      <div className="level2-header mb-3">
-                        <h6 className="level2-title mb-0" style={{
-                          fontSize: '14px',
-                          color: '#64748b'
-                        }}>
-                          Sélectionnez une option pour <strong style={{ color: '#1e293b' }}>{item.name}</strong>
+                  <div className="level2-container">
+                    <div className="level2-content">
+                      <div className="level2-header">
+                        <h6 className="level2-title">
+                          Sélectionnez une option pour <strong>{item.name}</strong>
                         </h6>
                       </div>
 
                       {(() => {
-                        const level2Items = category.subcategories?.[item.id] || [];
-
+                        const level2Items = getLevel2Items(categoryId, item.id);
                         if (level2Items.length === 0) {
                           return (
-                            <div className="no-level2-message text-center py-2">
-                              <p className="text-muted small mb-0">Aucune option disponible</p>
+                            <div className="no-level2-message">
+                              <p className="text-muted small">Aucune option disponible</p>
                             </div>
                           );
                         }
@@ -330,34 +365,17 @@ const CategoryAccordion = ({ postData, handleChangeInput, onComplete }) => {
                             {level2Items.map((level2Item) => (
                               <div
                                 key={level2Item.id}
-                                className={`level2-item p-3 rounded mb-2 ${selectedItems.level2 === level2Item.id ? 'selected' : ''}`}
-                                style={{
-                                  border: selectedItems.level2 === level2Item.id ? 
-                                    '2px solid #3B82F6' : '1px solid #e2e8f0',
-                                  backgroundColor: selectedItems.level2 === level2Item.id ? 
-                                    '#EFF6FF' : 'white',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s'
-                                }}
+                                className={`level2-item ${selectedItems.level2 === level2Item.id ? 'selected' : ''}`}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleLevel2Select(categoryId, item.id, level2Item.id);
                                 }}
                               >
-                                <div className="level2-item-content d-flex align-items-center">
-                                  <span className="level2-emoji me-3" style={{ fontSize: '20px' }}>
-                                    {level2Item.emoji}
-                                  </span>
-                                  <span className="level2-name" style={{
-                                    color: selectedItems.level2 === level2Item.id ? 
-                                      '#1e40af' : '#1e293b',
-                                    fontSize: isMobile ? '14px' : '15px',
-                                    flex: 1
-                                  }}>
-                                    {level2Item.name}
-                                  </span>
+                                <div className="level2-item-content">
+                                  <span className="level2-emoji">{level2Item.emoji}</span>
+                                  <span className="level2-name">{level2Item.name}</span>
                                   {selectedItems.level2 === level2Item.id && (
-                                    <CheckCircle className="text-success" size={18} />
+                                    <CheckCircle className="text-success ms-auto" size={16} />
                                   )}
                                 </div>
                               </div>
@@ -376,492 +394,702 @@ const CategoryAccordion = ({ postData, handleChangeInput, onComplete }) => {
     );
   };
 
-  // ⏳ ESTADOS DE CARGA
-  if (loading) {
+  // 🎨 RENDERIZAR PANEL DE SELECCIÓN
+  const renderSelectionPanel = () => {
+    if (!selectedItems.category) return null;
+
+    const category = categoryHierarchy[selectedItems.category];
+    if (!category) return null;
+
+    const items = getCategoryItems(selectedItems.category);
+    const getLevel1Name = () => {
+      const item = items.find(item => item.id === selectedItems.level1);
+      return item?.name || '';
+    };
+
+    const getLevel2Name = () => {
+      if (!selectedItems.level2) return '';
+      const level2Items = getLevel2Items(selectedItems.category, selectedItems.level1);
+      const item = level2Items.find(item => item.id === selectedItems.level2);
+      return item?.name || '';
+    };
+
+    const categoryName = categories.find(c => c.id === selectedItems.category)?.name;
+
     return (
-      <div className="text-center py-5">
-        <div className="spinner-container" style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '300px'
-        }}>
-          <Spinner animation="border" variant="primary" />
-          <p className="mt-3" style={{ color: '#64748b' }}>Chargement des catégories...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert variant="danger" className="m-3">
-        <div className="d-flex align-items-center">
-          <i className="fas fa-exclamation-triangle me-2"></i>
-          <div>
-            <strong>Erreur:</strong> {error}
-          </div>
-        </div>
-      </Alert>
-    );
-  }
-
-  if (mainCategories.length === 0) {
-    return (
-      <Card className="text-center py-5 m-3">
-        <div className="text-muted">
-          <div className="empty-icon mb-3" style={{ fontSize: '48px', opacity: 0.5 }}>
-            📦
-          </div>
-          <h5 className="mb-2">Aucune catégorie disponible</h5>
-          <p className="mb-3">Vérifiez que le seed MongoDB a été exécuté</p>
-          <Button 
-            variant="outline-primary" 
-            size="sm"
-            onClick={() => window.location.reload()}
-            className="d-inline-flex align-items-center"
-          >
-            <i className="fas fa-redo me-2"></i>
-            Recharger la page
-          </Button>
-        </div>
-      </Card>
-    );
-  }
-
-  // 🔍 FILTRAR CATEGORÍAS
-  const filteredCategories = mainCategories.filter(cat =>
-    cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cat.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cat.emoji.includes(searchTerm)
-  );
-
-  return (
-    <div className="category-accordion" style={{
-      width: '100%',
-      background: 'white',
-      borderRadius: '12px',
-      overflow: 'hidden',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
-    }}>
-      {/* Barra de búsqueda */}
-      <div className="search-bar" style={{
-        padding: isMobile ? '16px 16px 12px' : '20px 20px 16px',
-        borderBottom: '1px solid #f1f5f9'
-      }}>
-        <div className="search-input-wrapper position-relative">
-          <div className="search-icon" style={{
-            position: 'absolute',
-            left: '16px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: '#94a3b8'
-          }}>
-            🔍
-          </div>
-          <Form.Control
-            type="text"
-            placeholder="Rechercher une catégorie..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%',
-              padding: isMobile ? '12px 12px 12px 44px' : '14px 14px 14px 48px',
-              border: '2px solid #e2e8f0',
-              borderRadius: '10px',
-              fontSize: isMobile ? '14px' : '16px',
-              transition: 'all 0.2s',
-              backgroundColor: '#f8fafc'
-            }}
-            className="search-input"
-          />
-        </div>
-        
-        {searchTerm && (
-          <div className="category-count mt-2 d-flex justify-content-between">
-            <span className="text-muted" style={{ fontSize: '13px' }}>
-              {filteredCategories.length} résultat{filteredCategories.length !== 1 ? 's' : ''}
-            </span>
-            <button
-              onClick={() => setSearchTerm('')}
-              className="btn btn-sm btn-link p-0"
-              style={{ fontSize: '13px', textDecoration: 'none' }}
-            >
-              Effacer
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Contador de categorías */}
-      {!searchTerm && (
-        <div className="category-count px-4 py-2" style={{
-          backgroundColor: '#f8fafc',
-          borderBottom: '1px solid #f1f5f9'
-        }}>
+      <Card className="selection-panel mt-4">
+        <Card.Header className="selection-header">
           <div className="d-flex align-items-center justify-content-between">
-            <span className="text-muted" style={{ fontSize: '14px' }}>
-              <strong>{mainCategories.length}</strong> catégories disponibles
-            </span>
-            {selectedItems.category && (
-              <Badge bg="success" className="d-flex align-items-center" style={{
-                fontSize: '12px',
-                padding: '4px 8px',
-                borderRadius: '20px'
-              }}>
-                <CheckCircle size={10} className="me-1" />
-                Sélectionné
-              </Badge>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Lista de categorías */}
-      <div className="categories-list" style={{
-        padding: isMobile ? '0' : '0',
-        maxHeight: '500px',
-        overflowY: 'auto',
-        scrollbarWidth: 'thin'
-      }}>
-        {filteredCategories.length === 0 ? (
-          <div className="no-results py-5 text-center">
-            <div className="empty-icon mb-3" style={{ fontSize: '48px', opacity: 0.3 }}>
-              🔍
+            <div className="d-flex align-items-center">
+              <CheckCircle className="text-success me-2" size={18} />
+              <strong>Sélection en cours</strong>
             </div>
-            <h5 className="mb-2" style={{ color: '#64748b' }}>Aucun résultat</h5>
-            <p className="text-muted" style={{ fontSize: '14px' }}>
-              Aucune catégorie ne correspond à "{searchTerm}"
-            </p>
+            <Badge bg={selectedItems.level2 ? 'success' : selectedItems.level1 ? 'warning' : 'secondary'}>
+              {selectedItems.level2 ? 'Complet' : selectedItems.level1 ? 'En cours' : 'Début'}
+            </Badge>
           </div>
-        ) : (
-          <Accordion activeKey={activeMainCategory} flush>
-            {filteredCategories.map((category) => {
-              const categoryType = categoryHierarchy[category.id]?.requiresLevel2 ? 
-                { text: 'Multi-niveaux', color: '#f59e0b' } : 
-                { text: 'Simple', color: '#10B981' };
+        </Card.Header>
 
-              return (
-                <Accordion.Item
-                  key={category.id}
-                  eventKey={category.id}
-                  style={{
-                    border: 'none',
-                    borderBottom: '1px solid #f1f5f9'
-                  }}
-                >
-                  <Accordion.Header
-                    onClick={() => handleMainCategoryToggle(category.id)}
-                    style={{
-                      padding: isMobile ? '16px' : '20px',
-                      backgroundColor: selectedItems.category === category.id ? '#f0fdf4' : 'white'
-                    }}
-                  >
-                    <div className="d-flex align-items-center justify-content-between w-100">
-                      <div className="d-flex align-items-center">
-                        <div className="category-emoji me-3" style={{ fontSize: '24px' }}>
-                          {category.emoji}
-                        </div>
-                        <div>
-                          <div className="category-name fw-medium" style={{
-                            color: selectedItems.category === category.id ? '#065f46' : '#1e293b',
-                            fontSize: isMobile ? '15px' : '16px'
-                          }}>
-                            {category.name}
-                          </div>
-                          <div className="category-type mt-1">
-                            <span style={{
-                              backgroundColor: categoryType.color + '20',
-                              color: categoryType.color,
-                              fontSize: '11px',
-                              padding: '2px 8px',
-                              borderRadius: '12px',
-                              fontWeight: '500'
-                            }}>
-                              {categoryType.text}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="d-flex align-items-center">
-                        {selectedItems.category === category.id && (
-                          <div className="selected-indicator me-3">
-                            <div style={{
-                              width: '8px',
-                              height: '8px',
-                              backgroundColor: '#10B981',
-                              borderRadius: '50%',
-                              animation: 'pulse 2s infinite'
-                            }}></div>
-                          </div>
-                        )}
-                        <div className="expand-arrow" style={{
-                          transform: activeMainCategory === category.id ? 'rotate(180deg)' : 'rotate(0deg)',
-                          transition: 'transform 0.2s',
-                          color: '#94a3b8'
-                        }}>
-                          <ChevronDown size={18} />
-                        </div>
-                      </div>
-                    </div>
-                  </Accordion.Header>
-                  
-                  <Accordion.Body style={{
-                    padding: isMobile ? '16px' : '20px',
-                    paddingTop: '8px',
-                    backgroundColor: '#f8fafc'
-                  }}>
-                    {renderCategoryContent(category.id)}
-                  </Accordion.Body>
-                </Accordion.Item>
-              );
-            })}
-          </Accordion>
-        )}
-      </div>
-
-      {/* Panel de selección */}
-      {selectedItems.category && (
-        <div className="selection-panel" style={{
-          padding: '20px',
-          borderTop: '1px solid #f1f5f9',
-          backgroundColor: '#ffffff'
-        }}>
-          <div className="selection-header mb-4">
-            <div className="d-flex align-items-center justify-content-between mb-3">
-              <h6 className="mb-0 fw-bold" style={{ color: '#1e293b' }}>
-                <CheckCircle className="me-2" size={18} style={{ color: '#10B981' }} />
-                Sélection en cours
-              </h6>
-              <Badge bg={selectedItems.level2 ? 'success' : selectedItems.level1 ? 'warning' : 'secondary'}
-                className="px-3 py-1"
-                style={{ borderRadius: '20px', fontSize: '12px' }}
-              >
-                {selectedItems.level2 ? 'Complet' : selectedItems.level1 ? 'En cours' : 'Début'}
-              </Badge>
-            </div>
-            
-            <div className="selection-path">
-              <div className="d-flex align-items-center flex-wrap">
-                {/* Nivel 1 */}
-                <div className="path-step d-flex align-items-center me-3">
-                  <div className="step-icon me-2" style={{
-                    width: '32px',
-                    height: '32px',
-                    backgroundColor: '#10B981',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white'
-                  }}>
-                    {mainCategories.find(c => c.id === selectedItems.category)?.emoji || '📁'}
-                  </div>
-                  <div>
-                    <div className="step-label" style={{ fontSize: '11px', color: '#64748b' }}>
-                      Catégorie principale
-                    </div>
-                    <div className="step-value fw-medium" style={{ fontSize: '14px', color: '#1e293b' }}>
-                      {mainCategories.find(c => c.id === selectedItems.category)?.name}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Flecha */}
-                {selectedItems.level1 && (
-                  <>
-                    <div className="path-arrow me-3" style={{ color: '#cbd5e1' }}>
-                      <ChevronRight size={20} />
-                    </div>
-
-                    {/* Nivel 2 */}
-                    <div className="path-step d-flex align-items-center me-3">
-                      <div className="step-icon me-2" style={{
-                        width: '32px',
-                        height: '32px',
-                        backgroundColor: selectedItems.level2 ? '#10B981' : '#3B82F6',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white'
-                      }}>
-                        {getCategoryItems(selectedItems.category)
-                          .find(item => item.id === selectedItems.level1)?.emoji || '📂'}
-                      </div>
-                      <div>
-                        <div className="step-label" style={{ fontSize: '11px', color: '#64748b' }}>
-                          Sous-catégorie
-                        </div>
-                        <div className="step-value fw-medium" style={{ fontSize: '14px', color: '#1e293b' }}>
-                          {getCategoryItems(selectedItems.category)
-                            .find(item => item.id === selectedItems.level1)?.name}
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* Flecha */}
-                {selectedItems.level2 && (
-                  <>
-                    <div className="path-arrow me-3" style={{ color: '#cbd5e1' }}>
-                      <ChevronRight size={20} />
-                    </div>
-
-                    {/* Nivel 3 */}
-                    <div className="path-step d-flex align-items-center">
-                      <div className="step-icon me-2" style={{
-                        width: '32px',
-                        height: '32px',
-                        backgroundColor: '#10B981',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white'
-                      }}>
-                        ✅
-                      </div>
-                      <div>
-                        <div className="step-label" style={{ fontSize: '11px', color: '#64748b' }}>
-                          Type d'article
-                        </div>
-                        <div className="step-value fw-medium" style={{ fontSize: '14px', color: '#1e293b' }}>
-                          {categoryHierarchy[selectedItems.category]?.subcategories?.[selectedItems.level1]
-                            ?.find(item => item.id === selectedItems.level2)?.name || selectedItems.level2}
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
+        <Card.Body>
+          <div className="selection-path">
+            <div className="path-step active">
+              <div className="step-icon">
+                {categories.find(c => c.id === selectedItems.category)?.emoji}
+              </div>
+              <div className="step-info">
+                <div className="step-label">Catégorie</div>
+                <div className="step-value">{categoryName}</div>
               </div>
             </div>
+
+            {selectedItems.level1 && (
+              <>
+                <div className="path-arrow">→</div>
+                <div className={`path-step ${selectedItems.level2 ? 'active' : 'current'}`}>
+                  <div className="step-icon">
+                    {items.find(item => item.id === selectedItems.level1)?.emoji}
+                  </div>
+                  <div className="step-info">
+                    <div className="step-label">
+                      {category.levels === 1 ? 'Sous-catégorie' : 'Type'}
+                    </div>
+                    <div className="step-value">{getLevel1Name()}</div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {selectedItems.level2 && (
+              <>
+                <div className="path-arrow">→</div>
+                <div className="path-step active final">
+                  <div className="step-icon">
+                    {getLevel2Name() ? '✅' : '📋'}
+                  </div>
+                  <div className="step-info">
+                    <div className="step-label">Sous-catégorie</div>
+                    <div className="step-value">{getLevel2Name()}</div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="completion-status mt-3">
+            {selectedItems.level2 ? (
+              <div className="alert alert-success py-2 mb-0">
+                <div className="d-flex align-items-center">
+                  <CheckCircle className="me-2" size={20} />
+                  <div>
+                    <strong>Sélection complète!</strong>
+                    <div className="small">Prêt pour l'étape 2</div>
+                  </div>
+                </div>
+              </div>
+            ) : selectedItems.level1 ? (
+              <div className="alert alert-warning py-2 mb-0">
+                <div className="d-flex align-items-center">
+                  <ChevronDown className="me-2" />
+                  <div>
+                    <strong>Sélectionnez une option ci-dessus</strong>
+                    <div className="small">Cliquez sur une option pour continuer</div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <Button
             variant="outline-danger"
             size="sm"
             onClick={handleResetSelection}
-            className="w-100 d-flex align-items-center justify-content-center"
-            style={{
-              border: '1px solid #fca5a5',
-              color: '#dc2626',
-              padding: '10px',
-              borderRadius: '8px',
-              fontSize: '14px'
-            }}
+            className="w-100 mt-3"
           >
             <i className="fas fa-times me-2"></i>
             Changer de catégorie
           </Button>
-        </div>
-      )}
+        </Card.Body>
+      </Card>
+    );
+  };
 
-      {/* Instrucciones */}
-      {!selectedItems.category && (
-        <div className="instructions py-3 text-center" style={{
-          backgroundColor: '#f8fafc',
-          borderTop: '1px solid #f1f5f9',
-          fontSize: '13px',
-          color: '#64748b'
-        }}>
-          <div className="d-flex align-items-center justify-content-center">
-            <div className="me-2">👆</div>
-            <div>Sélectionnez une catégorie pour continuer</div>
+  // 🔍 FILTRAR CATEGORÍAS
+  const filteredCategories = categories.filter(cat =>
+    cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cat.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cat.emoji.includes(searchTerm)
+  );
+
+  // 🆕 MOSTRAR ESTADOS DE CARGA
+  if (accordionLoading && categories.length === 0) {
+    return (
+      <div className="text-center py-5">
+        <Spinner animation="border" variant="primary" />
+        <p className="mt-2">Chargement des catégories...</p>
+        <small className="text-muted">Depuis le backend</small>
+      </div>
+    );
+  }
+
+  if (accordionError) {
+    return (
+      <Alert variant="danger" className="border-0">
+        <div className="d-flex align-items-start">
+          <i className="fas fa-exclamation-triangle me-2 mt-1"></i>
+          <div>
+            <strong>Erreur de chargement</strong>
+            <p className="mb-2">{accordionError}</p>
+            <Button 
+              size="sm" 
+              variant="outline-primary"
+              onClick={() => dispatch(getCategoriesForAccordion())}
+            >
+              <i className="fas fa-redo me-1"></i>
+              Réessayer
+            </Button>
           </div>
         </div>
-      )}
+      </Alert>
+    );
+  }
 
-      {/* Estilos CSS inline */}
+  if (categories.length === 0 && !accordionLoading) {
+    return (
+      <Card className="text-center py-4 border-0 shadow-sm">
+        <div className="empty-icon mb-3">📭</div>
+        <h5 className="mb-2">Aucune catégorie disponible</h5>
+        <p className="text-muted mb-3">Les catégories n'ont pas pu être chargées</p>
+        <div className="d-flex gap-2 justify-content-center">
+          <Button 
+            variant="primary"
+            onClick={() => dispatch(getCategoriesForAccordion())}
+          >
+            <i className="fas fa-sync-alt me-1"></i> Charger les catégories
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="nested-category-accordion">
+      {/* Barra de búsqueda */}
+      <div className="search-container mb-4">
+        <Form.Control
+          type="text"
+          placeholder="🔍 Rechercher une catégorie..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="search-input"
+        />
+      </div>
+
+      {/* Contador de categorías */}
+      <div className="category-count mb-3 text-muted small">
+        <span className="badge bg-primary rounded-pill">{filteredCategories.length}</span> catégories sur {categories.length}
+      </div>
+
+      {/* Accordion principal */}
+      <Accordion activeKey={activeMainCategory} className="main-accordion">
+        {filteredCategories.map((category) => (
+          <Accordion.Item
+            key={category.id}
+            eventKey={category.id}
+            className="main-category-item"
+          >
+            <Accordion.Header
+              onClick={() => handleMainCategoryToggle(category.id)}
+              className="main-category-header"
+            >
+              <div className="main-category-content">
+                <div className="category-main-info">
+                  <span className="category-emoji">{category.emoji}</span>
+                  <span className="category-name">{category.name}</span>
+                </div>
+
+                <div className="category-status">
+                  {selectedItems.category === category.id && (
+                    <Badge bg="success" className="selected-badge me-2">
+                      <CheckCircle size={12} /> Sélectionné
+                    </Badge>
+                  )}
+                  <span className="expand-icon">
+                    {activeMainCategory === category.id ? <ChevronUp /> : <ChevronDown />}
+                  </span>
+                </div>
+              </div>
+            </Accordion.Header>
+
+            <Accordion.Body className="main-category-body">
+              {renderCategoryContent(category.id)}
+            </Accordion.Body>
+          </Accordion.Item>
+        ))}
+      </Accordion>
+
+      {/* Panel de selección */}
+      {renderSelectionPanel()}
+
       <style jsx>{`
-        @keyframes pulse {
-          0% {
-            transform: scale(1);
-            opacity: 1;
-          }
-          50% {
-            transform: scale(1.1);
-            opacity: 0.8;
-          }
-          100% {
-            transform: scale(1);
-            opacity: 1;
-          }
+        .nested-category-accordion {
+          width: 100%;
+          max-width: 800px;
+          margin: 0 auto;
         }
-
-        .subcategory-item:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        
+        /* Barra de búsqueda */
+        .search-container {
+          position: relative;
         }
-
-        .level2-item:hover {
-          transform: translateX(4px);
+        
+        .search-input {
+          padding: 12px 15px 12px 45px;
+          border-radius: 8px;
+          border: 2px solid #e9ecef;
+          font-size: 1rem;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236c757d' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: 15px center;
+          background-size: 20px;
+          transition: all 0.2s ease;
         }
-
-        .categories-list::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        .categories-list::-webkit-scrollbar-track {
-          background: #f1f5f9;
-          border-radius: 3px;
-        }
-
-        .categories-list::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 3px;
-        }
-
-        .categories-list::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
-        }
-
+        
         .search-input:focus {
-          outline: none;
-          border-color: #10B981 !important;
-          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
-          background-color: white !important;
+          border-color: #0d6efd;
+          box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+          background-position: 15px center;
         }
-
+        
+        /* Accordion principal */
+        .main-accordion {
+          border-radius: 10px;
+          overflow: hidden;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .main-category-item {
+          border: none;
+          border-bottom: 1px solid #e9ecef;
+          border-radius: 0 !important;
+        }
+        
+        .main-category-item:last-child {
+          border-bottom: none;
+        }
+        
+        .main-category-header {
+          padding: 20px;
+          background: white;
+          transition: all 0.2s ease;
+        }
+        
+        .main-category-header:hover {
+          background: #f8f9fa;
+        }
+        
+        .main-category-header .accordion-button {
+          padding: 0;
+          background: transparent;
+          box-shadow: none !important;
+          color: inherit;
+        }
+        
+        .main-category-header .accordion-button:not(.collapsed) {
+          background: transparent;
+          color: inherit;
+        }
+        
+        .main-category-content {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+        }
+        
+        .category-main-info {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          flex-grow: 1;
+        }
+        
+        .category-emoji {
+          font-size: 1.8rem;
+          min-width: 40px;
+        }
+        
+        .category-name {
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #212529;
+        }
+        
+        .category-type-badge .badge {
+          font-size: 0.75rem;
+          padding: 4px 8px;
+          font-weight: 500;
+        }
+        
+        .category-status {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        
+        .selected-badge {
+          font-size: 0.8rem;
+          padding: 4px 8px;
+        }
+        
+        .expand-icon {
+          color: #6c757d;
+          transition: transform 0.3s ease;
+        }
+        
+        .main-category-body {
+          padding: 0;
+          background: #f8f9fa;
+          border-top: 1px solid #e9ecef;
+        }
+        
+        /* Contenido de categoría */
+        .category-content {
+          padding: 20px;
+        }
+        
+        .subcategories-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        
+        .subcategory-wrapper {
+          background: white;
+          border-radius: 8px;
+          overflow: hidden;
+          border: 1px solid #e9ecef;
+          transition: all 0.2s ease;
+        }
+        
+        .subcategory-wrapper:hover {
+          border-color: #0d6efd;
+          box-shadow: 0 2px 8px rgba(13, 110, 253, 0.1);
+        }
+        
+        .subcategory-item {
+          padding: 15px;
+          cursor: pointer;
+          position: relative;
+          transition: all 0.2s ease;
+        }
+        
+        .subcategory-item:hover {
+          background: #f8f9fa;
+        }
+        
+        .subcategory-item.selected {
+          background: linear-gradient(135deg, rgba(13, 110, 253, 0.05), rgba(13, 110, 253, 0.1));
+          border-left: 4px solid #0d6efd;
+        }
+        
+        .subcategory-item.has-sublevel {
+          border-left: 4px solid #ffc107;
+        }
+        
+        .subcategory-content {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+        }
+        
+        .subcategory-icon {
+          position: relative;
+          min-width: 50px;
+        }
+        
+        .item-emoji {
+          font-size: 1.8rem;
+        }
+        
+        .sublevel-indicator {
+          position: absolute;
+          top: -5px;
+          right: -5px;
+          background: #ffc107;
+          color: white;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.7rem;
+          border: 2px solid white;
+        }
+        
+        .subcategory-info {
+          flex-grow: 1;
+        }
+        
+        .subcategory-name {
+          font-weight: 500;
+          font-size: 0.95rem;
+          color: #212529;
+        }
+        
+        .selection-hint {
+          margin-top: 5px;
+        }
+        
+        .subcategory-actions {
+          color: #6c757d;
+        }
+        
+        .chevron {
+          transition: transform 0.3s ease;
+        }
+        
+        .chevron.expanded {
+          transform: rotate(180deg);
+        }
+        
+        .subcategory-badge {
+          position: absolute;
+          top: 10px;
+          right: 15px;
+        }
+        
+        .badge-sm {
+          font-size: 0.7rem;
+          padding: 2px 6px;
+        }
+        
+        /* Nivel 2 - Contenido expandido */
+        .level2-container {
+          background: #f1f3f4;
+          border-top: 1px solid #dee2e6;
+          animation: slideDown 0.3s ease;
+        }
+        
+        .level2-content {
+          padding: 20px;
+        }
+        
+        .level2-header {
+          margin-bottom: 15px;
+          padding-bottom: 10px;
+          border-bottom: 1px dashed #dee2e6;
+        }
+        
+        .level2-title {
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: #495057;
+          margin: 0;
+        }
+        
+        .level2-items {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        
+        .level2-item {
+          padding: 12px 15px;
+          background: white;
+          border-radius: 6px;
+          border: 1px solid #e9ecef;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        
+        .level2-item:hover {
+          border-color: #0d6efd;
+          transform: translateX(5px);
+        }
+        
+        .level2-item.selected {
+          background: linear-gradient(135deg, rgba(25, 135, 84, 0.05), rgba(25, 135, 84, 0.1));
+          border-color: #198754;
+        }
+        
+        .level2-item-content {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        
+        .level2-emoji {
+          font-size: 1.3rem;
+          min-width: 30px;
+        }
+        
+        .level2-name {
+          font-size: 0.9rem;
+          font-weight: 500;
+          flex-grow: 1;
+        }
+        
+        /* Panel de selección */
+        .selection-panel {
+          border: 2px solid #0d6efd;
+          animation: fadeIn 0.5s ease;
+        }
+        
+        .selection-header {
+          background: linear-gradient(135deg, #0d6efd, #6610f2);
+          color: white;
+          border: none;
+        }
+        
+        .selection-path {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 10px;
+          padding: 15px;
+          background: #f8f9fa;
+          border-radius: 8px;
+        }
+        
+        .path-step {
+          display: flex;
+          align-items: center;
+          padding: 10px 15px;
+          background: white;
+          border-radius: 6px;
+          border: 1px solid #dee2e6;
+          min-width: 180px;
+        }
+        
+        .path-step.active {
+          border-color: #0d6efd;
+          background: #e3f2fd;
+        }
+        
+        .path-step.current {
+          border-color: #ffc107;
+          background: #fff3cd;
+        }
+        
+        .path-step.final {
+          border-color: #198754;
+          background: #d1e7dd;
+        }
+        
+        .step-icon {
+          font-size: 1.5rem;
+          margin-right: 10px;
+          min-width: 30px;
+        }
+        
+        .step-label {
+          font-size: 0.75rem;
+          color: #6c757d;
+          margin-bottom: 2px;
+        }
+        
+        .step-value {
+          font-size: 0.9rem;
+          font-weight: 500;
+          color: #212529;
+        }
+        
+        .path-arrow {
+          color: #6c757d;
+          font-weight: bold;
+        }
+        
+        /* Animaciones */
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            max-height: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            max-height: 500px;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        /* Responsive */
         @media (max-width: 768px) {
-          .category-accordion {
-            border-radius: 0;
+          .main-category-content {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+          }
+          
+          .category-main-info {
+            width: 100%;
+            justify-content: space-between;
+          }
+          
+          .category-status {
+            width: 100%;
+            justify-content: space-between;
           }
           
           .selection-path {
-            overflow-x: auto;
-            padding-bottom: 8px;
+            flex-direction: column;
+            align-items: stretch;
           }
           
-          .selection-path > div {
-            min-width: max-content;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .category-emoji {
-            font-size: 20px !important;
+          .path-step {
+            min-width: 100%;
           }
           
-          .category-name {
-            font-size: 14px !important;
+          .path-arrow {
+            transform: rotate(90deg);
+            align-self: center;
           }
           
-          .subcategory-item {
-            padding: 12px !important;
+          .subcategory-content {
+            gap: 10px;
           }
           
           .item-emoji {
-            font-size: 20px !important;
+            font-size: 1.5rem;
+          }
+        }
+        
+        @media (max-width: 576px) {
+          .main-category-header {
+            padding: 15px;
           }
           
-          .animated-dot {
-            width: 10px !important;
-            height: 10px !important;
+          .category-content {
+            padding: 15px;
+          }
+          
+          .subcategory-item {
+            padding: 12px;
+          }
+          
+          .level2-content {
+            padding: 15px;
+          }
+          
+          .category-emoji {
+            font-size: 1.5rem;
+            min-width: 35px;
+          }
+          
+          .category-name {
+            font-size: 1rem;
           }
         }
       `}</style>

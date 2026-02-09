@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import CardBodyCarousel from './home/post_card/CardBodyCarousel';
 import CardBodyTitle from './home/post_card/CardBodyTitle';
 import CardFooter from './home/post_card/CardFooter';
+import CardHeader from './home/post_card/CardHeader';
 import DescriptionPost from './home/post_card/DescriptionPost';
  
 import UserInfo from './home/post_card/UserInfo';
@@ -22,7 +23,7 @@ const PostCard = ({ post }) => {
     <div className={`detail-post-card bg-white rounded-xl shadow-lg overflow-hidden mb-4 ${isDetailPage ? 'detail-view' : 'home-view'}`}>
       {/* TÍTULO DEL PRODUCTO */}
       <CardBodyTitle post={post} />
-      
+       
       {/* CARRUSEL DE IMÁGENES */}
       <CardBodyCarousel post={post} />
       

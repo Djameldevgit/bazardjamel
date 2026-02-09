@@ -8,114 +8,10 @@ let cacheCategoriasPrincipales = null;
 let cacheCategoriasPrincipalesEn = 0;
 let cacheEstadisticas = null;
 let cacheEstadisticasEn = 0;
-const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
-  const incluirPosts = req.query.posts === 'true';
-  const ahora = Date.now();
 
-  // 🔹 Caché solo para nivel 1 sin posts
-  if (!incluirPosts && cacheCategoriasPrincipales && ahora - cacheCategoriasPrincipalesEn < 5 * 60 * 1000) {
-    return res.json(cacheCategoriasPrincipales);
-  }
-
-  // 1️⃣ Traer categorías activas
-  const [nivel1, nivel2, nivel3] = await Promise.all([
-    Category.find({ level: 1, isActive: true })
-      .select('_id name slug icon emoji order hasChildren postCount')
-      .sort({ order: 1 })
-      .lean(),
-    Category.find({ level: 2, isActive: true })
-      .select('_id name slug parent emoji order hasChildren isLeaf')
-      .sort({ order: 1 })
-      .lean(),
-    Category.find({ level: 3, isActive: true })
-      .select('_id name slug parent emoji order isLeaf')
-      .sort({ order: 1 })
-      .lean(),
-  ]);
-
-  // 2️⃣ Armar relaciones padre-hijo en memoria
-  const nivel3PorPadre = {};
-  nivel3.forEach(cat => {
-    const idPadre = String(cat.parent);
-    if (!nivel3PorPadre[idPadre]) nivel3PorPadre[idPadre] = [];
-    nivel3PorPadre[idPadre].push(cat);
-  });
-
-  nivel2.forEach(subcat => {
-    const clave = String(subcat._id);
-    subcat.children = nivel3PorPadre[clave] || [];
-    subcat.hasChildren = subcat.children.length > 0;
-  });
-
-  const nivel2PorPadre = {};
-  nivel2.forEach(subcat => {
-    const idPadre = String(subcat.parent);
-    if (!nivel2PorPadre[idPadre]) nivel2PorPadre[idPadre] = [];
-    nivel2PorPadre[idPadre].push(subcat);
-  });
-
-  nivel1.forEach(cat => {
-    const clave = String(cat._id);
-    cat.children = nivel2PorPadre[clave] || [];
-    cat.hasChildren = cat.children.length > 0;
-  });
-
-  // 3️⃣ Traer posts si se piden
-  if (incluirPosts) {
-    // Crear lista de todos los ids de categorías (nivel1, nivel2, nivel3)
-    const todosIds = [
-      ...nivel1.map(c => c._id),
-      ...nivel2.map(c => c._id),
-      ...nivel3.map(c => c._id),
-    ];
-
-    // 🔹 UNA SOLA CONSULTA a Post
-    const posts = await Post.find({ 
-      category: { $in: todosIds },
-  $or: [{ isActive: true }, { status: 'active' }] 
-     })
-      .select('_id title price images createdAt location category')
-      .sort({ createdAt: -1 })
-      .lean()
-       
-    // 🔹 Map para asignar posts a su categoría
-    const postsMap = {};
-    posts.forEach(post => {
-      const key = String(post.category);
-      if (!postsMap[key]) postsMap[key] = [];
-      if (postsMap[key].length < 8) postsMap[key].push(post); // limitar a 8 por categoría
-    });
-
-    // 🔹 Asignar posts a nivel3
-    nivel3.forEach(cat => {
-      cat.posts = postsMap[String(cat._id)] || [];
-    });
-
-    // 🔹 Asignar posts a nivel2 sumando hijos nivel3
-    nivel2.forEach(cat => {
-      const hijosPosts = cat.children.flatMap(c => c.posts || []);
-      cat.posts = [...(postsMap[String(cat._id)] || []), ...hijosPosts].slice(0, 8);
-    });
-
-    // 🔹 Asignar posts a nivel1 sumando hijos nivel2
-    nivel1.forEach(cat => {
-      const hijosPosts = cat.children.flatMap(c => c.posts || []);
-      cat.posts = [...(postsMap[String(cat._id)] || []), ...hijosPosts].slice(0, 8);
-    });
-  }
-
-  const respuesta = { success: true, categories: nivel1 };
-
-  // 🔹 Guardar caché si no se piden posts
-  if (!incluirPosts) {
-    cacheCategoriasPrincipales = respuesta;
-    cacheCategoriasPrincipalesEn = ahora;
-  }
-
-  return res.json(respuesta);
-});
-
- 
+/**
+ * Helper: Obtener hijos de una categoría
+ */
 const getChildren = async (parentId, nivel = null, limit = 0) => {
   const query = { parent: parentId };
   if (nivel) query.level = nivel;
@@ -127,11 +23,12 @@ const getChildren = async (parentId, nivel = null, limit = 0) => {
   return children;
 };
 
- 
+/**
+ * Helper: Obtener posts de múltiples categorías
+ */
 const getPostsByCategoryIds = async (categoryIds, limitPerCategory = 8, page = 1) => {
   const skip = (page - 1) * limitPerCategory;
   const posts = await Post.find({ category: { $in: categoryIds }, status: 'active' })
-  .populate('cateogry', 'categorie subCategory articleType name')
     .populate('user', 'username avatar')
     .populate('category', 'name slug level')
     .sort({ createdAt: -1 })
@@ -144,7 +41,10 @@ const getPostsByCategoryIds = async (categoryIds, limitPerCategory = 8, page = 1
 
   return { posts, total, hasMore, currentPage: page };
 };
- 
+
+/**
+ * Helper: Asignar posts a categorías según nivel
+ */
 const mapPostsToCategories = (categories, postsMap, limit = 8) => {
   categories.forEach(cat => {
     const childrenPosts = (cat.children || []).flatMap(c => postsMap[String(c._id)] || []);
@@ -156,7 +56,81 @@ const mapPostsToCategories = (categories, postsMap, limit = 8) => {
   });
 };
 
- 
+/**
+ * GET /api/categories/principales
+ * Obtener categorías nivel 1 + hijos + posts opcionales
+ */
+const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
+  const incluirPosts = req.query.posts === 'true';
+  const ahora = Date.now();
+
+  if (!incluirPosts && cacheCategoriasPrincipales && ahora - cacheCategoriasPrincipalesEn < 5 * 60 * 1000) {
+    return res.json(cacheCategoriasPrincipales);
+  }
+
+  // 1️⃣ Traer todas las categorías activas
+  const [nivel1, nivel2, nivel3] = await Promise.all([
+    Category.find({ level: 1, isActive: true }).sort({ order: 1 }).lean(),
+    Category.find({ level: 2, isActive: true }).sort({ order: 1 }).lean(),
+    Category.find({ level: 3, isActive: true }).sort({ order: 1 }).lean(),
+  ]);
+
+  // 2️⃣ Armar relaciones padre-hijo
+  const nivel3PorPadre = {};
+  nivel3.forEach(cat => {
+    const idPadre = String(cat.parent);
+    if (!nivel3PorPadre[idPadre]) nivel3PorPadre[idPadre] = [];
+    nivel3PorPadre[idPadre].push(cat);
+  });
+
+  nivel2.forEach(subcat => {
+    subcat.children = nivel3PorPadre[String(subcat._id)] || [];
+    subcat.hasChildren = subcat.children.length > 0;
+  });
+
+  const nivel2PorPadre = {};
+  nivel2.forEach(subcat => {
+    const idPadre = String(subcat.parent);
+    if (!nivel2PorPadre[idPadre]) nivel2PorPadre[idPadre] = [];
+    nivel2PorPadre[idPadre].push(subcat);
+  });
+
+  nivel1.forEach(cat => {
+    cat.children = nivel2PorPadre[String(cat._id)] || [];
+    cat.hasChildren = cat.children.length > 0;
+  });
+
+  // 3️⃣ Obtener posts si se requiere
+  if (incluirPosts) {
+    const todosIds = [...nivel1, ...nivel2, ...nivel3].map(c => c._id);
+    const posts = await Post.find({ category: { $in: todosIds }, status: 'active' })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const postsMap = {};
+    posts.forEach(post => {
+      const key = String(post.category);
+      if (!postsMap[key]) postsMap[key] = [];
+      if (postsMap[key].length < 8) postsMap[key].push(post);
+    });
+
+    mapPostsToCategories(nivel1, postsMap, 8);
+  }
+
+  const respuesta = { success: true, categories: nivel1 };
+
+  if (!incluirPosts) {
+    cacheCategoriasPrincipales = respuesta;
+    cacheCategoriasPrincipalesEn = ahora;
+  }
+
+  res.json(respuesta);
+});
+
+/**
+ * GET /api/categories/:identifier
+ * Obtener categoría por slug o ID + hijos + posts + ancestros
+ */
 const obtenerCategoriaPorId = asyncHandler(async (req, res) => {
   const { identifier } = req.params;
   const incluirHijos = req.query.children === 'true' || req.query.children === 'deep';
@@ -214,7 +188,10 @@ const obtenerCategoriaPorId = asyncHandler(async (req, res) => {
   res.json({ success: true, category: datosRespuesta, children: datosRespuesta.children || [], posts: datosRespuesta.posts || [] });
 });
 
- 
+/**
+ * GET /api/categories/tree
+ * Obtener árbol completo de categorías (nivel 1-3)
+ */
 const obtenerArbolDeCategorias = asyncHandler(async (req, res) => {
   const todas = await Category.find({ isActive: true }).sort({ order: 1 }).lean();
   const mapa = {};
@@ -232,7 +209,9 @@ const obtenerArbolDeCategorias = asyncHandler(async (req, res) => {
   res.json({ success: true, tree: raices, totalLevels: 3 });
 });
 
- 
+/**
+ * GET /api/categories/search/:query
+ */
 const buscarCategorias = asyncHandler(async (req, res) => {
   const { query } = req.params;
   const limit = parseInt(req.query.limit) || 10;
@@ -247,83 +226,9 @@ const buscarCategorias = asyncHandler(async (req, res) => {
   res.json({ success: true, categories: categorias, totalResults: categorias.length });
 });
 
-// 📂 controllers/categoryController.js - ACTUALIZAR getCategoriesForAccordion
-// 📂 controllers/categoryController.js - ACTUALIZAR getCategoriesForAccordion
-const getCategoriesForAccordion = asyncHandler(async (req, res) => {
-  try {
-    console.log('🔄 Obteniendo categorías para accordion...');
-    
-    // Obtener TODAS las categorías con level y parent
-    const categories = await Category.find({ isActive: true })
-      .select('_id name slug emoji parent level icon description') // AÑADIR level
-      .lean();
-    
-    console.log(`📊 Total categorías encontradas: ${categories.length}`);
-    
-    // DEBUG: Verificar que tenemos level
-    console.log('🔍 Verificando niveles de categorías:');
-    categories.slice(0, 5).forEach(cat => {
-      console.log(`- ${cat.name}: level=${cat.level}, parent=${cat.parent}`);
-    });
-    
-    // Crear mapa para acceso rápido
-    const categoryMap = {};
-    categories.forEach(cat => {
-      categoryMap[cat._id] = { ...cat, children: [] };
-    });
-    
-    // Construir jerarquía
-    const hierarchy = [];
-    
-    // 1. Agregar nivel 1 (sin parent)
-    const level1Categories = categories.filter(cat => cat.level === 1);
-    level1Categories.forEach(cat => {
-      hierarchy.push(categoryMap[cat._id]);
-    });
-    
-    // 2. Agregar nivel 2 a sus padres
-    const level2Categories = categories.filter(cat => cat.level === 2);
-    level2Categories.forEach(cat => {
-      if (cat.parent && categoryMap[cat.parent]) {
-        categoryMap[cat.parent].children.push(categoryMap[cat._id]);
-      }
-    });
-    
-    // 3. Agregar nivel 3 a sus padres
-    const level3Categories = categories.filter(cat => cat.level === 3);
-    level3Categories.forEach(cat => {
-      if (cat.parent && categoryMap[cat.parent]) {
-        // Encontrar el padre (nivel 2)
-        const parentCat = categoryMap[cat.parent];
-        if (parentCat) {
-          parentCat.children.push(categoryMap[cat._id]);
-        }
-      }
-    });
-    
-    // Verificar estructura
-    console.log('📋 Estructura resultante:');
-    hierarchy.forEach((cat, i) => {
-      console.log(`[${i}] ${cat.name} (level: ${cat.level}) - Hijos: ${cat.children.length || 0}`);
-    });
-    
-    res.json({ 
-      success: true, 
-      categories: hierarchy,
-      total: hierarchy.length,
-      message: `Categorías cargadas: ${hierarchy.length} principales`
-    });
-    
-  } catch (error) {
-    console.error('❌ Error en getCategoriesForAccordion:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al cargar categorías',
-      error: error.message
-    });
-  }
-});
-
+/**
+ * GET /api/categories/stats
+ */
 const obtenerEstadisticasDeCategorias = asyncHandler(async (req, res) => {
   const ahora = Date.now();
   if (cacheEstadisticas && ahora - cacheEstadisticasEn < 10 * 60 * 1000) return res.json(cacheEstadisticas);
@@ -360,7 +265,4 @@ module.exports = {
   obtenerArbolDeCategorias,
   buscarCategorias,
   obtenerEstadisticasDeCategorias,
-  getCategoriesForAccordion
-
-
 };

@@ -1279,8 +1279,7 @@ export const DYNAMIC_FIELDS_CONFIG = {
 
 // 🔥 FUNCIÓN PRINCIPAL MEJORADA - ACEPTA SUBCATEGORÍA
 export const getFieldsForCategory = (mainCategory, subCategory = null, step = null) => {
-  console.log('🔍 FieldConfig - Buscando campos:', { mainCategory, subCategory, step });
-  
+     
   if (!mainCategory) {
     console.log('⚠️ No hay categoría seleccionada');
     return step ? [] : { step2: [], step3: [], step4: [], step5: [] };

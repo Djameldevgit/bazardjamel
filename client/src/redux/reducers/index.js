@@ -29,6 +29,7 @@ import privacy from './privacyReducer'
 import boutique from './boutiqueReducer'
 import posts from './postReducer'
 import category from './categoryReducer'
+import { accordionReducer } from './accordionReducer'
  
  
  
@@ -63,5 +64,5 @@ export default combineReducers({
     form,
     settings,
     privacy,
-boutique ,  posts, category
+boutique ,  posts, category,accordionReducer
 })

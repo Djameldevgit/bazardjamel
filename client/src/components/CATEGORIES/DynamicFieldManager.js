@@ -170,69 +170,64 @@ const DynamicFieldManager = ({
   }, [mainCategory, subCategory, articleType, mongoCategories]);
 
   // 🔥 OBTENER CAMPOS SEGÚN CATEGORÍA (FieldConfig local)
+
   useEffect(() => {
-    console.log('🔄 DynamicFieldManager - Actualizando campos:', {
+    console.log('🔄 DynamicFieldManager - Actualizando con:', {
       mainCategory,
       subCategory,
       articleType,
       currentStep,
-      categoryInfo
+      postDataKeys: postData ? Object.keys(postData) : []
     });
-
+  
     setLoadingFields(true);
-    let fields = [];
-
-    // STEP 1: Información de categoría seleccionada
+  
+    // STEP 1: Solo información
     if (currentStep === 1) {
-      fields = [];
-      console.log('✅ Step 1: Mostrando información de categoría');
-      setVisibleFields(fields);
+      setVisibleFields([]);
       setLoadingFields(false);
       return;
     }
-
-    // STEP 2, 3, 4: CAMPOS DINÁMICOS
-    else if (currentStep >= 2 && currentStep <= 4) {
-      if (mainCategory) {
-        // Obtener campos específicos para la categoría (desde FieldConfig local)
-        fields = getFieldsForCategory(
-          mainCategory,
-          subCategory,
-          currentStep,
-          articleType
-        );
-
-        console.log(`📋 Campos obtenidos para ${mainCategory}:`, fields);
-
-        // 🔥 FILTRAR CAMPOS VÁLIDOS
-        const validFields = fields.filter(field =>
-          field &&
-          typeof field === 'string' &&
-          field.trim() !== '' &&
-          !field.startsWith('!')
-        );
-
-        console.log(`✅ Step ${currentStep}: ${validFields.length} campos válidos`);
-        setVisibleFields(validFields);
-        setLoadingFields(false);
-        return;
-      } else {
-        console.log('⚠️ No hay categoría seleccionada');
-        setVisibleFields([]);
-        setLoadingFields(false);
-        return;
-      }
+  
+    // STEPS 2-4: Campos dinámicos
+    if (currentStep >= 2 && currentStep <= 4 && mainCategory) {
+      const fields = getFieldsForCategory(mainCategory, subCategory, currentStep, articleType);
+      
+      // 🎯 EN MODO EDICIÓN: Mostrar TODOS los campos configurados
+      const validFields = fields.filter(field => {
+        if (!field || typeof field !== 'string' || field.trim() === '' || field.startsWith('!')) {
+          return false;
+        }
+        return true;
+      });
+  
+      // 🎯 LOG DE VALORES DISPONIBLES EN POSTDATA
+      console.log(`📋 Step ${currentStep}: ${validFields.length} campos`, validFields);
+      
+      validFields.forEach(field => {
+        const value = postData[field];
+        if (value !== undefined && value !== null && value !== '') {
+          console.log(`   ✅ ${field}:`, value);
+        } else {
+          console.log(`   ❌ ${field}: NO TIENE VALOR en postData`);
+        }
+      });
+  
+      setVisibleFields(validFields);
+      setLoadingFields(false);
+      return;
     }
-
-    // STEP 5: IMÁGENES
-    else if (currentStep === 5) {
-      fields = ['images'];
-      console.log('✅ Step 5: Campos de imágenes');
+  
+    // STEP 5: Imágenes
+    if (currentStep === 5) {
+      setVisibleFields(['images']);
+      setLoadingFields(false);
+      return;
     }
-
-    setVisibleFields(fields || []);
+  
+    setVisibleFields([]);
     setLoadingFields(false);
-  }, [mainCategory, subCategory, articleType, currentStep, categoryInfo]);
+  }, [mainCategory, subCategory, articleType, currentStep, postData]);
 
   // 🔥 MEMOIZAR CAMPOS RENDERIZADOS
   const renderedFields = useMemo(() => {
@@ -281,11 +276,19 @@ const DynamicFieldManager = ({
       return (
         <div className="step-content">
           <div className={`alert ${isEdit ? 'alert-warning' : 'alert-success'}`}>
-            <h5>
-              <i className={`fas ${isEdit ? 'fa-edit' : 'fa-check-circle'} me-2`}></i>
-              {isEdit ? 'Modification de catégorie' : 'Catégorie sélectionnée'}
-            </h5>
-
+          {isEdit && currentStep > 1 && (
+        <div className="alert alert-info mb-3 py-2">
+          <div className="d-flex align-items-center">
+            <i className="fas fa-edit me-2"></i>
+            <div>
+              <small className="fw-bold">Mode édition activé</small>
+              <small className="d-block text-muted">
+                {Object.keys(postData).filter(k => postData[k]).length} valeur(s) chargée(s)
+              </small>
+            </div>
+          </div>
+        </div>
+      )}
             <div className="category-details mt-3">
               <div className="row">
                 <div className="col-12">

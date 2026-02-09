@@ -1,11 +1,13 @@
-// redux/reducers/categoryReducer.js - VERSIÓN SIMPLIFICADA
+// 📂 redux/reducers/categoryReducer.js
 const initialState = {
+  // ==================== PARA HOME ====================
   categories: [],
   loading: false,
   error: null,
   currentPage: 1,
   hasMoreCategories: true,
   
+  // ==================== PARA CATEGORY PAGE ====================
   activeCategory: null,
   activeSubcategory: null,
   activeArticle: null,
@@ -16,14 +18,25 @@ const initialState = {
   postsError: null,
   postsCurrentPage: 1,
   hasMorePosts: false,
-  postsTotal: 0
+  postsTotal: 0,
+  
+  // ==================== NUEVO: PARA CATEGORY ACCORDION ====================
+  accordionCategories: [],      // Estructura jerárquica para accordion
+  accordionLoading: false,
+  accordionError: null
 };
 
 export const categoryReducer = (state = initialState, action) => {
   switch (action.type) {
-    // Home
+    // ==================== HOME ====================
     case 'LOADING':
       return { ...state, loading: action.payload };
+      
+    case 'GET_ALL_CATEGORIES_WITHOUT_POSTS_SUCCESS':
+      return { ...state, categories: action.payload, loading: false, error: null };
+      
+    case 'GET_ALL_CATEGORIES_WITHOUT_POSTS_FAIL':
+      return { ...state, loading: false, error: action.payload, categories: [] };
       
     case 'GET_ALL_CATEGORIES_WITH_POSTS':
       return { ...state, loading: true, error: null };
@@ -46,7 +59,7 @@ export const categoryReducer = (state = initialState, action) => {
         categories: []
       };
       
-    // Category Page
+    // ==================== CATEGORY PAGE ====================
     case 'GET_CATEGORY_POSTS':
       return { ...state, postsLoading: true, postsError: null };
       
@@ -81,7 +94,29 @@ export const categoryReducer = (state = initialState, action) => {
     case 'LOAD_MORE_POSTS':
       return { ...state, postsLoading: true };
       
-    // Navegación
+    // ==================== NUEVO: PARA CATEGORY ACCORDION ====================
+    case 'LOADING_CATEGORIES_ACCORDION':
+      return {
+        ...state,
+        accordionLoading: action.payload
+      };
+      
+    case 'GET_CATEGORIES_FOR_ACCORDION_SUCCESS':
+      return {
+        ...state,
+        accordionCategories: action.payload || [],
+        accordionLoading: false,
+        accordionError: null
+      };
+      
+    case 'GET_CATEGORIES_FOR_ACCORDION_FAIL':
+      return {
+        ...state,
+        accordionLoading: false,
+        accordionError: action.payload
+      };
+      
+    // ==================== NAVEGACIÓN ====================
     case 'SET_ACTIVE_CATEGORY':
       return {
         ...state,
@@ -136,7 +171,8 @@ export const categoryReducer = (state = initialState, action) => {
       return {
         ...state,
         error: null,
-        postsError: null
+        postsError: null,
+        accordionError: null
       };
       
     default:

@@ -1,5 +1,5 @@
-// 📁 src/components/post/DescriptionPost.js - VERSIÓN OPTIMIZADA
-import React from 'react';
+// 📁 src/components/post/DescriptionPost.js - ACTUALIZADO PARA TU MODELO
+import React, { useMemo } from 'react';
 import { Container, Row, Col, Badge, Button, Card } from 'react-bootstrap';
 import { useSelector, useDispatch } from 'react-redux';
 import { useHistory } from 'react-router-dom';
@@ -11,211 +11,181 @@ const DescriptionPost = ({ post }) => {
     const dispatch = useDispatch();
     const history = useHistory();
     
-    // 🎯 OBTENER TODOS LOS DATOS (comunes + específicos)
-    const getAllPostData = () => {
+    // 🎯 OBTENER TODOS LOS DATOS COMBINADOS (post + categorySpecificData)
+    const postData = useMemo(() => {
         if (!post) return {};
         
-        const allData = {};
+        const allData = { ...post };
         
-        // 1. Campos comunes directos del post
-        const commonFields = [
-            'title', 'description', 'price', 'categorie', 'subCategory',
-            'articleType', 'condition', 'wilaya', 'commune', 'address'
-        ];
-        
-        commonFields.forEach(field => {
-            if (post[field] !== undefined && post[field] !== null && post[field] !== '') {
-                allData[field] = post[field];
-            }
-        });
-        
-        // 2. Campos específicos de categorySpecificData
-        if (post.categorySpecificData) {
-            let specificData = {};
-            
-            if (post.categorySpecificData instanceof Map) {
-                post.categorySpecificData.forEach((value, key) => {
-                    if (value !== undefined && value !== null && value !== '') {
-                        specificData[key] = value;
-                    }
-                });
-            } else if (typeof post.categorySpecificData === 'object') {
-                Object.entries(post.categorySpecificData).forEach(([key, value]) => {
-                    if (value !== undefined && value !== null && value !== '') {
-                        specificData[key] = value;
-                    }
-                });
-            }
-            
-            // Combinar con campos comunes
-            Object.assign(allData, specificData);
+        // Si existe categorySpecificData, combinarlo al nivel principal
+        if (post.categorySpecificData && typeof post.categorySpecificData === 'object') {
+            // Para facilitar el acceso en la UI
+            Object.assign(allData, post.categorySpecificData);
         }
         
         return allData;
-    };
+    }, [post]);
     
-    const postData = getAllPostData();
     const user = post?.user || {};
-
-    // 🎨 EMOJIS PARA TODOS LOS CAMPOS
-    const getFieldEmoji = (field) => {
-        const emojiMap = {
-            // Campos comunes
-            'title': '🏷️', 'description': '📄', 'categorie': '🏷️', 
-            'subCategory': '🏷️', 'articleType': '🏷️', 'condition': '⭐',
-            'price': '💰', 'wilaya': '🏙️', 'commune': '🏘️', 'address': '📍',
+    
+    // 🎨 EMOJIS PARA TODOS LOS CAMPOS (optimizado)
+    const getFieldEmoji = (field, value) => {
+        // Mapa de emojis por campo
+        const fieldEmojiMap = {
+            // Campos del modelo
+            'title': '🏷️',
+            'description': '📄',
+            'categorie': '🏷️',
+            'subCategory': '🏷️',
+            'articleType': '🏷️',
+            'category': '📂',
+            'price': '💰',
+            'etat': '⭐',
+            'wilaya': '🏙️',
+            'commune': '🏘️',
+            'address': '📍',
+            'phone': '📱',
+            'email': '📧',
+            'views': '👁️',
+            'isActive': '✅',
+            'createdAt': '📅',
+            'updatedAt': '🔄',
             
-            // Vehículos
-            'marque': '🚗', 'modele': '🚘', 'annee': '📅', 'kilometrage': '🛣️',
-            'carburant': '⛽', 'boiteVitesse': '⚙️', 'couleur': '🎨', 'puissance': '⚡',
-            'portes': '🚪', 'sieges': '💺', 'cylindree': '⚙️',
+            // Campos comunes en categorySpecificData
+            'marque': '🚗', 'modele': '🚘', 'annee': '📅',
+            'kilometrage': '🛣️', 'carburant': '⛽', 'boiteVitesse': '⚙️',
+            'surface': '📏', 'chambres': '🛏️', 'sallesBain': '🚿',
+            'ram': '💾', 'stockage': '💿', 'processeur': '⚙️',
+            'ecran': '🖥️', 'camera': '📷', 'batterie': '🔋',
             
-            // Inmuebles
-            'surface': '📏', 'chambres': '🛏️', 'sallesBain': '🚿', 'etage': '🏢',
-            'meuble': '🛋️', 'jardin': '🌳', 'piscine': '🏊', 'garage': '🚗',
-            'parking': '🅿️', 'ascenseur': '🔼', 'balcon': '🌆', 'terrasse': '🏞️',
-            
-            // Teléfonos/Informática
-            'ram': '💾', 'stockage': '💿', 'processeur': '⚙️', 'ecran': '🖥️',
-            'systemeExploitation': '💻', 'camera': '📷', 'batterie': '🔋', 'reseau': '📡',
-            'capacite': '💾', 'taille': '📏', 'poids': '⚖️',
-            
-            // Electroménager
-            'typeAppareil': '🔌', 'classeEnergetique': '⚡', 'consommation': '💡',
-            
-            // Alimentación
-            'typeProduit': '🥫', 'origine': '🌍', 'saison': '🌞', 'dlc': '📅',
-            'ingredients': '🥗', 'conservation': '❄️', 'poids': '⚖️', 'conditionnement': '📦',
-            
-            // Servicios
-            'typeService': '🛠️', 'duree': '⏱️', 'experience': '🎓', 'disponibilite': '📅',
-            'zone': '🗺️', 'tarif': '💰',
-            
-            // Materiales
-            'typeMateriau': '🧱', 'quantite': '📦', 'dimensions': '📐',
-            
-            // Empleo
-            'salaire': '💰', 'typeContrat': '📝', 'experienceRequise': '🎓',
-            'competences': '💼', 'avantages': '🎁',
-            
-            // Viajes
-            'destination': '✈️', 'duree': '⏱️', 'transport': '🚗', 'hotel': '🏨',
-            
-            // Condiciones generales
-            'unite': '📏', 'typeOffre': '🏷️', 'echange': '🔄', 'livraison': '🚚',
-            'grossdetail': '📦', 'negotiable': '🤝', 'garantie': '🛡️', 'reference': '🔢',
-            
-            // Por defecto
+            // Por defecto según valor
             'default': '📋'
         };
         
-        return emojiMap[field] || emojiMap.default;
+        // Emojis especiales según valor (para etat/condition)
+        if (field === 'etat' || field === 'condition') {
+            const val = String(value).toLowerCase();
+            if (val.includes('neuf') || val === 'new') return '✨';
+            if (val.includes('occasion') || val === 'used') return '🔄';
+        }
+        
+        return fieldEmojiMap[field] || fieldEmojiMap.default;
     };
     
-    // 📝 FORMATO DE VALORES (MEJORADO)
+    // 📝 FORMATO DE VALORES (optimizado para tu modelo)
     const formatValue = (field, value) => {
-        if (value === undefined || value === null || value === '') return '-';
+        if (value === undefined || value === null || value === '') {
+            return 'Non spécifié';
+        }
         
         // Booleanos
         if (typeof value === 'boolean') {
             return value ? '✅ Oui' : '❌ Non';
         }
         
-        // Arrays
-        if (Array.isArray(value)) {
-            return value.join(', ');
+        // Fechas
+        if (field === 'createdAt' || field === 'updatedAt') {
+            return new Date(value).toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
         }
         
-        // Números con formato
+        // Números
         if (typeof value === 'number') {
-            // Precios
-            if (['price', 'prix', 'loyer', 'salaire', 'tarif'].includes(field)) {
+            // Precio
+            if (field === 'price') {
                 return new Intl.NumberFormat('fr-FR').format(value) + ' DA';
             }
-            // Medidas
-            if (['surface', 'superficie', 'taille', 'longueur', 'largeur'].includes(field)) {
-                return new Intl.NumberFormat('fr-FR').format(value) + ' m²';
+            // Vistas
+            if (field === 'views') {
+                return new Intl.NumberFormat('fr-FR').format(value) + ' vues';
             }
-            if (['kilometrage', 'km', 'distance'].includes(field)) {
+            // Kilometraje
+            if (field === 'kilometrage') {
                 return new Intl.NumberFormat('fr-FR').format(value) + ' km';
             }
-            if (['poids', 'weight', 'masse'].includes(field)) {
-                return new Intl.NumberFormat('fr-FR').format(value) + ' kg';
+            // Superficie
+            if (field === 'surface') {
+                return new Intl.NumberFormat('fr-FR').format(value) + ' m²';
             }
-            // Cantidades
-            if (['quantite', 'quantity', 'nombre', 'number', 'annee'].includes(field)) {
-                return new Intl.NumberFormat('fr-FR').format(value);
+            // Año
+            if (field === 'annee') {
+                return value;
             }
             return new Intl.NumberFormat('fr-FR').format(value);
+        }
+        
+        // Arrays (imágenes)
+        if (Array.isArray(value) && field === 'images') {
+            return `${value.length} image${value.length > 1 ? 's' : ''}`;
         }
         
         // Strings con valores especiales
         const stringValue = String(value).trim().toLowerCase();
         
         const specialValues = {
-            // Tipos de oferta
-            'vente': '🛒 Vente',
-            'location': '🏠 Location', 
-            'echange': '🔄 Échange',
-            'don': '🎁 Don',
-            'cherche': '🔍 Recherche',
-            
-            // Estados
+            // Estados del producto
             'neuf': '✨ Neuf',
             'occasion': '🔄 Occasion',
             'comme neuf': '✨ Comme neuf',
             'reconditionne': '🔄 Reconditionné',
             
-            // Tipo de venta
-            'gross': '📦 En gros',
-            'detail': '🛍️ Au détail',
-            'both': '📦 Gros & détail',
-            
-            // Booleanos
+            // Booleanos en texto
             'true': '✅ Oui',
             'false': '❌ Non',
-            'oui': '✅ Oui', 
+            'oui': '✅ Oui',
             'non': '❌ Non',
             
             // Combustibles
             'diesel': '⛽ Diesel',
-            'essence': '⛽ Essence', 
+            'essence': '⛽ Essence',
             'electrique': '⚡ Électrique',
             'hybride': '🔋 Hybride',
             
             // Transmisión
             'manuel': '⚙️ Manuel',
             'automatique': '⚙️ Automatique',
+            'semi-automatique': '⚙️ Semi-automatique',
             
-            // Mobiliario
-            'meuble': '🛋️ Meublé',
-            'non meuble': '🛋️ Non meublé'
+            // Estado de actividad
+            'active': '✅ Active',
+            'inactive': '❌ Inactive'
         };
         
         if (specialValues[stringValue]) {
             return specialValues[stringValue];
         }
         
-        // Capitalizar primera letra
+        // Capitalizar primera letra para strings normales
         return String(value).charAt(0).toUpperCase() + String(value).slice(1);
     };
     
     // 🏷️ TRADUCIR NOMBRES DE CAMPOS
     const translateField = (field) => {
         const translations = {
-            // Campos comunes
+            // Campos del modelo
             'title': 'Titre',
             'description': 'Description',
             'categorie': 'Catégorie',
             'subCategory': 'Sous-catégorie',
             'articleType': 'Type d\'article',
-            'condition': 'État',
+            'category': 'Catégorie (ID)',
             'price': 'Prix',
+            'etat': 'État',
             'wilaya': 'Wilaya',
             'commune': 'Commune',
             'address': 'Adresse',
+            'phone': 'Téléphone',
+            'email': 'Email',
+            'views': 'Vues',
+            'isActive': 'Active',
+            'createdAt': 'Date de publication',
+            'updatedAt': 'Dernière mise à jour',
+            'images': 'Images',
             
-            // Vehículos
+            // Campos comunes
             'marque': 'Marque',
             'modele': 'Modèle',
             'annee': 'Année',
@@ -223,89 +193,79 @@ const DescriptionPost = ({ post }) => {
             'carburant': 'Carburant',
             'boiteVitesse': 'Boîte vitesse',
             'couleur': 'Couleur',
-            'puissance': 'Puissance',
-            'portes': 'Portes',
-            'sieges': 'Sièges',
-            
-            // Inmuebles
             'surface': 'Surface',
             'chambres': 'Chambres',
             'sallesBain': 'Salles de bain',
             'etage': 'Étage',
             'meuble': 'Meublé',
-            'jardin': 'Jardin',
-            'piscine': 'Piscine',
-            'garage': 'Garage',
-            
-            // Teléfonos
             'ram': 'RAM',
             'stockage': 'Stockage',
             'processeur': 'Processeur',
             'ecran': 'Écran',
-            'systemeExploitation': 'Système',
+            'systeme': 'Système',
             'camera': 'Caméra',
-            'batterie': 'Batterie',
-            
-            // Condiciones
-            'unite': 'Unité',
-            'typeOffre': 'Type offre',
-            'echange': 'Échange',
-            'livraison': 'Livraison',
-            'grossdetail': 'Type vente',
-            'negotiable': 'Négociable',
-            'garantie': 'Garantie',
-            'reference': 'Référence'
+            'batterie': 'Batterie'
         };
         
-        return translations[field] || 
-               field.replace(/([A-Z])/g, ' $1')
-                    .toLowerCase()
-                    .replace(/^./, str => str.toUpperCase());
+        return translations[field] || field;
     };
     
-    // 📊 ORDENAR CAMPOS INTELIGENTEMENTE
-    const getOrderedFields = () => {
-        const fields = Object.keys(postData);
+    // 📊 ORDEN DE CAMPOS (prioridad según importancia)
+    const orderedFields = useMemo(() => {
+        if (!postData) return [];
         
-        // Orden de importancia
+        const fields = Object.keys(postData).filter(field => {
+            // Excluir campos internos o vacíos
+            const value = postData[field];
+            const excludeFields = ['_id', '__v', 'user', 'categorySpecificData'];
+            
+            if (excludeFields.includes(field)) return false;
+            if (value === undefined || value === null || value === '') return false;
+            if (field === 'images' && Array.isArray(value) && value.length === 0) return false;
+            
+            return true;
+        });
+        
+        // Orden de prioridad
         const priorityOrder = [
             // Información esencial
             'title', 'description', 'categorie', 'subCategory', 'articleType',
             
-            // Precio y condiciones
-            'price', 'condition', 'typeOffre', 'echange', 'livraison', 
-            'grossdetail', 'negotiable', 'garantie', 'reference',
+            // Precio y estado
+            'price', 'etat',
             
-            // Características principales (depende de categoría)
+            // Características principales
             'marque', 'modele', 'annee', 'kilometrage', 'surface', 'chambres',
-            'ram', 'stockage', 'processeur', 'typeProduit', 'typeService',
+            'ram', 'stockage', 'processeur',
             
             // Especificaciones
             'carburant', 'boiteVitesse', 'couleur', 'sallesBain', 'meuble',
-            'ecran', 'systemeExploitation', 'camera', 'batterie',
+            'ecran', 'camera', 'batterie',
             
-            // Ubicación (al final)
-            'wilaya', 'commune', 'address'
+            // Contacto
+            'phone', 'email',
+            
+            // Ubicación
+            'wilaya', 'commune', 'address',
+            
+            // Metadatos
+            'views', 'createdAt'
         ];
         
-        const priorityFields = [];
-        const otherFields = [];
-        
-        fields.forEach(field => {
-            if (priorityOrder.includes(field)) {
-                priorityFields.push(field);
-            } else {
-                otherFields.push(field);
-            }
+        return fields.sort((a, b) => {
+            const indexA = priorityOrder.indexOf(a);
+            const indexB = priorityOrder.indexOf(b);
+            
+            // Si ambos están en la lista de prioridad
+            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+            // Si solo A está en la lista
+            if (indexA !== -1) return -1;
+            // Si solo B está en la lista
+            if (indexB !== -1) return 1;
+            // Si ninguno está, orden alfabético
+            return a.localeCompare(b);
         });
-        
-        // Ordenar prioridades
-        priorityFields.sort((a, b) => priorityOrder.indexOf(a) - priorityOrder.indexOf(b));
-        // Otros alfabéticamente
-        otherFields.sort();
-        
-        return [...priorityFields, ...otherFields];
-    };
+    }, [postData]);
     
     // 💬 MANEJAR CONTACTO
     const handleContact = () => {
@@ -335,49 +295,28 @@ const DescriptionPost = ({ post }) => {
         history.push(`/message/${user._id}`);
     };
     
-    // 🎨 COMPONENTE CAMPO-VALOR (OPTIMIZADO PARA MOBILE)
+    // 📱 COMPONENTE CAMPO-VALOR
     const FieldRow = ({ field }) => {
         const value = postData[field];
-        const emoji = getFieldEmoji(field);
+        const emoji = getFieldEmoji(field, value);
         const formattedValue = formatValue(field, value);
         const label = translateField(field);
         
+        // No mostrar si no hay valor significativo
+        if (formattedValue === 'Non spécifié') return null;
+        
         return (
-            <div className="field-row d-flex align-items-center justify-content-between p-3 border-bottom">
-                {/* Lado izquierdo: Emoji + Label */}
-                <div className="field-left d-flex align-items-center gap-2" style={{ flex: 1, minWidth: 0 }}>
-                    <span className="field-emoji" style={{ 
-                        fontSize: '1.3rem',
-                        flexShrink: 0,
-                        width: '32px',
-                        textAlign: 'center'
-                    }}>
+            <div className="field-row d-flex align-items-center p-3 border-bottom">
+                <div className="field-label d-flex align-items-center gap-2" style={{ flex: 1 }}>
+                    <span className="field-emoji" style={{ fontSize: '1.2rem', minWidth: '32px' }}>
                         {emoji}
                     </span>
-                    <span className="field-label text-truncate fw-semibold" style={{ 
-                        fontSize: '0.95rem',
-                        color: '#4a5568'
-                    }}>
-                        {label}
+                    <span className="fw-medium text-muted" style={{ fontSize: '0.9rem' }}>
+                        {label}:
                     </span>
                 </div>
-                
-                {/* Separador para móvil */}
-                <span className="mobile-separator mx-2 d-none d-sm-block" style={{ color: '#cbd5e0' }}>
-                    :
-                </span>
-                
-                {/* Lado derecho: Valor */}
-                <div className="field-right text-truncate" style={{ 
-                    flex: 1,
-                    textAlign: 'right',
-                    minWidth: 0
-                }}>
-                    <span className="field-value fw-bold" style={{ 
-                        fontSize: '1rem',
-                        color: '#2d3748',
-                        lineHeight: '1.3'
-                    }}>
+                <div className="field-value text-end" style={{ flex: 1 }}>
+                    <span className="fw-bold" style={{ color: '#1a202c' }}>
                         {formattedValue}
                     </span>
                 </div>
@@ -385,116 +324,67 @@ const DescriptionPost = ({ post }) => {
         );
     };
     
-    // 🏷️ RENDERIZAR HEADER
+    // 🏷️ HEADER DE LA PUBLICACIÓN
     const renderHeader = () => {
         const title = postData.title || 'Annonce';
         const price = postData.price;
         const categorie = postData.categorie;
         const subCategory = postData.subCategory;
-        const condition = postData.condition;
+        const etat = postData.etat;
         
         return (
             <div className="mb-4">
-                <div className="d-flex flex-column gap-3">
-                    {/* Título y categorías */}
-                    <div className="d-flex align-items-start gap-3">
-                        <div className="category-emoji" style={{ 
-                            fontSize: '2.8rem',
-                            lineHeight: '1',
-                            flexShrink: 0
+                <div className="d-flex justify-content-between align-items-start gap-3">
+                    <div style={{ flex: 1 }}>
+                        <h1 className="fw-bold mb-2" style={{ 
+                            fontSize: '1.5rem', 
+                            color: '#1a202c',
+                            lineHeight: '1.3'
                         }}>
-                            {getFieldEmoji(categorie || 'default')}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                            <h1 className="fw-bold mb-2" style={{ 
-                                fontSize: '1.5rem', 
-                                lineHeight: '1.3',
-                                color: '#1a202c',
-                                wordBreak: 'break-word'
-                            }}>
-                                {title}
-                            </h1>
-                            <div className="d-flex flex-wrap gap-1">
-                                {categorie && (
-                                    <Badge bg="primary" className="px-2 py-1" style={{ fontSize: '0.8rem' }}>
-                                        {categorie.charAt(0).toUpperCase() + categorie.slice(1)}
-                                    </Badge>
-                                )}
-                                {subCategory && (
-                                    <Badge bg="secondary" className="px-2 py-1" style={{ fontSize: '0.8rem' }}>
-                                        {subCategory}
-                                    </Badge>
-                                )}
-                                {condition && (
-                                    <Badge bg="info" className="px-2 py-1" style={{ fontSize: '0.8rem' }}>
-                                        {formatValue('condition', condition).replace(/^[✅❌✨🔄]\s*/, '')}
-                                    </Badge>
-                                )}
-                            </div>
+                            {title}
+                        </h1>
+                        <div className="d-flex flex-wrap gap-2 align-items-center">
+                            {categorie && (
+                                <Badge bg="primary" className="px-2 py-1">
+                                    {categorie}
+                                </Badge>
+                            )}
+                            {subCategory && (
+                                <Badge bg="secondary" className="px-2 py-1">
+                                    {subCategory}
+                                </Badge>
+                            )}
+                            {etat && (
+                                <Badge bg="info" className="px-2 py-1">
+                                    {formatValue('etat', etat)}
+                                </Badge>
+                            )}
                         </div>
                     </div>
                     
-                    {/* Precio */}
-                    {price && (
-                        <div className="price-container">
-                            <div className="d-inline-flex align-items-center gap-2 bg-success text-white px-3 py-2 rounded-2">
-                                <span style={{ fontSize: '1.2rem' }}>💰</span>
-                                <div>
-                                    <div className="small text-white-50">PRIX</div>
-                                    <div className="fw-bold" style={{ fontSize: '1.5rem' }}>
-                                        {formatValue('price', price)}
-                                    </div>
-                                </div>
+                    {price > 0 && (
+                        <div className="text-end">
+                            <div className="text-muted small">Prix</div>
+                            <div className="fw-bold fs-4 text-success">
+                                {formatValue('price', price)}
                             </div>
                         </div>
                     )}
                 </div>
+                
+                {/* Descripción */}
+                {postData.description && (
+                    <div className="mt-3 p-3 bg-light rounded">
+                        <p className="mb-0" style={{ lineHeight: '1.6' }}>
+                            {postData.description}
+                        </p>
+                    </div>
+                )}
             </div>
         );
     };
     
-    // 📱 BOTONES DE ACCIÓN
-    const renderActionButtons = () => {
-        const telephone = postData.telephone || postData.phone;
-        
-        return (
-            <div className="mt-4 pt-3 border-top">
-                <Row className="g-2">
-                    {telephone && (
-                        <Col xs={6}>
-                            <Button 
-                                variant="success" 
-                                size="md"
-                                className="w-100 d-flex align-items-center justify-content-center gap-2 py-2"
-                                style={{ fontSize: '0.9rem', borderRadius: '8px' }}
-                                onClick={() => window.location.href = `tel:${telephone}`}
-                            >
-                                <span>📞</span>
-                                <span className="d-none d-sm-inline">Appeler</span>
-                            </Button>
-                        </Col>
-                    )}
-                    
-                    <Col xs={telephone ? 6 : 12}>
-                        {auth.user && user?._id && auth.user._id !== user._id && (
-                            <Button 
-                                variant="primary" 
-                                size="md"
-                                className="w-100 d-flex align-items-center justify-content-center gap-2 py-2"
-                                style={{ fontSize: '0.9rem', borderRadius: '8px' }}
-                                onClick={handleContact}
-                            >
-                                <span>💬</span>
-                                <span className="d-none d-sm-inline">Contacter</span>
-                            </Button>
-                        )}
-                    </Col>
-                </Row>
-            </div>
-        );
-    };
-    
-    // ✅ VERIFICACIONES
+    // ✅ VALIDACIONES
     if (!post) {
         return (
             <Container className="py-4 text-center">
@@ -506,91 +396,89 @@ const DescriptionPost = ({ post }) => {
         );
     }
     
-    const orderedFields = getOrderedFields();
-    
     if (orderedFields.length === 0) {
         return (
             <Container className="py-4">
-                <div className="alert alert-info text-center py-3 rounded-2">
-                    <div className="fs-4 mb-2">📄</div>
-                    <h6 className="mb-1">Aucune information disponible</h6>
-                    <p className="mb-0 small text-muted">Cette annonce ne contient pas de détails.</p>
+                <div className="alert alert-info">
+                    <h6 className="mb-0">Aucune information disponible</h6>
                 </div>
             </Container>
         );
     }
     
     return (
-        <Container className="py-3" style={{ maxWidth: '900px' }}>
+        <Container className="py-3">
             {/* HEADER */}
             {renderHeader()}
             
-            {/* LISTA DE CAMPOS */}
-            <Card className="border-0 shadow-sm rounded-2 overflow-hidden mb-3">
+            {/* DETALLES */}
+            <Card className="border-0 shadow-sm mb-4">
+                <Card.Header className="bg-white border-0 py-3">
+                    <h5 className="mb-0 fw-bold">📋 Détails de l'annonce</h5>
+                </Card.Header>
                 <Card.Body className="p-0">
-                    {orderedFields.map(field => (
-                        <FieldRow key={field} field={field} />
-                    ))}
+                    {orderedFields
+                        .filter(field => !['title', 'description', 'price', 'etat'].includes(field))
+                        .map(field => (
+                            <FieldRow key={field} field={field} />
+                        ))}
                 </Card.Body>
             </Card>
             
-            {/* BOTONES */}
-            {renderActionButtons()}
+            {/* BOTONES DE ACCIÓN */}
+            <div className="d-flex gap-3">
+                {postData.phone && (
+                    <Button 
+                        variant="success" 
+                        className="flex-grow-1 d-flex align-items-center justify-content-center gap-2"
+                        onClick={() => window.location.href = `tel:${postData.phone}`}
+                    >
+                        <span>📞</span>
+                        <span>Appeler</span>
+                    </Button>
+                )}
+                
+                {auth.user && user?._id && auth.user._id !== user._id && (
+                    <Button 
+                        variant="primary" 
+                        className="flex-grow-1 d-flex align-items-center justify-content-center gap-2"
+                        onClick={handleContact}
+                    >
+                        <span>💬</span>
+                        <span>Contacter</span>
+                    </Button>
+                )}
+            </div>
             
-            {/* ESTILOS PARA MOBILE */}
+            {/* ESTILOS */}
             <style jsx>{`
                 .field-row {
-                    min-height: 56px;
+                    min-height: 60px;
                     transition: background-color 0.2s;
                 }
                 
                 .field-row:hover {
-                    background-color: #f8fafc;
+                    background-color: #f8f9fa;
                 }
                 
                 .border-bottom {
-                    border-color: #e2e8f0 !important;
+                    border-color: #e9ecef !important;
                 }
                 
                 .border-bottom:last-child {
                     border-bottom: none !important;
                 }
                 
-                /* MOBILE OPTIMIZATIONS */
-                @media (max-width: 576px) {
+                @media (max-width: 768px) {
                     .field-row {
-                        padding: 12px 16px !important;
-                        min-height: 52px;
-                    }
-                    
-                    .field-emoji {
-                        font-size: 1.2rem !important;
-                        width: 28px !important;
-                    }
-                    
-                    .field-label {
-                        font-size: 0.9rem !important;
+                        flex-direction: column;
+                        align-items: flex-start !important;
+                        gap: 8px;
                     }
                     
                     .field-value {
-                        font-size: 0.95rem !important;
-                    }
-                    
-                    .mobile-separator {
-                        display: inline-block !important;
-                        margin: 0 6px !important;
-                    }
-                }
-                
-                @media (min-width: 577px) and (max-width: 768px) {
-                    .mobile-separator {
-                        display: inline-block !important;
-                    }
-                }
-                
-                @media (min-width: 769px) {
-                    .mobile-separator {
-                        display: none !important;
+                        text-align: left !important;
+                        width: 100%;
                     }
                 }
             `}</style>

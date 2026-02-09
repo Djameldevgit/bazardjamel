@@ -1,130 +1,1000 @@
+// 📂 controllers/postController.js
+const Post = require('../models/postModel');
+const Category = require('../models/categoryModel');
+const User = require('../models/userModel');
+const Boutique = require('../models/boutiqueModel');
+const mongoose = require('mongoose');
 
-_id
-: 
-ObjectId('6977a21abc259c17fc9d60e2')
-parent
-: 
-ObjectId('6977a21abc259c17fc9d60d0')
+class APIfeatures {
+  constructor(query, queryString) {
+    this.query = query;
+    this.queryString = queryString;
+  }
+  paginating() {
+    const page = parseInt(this.queryString.page) || 1;
+    const limit = parseInt(this.queryString.limit) || 9;
+    const skip = (page - 1) * limit;
+    this.query = this.query.skip(skip).limit(limit);
+    return this;
+  }
+}
 
-ancestors
-: 
-Array (empty)
-order
-: 
-0
-hasChildren
-: 
-false
-isLeaf
-: 
-false
-postCount
-: 
-0
-isActive
-: 
-true
-name
-: 
-"Pyjamas"
-slug
-: 
-"vetements-pyjamas-homme"
-level
-: 
-3
-createdAt
-: 
-2026-01-26T17:19:22.952+00:00
-updatedAt
-: 
-2026-01-26T17:19:22.952+00:00
-__v
-: 
-0
-_id
-: 
-ObjectId('6977a21bbc259c17fc9d60e4')
-parent
-: 
-ObjectId('6977a21abc259c17fc9d60d0')
+const postCtrl = {
+  /**
+   * 🆕 CREAR NUEVO POST
+   */
+   createPost: async function (req, res) {
+    try {
+      console.log('📥 POST recibido en /api/posts');
+  
+      // 🔧 Aceptar tanto la estructura vieja como nueva
+      let postData, images, authData;
+  
+      if (req.body.postData) {
+        postData = req.body.postData || {};
+        images = req.body.images || [];
+        authData = req.body.auth || {};
+      } else {
+        postData = req.body || {};
+        images = req.body.images || [];
+        authData = {};
+      }
+  
+      console.log('🔍 Estructura recibida:', req.body.postData ? 'nueva' : 'plana');
+      console.log('📊 Datos recibidos:', {
+        categorie: postData.categorie,
+        subCategory: postData.subCategory,
+        title: postData.title,
+        wilaya: postData.wilaya,
+        commune: postData.commune,
+        imagesCount: images.length
+      });
+  
+      // 🧱 Validación de campos obligatorios
+      const requiredFields = ['categorie', 'subCategory', 'title', 'wilaya', 'commune', 'price', 'etat'];
+      const missingFields = requiredFields.filter(f => !postData[f] || postData[f].toString().trim() === '');
+  
+      if (missingFields.length > 0) {
+        console.error('❌ Campos faltantes:', missingFields);
+        return res.status(400).json({
+          error: `Faltan campos obligatorios: ${missingFields.join(', ')}`,
+          receivedData: postData
+        });
+      }
+  
+      // 🔍 Obtener usuario
+      let userId;
+      if (req.user._id) userId = req.user._id;
+      else if (authData.user._id) userId = authData.user._id;
+      else return res.status(401).json({ error: 'Usuario no autenticado' });
+  
+      // 🔍 Buscar la categoría adecuada (nivel 3 > 2 > 1)
+      let category = null;
+      if (postData.articleType) {
+        category = await Category.findOne({ name: postData.articleType, level: 3 });
+      }
+      if (!category && postData.subCategory) {
+        category = await Category.findOne({ name: postData.subCategory, level: 2 });
+      }
+      if (!category && postData.categorie) {
+        category = await Category.findOne({ name: postData.categorie, level: 1 });
+      }
+  
+      console.log('🔍 Categoría encontrada:', category ? category.name : 'No encontrada');
+  
+      // 🧱 Crear nuevo Post
+      const newPost = new Post({
+        user: userId,
+  
+        // Campos de categoría
+        categorie: postData.categorie,
+        subCategory: postData.subCategory,
+        articleType: postData.articleType || '',
+        category: category ? category._id : null, // ← aquí reemplazamos categoryRef
+  
+        // Información general
+        title: postData.title,
+        description: postData.description || '',
+        price: parseFloat(postData.price) || 0,
+        etat: postData.etat || 'occasion',
+  
+        // Ubicación y contacto
+        wilaya: postData.wilaya,
+        commune: postData.commune,
+        address: postData.address || '',
+        phone: postData.phone || '',
+        email: postData.email || '',
+  
+        // Datos específicos
+        categorySpecificData: postData.categorySpecificData || {},
+  
+        // Imágenes
+        images: Array.isArray(images)
+          ? images.map(img => ({
+              url: img.url || img,
+              public_id: img.public_id || '',
+              isMain: img.isMain || false,
+              isExisting: img.isExisting || false
+            }))
+          : [],
+  
+        // Estado
+        isActive: true,
+        isPromoted: false,
+        views: 0,
+        status: 'active'
+      });
+  
+      console.log('💾 Guardando post con usuario:', userId);
+  
+      // 💾 Guardar en MongoDB
+      const savedPost = await newPost.save();
+  
+      console.log('✅ Post guardado con ID:', savedPost._id);
+  
+      // 🔍 Populate user
+      await savedPost.populate('user', 'username avatar');
+  
+      return res.status(201).json({
+        success: true,
+        message: '✅ Post creado correctamente',
+        newPost: savedPost,
+      });
+    } catch (err) {
+      console.error('❌ Error en createPost:', err);
+      return res.status(500).json({
+        error: 'Error al crear el post',
+        details: err.message || err.toString(),
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      });
+    }
+  },
+  
+  
+  /**
+   * ✏️ ACTUALIZAR POST
+   */
+  updatePost: async function (req, res) {
+    try {
+      const id = req.params.id;
+      const body = req.body || {};
+      const postData = body.postData || {};
+      const images = body.images || [];
+      const auth = body.auth || {};
 
-ancestors
-: 
-Array (empty)
-order
-: 
-0
-hasChildren
-: 
-false
-isLeaf
-: 
-false
-postCount
-: 
-0
-isActive
-: 
-true
-name
-: 
-"Maillots de bain"
-slug
-: 
-"vetements-maillots-bain-homme"
-level
-: 
-3
-createdAt
-: 
-2026-01-26T17:19:23.004+00:00
-updatedAt
-: 
-2026-01-26T17:19:23.004+00:00
-__v
-: 
-0
-_id
-: 
-ObjectId('6977a21bbc259c17fc9d60e6')
-parent
-: 
-ObjectId('6977a21abc259c17fc9d60d0')
+      // 🧱 Validación de ID y usuario
+      if (!id) {
+        return res.status(400).json({ error: 'ID del post no proporcionado' });
+      }
 
-ancestors
-: 
-Array (empty)
-order
-: 
-0
-hasChildren
-: 
-false
-isLeaf
-: 
-false
-postCount
-: 
-0
-isActive
-: 
-true
-name
-: 
-"Casquettes & Chapeaux"
-slug
-: 
-"vetements-casquettes-chapeaux-homme"
-level
-: 
-3
-createdAt
-: 
-2026-01-26T17:19:23.053+00:00
-updatedAt
-: 
-2026-01-26T17:19:23.053+00:00
-__v
-: 
-0
+      if (!auth || !auth.user || !auth.user._id) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+
+      // 🧱 Buscar post existente
+      const existingPost = await Post.findById(id);
+      if (!existingPost) {
+        return res.status(404).json({ error: 'Post no encontrado' });
+      }
+
+      // ⚠️ Verificar propiedad del post
+      if (existingPost.user.toString() !== auth.user._id.toString()) {
+        return res.status(403).json({ error: 'No autorizado para modificar este post' });
+      }
+
+      // 🔍 Buscar nueva categoría (si cambió)
+      let categoryRef = existingPost.categoryRef;
+      
+      // Solo buscar nueva categoría si se proporciona alguno de estos campos
+      if (postData.articleType || postData.subCategory || postData.categorie) {
+        let foundCategory = null;
+        
+        // Prioridad: articleType > subCategory > categorie
+        if (postData.articleType) {
+          foundCategory = await Category.findOne({
+            name: postData.articleType,
+            level: 3
+          });
+        }
+        
+        if (!foundCategory && postData.subCategory) {
+          foundCategory = await Category.findOne({
+            name: postData.subCategory,
+            level: 2
+          });
+        }
+        
+        if (!foundCategory && postData.categorie) {
+          foundCategory = await Category.findOne({
+            name: postData.categorie,
+            level: 1
+          });
+        }
+        
+        if (foundCategory) {
+          categoryRef = foundCategory._id;
+        }
+      }
+
+      // 🧱 Actualizar campos básicos
+      const updateFields = {};
+      
+      if (postData.categorie) updateFields.categorie = postData.categorie;
+      if (postData.subCategory) updateFields.subCategory = postData.subCategory;
+      if (postData.articleType) updateFields.articleType = postData.articleType;
+      if (categoryRef) updateFields.categoryRef = categoryRef;
+      
+      if (postData.title) updateFields.title = postData.title;
+      if (postData.description !== undefined) updateFields.description = postData.description;
+
+      if (postData.price !== undefined && postData.price !== null && postData.price !== '') {
+        updateFields.price = parseFloat(postData.price);
+      }
+
+      if (postData.etat) updateFields.etat = postData.etat;
+
+      if (postData.wilaya) updateFields.wilaya = postData.wilaya;
+      if (postData.commune) updateFields.commune = postData.commune;
+      if (postData.address !== undefined) updateFields.address = postData.address;
+      if (postData.phone !== undefined) updateFields.phone = postData.phone;
+      if (postData.email !== undefined) updateFields.email = postData.email;
+
+      // 🧩 Datos específicos
+      if (postData.categorySpecificData) {
+        updateFields.categorySpecificData = postData.categorySpecificData;
+      }
+
+      // 🖼️ Imágenes
+      if (Array.isArray(images) && images.length > 0) {
+        updateFields.images = images.map(img => ({
+          url: img.url || img,
+          public_id: img.public_id || '',
+          isMain: img.isMain || false,
+          isExisting: img.isExisting || false
+        }));
+      }
+
+      // 💾 Guardar cambios
+      const updatedPost = await Post.findByIdAndUpdate(
+        id,
+        { $set: updateFields },
+        { new: true, runValidators: true }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: '✅ Post actualizado correctamente',
+        post: updatedPost,
+      });
+    } catch (err) {
+      console.error('❌ Error en updatePost:', err);
+      return res.status(500).json({
+        error: 'Error al actualizar el post',
+        details: err.message || err.toString(),
+      });
+    }
+  },
+  
+  /**
+   * 🔍 FILTRAR POSTS POR CATEGORÍA
+   */
+  filterPosts: async (req, res) => {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 12;
+      const skip = (page - 1) * limit;
+
+      const { category: categoryParam, sub } = req.query;
+
+      if (!categoryParam) {
+        return res.json({
+          success: true,
+          posts: [],
+          total: 0,
+          page,
+          hasMore: false,
+          message: 'Se requiere categoría'
+        });
+      }
+
+      // 🔹 1️⃣ Obtener la categoría principal
+      let categoryDoc = await Category.findOne({ slug: categoryParam }).lean();
+      if (!categoryDoc && mongoose.Types.ObjectId.isValid(categoryParam)) {
+        categoryDoc = await Category.findById(categoryParam).lean();
+      }
+      if (!categoryDoc) {
+        return res.json({
+          success: true,
+          posts: [],
+          total: 0,
+          page,
+          hasMore: false,
+          message: 'Categoría no encontrada'
+        });
+      }
+
+      // 🔹 2️⃣ Función helper para obtener IDs de hijos recursivamente
+      const getChildCategories = async (catId) => {
+        const children = await Category.find({ parent: catId, isActive: true })
+          .select('_id level name slug emoji icon iconType iconColor bgColor hasChildren isLeaf order')
+          .sort({ order: 1 })
+          .lean();
+
+        let allIds = children.map(c => c._id);
+
+        for (const child of children) {
+          const subIds = await getChildCategories(child._id);
+          allIds = [...allIds, ...subIds];
+        }
+
+        return allIds;
+      };
+
+      // 🔹 3️⃣ Determinar categorías a filtrar según nivel
+      let children = [];
+      let allCategoryIds = [categoryDoc._id];
+
+      if (categoryDoc.level === 1 && sub) {
+        // Buscar subcategoría específica si existe
+        const subDoc = await Category.findOne({ 
+          slug: sub, 
+          parent: categoryDoc._id, 
+          level: 2, 
+          isActive: true 
+        }).lean();
+        
+        if (subDoc) {
+          const articleIds = await getChildCategories(subDoc._id);
+          children = await Category.find({ 
+            parent: subDoc._id, 
+            level: 3, 
+            isActive: true 
+          })
+            .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf order')
+            .sort({ order: 1 })
+            .lean();
+          allCategoryIds = [subDoc._id, ...articleIds];
+        } else {
+          // fallback: todas las subcategorías
+          children = await Category.find({ 
+            parent: categoryDoc._id, 
+            level: 2, 
+            isActive: true 
+          })
+            .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf order')
+            .sort({ order: 1 })
+            .lean();
+          allCategoryIds = [categoryDoc._id, ...children.map(c => c._id)];
+        }
+      } else {
+        // 🔹 CASO: Nivel 2 o 3
+        const childIds = await getChildCategories(categoryDoc._id);
+      
+        children = await Category.find({ 
+          parent: categoryDoc._id, 
+          isActive: true 
+        })
+          .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf order')
+          .sort({ order: 1 })
+          .lean();
+      
+        allCategoryIds = [categoryDoc._id, ...childIds];
+      }
+
+      // 🔹 4️⃣ Consultar posts activos
+      const filter = { 
+        categoryRef: { $in: allCategoryIds }, 
+        isActive: true,
+        status: 'active'
+      };
+
+      const [posts, total] = await Promise.all([
+        Post.find(filter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .select('_id title price images createdAt wilaya commune user description etat views')
+          .populate('user', 'username avatar')
+          .populate('categoryRef', 'name slug icon level')
+          .lean(),
+        Post.countDocuments(filter)
+      ]);
+
+      const hasMore = page * limit < total;
+      const totalPages = Math.ceil(total / limit);
+
+      // 🔹 5️⃣ Respuesta final
+      return res.json({
+        success: true,
+        posts,
+        total,
+        page,
+        limit,
+        hasMore,
+        totalPages,
+        categoryInfo: {
+          _id: categoryDoc._id,
+          name: categoryDoc.name,
+          slug: categoryDoc.slug,
+          level: categoryDoc.level,
+          emoji: categoryDoc.emoji || '',
+          description: categoryDoc.description || '',
+          icon: categoryDoc.icon || '',
+          iconType: categoryDoc.iconType || 'image-png',
+          iconColor: categoryDoc.iconColor || '#666666',
+          bgColor: categoryDoc.bgColor || '#FFFFFF'
+        },
+        children: children.map(c => ({
+          _id: c._id,
+          name: c.name,
+          slug: c.slug,
+          level: c.level,
+          emoji: c.emoji || '',
+          hasChildren: c.hasChildren || false,
+          isLeaf: c.isLeaf || false,
+          icon: c.icon || '',
+          iconType: c.iconType || 'image-png',
+          iconColor: c.iconColor || categoryDoc.iconColor || '#666666',
+          bgColor: c.bgColor || categoryDoc.bgColor || '#FFFFFF'
+        }))
+      });
+
+    } catch (error) {
+      console.error('❌ Error en filterPosts optimizado:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error al filtrar posts', 
+        error: error.message 
+      });
+    }
+  },
+  
+  /**
+   * 📄 OBTENER TODOS LOS POSTS (PAGINADOS)
+   */
+  getPosts: async (req, res) => {
+    try {
+      const { page = 1, limit = 9, category } = req.query;
+      const skip = (page - 1) * limit;
+
+      // Construir query
+      let query = { isActive: true, status: 'active' };
+
+      // Si hay categoría, filtrar
+      if (category && category !== 'all') {
+        query.categorie = category;
+      }
+
+      // Obtener posts
+      const posts = await Post.find(query)
+        .skip(skip)
+        .limit(parseInt(limit))
+        .sort('-createdAt')
+        .populate("user", "username avatar")
+        .populate("categoryRef", "name slug");
+
+      // Contar total
+      const total = await Post.countDocuments(query);
+
+      res.json({
+        success: true,
+        result: posts.length,
+        total,
+        page: parseInt(page),
+        totalPages: Math.ceil(total / limit),
+        posts
+      });
+
+    } catch (err) {
+      console.error('❌ Error en getPosts:', err);
+      return res.status(500).json({ 
+        success: false,
+        message: err.message 
+      });
+    }
+  },
+
+  /**
+   * 🔍 OBTENER POST DETALLADO
+   */
+  getPost: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const post = await Post.findById(id)
+        .populate('user', 'username avatar phone email')
+        .populate('categoryRef', 'name slug emoji level')
+        .populate({
+          path: 'comments',
+          populate: { 
+            path: 'user', 
+            select: 'username avatar' 
+          }
+        });
+
+      if (!post) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'El post no existe' 
+        });
+      }
+
+      // Incrementar vistas
+      await Post.findByIdAndUpdate(id, { $inc: { views: 1 } });
+
+      res.json({ 
+        success: true, 
+        post 
+      });
+    } catch (error) {
+      console.error('Error en getPost:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error al obtener post', 
+        error: error.message 
+      });
+    }
+  },
+
+  /**
+   * 🔎 OBTENER POST POR ID (Alternativa)
+   */
+  getPostById: async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'ID inválido' 
+        });
+      }
+
+      const post = await Post.findById(id)
+        .populate('categoryRef', 'name slug emoji level')
+        .populate('user', 'username avatar phone email')
+        .lean();
+
+      if (!post) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Post no encontrado' 
+        });
+      }
+
+      // Incrementar vistas
+      await Post.findByIdAndUpdate(id, { $inc: { views: 1 } });
+
+      // Obtener posts relacionados
+      const related = await Post.find({
+        categoryRef: post.categoryRef,
+        _id: { $ne: post._id },
+        isActive: true
+      })
+        .sort({ createdAt: -1 })
+        .limit(6)
+        .select('title images price etat createdAt')
+        .lean();
+
+      res.json({ 
+        success: true, 
+        post: { 
+          ...post, 
+          relatedPosts: related 
+        } 
+      });
+    } catch (error) {
+      console.error('Error en getPostById:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error al obtener post', 
+        error: error.message 
+      });
+    }
+  },
+
+  /**
+   * 👤 POSTS POR USUARIO
+   */
+  getUserPosts: async (req, res) => {
+    try {
+      const { id } = req.params; // El ID del usuario
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 6;
+      const skip = (page - 1) * limit;
+
+      console.log(`🔍 Buscando posts del usuario ID: ${id}`);
+      console.log(`📄 Página: ${page}, Límite: ${limit}`);
+
+      // Validar ObjectId
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID de usuario inválido'
+        });
+      }
+
+      // Verificar si el usuario existe
+      const userExists = await User.findById(id).select('_id username');
+      if (!userExists) {
+        return res.status(404).json({
+          success: false,
+          message: 'Usuario no encontrado'
+        });
+      }
+
+      // Query para posts del usuario
+      const query = {
+        user: new mongoose.Types.ObjectId(id),
+        isActive: true
+      };
+
+      // Ejecutar búsqueda y conteo en paralelo
+      const [posts, total] = await Promise.all([
+        Post.find(query)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .populate('user', 'username avatar')
+          .populate('categoryRef', 'name slug emoji')
+          .lean(),
+        Post.countDocuments(query)
+      ]);
+
+      // Calcular paginación
+      const totalPages = Math.ceil(total / limit);
+      const hasNextPage = page < totalPages;
+      const hasPrevPage = page > 1;
+
+      console.log(`✅ Encontrados ${posts.length} posts de ${total} totales`);
+
+      res.json({
+        success: true,
+        posts,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalPosts: total,
+          hasNextPage,
+          hasPrevPage,
+          nextPage: hasNextPage ? page + 1 : null,
+          prevPage: hasPrevPage ? page - 1 : null
+        },
+        user: {
+          _id: userExists._id,
+          username: userExists.username
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Error en getUserPosts:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al obtener posts del usuario',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  },
+
+  /**
+   * 🗑️ ELIMINAR POST (SOFT DELETE)
+   */
+  deletePost: async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Verificar si el post existe
+      const post = await Post.findById(id);
+      if (!post) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Post no encontrado' 
+        });
+      }
+
+      // Verificar propiedad (si hay usuario autenticado)
+      if (req.user && post.user && req.user._id && post.user.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'No autorizado para eliminar este post' 
+        });
+      }
+
+      // Soft delete
+      const deleted = await Post.findByIdAndUpdate(
+        id,
+        { 
+          isActive: false, 
+          status: 'deleted', 
+          deletedAt: new Date() 
+        },
+        { new: true }
+      );
+
+      res.json({ 
+        success: true, 
+        message: 'Post eliminado correctamente', 
+        post: deleted 
+      });
+    } catch (error) {
+      console.error('Error en deletePost:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error al eliminar post', 
+        error: error.message 
+      });
+    }
+  },
+
+  /**
+   * 🔥 POSTS DESTACADOS
+   */
+  getFeaturedPosts: async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit) || 6;
+      const posts = await Post.find({ 
+        isActive: true, 
+        isPromoted: true 
+      })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .populate('user', 'username avatar')
+        .populate('categoryRef', 'name slug emoji')
+        .lean();
+      
+      res.json({ 
+        success: true, 
+        featuredPosts: posts 
+      });
+    } catch (error) {
+      console.error('Error en getFeaturedPosts:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error al obtener destacados', 
+        error: error.message 
+      });
+    }
+  },
+
+  /**
+   * 📅 POSTS RECIENTES
+   */
+  getRecentPosts: async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit) || 20;
+      const posts = await Post.find({ 
+        isActive: true 
+      })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .select('title images price etat createdAt wilaya commune')
+        .populate('user', 'username avatar')
+        .populate('categoryRef', 'name slug emoji')
+        .lean();
+      
+      res.json({
+        success: true,
+        recentPosts: posts,
+        total: posts.length
+      });
+    } catch (error) {
+      console.error('Error en getRecentPosts:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al obtener posts recientes',
+        error: error.message
+      });
+    }
+  },
+
+  /**
+   * 🔍 BUSCAR POSTS
+   */
+  searchPosts: async (req, res) => {
+    try {
+      const { query } = req.params;
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 12;
+      const skip = (page - 1) * limit;
+
+      const searchQuery = {
+        $or: [
+          { title: { $regex: query, $options: 'i' } },
+          { description: { $regex: query, $options: 'i' } },
+          { categorie: { $regex: query, $options: 'i' } },
+          { subCategory: { $regex: query, $options: 'i' } }
+        ],
+        isActive: true,
+        status: 'active'
+      };
+
+      const [posts, total] = await Promise.all([
+        Post.find(searchQuery)
+          .skip(skip)
+          .limit(limit)
+          .sort({ createdAt: -1 })
+          .populate('user', 'username avatar')
+          .populate('categoryRef', 'name slug')
+          .lean(),
+        Post.countDocuments(searchQuery)
+      ]);
+
+      res.json({
+        success: true,
+        posts,
+        pagination: {
+          currentPage: page,
+          totalPages: Math.ceil(total / limit),
+          totalPosts: total,
+          hasMore: page * limit < total
+        },
+        query
+      });
+    } catch (error) {
+      console.error('Error en searchPosts:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error en búsqueda', 
+        error: error.message 
+      });
+    }
+  },
+
+  /**
+   * 🛒 MARCAR COMO VENDIDO
+   */
+  markAsSold: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const post = await Post.findById(id);
+      if (!post) {
+        return res.status(404).json({
+          success: false,
+          message: 'Post no encontrado'
+        });
+      }
+
+      // Verificar propiedad
+      if (req.user && post.user && req.user._id && post.user.toString() !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'No autorizado'
+        });
+      }
+
+      const updatedPost = await Post.findByIdAndUpdate(
+        id,
+        { 
+          $set: { 
+            status: 'sold', 
+            soldAt: new Date() 
+          } 
+        },
+        { new: true }
+      );
+
+      res.json({
+        success: true,
+        message: 'Post marcado como vendido',
+        post: updatedPost
+      });
+
+    } catch (error) {
+      console.error('Error en markAsSold:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al marcar como vendido',
+        error: error.message
+      });
+    }
+  },
+
+  /**
+   * 🔍 POSTS SIMILARES
+   */
+  getSimilarPosts: async (req, res) => {
+    try {
+      console.log('📥 getSimilarPosts recibió:', req.query);
+
+      const {
+        categorie,
+        subCategory,
+        excludeId,
+        limit = 6,
+        page = 1
+      } = req.query;
+
+      // Validación
+      if (!categorie || !subCategory) {
+        return res.status(400).json({
+          success: false,
+          message: 'Se requiere categorie y subCategory'
+        });
+      }
+
+      // Construir query
+      let query = {
+        categorie: categorie.trim(),
+        subCategory: subCategory.trim(),
+        isActive: true,
+        status: 'active'
+      };
+
+      // Excluir post actual
+      if (excludeId && mongoose.Types.ObjectId.isValid(excludeId)) {
+        query._id = { $ne: new mongoose.Types.ObjectId(excludeId) };
+      }
+
+      console.log('🔍 Query de búsqueda:', query);
+
+      // Paginación
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+
+      // Buscar posts
+      const posts = await Post.find(query)
+        .populate('user', 'username avatar')
+        .populate('categoryRef', 'name slug')
+        .sort({ isPromoted: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit));
+
+      const total = await Post.countDocuments(query);
+      const totalPages = Math.ceil(total / parseInt(limit));
+      const hasMore = page < totalPages;
+
+      console.log(`✅ Encontrados ${posts.length} posts de ${total}`);
+
+      res.json({
+        success: true,
+        posts,
+        total,
+        page: parseInt(page),
+        totalPages,
+        hasMore
+      });
+
+    } catch (error) {
+      console.error('❌ getSimilarPosts error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error del servidor',
+        error: error.message
+      });
+    }
+  },
+
+  /**
+   * 🩺 HEALTH CHECK
+   */
+  healthCheck: async (req, res) => {
+    try {
+      // Verificar conexión a MongoDB
+      const dbStatus = mongoose.connection.readyState;
+      const dbStatusText = 
+        dbStatus === 0 ? 'disconnected' :
+        dbStatus === 1 ? 'connected' :
+        dbStatus === 2 ? 'connecting' :
+        dbStatus === 3 ? 'disconnecting' : 'unknown';
+
+      res.json({
+        success: true,
+        message: 'API de posts funcionando correctamente',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        database: {
+          status: dbStatusText,
+          connected: dbStatus === 1
+        },
+        environment: process.env.NODE_ENV || 'development'
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error en health check',
+        error: error.message
+      });
+    }
+  }
+};
+
+module.exports = postCtrl;

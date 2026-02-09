@@ -8,9 +8,10 @@ import Register from './pages/register'
 import { refreshToken } from './redux/actions/authAction'
 import io from 'socket.io-client'
 import { GLOBALTYPES } from './redux/actions/globalTypes'
- 
+//mport PageRender from './customRouter/PageRender'
+//import PrivateRouter from './customRouter/PrivateRouter'
 import Home from './pages/home';
- 
+
 import NotFound from './pages/NotFound';
 import CategoryPage from './pages/category/CategoryPage';
 import Navbar2 from './components/header/Navbar2';
@@ -19,6 +20,7 @@ import PostId from './pages/PostId';
 import DashboardPage from './pages/users/dashboardpage';
 import profile from './pages/profile';
 import CreateBoutiquePage from './pages/boutique/createBoutiquePage';
+import roles from './pages/users/roles';
 
 function App() {
   const { auth } = useSelector(state => state)
@@ -31,7 +33,7 @@ function App() {
   useEffect(() => {
     // Inicializar autenticación
     dispatch(refreshToken())
-    
+
     // Inicializar Socket.IO solo si no está ya inicializado
     if (!socket) {
       // Asegúrate de que la URL del backend sea correcta
@@ -47,7 +49,7 @@ function App() {
       if (socketInstance && typeof socketInstance.on === 'function') {
         setSocket(socketInstance)
         dispatch({ type: GLOBALTYPES.SOCKET, payload: socketInstance })
-        
+
         // Manejar eventos de conexión
         socketInstance.on('connect', () => {
           console.log('✅ Socket.IO conectado:', socketInstance.id)
@@ -74,32 +76,35 @@ function App() {
 
   return (
     <Router>
-    <GoogleTranslateManager />
-   
-    <div className="App">
-      <Navbar2 />
-    
-      <div id="google_translate_element" style={{ display: 'none' }}></div>
-      
-      <Switch>
-        {/* Redirección de raíz - opcional */}
-        <Route exact path="/" component={Home} />
-        <Route exact path="/register" component={Register} />
-  <Route exact path="/login" component={Login} />
-        {/* Página dinámica de categoría (niveles 1, 2, 3) */}
-        <Route exact path="/category/:slug" component={CategoryPage} />
-        <Route exact path="/category/:slug/:subSlug" component={CategoryPage} />
-        <Route exact path="/category/:slug/:subSlug/:articleSlug" component={CategoryPage} />
-        <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
+      <GoogleTranslateManager />
 
-        <Route exact path="/dashboard" component={DashboardPage} />
-        <Route exact path="/create-boutique" component={CreateBoutiquePage} />
-        {/* Detalle de post */}
-        <Route exact path="/post/:id" component={PostId} />
-        <Route exact path="/profile/:id" component={profile} />
-        {/* 404 */}
-        <Route component={NotFound} />
-      </Switch></div>
+      <div className="App">
+        <Navbar2 />
+
+        <div id="google_translate_element" style={{ display: 'none' }}></div>
+
+        <Switch>
+          {/* Redirección de raíz - opcional */}
+          <Route exact path="/" component={Home} />
+          <Route exact path="/register" component={Register} />
+          <Route exact path="/login" component={Login} />
+          {/* Página dinámica de categoría (niveles 1, 2, 3) */}
+          <Route exact path="/category/:slug" component={CategoryPage} />
+          <Route exact path="/category/:slug/:subSlug" component={CategoryPage} />
+          <Route exact path="/category/:slug/:subSlug/:articleSlug" component={CategoryPage} />
+          <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
+          <Route exact path="/edit-post/:id" component={CreateAnnoncePage} />
+ 
+          <Route exact path="/dashboard" component={DashboardPage} />
+          <Route exact path="/create-boutique" component={CreateBoutiquePage} />
+          {/* <PrivateRouter exact path="/:page/:id/:tab" component={PageRender}Detalle de post  />
+          <PrivateRouter exact path="/:page/:id" component={PageRender} />
+          <PrivateRouter exact path="/:page" component={PageRender} />*/}
+          <Route exact path="/post/:id" component={PostId} />
+          <Route exact path="/profile/:id" component={profile} />
+          <Route exact path="/users/roles" component={roles} />
+          <Route component={NotFound} />
+        </Switch></div>
     </Router>
   );
 }

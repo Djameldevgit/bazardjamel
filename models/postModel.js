@@ -1,113 +1,133 @@
-// models/Post.js
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const postSchema = new mongoose.Schema({
-  // Campos básicos (REQUERIDOS)
-  categorie: {
-    type: String,
-    required: [true, 'La catégorie est requise']
+const postSchema = new mongoose.Schema(
+  {
+    // 👤 Autor
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user",
+      required: true,
+      index: true
+    },
+
+    // 🗂️ CATEGORÍAS (strings del cliente)
+    categorie: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true
+    },
+
+    subCategory: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true
+    },
+
+    articleType: {
+      type: String,
+      trim: true,
+      index: true
+    },
+
+    // 🔑 CATEGORÍA REAL (MongoDB)
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      required: true,
+      index: true
+    },
+
+    // 📝 CONTENIDO
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 3,
+      maxlength: 150
+    },
+
+    description: {
+      type: String,
+      trim: true,
+      maxlength: 3000
+    },
+
+    price: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+
+    etat: {
+      type: String,
+       
+    },
+
+    // 📍 LOCALIZACIÓN
+    wilaya: {
+      type: String,
+      required: true,
+      index: true
+    },
+
+    commune: {
+      type: String,
+      required: true
+    },
+
+    address: {
+      type: String,
+      trim: true
+    },
+
+    // 📞 CONTACTO
+    phone: {
+      type: String,
+      trim: true
+    },
+
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true
+    },
+
+    // 🧩 CAMPOS DINÁMICOS POR CATEGORÍA
+    categorySpecificData: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {}
+    },
+
+    // 🖼️ IMÁGENES
+    images: {
+      type: Array,
+      required: true
   },
-  subCategory: {
-    type: String,
-    required: [true, 'La sous-catégorie est requise']
-  },
-  articleType: {
-    type: String,
-    default: ''
-  },
-  
-  // Campos comunes obligatorios
-  title: {
-    type: String,
-    required: [true, 'Le titre est requis'],
-    trim: true
-  },
-  description: {
-    type: String,
-    required: [true, 'La description est requise'],
-    trim: true
-  },
-  price: {
-    type: Number,
-    required: [true, 'Le prix est requis'],
-    min: [0, 'Le prix ne peut pas être négatif']
-  },
-  etat: {
-    type: String,
-    enum: ['neuf', 'occasion', 'reconditionné'],
-    default: 'occasion'
-  },
-  
-  // Campos de contacto
-  phone: {
-    type: String,
-    trim: true
-  },
-  email: {
-    type: String,
-    trim: true,
-    lowercase: true
-  },
-  
-  // Campos de ubicación
-  wilaya: {
-    type: String,
-    required: [true, 'La wilaya est requise']
-  },
-  commune: {
-    type: String,
-    required: [true, 'La commune est requise']
-  },
-  address: {
-    type: String,
-    trim: true
-  },
-  
-  // Campos específicos por categoría
-  categorySpecificData: {
-    type: Map,
-    of: mongoose.Schema.Types.Mixed,
-    default: new Map()
-  },
-  
-  // Imágenes
-  images: [{
-    url: String,
-    public_id: String,
-    isMain: {
+
+    // 📊 ESTADÍSTICAS
+    views: {
+      type: Number,
+      default: 0
+    },
+
+    isActive: {
       type: Boolean,
-      default: false
+      default: true,
+      index: true
     }
-  }],
-  
-  // Información del usuario
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'user',
-    required: true
   },
-  
-  // Metadatos
-  views: {
-    type: Number,
-    default: 0
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  },
-  expiresAt: {
-    type: Date,
-    default: () => new Date(+new Date() + 30 * 24 * 60 * 60 * 1000) // 30 días
+  {
+    timestamps: true
   }
-}, {
-  timestamps: true
-});
+);
 
-// Índices para mejor rendimiento
-postSchema.index({ status: 1, createdAt: -1 });
+//
+// 🔍 ÍNDICES IMPORTANTES (performance UI)
+//
 postSchema.index({ category: 1, createdAt: -1 });
-postSchema.index({ user: 1, createdAt: -1 });
-postSchema.index({ price: 1 });
+postSchema.index({ wilaya: 1, category: 1 });
+postSchema.index({ categorie: 1, subCategory: 1 });
 
-module.exports = mongoose.model('Post', postSchema);
+module.exports = mongoose.model("Post", postSchema);

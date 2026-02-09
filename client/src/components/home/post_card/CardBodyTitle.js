@@ -80,15 +80,14 @@ const CardBodyTitle = ({ post }) => {
         }
         history.push(`/profile/${post.user._id}`);
         setShowDropdown(false);
-    };
-
+    }; 
+    
     const handleEditPost = () => {
-        if (!auth.user) { 
-            setShowAuthModal(true); 
-            return; 
+        if (!auth.user) {
+            setShowAuthModal(true);
+            return;
         }
-        
-        // ✅ CORREGIDO: Pasar el post completo y verificar que existe
+    
         if (!post || !post._id) {
             console.error('❌ No hay post o ID disponible para editar');
             dispatch({
@@ -97,27 +96,45 @@ const CardBodyTitle = ({ post }) => {
             });
             return;
         }
-
-        console.log('📝 Editando post:', {
-            postId: post._id,
-            hasPostData: !!post,
-            postTitle: post.title
-        });
-
-        // ✅ Navegar a la página de edición con todos los datos del post
-        history.push(`/editer-annonce/${post._id}`, { 
-            isEdit: true, 
-            postData: post // ← Asegúrate que 'post' tiene todos los datos necesarios
-        });
+    
         
-        // ✅ Opcional: Actualizar el estado global si es necesario
-        dispatch({ 
-            type: GLOBALTYPES.STATUS, 
-            payload: { ...post, onEdit: true } 
+        // 🎯 PREPARAR DATOS DE CATEGORÍA PARA EL ACCORDION
+        const postDataForEdit = {
+            ...post,
+            // 🔥 Asegurar que estos campos existan (pueden venir de diferentes lugares)
+            categorie: post.categorie || post.category?.name || '',
+            subCategory: post.subCategory || post.categorySpecificData?.subCategory || '',
+            articleType: post.articleType || post.categorySpecificData?.articleType || '',
+            // 🎯 Pasar también categorySpecificData si existe
+            categorySpecificData: post.categorySpecificData || {}
+        };
+    
+        console.log('📦 Datos formateados para edición:', postDataForEdit);
+    
+        // 🎯 Redirigir a CreateAnnoncePage con TODOS los datos
+        history.push(`/edit-post/${post._id}`, {
+            isEdit: true,
+            postData: postDataForEdit  // 🔥 Pasar TODOS los datos del post
         });
-        
+    
+        dispatch({
+            type: GLOBALTYPES.STATUS,
+            payload: { ...post, onEdit: true }
+        });
+    
         setShowDropdown(false);
     };
+
+/*    const handleEditPost = () => {
+        if (!auth.user) { setShowAuthModal(true); return; }
+        history.push(`/editer-annonce/${post._id}`, {
+            isEdit: true,
+            postData: post 
+        });
+        dispatch({ type: 'GLOBALTYPES.STATUS', payload: { ...post, onEdit: true } });
+        setShowDropdown(false);
+    };*/
+
 
     const handleDeletePost = () => {
         if (window.confirm("Are you sure want to delete this posthhhhhh?")) {
@@ -202,7 +219,7 @@ const CardBodyTitle = ({ post }) => {
             <span>{text}</span>
         </div>
     );
- 
+
 
     return (
         <div className="cardtitle" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
@@ -229,8 +246,8 @@ const CardBodyTitle = ({ post }) => {
                     }}
                         onClick={() => setShowDropdown(!showDropdown)}
                         title={t('cardbody.moreOptions', 'Plus d\'options')}>
-                        <FaEllipsisH 
-                            size={14} 
+                        <FaEllipsisH
+                            size={14}
                             color="#6b7280"
                         />
                     </div>

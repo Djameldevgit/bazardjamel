@@ -1,7 +1,7 @@
 // 📂 redux/reducers/postReducer.js - VERSIÓN LIMPIA
 import { POST_TYPES } from '../actions/postAction';
 import { GLOBALTYPES } from '../actions/globalTypes';
-
+import {   DeleteData } from '../actions/globalTypes'
 const initialState = {
   // Estados básicos
   loading: false,
@@ -55,7 +55,11 @@ const postReducer = (state = initialState, action) => {
     postsLoading: true,
     postsError: null
   };
-  
+  case POST_TYPES.GET_POST_BY_ID:
+  return {
+    ...state,
+    postToEdit: action.payload // Guardamos el post completo para edición
+  };
 case POST_TYPES.GET_CATEGORY_POSTS_SUCCESS:
   console.log('✅ Reducer: GET_CATEGORY_POSTS_SUCCESS', {
     postsCount: action.payload.posts.length,
@@ -135,16 +139,11 @@ case POST_TYPES.GET_CATEGORY_POSTS_FAIL:
           : state.detailPost
       };
 
-    // ================ DELETE POST ================
-    case POST_TYPES.DELETE_POST:
-      return {
-        ...state,
-        posts: state.posts.filter(post => post._id !== action.payload._id),
-        result: Math.max(0, state.result - 1),
-        detailPost: state.detailPost?._id === action.payload._id 
-          ? null 
-          : state.detailPost
-      };
+      case POST_TYPES.DELETE_POST:
+        return {
+            ...state,
+            posts: DeleteData(state.posts, action.payload._id)
+        };
 
     // ================ SIMILAR POSTS ================
     case POST_TYPES.GET_SIMILAR_POSTS:

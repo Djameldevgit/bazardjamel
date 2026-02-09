@@ -300,10 +300,7 @@ const HeaderCarousel = memo(() => {
               objectFit: 'cover',
               borderRadius: '12px'
             }}
-            onError={(e) => {
-              e.target.src = `https://via.placeholder.com/400x350/${slide.color.replace('#', '')}/ffffff?text=${slide.title}`;
-            }}
-          />
+              />
           
           <div 
             style={{
@@ -408,10 +405,7 @@ const HeaderCarousel = memo(() => {
                         objectPosition: 'center 25%',
                         borderRadius: '8px'
                       }}
-                      onError={(e) => {
-                        e.target.src = `https://via.placeholder.com/800x150/8b5cf6/ffffff?text=Tassili+${index + 1}`;
-                      }}
-                    />
+                         />
                   </div>
                
                   <Carousel.Caption 

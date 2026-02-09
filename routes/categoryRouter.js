@@ -1,6 +1,8 @@
 // 📂 routes/categoryRoutes.js - ORDEN CORRECTO
 const express = require('express');
+ 
 const router = express.Router();
+
 const {
   obtenerCategoriasPrincipales,
   obtenerCategoriaPorId,
@@ -8,11 +10,11 @@ const {
  
   buscarCategorias,
   obtenerEstadisticasDeCategorias,
- 
+  getCategoriesForAccordion
 } = require('../controllers/categoryCtrl');
 
 
- 
+router.get('/categories/accordion',  getCategoriesForAccordion);
 // 1. Rutas fijas
 router.get('/main', obtenerCategoriasPrincipales);
 router.get('/tree', obtenerArbolDeCategorias);

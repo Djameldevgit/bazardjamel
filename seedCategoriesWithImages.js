@@ -1,4 +1,4 @@
-// 📂 backend/seed/seedCategoriesPerfect.js
+// 📂 backend/seed/seedCategoriesWithImages.js
 require('dotenv').config();
 const mongoose = require('mongoose');
 const Category = require('./models/categoryModel');

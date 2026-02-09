@@ -30,10 +30,15 @@ const CardHeader = ({ post }) => {
         }
     };
 
-    const handleEditPost = () => {
+    /*const handleEditPost = () => {
         dispatch({ type: GLOBALTYPES.STATUS, payload: { ...post, onEdit: true } });
+    };*/
+    const handleEditPost = () => {
+        if (!auth.user) { setShowAuthModal(true); return; }
+        history.push('/editer-annonce', { isEdit: true, postData: post });
+        dispatch({ type: 'GLOBALTYPES.STATUS', payload: { ...post, onEdit: true } });
+        setShowDropdown(false);
     };
-
 
     const handleDeletePost = () => {
         if (window.confirm("Are you sure want to delete this posthhhhhh?")) {

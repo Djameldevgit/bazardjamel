@@ -4,13 +4,18 @@ import { GLOBALTYPES } from './globalTypes'
 import { imageUpload } from '../../utils/imageUpload'
 import { postDataAPI, getDataAPI, patchDataAPI, deleteDataAPI } from '../../utils/fetchData'
 import { createNotify, removeNotify } from './notifyAction'
-
+import axios from 'axios'
+import { BASE_URL } from '../../utils/config'
+ 
+//import { BASE_URL } from '../utils/config';
+ 
 export const POST_TYPES = {
   // Estados básicos
   LOADING_POST: 'LOADING_POST',
   CREATE_POST: 'CREATE_POST',
   GET_POST: 'GET_POST',
   GET_POSTS: 'GET_POSTS',
+  GET_POST_BY_ID: 'GET_POST_BY_ID',
   UPDATE_POST: 'UPDATE_POST',
   DELETE_POST: 'DELETE_POST',
   GET_CATEGORY_POSTS:'GET_CATEGORY_POSTS',
@@ -36,245 +41,348 @@ export const POST_TYPES = {
 
 // 📂 actions/categoryAction.js - Debe tener
 // 📂 actions/categoryAction.js - getCategoryPosts CORREGIDO
+// 📂 actions/categoryAction.js
 export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = null, page = 1, limit = 12) => async (dispatch) => {
     try {
-      console.log('🎯 CATEGORY ACTION: getCategoryPosts', { 
-        categorySlug, 
-        subSlug, 
-        articleSlug, 
-        page, 
-        limit 
-      });
+      dispatch({ type: types.GET_CATEGORY_POSTS });
   
-      const params = { 
-        page, 
-        limit, 
-        category: categorySlug 
+      // ⭐ CONSTRUIR ENDPOINT CORRECTO
+      let endpoint = `${API_URL}/api/posts/filter`;
+      let params = { 
+        category: categorySlug,
+        page: page,
+        limit: limit
       };
       
+      // Añadir subcategoría si existe
       if (subSlug) params.sub = subSlug;
-      if (articleSlug) params.article = articleSlug;
+      
+      console.log('🔍 Consultando endpoint:', endpoint);
+      console.log('📊 Parámetros:', params);
   
-      console.log('📡 Llamando API con params:', params);
+      const { data } = await axios.get(endpoint, { params });
       
-      // ⭐ IMPORTANTE: La URL correcta
-      const { data } = await getDataAPI(`${API_URL}/posts/filter`, { params });
-      
-      console.log('✅ Respuesta recibida:', { 
+      console.log('✅ Respuesta del servidor:', {
         success: data.success,
-        postsCount: data.posts?.length || 0,
-        total: data.total,
-        hasMore: data.hasMore,
-        category: data.category?.name
+        postsCount: data.posts ? data.posts.length : 0,
+        childrenCount: data.children ? data.children.length : 0,
+        categoryInfo: data.categoryInfo ? data.categoryInfo.name : 'No info'
       });
   
-      // Dispatch al reducer de CATEGORÍAS (no al de posts)
-      dispatch({
-        type: types.GET_CATEGORY_POSTS_SUCCESS,
-        payload: {
-          categoryInfo: data.category || {},
-          children: data.children || [],
-          posts: data.posts || [],
+      // ⭐ VERIFICAR ESTRUCTURA DE DATOS
+      if (data.posts && data.posts.length > 0) {
+        console.log('📦 Primer post recibido:', {
+          id: data.posts[0]._id,
+          title: data.posts[0].title,
+          images: data.posts[0].images ? data.posts[0].images.length : 0,
+          user: data.posts[0].user
+        });
+      }
+  
+      // ⭐ OBTENER ICONOS REALES DE LAS CATEGORÍAS
+      if (data.children && data.children.length > 0) {
+        console.log('🎨 Información de iconos de children:');
+        data.children.forEach((child, i) => {
+          const iconInfo = child.icon 
+            ? `✅ ${child.icon} (${child.iconType || 'no-type'})` 
+            : '❌ NO TIENE ICONO';
+          
+          console.log(`${i+1}. ${child.name} - ${iconInfo}`);
+        });
+      }
+  
+      // ⭐ ACTUALIZAR ESTADO ACTIVO
+      if (categorySlug) {
+        dispatch({ 
+          type: types.SET_ACTIVE_CATEGORY, 
+          payload: { slug: categorySlug, ...data.categoryInfo } 
+        });
+      }
+      if (subSlug) {
+        dispatch({ 
+          type: types.SET_ACTIVE_SUBCATEGORY, 
+          payload: { slug: subSlug } 
+        });
+      }
+  
+      // ⭐ PREPARAR PAYLOAD CON ESTRUCTURA CORRECTA
+      const payload = {
+        // Información de categoría
+        categoryInfo: data.categoryInfo || {},
+        
+        // Hijos (subcategorías)
+        children: Array.isArray(data.children) 
+          ? data.children.map(child => ({
+              ...child,
+              // Asegurar que tenga valores por defecto para icono
+              icon: child.icon || getDefaultIcon(child.name),
+              iconType: child.iconType || 'emoji',
+              iconColor: child.iconColor || '#666666',
+              bgColor: child.bgColor || '#FFFFFF'
+            }))
+          : [],
+        
+        // Posts
+        posts: Array.isArray(data.posts) 
+          ? data.posts.map(post => ({
+              ...post,
+              // Asegurar que las imágenes tengan formato correcto
+              images: Array.isArray(post.images) 
+                ? post.images.map(img => ({
+                    url: typeof img === 'string' ? img : img.url,
+                    isMain: img.isMain || false
+                  }))
+                : []
+            }))
+          : [],
+        
+        // Paginación
+        pagination: {
           currentPage: page,
           hasMore: data.hasMore || false,
-          totalPages: data.totalPages || 1,
-          totalPosts: data.total || 0
+          totalPages: data.totalPages || Math.ceil((data.total || 0) / limit),
+          totalPosts: data.total || 0,
+          limit: limit
         }
+      };
+  
+      console.log('📤 Payload final para reducer:', {
+        postsCount: payload.posts.length,
+        childrenCount: payload.children.length,
+        hasMore: payload.pagination.hasMore
       });
   
-      return data;
+      // ⭐ DESPACHAR AL REDUCER
+      dispatch({
+        type: types.GET_CATEGORY_POSTS_SUCCESS,
+        payload: payload
+      });
+  
+      return {
+        success: true,
+        ...payload
+      };
   
     } catch (error) {
-      console.error('❌ Error en getCategoryPosts:', {
-        message: error.message,
-        response: error.response?.data,
-        url: error.config?.url
-      });
+      console.error('❌ Error en getCategoryPosts:', error.response || error.message);
       
       dispatch({
         type: types.GET_CATEGORY_POSTS_FAIL,
-        payload: error.response?.data?.message || 'Error al obtener posts de categoría'
+        payload: error.response?.data?.message || error.message
       });
   
-      throw error;
+      return {
+        success: false,
+        posts: [],
+        children: [],
+        categoryInfo: {},
+        pagination: {
+          currentPage: page,
+          hasMore: false,
+          totalPages: 0,
+          totalPosts: 0
+        }
+      };
     }
   };
-export const createPost = ({ postData, images, auth, socket }) => async (dispatch) => {
-    let media = []
-    try {
-        dispatch({ 
-            type: GLOBALTYPES.ALERT, 
-            payload: { loading: true, text: 'Creating post...' } 
-        })
-        
-        if(images.length > 0) media = await imageUpload(images)
-
-        const res = await postDataAPI('posts', { ...postData, images: media }, auth.token);
-        
-        dispatch({ 
-            type: POST_TYPES.CREATE_POST, 
-            payload: {
-                ...res.data.newPost, 
-                user: auth.user
-            } 
-        })
-
-        dispatch({ 
-            type: GLOBALTYPES.ALERT, 
-            payload: { success: '✅ Post created successfully!' } 
-        })
-
-        // Notify
-        const msg = {
-            id: res.data.newPost._id,
-            text: 'added a new post.',
-            recipients: res.data.newPost.user.followers,
-            url: `/post/${res.data.newPost._id}`,
-            content: postData.description, 
-            image: media[0]?.url
-        }
-
-        dispatch(createNotify({msg, auth, socket}))
-
-    } catch (err) {
-        dispatch({
-            type: GLOBALTYPES.ALERT,
-            payload: {
-                error: err.response?.data?.msg || err.message || 'Error creating post'
-            }
-        })
+  
+  // Helper para iconos por defecto
+  const getDefaultIcon = (categoryName) => {
+    const iconMap = {
+      'Voitures': '🚗',
+      'Motos': '🏍️',
+      'Vélos': '🚲',
+      'Camion': '🚚',
+      'Bus': '🚌',
+      'Engin': '🚜',
+      'Tracteurs': '🚜',
+      'Immobilier': '🏠',
+      'Electronique': '📱',
+      'Mode': '👗',
+      'Maison': '🏡',
+      'Services': '🛠️',
+      'Emploi': '💼',
+      'Autres': '📦'
+    };
+    
+    return iconMap[categoryName] || '📦';
+  };
+// 📂 redux/actions/postAction.js
+// 📂 redux/actions/postAction.js
+// 📂 redux/actions/postAction.js
+export const createPost = ({ 
+  postData, 
+  images, 
+  auth 
+}) => async (dispatch) => {
+  console.time('⏱️ createPost action time');
+  let media = []
+  
+  try {
+    console.log('🟡 createPost action iniciada');
+    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: true} })
+    
+    // Verificar si hay imágenes para subir
+    if(images.length > 0) {
+      console.log(`📤 Subiendo ${images.length} imágenes...`);
+      console.time('🖼️ Image upload time');
+      media = await imageUpload(images);
+      console.timeEnd('🖼️ Image upload time');
+      console.log('✅ Imágenes subidas:', media.length);
     }
+
+    // 📌 Preparar datos finales para enviar
+    const postToSend = {
+      ...postData,
+      images: media
+    };
+
+    console.log('📦 Datos a enviar al API:', postToSend);
+
+    // 📌 ENVIAR DATOS AL API
+    console.time('🌐 API call time');
+    const res = await postDataAPI('posts', postToSend, auth.token);
+    console.timeEnd('🌐 API call time');
+    
+    console.log('✅ Respuesta del API:', res.data);
+
+    dispatch({ 
+      type: POST_TYPES.CREATE_POST, 
+      payload: {
+        ...res.data.newPost, 
+        user: auth.user,
+        categorySpecificData: postData.categorySpecificData || {}
+      } 
+    });
+
+    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: false} });
+
+   
+
+  } catch (err) {
+    console.error('❌ Error en createPost action:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: {error: err.response?.data?.msg || err.message}
+    });
+  } finally {
+    console.timeEnd('⏱️ createPost action time');
+  }
 }
 
-/**
- * Obtener todos los posts (paginados)
- */
-export const getPosts = (page = 1, limit = 12) => async (dispatch) => {
-    try {
-        dispatch({ type: POST_TYPES.LOADING_POST, payload: true })
-        
-        const res = await getDataAPI(`posts?page=${page}&limit=${limit}`)
-        
-        dispatch({
-            type: POST_TYPES.GET_POSTS,
-            payload: {
-                posts: res.data.posts || [],
-                page: res.data.page || page,
-                total: res.data.total || 0,
-                totalPages: res.data.totalPages || 1,
-                hasMore: res.data.hasMore || false
-            }
-        })
+// 📂 redux/actions/postAction.js
 
-        dispatch({ type: POST_TYPES.LOADING_POST, payload: false })
-        
-    } catch (err) {
-        dispatch({
-            type: GLOBALTYPES.ALERT,
-            payload: {error: err.response?.data?.msg || 'Error loading posts'}
-        })
-        dispatch({ type: POST_TYPES.LOADING_POST, payload: false })
+// 🎯 ACCIÓN UPDATE - CORREGIDA para recibir postId en lugar de status
+export const updatePost = ({
+  postId,    // ✅ Recibe postId
+  postData, 
+  images, 
+  auth
+}) => async (dispatch) => {
+  let media = []
+  
+  try {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+    
+    // ✅ Filtrar imágenes nuevas (no existentes)
+    const imgNewUrl = images.filter(img => !img.isExisting);
+    const imgOldUrl = images.filter(img => img.isExisting);
+    
+    // Subir solo imágenes nuevas
+    if (imgNewUrl.length > 0) {
+      media = await imageUpload(imgNewUrl);
     }
-}
 
-/**
- * Obtener un post por ID
- */
+    // ✅ Combinar imágenes antiguas + nuevas
+    const allImages = [...imgOldUrl, ...media];
+    
+    // ✅ Usar postId en lugar de status._id
+    const res = await patchDataAPI(`post/${postId}`, {  // ← postId aquí
+      ...postData,  // ← Enviar postData directamente
+      images: allImages 
+    }, auth.token);
+    
+    dispatch({ 
+      type: POST_TYPES.UPDATE_POST, 
+      payload: res.data.updatedPost 
+    });
+    
+    dispatch({ 
+      type: GLOBALTYPES.ALERT, 
+      payload: { success: res.data.msg } 
+    });
+    
+  } catch (err) {
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { 
+        error: err.response?.data?.msg || 
+               'Échec de la mise à jour' 
+      }
+    });
+    throw err;
+  }
+}
+ 
+
 export const getPost = (id) => async (dispatch) => {
     try {
-        const res = await getDataAPI(`post/${id}`)
-        dispatch({ type: POST_TYPES.GET_POST, payload: res.data.post })
-    } catch (err) {
-        dispatch({
-            type: GLOBALTYPES.ALERT,
-            payload: {error: err.response?.data?.msg || 'Error loading post'}
-        })
-    }
-}
-
-/**
- * Actualizar un post
- */
-export const updatePost = ({ id, postData, images, auth }) => async (dispatch) => {
-    let media = []
-    
-    const imgNewUrl = images.filter(img => !img.isExisting)
-    const imgOldUrl = images.filter(img => img.isExisting)
-
-    try {
+        console.log('🔍 Fetching post with ID:', id)
+        
+        // ✅ Usar axios directamente con BASE_URL
+        const res = await axios.get(`${BASE_URL}/api/post/${id}`)
+        
+        console.log('✅ Post response:', res.data)
+        
         dispatch({ 
-            type: GLOBALTYPES.ALERT, 
-            payload: { loading: true } 
+            type: POST_TYPES.GET_POST, 
+            payload: res.data.post 
         })
         
-        if (imgNewUrl.length > 0) {
-            media = await imageUpload(imgNewUrl);
-        }
-
-        const allImages = [...imgOldUrl, ...media];
-
-        const res = await patchDataAPI(`post/${id}`, { 
-            postData: {
-                ...postData,
-                content: postData.description || postData.content
-            },
-            images: allImages 
-        }, auth.token);
-
-        dispatch({ 
-            type: POST_TYPES.UPDATE_POST,
-            payload: res.data.newPost 
-        });
-        
-        dispatch({ 
-            type: GLOBALTYPES.ALERT, 
-            payload: { 
-                success: res.data.msg || 'Post updated successfully!' 
-            } 
-        });
-        
     } catch (err) {
-        console.error('❌ Error en updatePost:', err.response?.data || err.message);
+        console.error('❌ Error getting post:', {
+            message: err.message,
+            response: err.response?.data,
+            status: err.response?.status,
+            url: `${BASE_URL}/api/post/${id}`
+        })
+        
         dispatch({
             type: GLOBALTYPES.ALERT,
-            payload: { 
-                error: err.response?.data?.msg || 'Update failed' 
+            payload: {
+                error: err.response?.data?.msg || 
+                       err.message || 
+                       'Error loading post'
             }
-        });
-    }
-}
-
-/**
- * Eliminar un post
- */
-export const deletePost = ({ post, auth, socket }) => async (dispatch) => {
-    dispatch({ type: POST_TYPES.DELETE_POST, payload: post })
-
-    try {
-        await deleteDataAPI(`post/${post._id}`, auth.token)
-
-        // Notify
-        const msg = {
-            id: post._id,
-            text: 'deleted a post.',
-            recipients: post.user.followers,
-            url: `/profile/${auth.user._id}`,
-        }
-        dispatch(removeNotify({msg, auth, socket}))
-        
-    } catch (err) {
-        dispatch({
-            type: GLOBALTYPES.ALERT,
-            payload: {error: err.response?.data?.msg || 'Error deleting post'}
         })
     }
 }
 
-// ========== ACCIONES DE INTERACCIÓN ==========
+ 
 
-/**
- * Like a un post
- */
+export const deletePost = ({post, auth, socket}) => async (dispatch) => {
+  dispatch({ type: POST_TYPES.DELETE_POST, payload: post })
+
+  try {
+      const res = await deleteDataAPI(`post/${post._id}`, auth.token)
+
+      // Notify
+      const msg = {
+          id: post._id,
+          text: 'added a new post.',
+          recipients: res.data.newPost.user.followers,
+          url: `/post/${post._id}`,
+      }
+      dispatch(removeNotify({msg, auth, socket}))
+      
+  } catch (err) {
+      dispatch({
+          type: GLOBALTYPES.ALERT,
+          payload: {error: err.response.data.msg}
+      })
+  }
+}
+
 export const likePost = ({ post, auth, socket }) => async (dispatch) => {
     const newPost = {...post, likes: [...post.likes, auth.user]}
     dispatch({ type: POST_TYPES.UPDATE_POST, payload: newPost })
@@ -372,7 +480,7 @@ export const unSavePost = ({ post, auth }) => async (dispatch) => {
 /**
  * Obtener posts similares
  */
-export const getSimilarPosts = (postId, options = {}) => async (dispatch, getState) => {
+/*export const getSimilarPosts = (postId, options = {}) => async (dispatch, getState) => {
     try {
         dispatch({ type: POST_TYPES.LOADING_SIMILAR_POSTS, payload: true })
         
@@ -423,7 +531,7 @@ export const getSimilarPosts = (postId, options = {}) => async (dispatch, getSta
 
   export const clearSimilarPosts = () => (dispatch) => {
     dispatch({ type: POST_TYPES.CLEAR_SIMILAR_POSTS });
-  };
+  };*/
   export const getCategories = (page = 1, limit = 2) => async (dispatch, getState) => {
     try {
         const { auth } = getState();
