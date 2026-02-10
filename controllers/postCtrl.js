@@ -498,15 +498,12 @@ filterPosts: async (req, res) => {
       });
     }
   },
- // 📂 controllers/postController.js
-
-// 📂 controllers/postCtrl.js
+ 
  updatePost : async (req, res) => {
   try {
     const userId = req.user._id;
     const { id } = req.params;
-    
-    // 🎯 Recibir TODO del body (igual que createPost)
+     
     const { 
       categorie, subCategory, articleType, title, description,
       price, etat, wilaya, commune, address, phone, email,

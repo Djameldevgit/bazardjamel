@@ -1,10 +1,34 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useHistory } from "react-router-dom";
 
 const CategorySlider = ({ categories = [], onCategoryClick }) => {
   const history = useHistory();
   const sliderRef = useRef(null);
-  const itemsPerRow = 4; // 4 iconos por fila = 8 total (2 filas)
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  
+  // Agrupar categorías en pares para mostrar 2 por columna
+  const groupedCategories = [];
+  for (let i = 0; i < categories.length; i += 2) {
+    groupedCategories.push({
+      top: categories[i],
+      bottom: categories[i + 1] || null
+    });
+  }
+
+  useEffect(() => {
+    const checkScroll = () => {
+      if (sliderRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = sliderRef.current;
+        setCanScrollLeft(scrollLeft > 0);
+        setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+      }
+    };
+    
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [groupedCategories]);
 
   const handleClick = (cat) => {
     if (!cat) return;
@@ -15,107 +39,146 @@ const CategorySlider = ({ categories = [], onCategoryClick }) => {
     }
   };
 
-  // Función para formatear el nombre (inicial + resto)
   const formatName = (name) => {
     if (!name) return "";
-    const words = name.split(" ");
-    if (words.length <= 2) return name;
-    return words.slice(0, 2).join(" ") + (words.length > 2 ? "..." : "");
+    const maxLength = window.innerWidth <= 767 ? 10 : 14;
+    if (name.length <= maxLength) return name;
+    return name.substring(0, maxLength) + "...";
   };
 
-  // Scroll horizontal suave
   const scrollLeft = () => {
-    if (sliderRef.current) {
+    if (sliderRef.current && canScrollLeft) {
       sliderRef.current.scrollBy({ left: -300, behavior: 'smooth' });
     }
   };
 
   const scrollRight = () => {
-    if (sliderRef.current) {
+    if (sliderRef.current && canScrollRight) {
       sliderRef.current.scrollBy({ left: 300, behavior: 'smooth' });
     }
   };
 
-  // Detectar si hay scroll disponible
-  const hasScroll = categories.length > itemsPerRow * 2;
+  const handleScroll = () => {
+    if (sliderRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = sliderRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
+
+  // Si hay más de 4 columnas (8 categorías), mostrar scroll
+  const hasScroll = groupedCategories.length > 4;
 
   return (
     <div className="category-slider-container">
-      {/* Encabezado */}
-      <div className="slider-header">
-     
-        {hasScroll && (
-          <div className="slider-nav-buttons">
-            <button className="nav-btn prev-btn" onClick={scrollLeft} aria-label="Anterior">
-              <i className="fas fa-chevron-left"></i>
-            </button>
-            <button className="nav-btn next-btn" onClick={scrollRight} aria-label="Siguiente">
-              <i className="fas fa-chevron-right"></i>
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Contenedor del slider con scroll horizontal */}
-      <div 
-        ref={sliderRef} 
-        className={`category-slider ${hasScroll ? 'has-scroll' : ''}`}
-        style={{ 
-          '--items-per-row': itemsPerRow,
-          '--total-items': categories.length
-        }}
-      >
-        {categories.map((cat, index) => (
-          <div
-            key={cat._id || index}
-            className="category-slider-item"
-            onClick={() => handleClick(cat)}
-            style={{ animationDelay: `${index * 0.05}s` }}
+      {/* Botones solo en desktop */}
+      {hasScroll && window.innerWidth > 767 && (
+        <div className="slider-nav-buttons">
+          <button 
+            className={`nav-btn prev-btn ${!canScrollLeft ? 'disabled' : ''}`}
+            onClick={scrollLeft}
+            disabled={!canScrollLeft}
+            aria-label="Précédent"
           >
-            {/* Contenedor del icono */}
-            <div className="icon-container">
-              {cat.icon ? (
+            <i className="fas fa-chevron-left"></i>
+          </button>
+          <button 
+            className={`nav-btn next-btn ${!canScrollRight ? 'disabled' : ''}`}
+            onClick={scrollRight}
+            disabled={!canScrollRight}
+            aria-label="Suivant"
+          >
+            <i className="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      )}
+
+      {/* Slider con UNA sola fila (scroll horizontal) */}
+      <div 
+        ref={sliderRef}
+        className="category-slider"
+        onScroll={handleScroll}
+      >
+        {groupedCategories.map((group, index) => (
+          <div
+            key={index}
+            className="category-slider-item"
+            style={{ animationDelay: `${index * 0.03}s` }}
+          >
+            {/* Categoría superior */}
+            <div 
+              className="icon-container"
+              onClick={() => handleClick(group.top)}
+            >
+              {group.top.icon ? (
                 <img 
-                  src={cat.icon} 
-                  alt={cat.name} 
+                  src={group.top.icon} 
+                  alt={group.top.name} 
                   className="category-icon"
                   loading="lazy"
                 />
               ) : (
                 <div className="icon-fallback">
-                  {cat.name?.charAt(0).toUpperCase()}
+                  {group.top.name?.charAt(0).toUpperCase()}
                 </div>
               )}
               
-              {/* Badge de contador (si hay posts) */}
-              {cat.posts && cat.posts.length > 0 && (
-                <span className="item-count">{cat.posts.length}</span>
+              {group.top.count > 0 && (
+                <span className="item-count">{group.top.count}</span>
               )}
             </div>
-
-            {/* Nombre de la categoría */}
-            <div className="category-name">
-              {formatName(cat.name)}
+            
+            {/* Nombre categoría superior */}
+            <div 
+              className="category-name"
+              onClick={() => handleClick(group.top)}
+            >
+              {formatName(group.top.name)}
             </div>
+
+            {/* Categoría inferior (si existe) */}
+            {group.bottom && (
+              <>
+                <div 
+                  className="icon-container"
+                  onClick={() => handleClick(group.bottom)}
+                  style={{ marginTop: '1rem' }}
+                >
+                  {group.bottom.icon ? (
+                    <img 
+                      src={group.bottom.icon} 
+                      alt={group.bottom.name} 
+                      className="category-icon"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="icon-fallback">
+                      {group.bottom.name?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  
+                  {group.bottom.count > 0 && (
+                    <span className="item-count">{group.bottom.count}</span>
+                  )}
+                </div>
+                
+                {/* Nombre categoría inferior */}
+                <div 
+                  className="category-name"
+                  onClick={() => handleClick(group.bottom)}
+                >
+                  {formatName(group.bottom.name)}
+                </div>
+              </>
+            )}
           </div>
         ))}
       </div>
 
-      {/* Indicador de scroll (solo en móvil) */}
-      {hasScroll && (
-        <div className="scroll-indicator">
-          <span className="scroll-dot active"></span>
-          <span className="scroll-dot"></span>
-          <span className="scroll-dot"></span>
-        </div>
-      )}
-
-      {/* Contador de categorías */}
-      {categories.length > 0 && (
-        <div className="categories-counter">
-          <span className="counter-text">
-            {categories.length} {categories.length === 1 ? 'categoría' : 'categorías'}
-          </span>
+      {/* Indicador para móvil */}
+      {hasScroll && window.innerWidth <= 767 && (
+        <div className="scroll-hint">
+          <span>← Glisser →</span>
         </div>
       )}
     </div>

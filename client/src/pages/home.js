@@ -156,7 +156,7 @@ const Home = () => {
         </section>
 
         {/* Secciones de categorías */}
-        <Container className="py-5">
+        <Container className="">
           <InfiniteScroll
             dataLength={categories.length}
             next={fetchMoreData}
@@ -204,7 +204,7 @@ const Home = () => {
                 </div>
 
                 {category.posts && category.posts.length > 0 ? (
-                  <Row >
+                  <Row className='' >
                     {category.posts.slice(0, 6).map((post) => (
                       <Col key={post._id} xs={6} md={4} lg={2} className="mb-4">
                         {/* ✅ USAR PostCard EN LUGAR DE CARD DIRECTA */}

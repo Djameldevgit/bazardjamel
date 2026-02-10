@@ -1,675 +1,217 @@
-/* 📂 styles/category-slider.css */
+/* 📂 styles/sliders-unified.css - CSS ÚNICO PARA AMBOS SLIDERS */
 
-/* ============ CONTENEDOR PRINCIPAL ============ */
-.category-slider-container {
-  width: 100%;
-  padding: 1.5rem 0;
-  position: relative;
-}
+/* ============ ESTILOS COMPARTIDOS PARA AMBOS SLIDERS ============ */
 
-/* ============ ENCABEZADO ============ */
-.slider-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding: 0 1rem;
-}
-
-.slider-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 0;
-}
-
-.slider-nav-buttons {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.nav-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 2px solid #e0e0e0;
-  background: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 1rem;
-  color: #666;
-}
-
-.nav-btn:hover {
-  border-color: #007bff;
-  background: #007bff;
-  color: white;
-  transform: scale(1.05);
-}
-
-.nav-btn:active {
-  transform: scale(0.95);
-}
-
-/* ============ SLIDER CON SCROLL HORIZONTAL ============ */
-.category-slider {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-  gap: 1rem;
-  padding: 0 1rem;
-  max-height: 280px; /* 2 filas */
-  overflow-y: hidden;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #c1c1c1 transparent;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Scrollbar styling */
-.category-slider::-webkit-scrollbar {
-  height: 6px;
-}
-
-.category-slider::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-.category-slider::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 10px;
-}
-
-.category-slider::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
-}
-
-/* Indicador visual de que hay más contenido */
-.category-slider.has-scroll {
-  padding-right: 1rem;
-  mask-image: linear-gradient(
-    to right,
-    transparent,
-    black 20px,
-    black calc(100% - 60px),
-    transparent
-  );
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent,
-    black 20px,
-    black calc(100% - 60px),
-    transparent
-  );
-}
-
-/* ============ ITEMS DEL SLIDER ============ */
-.category-slider-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: pointer;
-  padding: 1rem 0.5rem;
-  border-radius: 12px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  min-width: 90px;
-  user-select: none;
-  animation: slideInUp 0.4s ease forwards;
-  opacity: 0;
-}
-
-.category-slider-item:hover {
-  background: rgba(0, 123, 255, 0.05);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.1);
-}
-
-.category-slider-item:active {
-  transform: translateY(0);
-  transition: transform 0.1s;
-}
-
-/* ============ CONTENEDOR DEL ICONO ============ */
-.icon-container {
-  position: relative;
-  width: 70px;
-  height: 70px;
-  margin-bottom: 0.75rem;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.category-slider-item:hover .icon-container {
-  transform: scale(1.05);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* Imagen del icono */
-.category-icon {
-  width: 60%;
-  height: 60%;
-  object-fit: contain;
-  filter: brightness(0) invert(1);
-}
-
-/* Fallback para iconos sin imagen */
-.icon-fallback {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.8rem;
-  font-weight: 800;
-  color: white;
-  text-transform: uppercase;
-}
-
-/* Badge de contador */
-.item-count {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: #ff4757;
-  color: white;
-  font-size: 0.65rem;
-  font-weight: 700;
-  min-width: 20px;
-  height: 20px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 5px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 2;
-}
-
-/* ============ NOMBRE DE CATEGORÍA ============ */
-.category-name {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #333;
-  text-align: center;
-  line-height: 1.3;
-  max-width: 90px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  transition: color 0.3s ease;
-}
-
-.category-slider-item:hover .category-name {
-  color: #007bff;
-}
-
-/* ============ INDICADOR DE SCROLL ============ */
-.scroll-indicator {
-  display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 1.5rem;
-  padding: 0.5rem;
-}
-
-.scroll-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #ddd;
-  transition: all 0.3s ease;
-}
-
-.scroll-dot.active {
-  background: #007bff;
-  transform: scale(1.2);
-}
-
-/* ============ CONTADOR DE CATEGORÍAS ============ */
-.categories-counter {
-  text-align: center;
-  margin-top: 1rem;
-  padding: 0.75rem;
-  border-top: 1px solid #eee;
-}
-
-.counter-text {
-  font-size: 0.85rem;
-  color: #666;
-  font-weight: 500;
-}
-
-/* ============ RESPONSIVE DESIGN ============ */
-
-/* MÓVIL: 4 iconos por fila, scroll horizontal */
-@media (max-width: 767px) {
-  .category-slider {
-    grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
-    gap: 0.75rem;
-    padding: 0 0.75rem;
-    max-height: 260px; /* 2 filas ajustadas */
-  }
-
-  .category-slider-item {
-    min-width: 85px;
-    padding: 0.75rem 0.25rem;
-  }
-
-  .icon-container {
-    width: 65px;
-    height: 65px;
-  }
-
-  .icon-fallback {
-    font-size: 1.6rem;
-  }
-
-  .category-name {
-    font-size: 0.75rem;
-    max-width: 85px;
-  }
-
-  .slider-header {
-    padding: 0 0.75rem;
-  }
-
-  .slider-title {
-    font-size: 1.3rem;
-  }
-
-  /* Ocultar botones de navegación en móvil */
-  .slider-nav-buttons {
-    display: none;
-  }
-
-  /* Scroll más prominente en móvil */
-  .category-slider::-webkit-scrollbar {
-    height: 4px;
-  }
-}
-
-/* TABLET: 5-6 iconos por fila */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .category-slider {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 1.25rem;
-    max-height: 300px;
-  }
-
-  .category-slider-item {
-    min-width: 100px;
-  }
-
-  .icon-container {
-    width: 75px;
-    height: 75px;
-  }
-
-  .icon-fallback {
-    font-size: 1.8rem;
-  }
-
-  .category-name {
-    font-size: 0.82rem;
-    max-width: 100px;
-  }
-}
-
-/* DESKTOP: 6-8 iconos por fila */
-@media (min-width: 1024px) and (max-width: 1439px) {
-  .category-slider-container {
-    padding: 2rem 0;
-  }
-
-  .category-slider {
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-    gap: 1.5rem;
-    max-height: 320px;
-  }
-
-  .slider-title {
-    font-size: 1.7rem;
-  }
-}
-
-/* PANTALLAS GRANDES: 8+ iconos por fila */
-@media (min-width: 1440px) {
-  .category-slider-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 2.5rem 0;
-  }
-
-  .category-slider {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 1.75rem;
-    max-height: 350px;
-  }
-
-  .icon-container {
-    width: 80px;
-    height: 80px;
-  }
-
-  .icon-fallback {
-    font-size: 2rem;
-  }
-
-  .slider-title {
-    font-size: 1.9rem;
-  }
-}
-
-/* ANIMACIONES */
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Efecto ripple al hacer click */
-.category-slider-item::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100%;
-  height: 100%;
-  border-radius: 12px;
-  background: rgba(0, 123, 255, 0.1);
-  transform: translate(-50%, -50%) scale(0);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.category-slider-item:active::after {
-  animation: ripple 0.6s ease-out;
-}
-
-@keyframes ripple {
-  0% {
-    transform: translate(-50%, -50%) scale(0);
-    opacity: 0.5;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(1.5);
-    opacity: 0;
-  }
-}
-
-/* ESTADO SIN CATEGORÍAS */
-.category-slider:empty + .scroll-indicator,
-.category-slider:empty + .categories-counter {
-  display: none;
-}
-
-.category-slider:empty::before {
-  content: 'No hay categorías disponibles';
-  text-align: center;
-  color: #999;
-  font-size: 1rem;
-  padding: 3rem 1rem;
-  grid-column: 1 / -1;
-}
-
-/* 📂 styles/unified-sliders.css */
-
-/* ============ VARIABLES Y ESTILOS BASE ============ */
+/* Variables globales */
 :root {
   --slider-primary: #007bff;
   --slider-secondary: #6c757d;
-  --slider-success: #28a745;
   --slider-danger: #ff4757;
-  --slider-warning: #ffc107;
-  --slider-info: #17a2b8;
-  --slider-light: #f8f9fa;
-  --slider-dark: #343a40;
-  
-  --slider-border-radius: 12px;
-  --slider-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --slider-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --slider-shadow-hover: 0 8px 15px rgba(0, 0, 0, 0.15);
+  --slider-success: #28a745;
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --gradient-tertiary: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
 }
 
-/* ============ CONTENEDOR PRINCIPAL UNIFICADO ============ */
+/* ============ CONTENEDORES PRINCIPALES ============ */
+.category-slider-container,
 .unified-slider-container {
   width: 100%;
-  margin: 1.5rem 0;
-  padding: 1rem 0;
+  padding: 0.25rem 0; /* MÍNIMO espacio vertical */
   position: relative;
+  overflow: hidden;
 }
 
-/* Variantes específicas */
+/* Variantes para unified-slider */
+.unified-slider-container.categoryPage {
+  margin: 0.5rem 0;
+  padding: 0.25rem 0;
+}
+
 .unified-slider-container.home {
   background: linear-gradient(to bottom, transparent, rgba(0, 123, 255, 0.02));
   border-radius: 16px;
-  padding: 1.5rem;
+  padding: 1rem 0;
 }
 
-.unified-slider-container.categoryPage {
-  margin: 1rem 0;
-  padding: 0.5rem 0;
-}
-
-.unified-slider-container.subcategories-slider .slider-item {
-  border: 2px solid transparent;
-}
-
-.unified-slider-container.categories-slider .slider-item {
-  border: 1px solid #f0f0f0;
-}
-
-/* ============ ENCABEZADO ============ */
-.slider-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding: 0 1rem;
-}
-
-.unified-slider-container.categoryPage .slider-header {
-  display: none; /* Ocultar en categoryPage si no hay título */
-}
-
-.slider-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--slider-dark);
-  margin: 0;
-  position: relative;
-  padding-left: 0.5rem;
-}
-
-.slider-title::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: 4px;
-  background: var(--slider-primary);
-  border-radius: 2px;
-}
-
-/* ============ SLIDER CON SCROLL HORIZONTAL ============ */
+/* ============ SLIDERS CON SCROLL HORIZONTAL (COMPARTIDO) ============ */
+.category-slider,
 .unified-slider {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-  gap: 1rem;
+  /* SOLUCIÓN: Una sola fila con altura para 2 filas visuales */
+  display: flex;
+  flex-wrap: nowrap; /* IMPORTANTE: una sola línea */
+  gap: 0.75rem;
   padding: 0.5rem 1rem;
-  max-height: calc(2 * 130px); /* 2 filas por defecto */
-  overflow-y: hidden;
+  
+  /* ALTURA suficiente para mostrar 2 filas VISUALMENTE */
+  height: 220px; /* Altura para 2 filas de iconos */
+  
+  /* SCROLL HORIZONTAL ACTIVADO */
   overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #c1c1c1 transparent;
+  overflow-y: hidden;
+  
+  /* Mejorar experiencia de scroll */
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--slider-primary) #f5f5f5;
+  
+  /* Forzar que el contenido no se reduzca */
+  align-items: flex-start;
 }
 
-/* Configuración por número de filas */
-.unified-slider[data-rows="1"] {
-  max-height: 130px;
-}
-
-.unified-slider[data-rows="2"] {
-  max-height: calc(2 * 130px);
-}
-
-.unified-slider[data-rows="3"] {
-  max-height: calc(3 * 130px);
-}
-
-/* Scrollbar styling */
+/* Scrollbar styling (compartido) */
+.category-slider::-webkit-scrollbar,
 .unified-slider::-webkit-scrollbar {
   height: 6px;
 }
 
+.category-slider::-webkit-scrollbar-track,
 .unified-slider::-webkit-scrollbar-track {
   background: #f5f5f5;
   border-radius: 10px;
   margin: 0 1rem;
 }
 
+.category-slider::-webkit-scrollbar-thumb,
 .unified-slider::-webkit-scrollbar-thumb {
   background: var(--slider-primary);
   border-radius: 10px;
   opacity: 0.6;
 }
 
+.category-slider::-webkit-scrollbar-thumb:hover,
 .unified-slider::-webkit-scrollbar-thumb:hover {
   background: var(--slider-primary);
   opacity: 1;
 }
 
 /* Indicador visual de scroll */
-.unified-slider.has-scroll {
-  padding-right: 2rem;
-  mask-image: linear-gradient(
-    to right,
-    transparent,
-    black 20px,
-    black calc(100% - 60px),
-    transparent
-  );
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent,
-    black 20px,
-    black calc(100% - 60px),
-    transparent
-  );
+.category-slider.has-scroll::after,
+.unified-slider.has-scroll::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 30px;
+  background: linear-gradient(to right, transparent, white);
+  pointer-events: none;
 }
 
-/* ============ ITEMS DEL SLIDER ============ */
-.slider-item {
+/* ============ ITEMS DE LOS SLIDERS (COMPARTIDOS) ============ */
+.category-slider-item,
+.unified-slider .slider-item {
+  /* Cada item contiene 2 filas de contenido */
   display: flex;
   flex-direction: column;
-  align-items: center;
   cursor: pointer;
-  padding: 1rem 0.5rem;
-  border-radius: var(--slider-border-radius);
-  transition: var(--slider-transition);
-  min-width: 90px;
-  position: relative;
-  animation: slideIn 0.4s ease forwards;
-  opacity: 0;
-  background: white;
+  padding: 0.75rem 0.5rem;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* ANCHO FIJO para cada columna */
+  width: 100px;
+  min-width: 100px; /* IMPORTANTE: ancho mínimo */
+  
+  /* ALTURA para 2 filas de contenido */
+  height: 200px;
+  
+  /* No crecer, no encoger */
+  flex: 0 0 auto;
+  
   user-select: none;
+  animation: slideInUp 0.4s ease forwards;
+  opacity: 0;
 }
 
-.slider-item:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--slider-shadow-hover);
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+/* Hover effects */
+.category-slider-item:hover,
+.unified-slider .slider-item:hover {
+  background: rgba(0, 123, 255, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.1);
 }
 
-.slider-item.active {
+/* Estado activo (solo para unified-slider) */
+.unified-slider .slider-item.active {
   border: 2px solid var(--slider-primary);
   background: linear-gradient(135deg, rgba(0, 123, 255, 0.05) 0%, rgba(0, 123, 255, 0.1) 100%);
 }
 
-.slider-item.active:hover {
+.unified-slider .slider-item.active:hover {
   border-color: var(--slider-primary);
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(15px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* ============ CONTENEDOR DEL ICONO ============ */
+/* ============ CONTENEDOR DEL ICONO - 100% REDONDO (COMPARTIDO) ============ */
+.icon-container,
 .item-icon-container {
   position: relative;
   width: 70px;
   height: 70px;
-  margin-bottom: 0.75rem;
-  border-radius: 50%;
+  border-radius: 50%; /* HACE REDONDO EL CONTENEDOR */
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-  transition: var(--slider-transition);
-  box-shadow: var(--slider-shadow);
+  overflow: hidden; /* CRÍTICO: esconde esquinas */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  margin: 0 auto 0.5rem auto; /* Centrar y espacio inferior */
 }
 
-/* Colores por tipo de contenido */
-.subcategories-slider .item-icon-container {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
+/* Colores específicos según tipo */
+.category-slider .icon-container,
 .categories-slider .item-icon-container {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: var(--gradient-primary); /* Categorías principales */
 }
 
-.slider-item:hover .item-icon-container {
-  transform: scale(1.08);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+.subcategories-slider .item-icon-container {
+  background: var(--gradient-secondary); /* Subcategorías */
 }
 
-.slider-item.active .item-icon-container {
+.articles-slider .item-icon-container {
+  background: var(--gradient-tertiary); /* Artículos */
+}
+
+/* Hover effect para iconos */
+.category-slider-item:hover .icon-container,
+.unified-slider .slider-item:hover .item-icon-container {
+  transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Estado activo para unified */
+.unified-slider .slider-item.active .item-icon-container {
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.8), 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-/* Icono/Imagen */
+/* ============ IMAGENES DE ICONOS - 100% REDONDAS (COMPARTIDO) ============ */
+.category-icon,
 .item-icon {
-  width: 60%;
-  height: 60%;
-  object-fit: contain;
-  filter: brightness(0) invert(1);
+  /* CAMBIO CRÍTICO: Para redondez perfecta */
+  width: 100%; /* Ocupa TODO el contenedor */
+  height: 100%; /* Ocupa TODO el contenedor */
+  object-fit: cover; /* Cubre todo el círculo */
+  border-radius: 50%; /* Hace la imagen redonda */
+  transform: scale(0.85); /* Reduce un poco para dejar borde */
+  filter: brightness(0) invert(1); /* Iconos blancos */
 }
 
-/* Icono emoji */
+/* Iconos emoji (para unified-slider) */
 .emoji-icon {
   font-size: 2rem;
   line-height: 1;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  filter: brightness(0) invert(1);
 }
 
-/* Fallback para iconos sin imagen */
+/* Fallback para iconos sin imagen (compartido) */
 .icon-fallback {
   width: 100%;
   height: 100%;
@@ -680,9 +222,11 @@
   font-weight: 800;
   color: white;
   text-transform: uppercase;
+  border-radius: 50%; /* También redondo */
 }
 
-/* ============ BADGES E INDICADORES ============ */
+/* ============ BADGES DE CONTADOR (COMPARTIDOS) ============ */
+.item-count,
 .item-count-badge {
   position: absolute;
   top: -5px;
@@ -702,6 +246,7 @@
   z-index: 2;
 }
 
+/* Indicador de activo (solo unified-slider) */
 .active-indicator {
   position: absolute;
   bottom: 5px;
@@ -715,14 +260,19 @@
   z-index: 1;
 }
 
-/* ============ NOMBRE DEL ITEM ============ */
+/* ============ NOMBRES (COMPARTIDOS) ============ */
+.category-name,
 .item-name {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: var(--slider-dark);
+  color: #333;
   text-align: center;
-  line-height: 1.3;
-  max-width: 90px;
+  line-height: 1.2;
+  margin-top: 0.5rem;
+  
+  /* Asegurar que el texto sea visible */
+  width: 100%;
+  height: 2.4em;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -731,24 +281,61 @@
   transition: color 0.3s ease;
 }
 
-.slider-item:hover .item-name {
+/* Hover effect para nombres */
+.category-slider-item:hover .category-name,
+.unified-slider .slider-item:hover .item-name {
   color: var(--slider-primary);
 }
 
-.slider-item.active .item-name {
+/* Estado activo para nombres (solo unified) */
+.unified-slider .slider-item.active .item-name {
   color: var(--slider-primary);
   font-weight: 700;
 }
 
-/* ============ BOTONES DE NAVEGACIÓN ============ */
+/* ============ ENCABEZADOS (PARA UNIFIED-SLIDER) ============ */
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding: 0 1rem;
+}
+
+.slider-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+  position: relative;
+  padding-left: 0.5rem;
+}
+
+.slider-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  background: var(--gradient-primary);
+  border-radius: 2px;
+}
+
+/* Ocultar encabezado en categoryPage */
+.unified-slider-container.categoryPage .slider-header {
+  display: none;
+}
+
+/* ============ BOTONES DE NAVEGACIÓN (COMPARTIDOS) ============ */
 .slider-nav-buttons {
   display: flex;
   gap: 0.5rem;
 }
 
 .nav-btn {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 2px solid #e0e0e0;
   background: white;
@@ -756,9 +343,10 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: var(--slider-transition);
-  font-size: 1rem;
-  color: var(--slider-secondary);
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  color: #666;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .nav-btn:hover {
@@ -772,12 +360,18 @@
   transform: scale(0.95);
 }
 
-/* ============ INDICADOR DE SCROLL ============ */
+.nav-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ============ INDICADORES DE SCROLL (COMPARTIDOS) ============ */
 .scroll-indicator {
   display: flex;
   justify-content: center;
   gap: 0.5rem;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   padding: 0.5rem;
 }
 
@@ -786,7 +380,7 @@
   height: 8px;
   border-radius: 50%;
   background: #ddd;
-  transition: var(--slider-transition);
+  transition: all 0.3s ease;
 }
 
 .scroll-dot.active {
@@ -794,15 +388,15 @@
   transform: scale(1.2);
 }
 
-/* ============ INFORMACIÓN DEL SLIDER ============ */
+/* ============ INFORMACIÓN DEL SLIDER (PARA UNIFIED) ============ */
 .slider-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1rem;
-  padding: 0.75rem 1rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
   border-top: 1px solid #eee;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .info-text {
@@ -822,271 +416,180 @@
   font-size: 0.9rem;
 }
 
-/* ============ RESPONSIVE DESIGN ============ */
+/* ============ RESPONSIVE DESIGN (COMPARTIDO) ============ */
 
-/* MÓVIL (≤767px) */
-/* 📂 styles/sliders-optimized.css - VERSIÓN MODIFICADA */
-
-/* ============ RESPONSIVE DESIGN OPTIMIZADO ============ */
-
-/* MÓVIL ANDROID (≤767px) - 8 ICONOS EN 2 FILAS (4x4) */
+/* MÓVIL: 8 ICONOS (4 columnas × 2 filas) */
 @media (max-width: 767px) {
-  .slider-container {
-    margin: 0.125rem 0; /* MÍNIMO MARGIN */
+  .category-slider-container,
+  .unified-slider-container {
     padding: 0.125rem 0;
   }
   
-  /* CAMBIO PRINCIPAL: Usar GRID en lugar de flex para 2 filas */
-  .slider-horizontal {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr); /* 4 columnas */
-    grid-template-rows: repeat(2, auto);   /* 2 filas */
-    gap: 0.5rem; /* Menor gap para compactar */
-    padding: 0.25rem 0.5rem;
-    overflow-x: hidden; /* Sin scroll horizontal */
-    overflow-y: hidden;
-    justify-items: center; /* Centrar items */
+  .category-slider,
+  .unified-slider {
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    height: 180px; /* Más bajo en móvil */
   }
   
-  /* Eliminar el pseudo-elemento de centrado */
-  .slider-horizontal::after {
-    display: none;
+  .category-slider-item,
+  .unified-slider .slider-item {
+    width: 85px;
+    min-width: 85px;
+    height: 170px;
+    padding: 0.5rem 0.25rem;
   }
   
-  .slider-item {
-    width: 68px; /* Más compacto para 4 en fila */
-    padding: 0.35rem 0.15rem;
-    margin: 0 auto; /* Centrar dentro de la celda */
+  .icon-container,
+  .item-icon-container {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    overflow: hidden;
   }
   
+  .category-icon,
   .item-icon {
-    width: 45px;
-    height: 45px;
-    margin-bottom: 0.3rem;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    transform: scale(0.85);
   }
   
-  .icon-initial {
-    font-size: 1.1rem;
+  .emoji-icon {
+    font-size: 1.5rem;
   }
   
-  .icon-emoji {
+  .icon-fallback {
     font-size: 1.4rem;
+    border-radius: 50%;
   }
   
+  .category-name,
   .item-name {
-    font-size: 0.62rem;
-    max-width: 65px;
+    font-size: 0.7rem;
     line-height: 1.1;
   }
   
   .slider-title {
-    font-size: 0.95rem;
-    padding-left: 0.5rem;
+    font-size: 1.1rem;
   }
   
   /* Ocultar botones en móvil */
-  .slider-nav-bottom {
+  .slider-nav-buttons {
     display: none;
   }
   
-  /* Mostrar puntos solo si hay más de 8 items */
-  .slider-dots {
-    display: none; /* Ocultar porque ahora es grid fijo */
+  /* Scrollbar más visible en móvil */
+  .category-slider::-webkit-scrollbar,
+  .unified-slider::-webkit-scrollbar {
+    height: 4px;
   }
   
-  /* Si hay más de 8 items, mostrar indicador */
-  .slider-horizontal.has-more-items {
-    position: relative;
-    padding-bottom: 1rem;
+  /* Indicador visual de scroll para móvil */
+  .category-slider.has-scroll::after,
+  .unified-slider.has-scroll::after {
+    width: 20px;
   }
   
-  .slider-horizontal.has-more-items::after {
-    content: '⋯';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    color: var(--slider-primary);
-    font-size: 1.2rem;
-    font-weight: bold;
-    opacity: 0.6;
-  }
-}
-
-/* TABLET (768px - 1023px) - 6 EN 2 FILAS (3x2) */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .slider-horizontal {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 3 columnas */
-    grid-template-rows: repeat(2, auto);   /* 2 filas */
-    gap: 0.75rem;
-    padding: 0.5rem 1rem;
-    overflow-x: hidden;
-    justify-items: center;
-  }
-  
-  .slider-item {
-    width: 90px;
-    padding: 0.5rem 0.25rem;
-  }
-  
-  .item-icon {
-    width: 55px;
-    height: 55px;
-  }
-  
-  .icon-initial {
-    font-size: 1.3rem;
-  }
-  
-  .item-name {
-    font-size: 0.7rem;
-    max-width: 85px;
-  }
-  
-  /* Botones solo si hay más de 6 items */
-  .slider-nav-bottom {
-    display: none;
-  }
-}
-
-/* DESKTOP (1024px - 1439px) - 8 EN 2 FILAS (4x2) */
-@media (min-width: 1024px) and (max-width: 1439px) {
-  .slider-container {
-    margin: 0.5rem 0;
-  }
-  
-  .slider-horizontal {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr); /* 4 columnas desktop */
-    grid-template-rows: repeat(2, auto);   /* 2 filas */
-    gap: 1rem;
-    padding: 0.75rem 1.25rem;
-    overflow-x: hidden;
-    justify-items: center;
-  }
-  
-  .slider-item {
-    width: 100px;
-  }
-  
-  .item-icon {
-    width: 60px;
-    height: 60px;
-  }
-  
-  .item-name {
+  /* Ocultar información extra en móvil para unified */
+  .unified-slider-container .slider-info {
     font-size: 0.75rem;
-    max-width: 95px;
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+/* TABLET: 12 ICONOS (6 columnas × 2 filas) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .category-slider,
+  .unified-slider {
+    height: 200px;
+  }
+  
+  .category-slider-item,
+  .unified-slider .slider-item {
+    width: 95px;
+    min-width: 95px;
+    height: 190px;
   }
   
   .slider-title {
-    font-size: 1.2rem;
-  }
-  
-  /* Botones de navegación para desktop */
-  .slider-nav-bottom {
-    display: flex;
-    margin-top: 0.5rem;
+    font-size: 1.4rem;
   }
 }
 
-/* PANTALLAS GRANDES (≥1440px) - 10 EN 2 FILAS (5x2) */
-@media (min-width: 1440px) {
-  .slider-container {
-    max-width: 1200px;
-    margin: 0.75rem auto;
+/* DESKTOP: 16 ICONOS (8 columnas × 2 filas) */
+@media (min-width: 1024px) {
+  .category-slider,
+  .unified-slider {
+    height: 220px;
   }
   
-  .slider-horizontal {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr); /* 5 columnas grandes */
-    grid-template-rows: repeat(2, auto);   /* 2 filas */
-    gap: 1.25rem;
-    padding: 0.75rem 1.5rem;
-    overflow-x: hidden;
-    justify-items: center;
+  .category-slider-item,
+  .unified-slider .slider-item {
+    width: 100px;
+    min-width: 100px;
+    height: 200px;
   }
   
-  .slider-item {
-    width: 110px;
-  }
-  
-  .item-icon {
-    width: 65px;
-    height: 65px;
-  }
-  
-  .icon-initial {
+  .slider-title {
     font-size: 1.5rem;
   }
   
-  .item-name {
-    font-size: 0.8rem;
-    max-width: 105px;
-  }
-}
-
-/* ============ AJUSTES PARA SCROLL HORIZONTAL CUANDO HAY MÁS ITEMS ============ */
-
-/* Clase adicional para cuando hay más items de los que caben */
-.slider-horizontal.scrollable {
-  display: flex !important; /* Forzar flex para scroll */
-  grid-template-columns: none !important;
-  grid-template-rows: none !important;
-  overflow-x: auto !important;
-}
-
-/* En móvil, si hay más de 8 items, usar scroll horizontal */
-@media (max-width: 767px) {
-  .slider-horizontal.scrollable-mobile {
-    display: flex;
-    grid-template-columns: none;
-    grid-template-rows: none;
-    overflow-x: auto;
-    padding: 0.25rem 0.75rem;
-  }
-  
-  .slider-horizontal.scrollable-mobile .slider-item {
-    width: 72px;
-  }
-  
-  /* Mostrar indicador de scroll */
-  .slider-horizontal.scrollable-mobile + .slider-dots {
+  /* Botones visibles en desktop */
+  .slider-nav-buttons {
     display: flex;
   }
 }
 
-/* ============ COMPONENTE JAVASCRIPT PARA DETECTAR MÁS ITEMS ============ */
+/* ============ ANIMACIONES (COMPARTIDAS) ============ */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
-/* Agrega esto a tu componente SliderUnificado o SliderOptimized: */
-/*
-  // Detectar si hay más items de los que caben
-  useEffect(() => {
-    if (sliderRef.current && items.length > 0) {
-      const container = sliderRef.current;
-      const itemsCount = items.length;
-      
-      // En móvil: más de 8 items
-      if (window.innerWidth <= 767 && itemsCount > 8) {
-        container.classList.add('scrollable-mobile');
-        container.classList.remove('has-more-items');
-      } 
-      // En tablet: más de 6 items  
-      else if (window.innerWidth <= 1023 && window.innerWidth > 767 && itemsCount > 6) {
-        container.classList.add('scrollable');
-      }
-      // En desktop: más de 8 items
-      else if (window.innerWidth <= 1439 && window.innerWidth > 1023 && itemsCount > 8) {
-        container.classList.add('scrollable');
-      }
-      // En pantallas grandes: más de 10 items
-      else if (window.innerWidth >= 1440 && itemsCount > 10) {
-        container.classList.add('scrollable');
-      }
-      else {
-        container.classList.remove('scrollable', 'scrollable-mobile', 'has-more-items');
-      }
-    }
-  }, [items, window.innerWidth]);
-*/
+/* ============ GARANTÍA DE REDONDEO 100% (COMPARTIDO) ============ */
+/* Esto fuerza redondez perfecta en todos los navegadores */
+.icon-container,
+.item-icon-container,
+.icon-container *,
+.item-icon-container * {
+  border-radius: 50% !important;
+  -webkit-border-radius: 50% !important;
+  -moz-border-radius: 50% !important;
+}
+
+.icon-container,
+.item-icon-container {
+  overflow: hidden !important;
+  }
+
+/* Eliminar cualquier borde o outline que rompa la redondez */
+.icon-container,
+.item-icon-container,
+.category-icon,
+.item-icon,
+.emoji-icon,
+.icon-fallback {
+  border: none !important;
+  outline: none !important;
+  box-shadow: inset 0 0 0 0 transparent !important;
+}
+
+/* Solución para Safari que a veces no redondea bien */
+ 
+
+/* ============ CONTENEDOR PARA 2 ICONOS POR COLUMNA (CATEGORY-SLIDER) ============ */
+/* Solo aplica al CategorySlider original */
+.category-slider-item > .icon-container {
+  margin-bottom: 0.75rem;
+}
+
+ 
