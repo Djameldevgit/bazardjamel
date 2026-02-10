@@ -79,15 +79,7 @@ const Home = () => {
     history.push(`/category/${slug}`, { fromHome: true, categoryName });
   };
 
-  const formatPrice = (price) => {
-    if (!price && price !== 0) return 'Precio no disponible';
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(price);
-  };
+  
 
   // Render condicional
   if (loading && categories.length === 0 && !initialLoadDone) {
@@ -212,7 +204,7 @@ const Home = () => {
                 </div>
 
                 {category.posts && category.posts.length > 0 ? (
-                  <Row>
+                  <Row >
                     {category.posts.slice(0, 6).map((post) => (
                       <Col key={post._id} xs={6} md={4} lg={2} className="mb-4">
                         {/* ✅ USAR PostCard EN LUGAR DE CARD DIRECTA */}

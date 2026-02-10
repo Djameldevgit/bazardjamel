@@ -1,7 +1,8 @@
-// 📂 redux/reducers/postReducer.js - VERSIÓN LIMPIA
+// 📂 redux/reducers/postReducer.js - VERSIÓN COMPLETA CORREGIDA
 import { POST_TYPES } from '../actions/postAction';
 import { GLOBALTYPES } from '../actions/globalTypes';
-import { DeleteData } from '../actions/globalTypes'
+import { DeleteData } from '../actions/globalTypes';
+
 const initialState = {
   // Estados básicos
   loading: false,
@@ -24,7 +25,7 @@ const initialState = {
   // Errores
   error: null,
 
-  // Filtros (opcional, si necesitas mantener estado de filtrado)
+  // Filtros
   filters: {
     categoryId: null,
     subcategory: null,
@@ -33,9 +34,8 @@ const initialState = {
     location: null
   },
 
-
-  // Posts similares
-  similarPosts: [],
+  // Posts similares (alternativa)
+  similarPostsArray: [],
   similarPostsTotal: 0,
   similarPostsPage: 1,
   similarPostsTotalPages: 1,
@@ -43,81 +43,138 @@ const initialState = {
   similarLoading: false,
   currentSimilarPostId: null,
 
-
-
-
-
+  // 🎯 NUEVOS ESTADOS PARA PAGINACIÓN DE CATEGORÍAS
+  postsLoading: false,
+  loadingMorePosts: false,
+  postsError: null,
+  hasMorePosts: true,
+  pagination: {
+    currentPage: 1,
+    totalPages: 1,
+    totalPosts: 0,
+    limit: 12
+  }
 };
 
 const postReducer = (state = initialState, action) => {
   switch (action.type) {
+    // ================ CATEGORY POSTS PAGINADOS ================
     case POST_TYPES.GET_CATEGORY_POSTS:
       return {
         ...state,
         postsLoading: true,
+        loadingMorePosts: false,
         postsError: null
       };
-    case POST_TYPES.GET_POST_BY_ID:
-      return {
-        ...state,
-        postToEdit: action.payload // Guardamos el post completo para edición
-      };
-
-    case POST_TYPES.SET_POST_FILTERS:
-      return {
-        ...state,
-        filters: {
-          ...state.filters,
-          ...action.payload
-        },
-        posts: [],
-        page: 1,
-        result: 0
-      };
-
-
 
     case POST_TYPES.GET_CATEGORY_POSTS_SUCCESS:
-      console.log('✅ Reducer: GET_CATEGORY_POSTS_SUCCESS', {
-        postsCount: action.payload.posts.length,
-        hasMore: action.payload.hasMore
+      console.log('✅ GET_CATEGORY_POSTS_SUCCESS:', {
+        pagina: action.payload.pagination?.currentPage || 1,
+        postsRecibidos: action.payload.posts?.length || 0,
+        postsActuales: state.posts.length,
+        tieneMas: action.payload.pagination?.hasMore || false
       });
+
+      // 🎯 LÓGICA DE ACUMULACIÓN
+      const currentPage = action.payload.pagination?.currentPage || 1;
+      const newPosts = action.payload.posts || [];
+      
+      let postsActualizados;
+      
+      if (currentPage === 1) {
+        // Página 1: Reemplazar
+        postsActualizados = newPosts;
+        console.log('📄 Página 1: Reemplazando posts');
+      } else {
+        // Página > 1: Acumular
+        postsActualizados = [...state.posts, ...newPosts];
+        console.log(`📄 Página ${currentPage}: Acumulando ${newPosts.length} posts`);
+      }
 
       return {
         ...state,
         postsLoading: false,
-       
-        posts: action.payload.posts || [],
-        postsCurrentPage: action.payload.currentPage || 1,
-        postsTotalPages: action.payload.totalPages || 1,
-        hasMorePosts: action.payload.hasMore || false,
-        postsError: null
+        loadingMorePosts: false,
+        posts: postsActualizados,
+        hasMorePosts: action.payload.pagination?.hasMore || false,
+        postsError: null,
+        pagination: {
+          currentPage: currentPage,
+          totalPages: action.payload.pagination?.totalPages || 1,
+          totalPosts: action.payload.pagination?.totalPosts || 0,
+          limit: action.payload.pagination?.limit || 12
+        }
       };
 
     case POST_TYPES.GET_CATEGORY_POSTS_FAIL:
       return {
         ...state,
         postsLoading: false,
-        postsError: action.payload,
-        posts: []
+        loadingMorePosts: false,
+        postsError: action.payload
       };
-    // ================ LOADING STATES ================
+
+    // 🎯 NUEVO: ESTADOS PARA "CARGAR MÁS" (SCROLL INFINITO)
+    case POST_TYPES.LOADING_MORE_POSTS:
+      return {
+        ...state,
+        loadingMorePosts: true,
+        postsError: null
+      };
+
+    case POST_TYPES.LOAD_MORE_POSTS_SUCCESS:
+      console.log('✅ LOAD_MORE_POSTS_SUCCESS:', {
+        pagina: action.payload.pagination?.currentPage || 1,
+        postsNuevos: action.payload.posts?.length || 0,
+        postsTotales: state.posts.length + (action.payload.posts?.length || 0),
+        tieneMas: action.payload.pagination?.hasMore || false
+      });
+
+      return {
+        ...state,
+        loadingMorePosts: false,
+        // 🎯 SIEMPRE acumular posts
+        posts: [...state.posts, ...(action.payload.posts || [])],
+        hasMorePosts: action.payload.pagination?.hasMore || false,
+        pagination: {
+          currentPage: action.payload.pagination?.currentPage || 1,
+          totalPages: action.payload.pagination?.totalPages || 1,
+          totalPosts: action.payload.pagination?.totalPosts || 0,
+          limit: action.payload.pagination?.limit || 12
+        }
+      };
+
+    case POST_TYPES.LOAD_MORE_POSTS_FAIL:
+      return {
+        ...state,
+        loadingMorePosts: false,
+        postsError: action.payload
+      };
+
+    // ================ RESET ================
+    case POST_TYPES.RESET_CATEGORY_POSTS:
+      return {
+        ...state,
+        posts: [],
+        postsLoading: false,
+        loadingMorePosts: false,
+        hasMorePosts: true,
+        postsError: null,
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalPosts: 0,
+          limit: 12
+        }
+      };
+
+    // ================ POSTS GENERALES ================
     case POST_TYPES.LOADING_POST:
       return {
         ...state,
         loading: action.payload
       };
 
-    case POST_TYPES.LOADING_SIMILAR_POSTS:
-      return {
-        ...state,
-        similarPosts: {
-          ...state.similarPosts,
-          loading: action.payload
-        }
-      };
-
-    // ================ CREATE POST ================
     case POST_TYPES.CREATE_POST:
       return {
         ...state,
@@ -125,7 +182,6 @@ const postReducer = (state = initialState, action) => {
         result: state.result + 1
       };
 
-    // ================ GET POSTS (paginados) ================
     case POST_TYPES.GET_POSTS:
       return {
         ...state,
@@ -135,7 +191,7 @@ const postReducer = (state = initialState, action) => {
         loading: false
       };
 
-    // ================ GET SINGLE POST ================
+    // ================ POST ESPECÍFICO ================
     case POST_TYPES.GET_POST:
       return {
         ...state,
@@ -143,7 +199,13 @@ const postReducer = (state = initialState, action) => {
         loading: false
       };
 
-    // ================ UPDATE POST ================
+    case POST_TYPES.GET_POST_BY_ID:
+      return {
+        ...state,
+        postToEdit: action.payload
+      };
+
+    // ================ ACTUALIZAR POST ================
     case POST_TYPES.UPDATE_POST:
       return {
         ...state,
@@ -161,26 +223,82 @@ const postReducer = (state = initialState, action) => {
         posts: DeleteData(state.posts, action.payload._id)
       };
 
-    // ================ SIMILAR POSTS ================
-    case POST_TYPES.GET_SIMILAR_POSTS:
+    // ================ FILTROS ================
+    case POST_TYPES.SET_POST_FILTERS:
+      return {
+        ...state,
+        filters: {
+          ...state.filters,
+          ...action.payload
+        },
+        posts: [],
+        page: 1,
+        result: 0
+      };
+
+    // ================ POSTS SIMILARES ================
+    case POST_TYPES.LOADING_SIMILAR_POSTS:
       return {
         ...state,
         similarPosts: {
-          posts: action.payload.posts || [],
-          currentPostId: action.payload.currentPostId,
-          page: action.payload.page || 1,
-          total: action.payload.total || 0,
-          loading: false
+          ...state.similarPosts,
+          loading: action.payload
         }
       };
+
+    case POST_TYPES.GET_SIMILAR_POSTS: {
+      const {
+        posts: newSimilarPosts = [],
+        page: newSimilarPage = 1,
+        total: newSimilarTotal = 0,
+        totalPages: newSimilarTotalPages = 1,
+        hasMore: newSimilarHasMore = false,
+        currentPostId: newCurrentPostId
+      } = action.payload;
+
+      const safeSimilarPosts = Array.isArray(newSimilarPosts)
+        ? newSimilarPosts
+        : [];
+
+      if (newSimilarPage === 1 || newCurrentPostId !== state.currentSimilarPostId) {
+        return {
+          ...state,
+          similarPostsArray: safeSimilarPosts,
+          similarPostsTotal: newSimilarTotal,
+          similarPostsPage: newSimilarPage,
+          similarPostsTotalPages: newSimilarTotalPages,
+          similarPostsHasMore: newSimilarHasMore,
+          similarLoading: false,
+          currentSimilarPostId: newCurrentPostId,
+          error: null
+        };
+      }
+
+      return {
+        ...state,
+        similarPostsArray: [...state.similarPostsArray, ...safeSimilarPosts],
+        similarPostsTotal: newSimilarTotal,
+        similarPostsPage: newSimilarPage,
+        similarPostsTotalPages: newSimilarTotalPages,
+        similarPostsHasMore: newSimilarHasMore,
+        similarLoading: false,
+        error: null
+      };
+    }
 
     case POST_TYPES.CLEAR_SIMILAR_POSTS:
       return {
         ...state,
-        similarPosts: initialState.similarPosts
+        similarPostsArray: [],
+        similarPostsTotal: 0,
+        similarPostsPage: 1,
+        similarPostsTotalPages: 1,
+        similarPostsHasMore: false,
+        similarLoading: false,
+        currentSimilarPostId: null
       };
 
-    // ================ LIKE/UNLIKE ================
+    // ================ LIKES ================
     case POST_TYPES.LIKE_POST:
     case POST_TYPES.UNLIKE_POST:
       return {
@@ -193,9 +311,7 @@ const postReducer = (state = initialState, action) => {
           : state.detailPost
       };
 
-    // ================ SAVE/UNSAVE ================
-    // Nota: Estas acciones probablemente manejan el estado en authReducer
-    // pero las mantenemos por si acaso
+    // ================ SAVES ================
     case POST_TYPES.SAVE_POST:
       return {
         ...state,
@@ -219,7 +335,7 @@ const postReducer = (state = initialState, action) => {
         )
       };
 
-    // ================ ERROR HANDLING ================
+    // ================ ERRORES ================
     case POST_TYPES.ERROR_POST:
       return {
         ...state,
@@ -237,15 +353,14 @@ const postReducer = (state = initialState, action) => {
         error: null
       };
 
-    // ================ RESET ================
+    // ================ RESET COMPLETO ================
     case POST_TYPES.RESET_POST_STATE:
       return {
         ...initialState
       };
 
-    // ================ GLOBAL ALERTS (si afectan posts) ================
+    // ================ ALERTAS GLOBALES ================
     case GLOBALTYPES.ALERT:
-      // Solo procesar si es un error relacionado con posts
       if (action.payload.error && action.payload.error.includes('post')) {
         return {
           ...state,
@@ -253,63 +368,6 @@ const postReducer = (state = initialState, action) => {
         };
       }
       return state;
-
-
-    // ==================== POSTS SIMILARES (de postAction) ====================
-    case POST_TYPES.GET_SIMILAR_POSTS: {
-      const {
-        posts: newSimilarPosts = [],
-        page: newSimilarPage = 1,
-        total: newSimilarTotal = 0,
-        totalPages: newSimilarTotalPages = 1,
-        hasMore: newSimilarHasMore = false,
-        currentPostId: newCurrentPostId
-      } = action.payload;
-
-      const safeSimilarPosts = Array.isArray(newSimilarPosts)
-        ? newSimilarPosts
-        : [];
-
-      if (newSimilarPage === 1 || newCurrentPostId !== state.currentSimilarPostId) {
-        return {
-          ...state,
-          similarPosts: safeSimilarPosts,
-          similarPostsTotal: newSimilarTotal,
-          similarPostsPage: newSimilarPage,
-          similarPostsTotalPages: newSimilarTotalPages,
-          similarPostsHasMore: newSimilarHasMore,
-          similarLoading: false,
-          currentSimilarPostId: newCurrentPostId,
-          error: null
-        };
-      }
-
-      return {
-        ...state,
-        similarPosts: [...state.similarPosts, ...safeSimilarPosts],
-        similarPostsTotal: newSimilarTotal,
-        similarPostsPage: newSimilarPage,
-        similarPostsTotalPages: newSimilarTotalPages,
-        similarPostsHasMore: newSimilarHasMore,
-        similarLoading: false,
-        error: null
-      };
-    }
-
-    case POST_TYPES.CLEAR_SIMILAR_POSTS:
-      return {
-        ...state,
-        similarPosts: [],
-        similarPostsTotal: 0,
-        similarPostsPage: 1,
-        similarPostsTotalPages: 1,
-        similarPostsHasMore: false,
-        similarLoading: false,
-        currentSimilarPostId: null
-      };
-
-
-
 
     // ================ DEFAULT ================
     default:

@@ -18,13 +18,26 @@ export const POST_TYPES = {
   GET_POST_BY_ID: 'GET_POST_BY_ID',
   UPDATE_POST: 'UPDATE_POST',
   DELETE_POST: 'DELETE_POST',
-  GET_CATEGORY_POSTS:'GET_CATEGORY_POSTS',
-  GET_CATEGORY_POSTS_SUCCESS:'GET_CATEGORY_POSTS_SUCCESS',
-  GET_CATEGORY_POSTS_FAIL:'GET_CATEGORY_POSTS_FAIL',
+  
+  // Posts por categoría
+  GET_CATEGORY_POSTS: 'GET_CATEGORY_POSTS',
+  GET_CATEGORY_POSTS_SUCCESS: 'GET_CATEGORY_POSTS_SUCCESS',
+  GET_CATEGORY_POSTS_FAIL: 'GET_CATEGORY_POSTS_FAIL',
+  
+  // 🎯 NUEVAS CONSTANTES PARA PAGINACIÓN
+  LOADING_MORE_POSTS: 'LOADING_MORE_POSTS',
+  LOAD_MORE_POSTS_SUCCESS: 'LOAD_MORE_POSTS_SUCCESS',
+  LOAD_MORE_POSTS_FAIL: 'LOAD_MORE_POSTS_FAIL',
+  RESET_CATEGORY_POSTS: 'RESET_CATEGORY_POSTS',
+  
+  // Posts similares
   GET_SIMILAR_POSTS: 'GET_SIMILAR_POSTS',
   LOADING_SIMILAR_POSTS: 'LOADING_SIMILAR_POSTS',
   CLEAR_SIMILAR_POSTS: 'CLEAR_SIMILAR_POSTS',
-  SET_POST_FILTERS:'SET_POST_FILTERS',
+  
+  // Filtros
+  SET_POST_FILTERS: 'SET_POST_FILTERS',
+  
   // Errores
   ERROR_POST: 'ERROR_POST',
   CLEAR_POST_ERROR: 'CLEAR_POST_ERROR',
@@ -43,150 +56,109 @@ export const setPostFilters = (filters) => ({
   type: POST_TYPES.SET_POST_FILTERS,
   payload: filters
 });
-export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = null, page = 1, limit = 12) => async (dispatch) => {
-    try {
-      dispatch({ type: types.GET_CATEGORY_POSTS });
-  
-      // ⭐ CONSTRUIR ENDPOINT CORRECTO
-      let endpoint = `${API_URL}/api/posts/filter`;
-      let params = { 
+export const resetCategoryPosts = () => ({
+  type: POST_TYPES.RESET_CATEGORY_POSTS
+});
+
+// 🎯 Acción para indicar que se están cargando más posts
+export const loadingMorePosts = () => ({
+  type: POST_TYPES.LOADING_MORE_POSTS
+});
+
+// 🎯 Acción para éxito al cargar más posts
+export const loadMorePostsSuccess = (payload) => ({
+  type: POST_TYPES.LOAD_MORE_POSTS_SUCCESS,
+  payload
+});
+
+// 🎯 Acción para error al cargar más posts
+export const loadMorePostsFail = (error) => ({
+  type: POST_TYPES.LOAD_MORE_POSTS_FAIL,
+  payload: error
+});
+
+// 📂 redux/actions/categoryAction.js - VERSIÓN CORREGIDA
+export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = null, page = 1, limit = 12) => async (dispatch, getState) => {
+  try {
+    console.log('🚀 getCategoryPosts - Página solicitada:', page);
+    
+    // 🎯 Si es página 1: GET_CATEGORY_POSTS, si es >1: LOADING_MORE_POSTS
+    if (page === 1) {
+      dispatch({ type: POST_TYPES.GET_CATEGORY_POSTS });
+    } else {
+      dispatch({ type: POST_TYPES.LOADING_MORE_POSTS });
+    }
+
+    const { data } = await axios.get(`${API_URL}/api/posts/filter`, {
+      params: {
         category: categorySlug,
+        sub: subSlug,
+        article: articleSlug,
         page: page,
         limit: limit
-      };
-      
-      // Añadir subcategoría si existe
-      if (subSlug) params.sub = subSlug;
-      
-      console.log('🔍 Consultando endpoint:', endpoint);
-      console.log('📊 Parámetros:', params);
-  
-      const { data } = await axios.get(endpoint, { params });
-      
-      console.log('✅ Respuesta del servidor:', {
-        success: data.success,
-        postsCount: data.posts ? data.posts.length : 0,
-        childrenCount: data.children ? data.children.length : 0,
-        categoryInfo: data.categoryInfo ? data.categoryInfo.name : 'No info'
-      });
-  
-      // ⭐ VERIFICAR ESTRUCTURA DE DATOS
-      if (data.posts && data.posts.length > 0) {
-        console.log('📦 Primer post recibido:', {
-          id: data.posts[0]._id,
-          title: data.posts[0].title,
-          images: data.posts[0].images ? data.posts[0].images.length : 0,
-          user: data.posts[0].user
-        });
       }
-  
-      // ⭐ OBTENER ICONOS REALES DE LAS CATEGORÍAS
-      if (data.children && data.children.length > 0) {
-        console.log('🎨 Información de iconos de children:');
-        data.children.forEach((child, i) => {
-          const iconInfo = child.icon 
-            ? `✅ ${child.icon} (${child.iconType || 'no-type'})` 
-            : '❌ NO TIENE ICONO';
-          
-          console.log(`${i+1}. ${child.name} - ${iconInfo}`);
-        });
-      }
-  
-      // ⭐ ACTUALIZAR ESTADO ACTIVO
-      if (categorySlug) {
-        dispatch({ 
-          type: types.SET_ACTIVE_CATEGORY, 
-          payload: { slug: categorySlug, ...data.categoryInfo } 
-        });
-      }
-      if (subSlug) {
-        dispatch({ 
-          type: types.SET_ACTIVE_SUBCATEGORY, 
-          payload: { slug: subSlug } 
-        });
-      }
-  
-      // ⭐ PREPARAR PAYLOAD CON ESTRUCTURA CORRECTA
-      const payload = {
-        // Información de categoría
-        categoryInfo: data.categoryInfo || {},
-        
-        // Hijos (subcategorías)
-        children: Array.isArray(data.children) 
-          ? data.children.map(child => ({
-              ...child,
-              // Asegurar que tenga valores por defecto para icono
-              icon: child.icon || getDefaultIcon(child.name),
-              iconType: child.iconType || 'emoji',
-              iconColor: child.iconColor || '#666666',
-              bgColor: child.bgColor || '#FFFFFF'
-            }))
-          : [],
-        
-        // Posts
-        posts: Array.isArray(data.posts) 
-          ? data.posts.map(post => ({
-              ...post,
-              // Asegurar que las imágenes tengan formato correcto
-              images: Array.isArray(post.images) 
-                ? post.images.map(img => ({
-                    url: typeof img === 'string' ? img : img.url,
-                    isMain: img.isMain || false
-                  }))
-                : []
-            }))
-          : [],
-        
-        // Paginación
-        pagination: {
-          currentPage: page,
-          hasMore: data.hasMore || false,
-          totalPages: data.totalPages || Math.ceil((data.total || 0) / limit),
-          totalPosts: data.total || 0,
-          limit: limit
-        }
-      };
-  
-      console.log('📤 Payload final para reducer:', {
-        postsCount: payload.posts.length,
-        childrenCount: payload.children.length,
-        hasMore: payload.pagination.hasMore
-      });
-  
-      // ⭐ DESPACHAR AL REDUCER
+    });
+
+    console.log('📥 Respuesta del backend filterPosts:', {
+      page: data.page,
+      postsRecibidos: data.posts?.length,
+      hasMore: data.hasMore,
+      total: data.total
+    });
+
+    // 🎯 Preparar payload CON PAGINACIÓN CORRECTA
+    const payload = {
+      posts: data.posts || [],
+      pagination: {
+        currentPage: page, // ✅ Página ACTUAL, no la siguiente
+        hasMore: data.hasMore || false,
+        totalPages: data.totalPages || 1,
+        totalPosts: data.total || 0,
+        limit: limit
+      },
+      categoryInfo: data.categoryInfo || {},
+      children: data.children || []
+    };
+
+    console.log('📤 Payload para reducer:', {
+      pagina: payload.pagination.currentPage,
+      posts: payload.posts.length,
+      hasMore: payload.pagination.hasMore
+    });
+
+    // 🎯 Despachar acción correcta
+    if (page === 1) {
       dispatch({
-        type: types.GET_CATEGORY_POSTS_SUCCESS,
+        type: POST_TYPES.GET_CATEGORY_POSTS_SUCCESS,
         payload: payload
       });
-  
-      return {
-        success: true,
-        ...payload
-      };
-  
-    } catch (error) {
-      console.error('❌ Error en getCategoryPosts:', error.response || error.message);
-      
+    } else {
       dispatch({
-        type: types.GET_CATEGORY_POSTS_FAIL,
+        type: POST_TYPES.LOAD_MORE_POSTS_SUCCESS,
+        payload: payload
+      });
+    }
+
+    return { success: true, ...payload };
+
+  } catch (error) {
+    console.error('❌ Error en getCategoryPosts:', error);
+    
+    if (page === 1) {
+      dispatch({
+        type: POST_TYPES.GET_CATEGORY_POSTS_FAIL,
         payload: error.response?.data?.message || error.message
       });
-  
-      return {
-        success: false,
-        posts: [],
-        children: [],
-        categoryInfo: {},
-        pagination: {
-          currentPage: page,
-          hasMore: false,
-          totalPages: 0,
-          totalPosts: 0
-        }
-      };
+    } else {
+      dispatch({
+        type: POST_TYPES.LOAD_MORE_POSTS_FAIL,
+        payload: error.response?.data?.message || error.message
+      });
     }
-  };
-  
+    
+    return { success: false };
+  }
+};
   // Helper para iconos por defecto
   const getDefaultIcon = (categoryName) => {
     const iconMap = {

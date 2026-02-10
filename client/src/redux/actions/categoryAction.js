@@ -9,28 +9,43 @@ export const resetCategoryPosts = () => (dispatch) => {
   dispatch({ type: "CATEGORY_RESET_POSTS" });
 };
  
+// actions/categoryActions.js
 export const getAllCategoriesWithPosts = (page = 1, limit = 2) => async (dispatch) => {
   try {
     dispatch({ type: 'LOADING_HOME', payload: true });
     dispatch({ type: 'GET_ALL_CATEGORIES_WITH_POSTS' });
     
     const { data } = await axios.get(`${BASE_URL}/api/categories/main`, {
-      params: { page, limit, posts: true }
+      params: { 
+        page, 
+        limit, 
+        posts: true 
+      }
     });
     
-    
-    console.log(data);
+    console.log('📊 Response Home:', {
+      page,
+      categoriesCount: data.categories?.length || 0,
+      pagination: data.pagination,
+      postsPerCategory: data.categories?.[0]?.posts?.length || 0
+    });
     
     dispatch({
       type: 'GET_ALL_CATEGORIES_WITH_POSTS_SUCCESS',
       payload: {
         categories: data.categories || [],
-        currentPage: page,
-        hasMore: data.categories?.length >= limit
+        currentPage: data.pagination?.currentPage || page,
+        hasMoreCategories: data.pagination?.hasMore || false,
+        totalCategories: data.pagination?.totalCategories || 0,
+        totalPages: data.pagination?.totalPages || 1
       }
     });
     
-    return { success: true, categories: data.categories };
+    return { 
+      success: true, 
+      categories: data.categories,
+      pagination: data.pagination 
+    };
     
   } catch (error) {
     console.error('❌ Error en getAllCategoriesWithPosts:', error);
@@ -41,8 +56,9 @@ export const getAllCategoriesWithPosts = (page = 1, limit = 2) => async (dispatc
     return { success: false };
   }
 };
- 
 
+// Acción para cargar más categorías (scroll infinito)
+ 
  
 // 🔥 NUEVA ACCIÓN: Para obtener categorías jerárquicas (para accordion)
 export const getCategoriesForAccordion = () => async (dispatch) => {

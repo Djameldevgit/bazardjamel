@@ -191,41 +191,160 @@ filterPosts: async (req, res) => {
     const limit = parseInt(req.query.limit) || 12;
     const skip = (page - 1) * limit;
 
-    const { category: categorySlug, sub, article } = req.query;
+    const { category: categorySlug, sub: subSlug, article: articleSlug } = req.query;
+
+    console.log('🔍 filterPosts - Parámetros:', {
+      category: categorySlug,
+      sub: subSlug,
+      article: articleSlug,
+      page: page,
+      limit: limit
+    });
 
     if (!categorySlug) {
       return res.json({
         success: true,
         posts: [],
         total: 0,
-        page,
+        page: page,
         hasMore: false,
         message: 'Se requiere categoría'
       });
     }
 
-    // Nivel 1: categoría principal
-    const categoryDoc = await Category.findOne({ slug: categorySlug, level: 1, isActive: true }).lean();
+    // 1. Buscar categoría nivel 1
+    const categoryDoc = await Category.findOne({ 
+      slug: categorySlug, 
+      level: 1, 
+      isActive: true 
+    }).lean();
+
     if (!categoryDoc) {
       return res.json({
         success: true,
         posts: [],
         total: 0,
-        page,
+        page: page,
         hasMore: false,
         message: 'Categoría no encontrada'
       });
     }
 
-    const filter = { category: categoryDoc._id, isActive: true };
+    // 2. Construir filtro base
+    const filter = { 
+      category: categoryDoc._id, 
+      isActive: true 
+    };
 
-    // Nivel 2: subcategoría (slug directo)
-    if (sub) filter.subCategory = sub;
+    // 3. 🎯 LÓGICA MEJORADA PARA SUBCATEGORÍAS
+    if (subSlug) {
+      // Buscar la subcategoría en la colección Category
+      const subCategoryDoc = await Category.findOne({
+        slug: subSlug,
+        level: 2,
+        isActive: true
+      }).lean();
 
-    // Nivel 3: artículo (slug directo)
-    if (article) filter.articleType = article;
+      if (subCategoryDoc) {
+        console.log('✅ Subcategoría encontrada:', {
+          slug: subCategoryDoc.slug,
+          name: subCategoryDoc.name
+        });
 
-    // Obtener posts
+        // 🎯 OPCIÓN 1: Buscar por subCategory = nombre de subcategoría
+        // 🎯 OPCIÓN 2: Buscar por articleType que contenga el slug de subcategoría
+        // 🎯 OPCIÓN 3: Buscar artículos (nivel 3) que pertenezcan a esta subcategoría
+        const subName = subCategoryDoc.name;
+        
+        // Primero, obtener todos los artículos (nivel 3) de esta subcategoría
+        const articlesOfSub = await Category.find({
+          parent: subCategoryDoc._id,
+          level: 3,
+          isActive: true
+        }).lean();
+
+        console.log('📊 Artículos de esta subcategoría:', 
+          articlesOfSub.map(a => ({ slug: a.slug, name: a.name }))
+        );
+
+        // Crear array de condiciones $or
+        const orConditions = [];
+
+        // Condición 1: subCategory exacto
+        orConditions.push({ subCategory: subName });
+
+        // Condición 2: articleType contiene el slug de subcategoría
+        orConditions.push({ articleType: { $regex: subSlug, $options: 'i' } });
+
+        // Condición 3: articleType igual al slug de algún artículo de esta subcategoría
+        if (articlesOfSub.length > 0) {
+          const articleSlugs = articlesOfSub.map(a => a.slug);
+          orConditions.push({ articleType: { $in: articleSlugs } });
+          
+          // Condición 4: subCategory igual al nombre de algún artículo de esta subcategoría
+          const articleNames = articlesOfSub.map(a => a.name);
+          orConditions.push({ subCategory: { $in: articleNames } });
+        }
+
+        filter.$or = orConditions;
+
+        console.log('🎯 Condiciones de búsqueda ($or):');
+        orConditions.forEach((cond, i) => {
+          console.log(`${i+1}. ${JSON.stringify(cond)}`);
+        });
+
+      } else {
+        console.log('⚠️ Subcategoría no encontrada en DB');
+        filter.subCategory = subSlug;
+      }
+    }
+
+    // 4. 🎯 LÓGICA PARA ARTÍCULOS (NIVEL 3)
+    if (articleSlug) {
+      // Buscar el artículo en la colección Category
+      const articleCategoryDoc = await Category.findOne({
+        slug: articleSlug,
+        level: 3,
+        isActive: true
+      }).lean();
+
+      if (articleCategoryDoc) {
+        console.log('✅ Artículo encontrado:', {
+          slug: articleCategoryDoc.slug,
+          name: articleCategoryDoc.name
+        });
+
+        // 🎯 Buscar por articleType (slug) O por subCategory (nombre)
+        filter.$and = [
+          { 
+            $or: [
+              { articleType: articleSlug },          // Por slug
+              { subCategory: articleCategoryDoc.name }  // Por nombre (caso "Robes")
+            ]
+          }
+        ];
+
+        console.log('🎯 Buscando posts con:');
+        console.log(`   articleType: "${articleSlug}"`);
+        console.log(`   O subCategory: "${articleCategoryDoc.name}"`);
+
+      } else {
+        console.log('⚠️ Artículo no encontrado en DB');
+        filter.articleType = articleSlug;
+      }
+    }
+
+    // 🎯 LIMPIAR FILTRO: Si tenemos $and y $or, asegurarse de que se combinen correctamente
+    if (filter.$or && filter.$and) {
+      // Combinar $and con condiciones existentes
+      const existingAnd = filter.$and || [];
+      filter.$and = [...existingAnd, { $or: filter.$or }];
+      delete filter.$or;
+    }
+
+    console.log('🎯 Filtro MongoDB final:', JSON.stringify(filter, null, 2));
+
+    // 5. Obtener posts paginados
     const [posts, total] = await Promise.all([
       Post.find(filter)
         .sort({ createdAt: -1 })
@@ -237,29 +356,52 @@ filterPosts: async (req, res) => {
       Post.countDocuments(filter)
     ]);
 
+    // 6. Calcular hasMore
     const hasMore = page * limit < total;
     const totalPages = Math.ceil(total / limit);
 
-    // Subcategorías (nivel 2)
-    const children = await Category.find({ parent: categoryDoc._id, level: 2, isActive: true })
+    console.log('📊 Resultados:', {
+      page: page,
+      postsEncontrados: posts.length,
+      totalPosts: total,
+      hasMore: hasMore
+    });
+
+    // 7. Obtener subcategorías (nivel 2) para el slider
+    const children = await Category.find({ 
+      parent: categoryDoc._id, 
+      level: 2, 
+      isActive: true 
+    })
       .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf')
       .sort({ order: 1 })
       .lean();
 
-    // Hijos de nivel 3 para cada subcategoría (solo para sliders)
-    const articles = await Category.find({ parent: { $in: children.map(c => c._id) }, level: 3, isActive: true })
+    // 8. Obtener artículos (nivel 3) para el slider
+    const articles = await Category.find({ 
+      parent: { $in: children.map(c => c._id) }, 
+      level: 3, 
+      isActive: true 
+    })
       .select('_id name slug level parent emoji icon iconType iconColor bgColor hasChildren isLeaf')
       .sort({ order: 1 })
       .lean();
 
-    return res.json({
+    // 9. Formatear para el frontend
+    const childrenFormatted = children.map(c => ({
+      ...c,
+      articles: articles.filter(a => String(a.parent) === String(c._id))
+    }));
+
+    // 10. Preparar respuesta
+    const response = {
       success: true,
-      posts,
-      total,
-      page,
-      limit,
-      hasMore,
-      totalPages,
+      posts: posts,
+      total: total,
+      page: page,
+      limit: limit,
+      hasMore: hasMore,
+      totalPages: totalPages,
       categoryInfo: {
         _id: categoryDoc._id,
         name: categoryDoc.name,
@@ -271,22 +413,49 @@ filterPosts: async (req, res) => {
         iconColor: categoryDoc.iconColor || '#666666',
         bgColor: categoryDoc.bgColor || '#FFFFFF'
       },
-      children: children.map(c => ({
-        ...c,
-        articles: articles.filter(a => String(a.parent) === String(c._id)) // nivel 3 hijos de esta subcategoría
-      }))
-    });
+      children: childrenFormatted
+    };
+
+    // 11. Debug detallado
+    if (posts.length > 0) {
+      console.log('✅ Posts encontrados:');
+      posts.slice(0, 3).forEach((post, i) => {
+        console.log(`${i+1}. ${post.title}`);
+        console.log(`   subCategory: "${post.subCategory}"`);
+        console.log(`   articleType: "${post.articleType}"`);
+      });
+    } else {
+      console.log('⚠️ No se encontraron posts');
+      console.log('💡 Filtro aplicado:', JSON.stringify(filter, null, 2));
+      
+      // Debug extra: ver posts sin filtro
+      const allPosts = await Post.find({ 
+        category: categoryDoc._id, 
+        isActive: true 
+      })
+        .select('title subCategory articleType')
+        .limit(5)
+        .lean();
+      
+      console.log('🔍 Primeros 5 posts en esta categoría:');
+      allPosts.forEach((post, i) => {
+        console.log(`${i+1}. ${post.title}`);
+        console.log(`   subCategory: "${post.subCategory}"`);
+        console.log(`   articleType: "${post.articleType}"`);
+      });
+    }
+
+    return res.json(response);
 
   } catch (error) {
     console.error('❌ Error en filterPosts:', error);
-    res.status(500).json({ success: false, message: 'Error al filtrar posts', error: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al filtrar posts', 
+      error: error.message 
+    });
   }
 },
-
- 
-
-
-
    
   getPosts: async (req, res) => {
     try {

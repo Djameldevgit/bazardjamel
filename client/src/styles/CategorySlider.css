@@ -1,415 +1,382 @@
- 
-.cs-slider-final {
-  padding: 1rem 0.5rem;
-  margin: 1rem auto;
-  max-width: 100%;
-  position: relative;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-}
-/* Limitar a 2 filas visibles */
-.cs-slider-container .cs-category-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 0.8rem;
-  max-height: calc(2 * (125px + 0.8rem)); /* 2 filas * altura + gap */
-  overflow: hidden;
-  position: relative;
-}
+/* 📂 styles/category-slider.css */
 
-/* Si quieres un pequeño fade al final para indicar scroll */
-.cs-slider-container::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
+/* ============ CONTENEDOR PRINCIPAL ============ */
+.category-slider-container {
   width: 100%;
-  height: 30px;
-  background: linear-gradient(rgba(255,255,255,0), rgba(255,255,255,1));
-  pointer-events: none;
-}
-/* Solo para CategoryPage: limitar a 2 filas */
-.cs-categoryPage .cs-slider-container .cs-category-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 0.8rem;
-  max-height: calc(2 * (125px + 0.8rem)); /* 2 filas */
-  overflow: hidden;
+  padding: 1.5rem 0;
   position: relative;
 }
 
 /* ============ ENCABEZADO ============ */
-.cs-slider-header {
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 1.5rem;
-  
-}
-.cs-slider-title {
-  font-size: 1.5rem;
- 
+  padding: 0 1rem;
 }
 
-.cs-page-indicator {
+.slider-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.slider-nav-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #e0e0e0;
+  background: white;
   display: flex;
   align-items: center;
-  padding: 0.4rem 0.8rem;
-  font-size: 0.9rem;
-}
-
-.cs-page-indicator .cs-current-page {
-  font-weight: 700;
-  font-size: 1.1rem;
-}
-
-.cs-page-indicator .cs-separator {
-  margin: 0 0.3rem;
-}
-
-.cs-page-indicator .cs-total-pages {
-  font-weight: 500;
-}
-
-/* ============ CONTENEDOR DEL SLIDER ============ */
-.cs-slider-container {
-  position: relative;
-  width: 100%;
-  padding: 1rem 0;
-}
-
-/* ============ PÁGINA ACTIVA ============ */
-.cs-slider-page {
-  padding: 0 0.5rem;
-  transition: opacity 0.3s ease;
-}
-
-.cs-slider-page.cs-active {
-  opacity: 1;
-}
-
-/* ============ FILAS DE CATEGORÍAS ============ */
-.cs-category-row {
-  display: grid;
-  gap: 0.8rem;
-  margin-bottom: 0.8rem;
   justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  color: #666;
 }
 
-.cs-first-row {
-  margin-bottom: 0.8rem;
+.nav-btn:hover {
+  border-color: #007bff;
+  background: #007bff;
+  color: white;
+  transform: scale(1.05);
 }
 
-.cs-second-row {
-  margin-bottom: 0;
+.nav-btn:active {
+  transform: scale(0.95);
 }
 
-/* ============ ÍTEM DE CATEGORÍA ============ */
-.cs-category-item {
+/* ============ SLIDER CON SCROLL HORIZONTAL ============ */
+.category-slider {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 1rem;
+  padding: 0 1rem;
+  max-height: 280px; /* 2 filas */
+  overflow-y: hidden;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 transparent;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbar styling */
+.category-slider::-webkit-scrollbar {
+  height: 6px;
+}
+
+.category-slider::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.category-slider::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10px;
+}
+
+.category-slider::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Indicador visual de que hay más contenido */
+.category-slider.has-scroll {
+  padding-right: 1rem;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 20px,
+    black calc(100% - 60px),
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 20px,
+    black calc(100% - 60px),
+    transparent
+  );
+}
+
+/* ============ ITEMS DEL SLIDER ============ */
+.category-slider-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-  padding: 0.5rem;
-  min-height: 125px;
-  width: 100%;
-  max-width: 120px;
-  margin: 0 auto;
-}
-
-.cs-empty-item {
+  padding: 1rem 0.5rem;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 90px;
+  user-select: none;
+  animation: slideInUp 0.4s ease forwards;
   opacity: 0;
-  pointer-events: none;
 }
 
-/* ============ CONTENEDOR DE IMAGEN ============ */
-.cs-image-container {
+.category-slider-item:hover {
+  background: rgba(0, 123, 255, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.1);
+}
+
+.category-slider-item:active {
+  transform: translateY(0);
+  transition: transform 0.1s;
+}
+
+/* ============ CONTENEDOR DEL ICONO ============ */
+.icon-container {
+  position: relative;
   width: 70px;
   height: 70px;
+  margin-bottom: 0.75rem;
   border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0.5rem;
   overflow: hidden;
-  position: relative;
-  padding: 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
 }
 
-/* ============ IMAGEN DE CATEGORÍA ============ */
-.cs-category-image {
-  width: 100%;
-  height: 100%;
+.category-slider-item:hover .icon-container {
+  transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Imagen del icono */
+.category-icon {
+  width: 60%;
+  height: 60%;
   object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 
-/* ============ FALLBACK PARA IMÁGENES ============ */
-.cs-image-fallback {
+/* Fallback para iconos sin imagen */
+.icon-fallback {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: white;
+  text-transform: uppercase;
+}
+
+/* Badge de contador */
+.item-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ff4757;
+  color: white;
+  font-size: 0.65rem;
   font-weight: 700;
-  border-radius: 50%;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 2;
 }
 
 /* ============ NOMBRE DE CATEGORÍA ============ */
-.cs-category-name {
-  font-size: 0.75rem;
+.category-name {
+  font-size: 0.8rem;
   font-weight: 600;
+  color: #333;
   text-align: center;
-  line-height: 1.2;
-  margin-top: 0.3rem;
-  height: 2em;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 0.2rem;
-  width: 100%;
+  line-height: 1.3;
+  max-width: 90px;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  transition: color 0.3s ease;
 }
 
-/* ============ CONTADOR DE PRODUCTOS ============ */
-.cs-product-count {
-  font-size: 0.65rem;
-  padding: 0.1rem 0.4rem;
-  border-radius: 8px;
-  margin-top: 0.2rem;
-  font-weight: 500;
+.category-slider-item:hover .category-name {
+  color: #007bff;
 }
 
-/* ============ CONTROLES DEL SLIDER ============ */
-.cs-slider-controls {
+/* ============ INDICADOR DE SCROLL ============ */
+.scroll-indicator {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 1.5rem;
-  padding: 0 1rem;
-}
-
-.cs-nav-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  cursor: pointer;
-  font-size: 1.2rem;
-  transition: all 0.3s ease;
-}
-
-.cs-page-indicators {
-  display: flex;
   gap: 0.5rem;
-}
-
-.cs-page-indicator-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cs-page-indicator-btn.cs-active {
-  transform: scale(1.05);
-}
-
-/* ============ CONTADOR DE CATEGORÍAS ============ */
-.cs-categories-counter {
-  text-align: center;
-  margin-top: 1rem;
-  font-size: 0.85rem;
-  font-weight: 500;
+  margin-top: 1.5rem;
   padding: 0.5rem;
 }
 
-/* ============ ESPACIO VACÍO ============ */
-.cs-empty-space {
-  width: 70px;
-  height: 70px;
+.scroll-dot {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
+  background: #ddd;
+  transition: all 0.3s ease;
 }
 
-/* ============ SIN CATEGORÍAS ============ */
-.cs-no-categories {
+.scroll-dot.active {
+  background: #007bff;
+  transform: scale(1.2);
+}
+
+/* ============ CONTADOR DE CATEGORÍAS ============ */
+.categories-counter {
   text-align: center;
-  padding: 3rem 2rem;
-  max-width: 500px;
-  margin: 2rem auto;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border-top: 1px solid #eee;
 }
 
-.cs-no-categories .cs-empty-icon {
-  font-size: 48px;
-  margin-bottom: 1rem;
-  opacity: 0.5;
+.counter-text {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
 }
 
-.cs-no-categories .cs-no-categories-title {
-  margin-bottom: 0.5rem;
-  font-size: 1.2rem;
-}
+/* ============ RESPONSIVE DESIGN ============ */
 
-.cs-no-categories .cs-no-categories-description {
-  font-size: 0.95rem;
-}
-
-/* ============ RESPONSIVE ============ */
-
-/* MÓVIL/ANDROID (≤767px) - 4 iconos por fila (8 total) */
+/* MÓVIL: 4 iconos por fila, scroll horizontal */
 @media (max-width: 767px) {
-  .cs-category-row {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.6rem;
-    padding: 0 0.25rem;
+  .category-slider {
+    grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+    gap: 0.75rem;
+    padding: 0 0.75rem;
+    max-height: 260px; /* 2 filas ajustadas */
   }
-  
-  .cs-category-item {
-    padding: 0.4rem;
-    min-height: 115px;
+
+  .category-slider-item {
+    min-width: 85px;
+    padding: 0.75rem 0.25rem;
+  }
+
+  .icon-container {
+    width: 65px;
+    height: 65px;
+  }
+
+  .icon-fallback {
+    font-size: 1.6rem;
+  }
+
+  .category-name {
+    font-size: 0.75rem;
     max-width: 85px;
   }
-  
-  .cs-image-container {
-    width: 60px;
-    height: 60px;
+
+  .slider-header {
+    padding: 0 0.75rem;
   }
-  
-  .cs-category-name {
-    font-size: 0.7rem;
-  }
-  
-  .cs-product-count {
-    font-size: 0.6rem;
-  }
-  
-  .cs-slider-title {
+
+  .slider-title {
     font-size: 1.3rem;
   }
-  
-  .cs-slider-controls {
-    margin-top: 1.2rem;
-    padding: 0 0.5rem;
+
+  /* Ocultar botones de navegación en móvil */
+  .slider-nav-buttons {
+    display: none;
   }
-  
-  .cs-page-indicator-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 0.8rem;
+
+  /* Scroll más prominente en móvil */
+  .category-slider::-webkit-scrollbar {
+    height: 4px;
   }
 }
 
-/* TABLET (768px - 1023px) - 3 iconos por fila (6 total) */
+/* TABLET: 5-6 iconos por fila */
 @media (min-width: 768px) and (max-width: 1023px) {
-  .cs-category-row {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    padding: 0 1rem;
+  .category-slider {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 1.25rem;
+    max-height: 300px;
   }
-  
-  .cs-category-item {
-    padding: 0.6rem;
-    min-height: 130px;
-    max-width: 110px;
+
+  .category-slider-item {
+    min-width: 100px;
   }
-  
-  .cs-image-container {
+
+  .icon-container {
     width: 75px;
     height: 75px;
   }
-  
-  .cs-category-name {
-    font-size: 0.78rem;
+
+  .icon-fallback {
+    font-size: 1.8rem;
   }
-  
-  .cs-product-count {
-    font-size: 0.7rem;
-  }
-  
-  .cs-slider-title {
-    font-size: 1.4rem;
+
+  .category-name {
+    font-size: 0.82rem;
+    max-width: 100px;
   }
 }
 
-/* DESKTOP (1024px - 1439px) - 4 iconos por fila (8 total) */
+/* DESKTOP: 6-8 iconos por fila */
 @media (min-width: 1024px) and (max-width: 1439px) {
-  .cs-slider-final {
-    max-width: 900px;
-    padding: 1.5rem 1rem;
+  .category-slider-container {
+    padding: 2rem 0;
   }
-  
-  .cs-category-row {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.2rem;
-    padding: 0 1rem;
+
+  .category-slider {
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 1.5rem;
+    max-height: 320px;
   }
-  
-  .cs-category-item {
-    padding: 0.7rem;
-    min-height: 140px;
-    max-width: 120px;
+
+  .slider-title {
+    font-size: 1.7rem;
   }
-  
-  .cs-image-container {
+}
+
+/* PANTALLAS GRANDES: 8+ iconos por fila */
+@media (min-width: 1440px) {
+  .category-slider-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2.5rem 0;
+  }
+
+  .category-slider {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1.75rem;
+    max-height: 350px;
+  }
+
+  .icon-container {
     width: 80px;
     height: 80px;
   }
-  
-  .cs-category-name {
-    font-size: 0.8rem;
-  }
-  
-  .cs-slider-title {
-    font-size: 1.6rem;
-  }
-}
 
-/* PANTALLAS MUY GRANDES (≥1440px) - 5 iconos por fila (10 total) */
-@media (min-width: 1440px) {
-  .cs-slider-final {
-    max-width: 1200px;
-    padding: 2rem;
+  .icon-fallback {
+    font-size: 2rem;
   }
-  
-  .cs-category-row {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1.5rem;
-    padding: 0 1.5rem;
-  }
-  
-  .cs-category-item {
-    padding: 0.8rem;
-    min-height: 150px;
-    max-width: 130px;
-  }
-  
-  .cs-image-container {
-    width: 85px;
-    height: 85px;
-  }
-  
-  .cs-category-name {
-    font-size: 0.85rem;
-  }
-  
-  .cs-slider-title {
-    font-size: 1.8rem;
+
+  .slider-title {
+    font-size: 1.9rem;
   }
 }
 
 /* ANIMACIONES */
-@keyframes cs-fadeInUp {
+@keyframes slideInUp {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -417,39 +384,709 @@
   }
 }
 
-.cs-category-item:not(.cs-empty-item) {
-  animation: cs-fadeInUp 0.4s ease forwards;
-  animation-delay: calc(var(--cs-item-delay, 0) * 0.05s);
+/* Efecto ripple al hacer click */
+.category-slider-item::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background: rgba(0, 123, 255, 0.1);
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  pointer-events: none;
 }
 
-/* Ajustes para pantallas muy pequeñas */
-@media (max-width: 380px) {
-  .cs-category-row {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.4rem;
+.category-slider-item:active::after {
+  animation: ripple 0.6s ease-out;
+}
+
+@keyframes ripple {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* ESTADO SIN CATEGORÍAS */
+.category-slider:empty + .scroll-indicator,
+.category-slider:empty + .categories-counter {
+  display: none;
+}
+
+.category-slider:empty::before {
+  content: 'No hay categorías disponibles';
+  text-align: center;
+  color: #999;
+  font-size: 1rem;
+  padding: 3rem 1rem;
+  grid-column: 1 / -1;
+}
+
+/* 📂 styles/unified-sliders.css */
+
+/* ============ VARIABLES Y ESTILOS BASE ============ */
+:root {
+  --slider-primary: #007bff;
+  --slider-secondary: #6c757d;
+  --slider-success: #28a745;
+  --slider-danger: #ff4757;
+  --slider-warning: #ffc107;
+  --slider-info: #17a2b8;
+  --slider-light: #f8f9fa;
+  --slider-dark: #343a40;
+  
+  --slider-border-radius: 12px;
+  --slider-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --slider-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --slider-shadow-hover: 0 8px 15px rgba(0, 0, 0, 0.15);
+}
+
+/* ============ CONTENEDOR PRINCIPAL UNIFICADO ============ */
+.unified-slider-container {
+  width: 100%;
+  margin: 1.5rem 0;
+  padding: 1rem 0;
+  position: relative;
+}
+
+/* Variantes específicas */
+.unified-slider-container.home {
+  background: linear-gradient(to bottom, transparent, rgba(0, 123, 255, 0.02));
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.unified-slider-container.categoryPage {
+  margin: 1rem 0;
+  padding: 0.5rem 0;
+}
+
+.unified-slider-container.subcategories-slider .slider-item {
+  border: 2px solid transparent;
+}
+
+.unified-slider-container.categories-slider .slider-item {
+  border: 1px solid #f0f0f0;
+}
+
+/* ============ ENCABEZADO ============ */
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 0 1rem;
+}
+
+.unified-slider-container.categoryPage .slider-header {
+  display: none; /* Ocultar en categoryPage si no hay título */
+}
+
+.slider-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--slider-dark);
+  margin: 0;
+  position: relative;
+  padding-left: 0.5rem;
+}
+
+.slider-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  background: var(--slider-primary);
+  border-radius: 2px;
+}
+
+/* ============ SLIDER CON SCROLL HORIZONTAL ============ */
+.unified-slider {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  max-height: calc(2 * 130px); /* 2 filas por defecto */
+  overflow-y: hidden;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 transparent;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Configuración por número de filas */
+.unified-slider[data-rows="1"] {
+  max-height: 130px;
+}
+
+.unified-slider[data-rows="2"] {
+  max-height: calc(2 * 130px);
+}
+
+.unified-slider[data-rows="3"] {
+  max-height: calc(3 * 130px);
+}
+
+/* Scrollbar styling */
+.unified-slider::-webkit-scrollbar {
+  height: 6px;
+}
+
+.unified-slider::-webkit-scrollbar-track {
+  background: #f5f5f5;
+  border-radius: 10px;
+  margin: 0 1rem;
+}
+
+.unified-slider::-webkit-scrollbar-thumb {
+  background: var(--slider-primary);
+  border-radius: 10px;
+  opacity: 0.6;
+}
+
+.unified-slider::-webkit-scrollbar-thumb:hover {
+  background: var(--slider-primary);
+  opacity: 1;
+}
+
+/* Indicador visual de scroll */
+.unified-slider.has-scroll {
+  padding-right: 2rem;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 20px,
+    black calc(100% - 60px),
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 20px,
+    black calc(100% - 60px),
+    transparent
+  );
+}
+
+/* ============ ITEMS DEL SLIDER ============ */
+.slider-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  padding: 1rem 0.5rem;
+  border-radius: var(--slider-border-radius);
+  transition: var(--slider-transition);
+  min-width: 90px;
+  position: relative;
+  animation: slideIn 0.4s ease forwards;
+  opacity: 0;
+  background: white;
+  user-select: none;
+}
+
+.slider-item:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--slider-shadow-hover);
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+.slider-item.active {
+  border: 2px solid var(--slider-primary);
+  background: linear-gradient(135deg, rgba(0, 123, 255, 0.05) 0%, rgba(0, 123, 255, 0.1) 100%);
+}
+
+.slider-item.active:hover {
+  border-color: var(--slider-primary);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ============ CONTENEDOR DEL ICONO ============ */
+.item-icon-container {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  margin-bottom: 0.75rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: var(--slider-transition);
+  box-shadow: var(--slider-shadow);
+}
+
+/* Colores por tipo de contenido */
+.subcategories-slider .item-icon-container {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.categories-slider .item-icon-container {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.slider-item:hover .item-icon-container {
+  transform: scale(1.08);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.slider-item.active .item-icon-container {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.8), 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Icono/Imagen */
+.item-icon {
+  width: 60%;
+  height: 60%;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+/* Icono emoji */
+.emoji-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+/* Fallback para iconos sin imagen */
+.icon-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: white;
+  text-transform: uppercase;
+}
+
+/* ============ BADGES E INDICADORES ============ */
+.item-count-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--slider-danger);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+
+.active-indicator {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--slider-success);
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
+
+/* ============ NOMBRE DEL ITEM ============ */
+.item-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--slider-dark);
+  text-align: center;
+  line-height: 1.3;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  transition: color 0.3s ease;
+}
+
+.slider-item:hover .item-name {
+  color: var(--slider-primary);
+}
+
+.slider-item.active .item-name {
+  color: var(--slider-primary);
+  font-weight: 700;
+}
+
+/* ============ BOTONES DE NAVEGACIÓN ============ */
+.slider-nav-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #e0e0e0;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--slider-transition);
+  font-size: 1rem;
+  color: var(--slider-secondary);
+}
+
+.nav-btn:hover {
+  border-color: var(--slider-primary);
+  background: var(--slider-primary);
+  color: white;
+  transform: scale(1.05);
+}
+
+.nav-btn:active {
+  transform: scale(0.95);
+}
+
+/* ============ INDICADOR DE SCROLL ============ */
+.scroll-indicator {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  padding: 0.5rem;
+}
+
+.scroll-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ddd;
+  transition: var(--slider-transition);
+}
+
+.scroll-dot.active {
+  background: var(--slider-primary);
+  transform: scale(1.2);
+}
+
+/* ============ INFORMACIÓN DEL SLIDER ============ */
+.slider-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #eee;
+  font-size: 0.85rem;
+}
+
+.info-text {
+  color: var(--slider-secondary);
+  font-weight: 500;
+}
+
+.active-item-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--slider-success);
+  font-weight: 600;
+}
+
+.active-item-indicator i {
+  font-size: 0.9rem;
+}
+
+/* ============ RESPONSIVE DESIGN ============ */
+
+/* MÓVIL (≤767px) */
+/* 📂 styles/sliders-optimized.css - VERSIÓN MODIFICADA */
+
+/* ============ RESPONSIVE DESIGN OPTIMIZADO ============ */
+
+/* MÓVIL ANDROID (≤767px) - 8 ICONOS EN 2 FILAS (4x4) */
+@media (max-width: 767px) {
+  .slider-container {
+    margin: 0.125rem 0; /* MÍNIMO MARGIN */
+    padding: 0.125rem 0;
   }
   
-  .cs-category-item {
-    max-width: 75px;
-    padding: 0.3rem;
+  /* CAMBIO PRINCIPAL: Usar GRID en lugar de flex para 2 filas */
+  .slider-horizontal {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 4 columnas */
+    grid-template-rows: repeat(2, auto);   /* 2 filas */
+    gap: 0.5rem; /* Menor gap para compactar */
+    padding: 0.25rem 0.5rem;
+    overflow-x: hidden; /* Sin scroll horizontal */
+    overflow-y: hidden;
+    justify-items: center; /* Centrar items */
   }
   
-  .cs-image-container {
+  /* Eliminar el pseudo-elemento de centrado */
+  .slider-horizontal::after {
+    display: none;
+  }
+  
+  .slider-item {
+    width: 68px; /* Más compacto para 4 en fila */
+    padding: 0.35rem 0.15rem;
+    margin: 0 auto; /* Centrar dentro de la celda */
+  }
+  
+  .item-icon {
+    width: 45px;
+    height: 45px;
+    margin-bottom: 0.3rem;
+  }
+  
+  .icon-initial {
+    font-size: 1.1rem;
+  }
+  
+  .icon-emoji {
+    font-size: 1.4rem;
+  }
+  
+  .item-name {
+    font-size: 0.62rem;
+    max-width: 65px;
+    line-height: 1.1;
+  }
+  
+  .slider-title {
+    font-size: 0.95rem;
+    padding-left: 0.5rem;
+  }
+  
+  /* Ocultar botones en móvil */
+  .slider-nav-bottom {
+    display: none;
+  }
+  
+  /* Mostrar puntos solo si hay más de 8 items */
+  .slider-dots {
+    display: none; /* Ocultar porque ahora es grid fijo */
+  }
+  
+  /* Si hay más de 8 items, mostrar indicador */
+  .slider-horizontal.has-more-items {
+    position: relative;
+    padding-bottom: 1rem;
+  }
+  
+  .slider-horizontal.has-more-items::after {
+    content: '⋯';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--slider-primary);
+    font-size: 1.2rem;
+    font-weight: bold;
+    opacity: 0.6;
+  }
+}
+
+/* TABLET (768px - 1023px) - 6 EN 2 FILAS (3x2) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .slider-horizontal {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 columnas */
+    grid-template-rows: repeat(2, auto);   /* 2 filas */
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    overflow-x: hidden;
+    justify-items: center;
+  }
+  
+  .slider-item {
+    width: 90px;
+    padding: 0.5rem 0.25rem;
+  }
+  
+  .item-icon {
     width: 55px;
     height: 55px;
   }
   
-  .cs-category-name {
-    font-size: 0.65rem;
+  .icon-initial {
+    font-size: 1.3rem;
   }
   
-  .cs-page-indicators {
-    gap: 0.3rem;
+  .item-name {
+    font-size: 0.7rem;
+    max-width: 85px;
   }
   
-  .cs-page-indicator-btn {
-    width: 26px;
-    height: 26px;
-    font-size: 0.75rem;
+  /* Botones solo si hay más de 6 items */
+  .slider-nav-bottom {
+    display: none;
   }
 }
+
+/* DESKTOP (1024px - 1439px) - 8 EN 2 FILAS (4x2) */
+@media (min-width: 1024px) and (max-width: 1439px) {
+  .slider-container {
+    margin: 0.5rem 0;
+  }
+  
+  .slider-horizontal {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 4 columnas desktop */
+    grid-template-rows: repeat(2, auto);   /* 2 filas */
+    gap: 1rem;
+    padding: 0.75rem 1.25rem;
+    overflow-x: hidden;
+    justify-items: center;
+  }
+  
+  .slider-item {
+    width: 100px;
+  }
+  
+  .item-icon {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .item-name {
+    font-size: 0.75rem;
+    max-width: 95px;
+  }
+  
+  .slider-title {
+    font-size: 1.2rem;
+  }
+  
+  /* Botones de navegación para desktop */
+  .slider-nav-bottom {
+    display: flex;
+    margin-top: 0.5rem;
+  }
+}
+
+/* PANTALLAS GRANDES (≥1440px) - 10 EN 2 FILAS (5x2) */
+@media (min-width: 1440px) {
+  .slider-container {
+    max-width: 1200px;
+    margin: 0.75rem auto;
+  }
+  
+  .slider-horizontal {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* 5 columnas grandes */
+    grid-template-rows: repeat(2, auto);   /* 2 filas */
+    gap: 1.25rem;
+    padding: 0.75rem 1.5rem;
+    overflow-x: hidden;
+    justify-items: center;
+  }
+  
+  .slider-item {
+    width: 110px;
+  }
+  
+  .item-icon {
+    width: 65px;
+    height: 65px;
+  }
+  
+  .icon-initial {
+    font-size: 1.5rem;
+  }
+  
+  .item-name {
+    font-size: 0.8rem;
+    max-width: 105px;
+  }
+}
+
+/* ============ AJUSTES PARA SCROLL HORIZONTAL CUANDO HAY MÁS ITEMS ============ */
+
+/* Clase adicional para cuando hay más items de los que caben */
+.slider-horizontal.scrollable {
+  display: flex !important; /* Forzar flex para scroll */
+  grid-template-columns: none !important;
+  grid-template-rows: none !important;
+  overflow-x: auto !important;
+}
+
+/* En móvil, si hay más de 8 items, usar scroll horizontal */
+@media (max-width: 767px) {
+  .slider-horizontal.scrollable-mobile {
+    display: flex;
+    grid-template-columns: none;
+    grid-template-rows: none;
+    overflow-x: auto;
+    padding: 0.25rem 0.75rem;
+  }
+  
+  .slider-horizontal.scrollable-mobile .slider-item {
+    width: 72px;
+  }
+  
+  /* Mostrar indicador de scroll */
+  .slider-horizontal.scrollable-mobile + .slider-dots {
+    display: flex;
+  }
+}
+
+/* ============ COMPONENTE JAVASCRIPT PARA DETECTAR MÁS ITEMS ============ */
+
+/* Agrega esto a tu componente SliderUnificado o SliderOptimized: */
+/*
+  // Detectar si hay más items de los que caben
+  useEffect(() => {
+    if (sliderRef.current && items.length > 0) {
+      const container = sliderRef.current;
+      const itemsCount = items.length;
+      
+      // En móvil: más de 8 items
+      if (window.innerWidth <= 767 && itemsCount > 8) {
+        container.classList.add('scrollable-mobile');
+        container.classList.remove('has-more-items');
+      } 
+      // En tablet: más de 6 items  
+      else if (window.innerWidth <= 1023 && window.innerWidth > 767 && itemsCount > 6) {
+        container.classList.add('scrollable');
+      }
+      // En desktop: más de 8 items
+      else if (window.innerWidth <= 1439 && window.innerWidth > 1023 && itemsCount > 8) {
+        container.classList.add('scrollable');
+      }
+      // En pantallas grandes: más de 10 items
+      else if (window.innerWidth >= 1440 && itemsCount > 10) {
+        container.classList.add('scrollable');
+      }
+      else {
+        container.classList.remove('scrollable', 'scrollable-mobile', 'has-more-items');
+      }
+    }
+  }, [items, window.innerWidth]);
+*/
