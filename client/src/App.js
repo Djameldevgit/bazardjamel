@@ -20,7 +20,20 @@ import PostId from './pages/PostId';
 import DashboardPage from './pages/users/dashboardpage';
 import profile from './pages/profile';
 import CreateBoutiquePage from './pages/boutique/createBoutiquePage';
+import BoutiquePage from './pages/boutique/BoutiquePage';
+ 
+import BoutiquesCategoryPage from './pages/boutique/BoutiquesCategoryPage';
+import MyBoutiquesPage from './pages/boutique/MyBoutiquesPage';
+//import ManageBoutiquePage from './pages/boutique/ManageBoutiquePage';
+//import EditBoutiquePage from './pages/boutique/EditBoutiquePage';
+
+
+
+
+
+
 import roles from './pages/users/roles';
+import BoutiquesListPage from './pages/boutique/BoutiquesListePage';
 
 function App() {
   const { auth } = useSelector(state => state)
@@ -97,6 +110,15 @@ function App() {
  
           <Route exact path="/dashboard" component={DashboardPage} />
           <Route exact path="/create-boutique" component={CreateBoutiquePage} />
+          <Route exact path="/boutique/:domaine" component={BoutiquePage} />
+<Route exact path="/boutiques" component={BoutiquesListPage } />
+<Route exact path="/boutiques/category/:categorySlug" component={BoutiquesCategoryPage} />
+<Route exact path="/my-boutiques" component={MyBoutiquesPage} />
+  {/*  <Route exact path="/manage-boutique/:id" component={ManageBoutiquePage} />
+ <Route exact path="/edit-boutique/:id" component={EditBoutiquePage} /> */}
+ 
+
+
           {/* <PrivateRouter exact path="/:page/:id/:tab" component={PageRender}Detalle de post  />
           <PrivateRouter exact path="/:page/:id" component={PageRender} />
           <PrivateRouter exact path="/:page" component={PageRender} />*/}

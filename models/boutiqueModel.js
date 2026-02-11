@@ -1,11 +1,11 @@
-// 📂 models/boutiqueModel.js
+// 📂 models/boutiqueModel.js - CORREGIDO
 const mongoose = require('mongoose');
 
 const boutiqueSchema = new mongoose.Schema({
   // ========== INFORMACIÓN BÁSICA ==========
   nom_boutique: {
     type: String,
-   
+    required: [true, 'Le nom de la boutique est requis'],
     trim: true,
     maxlength: [100, 'Le nom ne peut pas dépasser 100 caractères'],
     index: true
@@ -13,7 +13,7 @@ const boutiqueSchema = new mongoose.Schema({
   
   domaine_boutique: {
     type: String,
- 
+    required: [true, 'Le domaine de la boutique est requis'],
     trim: true,
     unique: true,
     lowercase: true,
@@ -23,12 +23,14 @@ const boutiqueSchema = new mongoose.Schema({
   
   slogan_boutique: {
     type: String,
+    default: '',
     trim: true,
     maxlength: [200, 'Le slogan ne peut pas dépasser 200 caractères']
   },
   
   description_boutique: {
     type: String,
+    default: '',
     trim: true,
     maxlength: [2000, 'La description ne peut pas dépasser 2000 caractères']
   },
@@ -43,31 +45,51 @@ const boutiqueSchema = new mongoose.Schema({
   proprietaire: {
     nom: {
       type: String,
-     
+      required: [true, 'Le nom du propriétaire est requis'],
       trim: true
     },
     email: {
       type: String,
- 
+      required: [true, 'L\'email du propriétaire est requis'],
       lowercase: true,
       trim: true
     },
     telephone: {
       type: String,
-   
-      trim: true
+          trim: true
     },
-    wilaya: String,
-    adresse: String
-  },
+    wilaya: {
+      type: String,
+      default: ''
+    },
+    adresse: {
+      type: String,
+      default: ''
+    }
+  }, // <-- AQUÍ FALTABA ESTA LLAVE DE CIERRE
   
   // ========== REDES SOCIALES ==========
   reseaux_sociaux: {
-    facebook: String,
-    instagram: String,
-    tiktok: String,
-    whatsapp: String,
-    website: String
+    facebook: {
+      type: String,
+      default: ''
+    },
+    instagram: {
+      type: String,
+      default: ''
+    },
+    tiktok: {
+      type: String,
+      default: ''
+    },
+    whatsapp: {
+      type: String,
+      default: ''
+    },
+    website: {
+      type: String,
+      default: ''
+    }
   },
   
   // ========== APARIENCIA ==========
@@ -79,8 +101,14 @@ const boutiqueSchema = new mongoose.Schema({
   
   // ========== LOGO ==========
   logo: {
-    url: String,
-    public_id: String
+    url: {
+      type: String,
+      default: ''
+    },
+    public_id: {
+      type: String,
+      default: ''
+    }
   },
   
   // ========== ESTADO Y PLAN ==========
@@ -116,7 +144,7 @@ const boutiqueSchema = new mongoose.Schema({
   user: {
     type: mongoose.Types.ObjectId,
     ref: 'user',
-     
+    required: [true, 'L\'utilisateur est requis'],
     index: true
   },
   
@@ -147,7 +175,7 @@ const boutiqueSchema = new mongoose.Schema({
   // ========== CONFIGURACIONES ==========
   accepte_conditions: {
     type: Boolean,
-   
+    required: [true, 'Vous devez accepter les conditions'],
     default: false
   }
 

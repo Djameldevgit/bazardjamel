@@ -2,11 +2,16 @@
 const Boutique = require('../models/boutiqueModel');
 const Post = require('../models/postModel');
 
+ 
 const boutiqueCtrl = {
-  // 📄 CREAR BOUTIQUE
+  // 📄 CREAR BOUTIQUE - VERSIÓN SIMPLIFICADA
   createBoutique: async (req, res) => {
     try {
-      let {
+      console.log('📦 Request body recibido:', req.body);
+      console.log('👤 Usuario autenticado:', req.user._id);
+      
+      // Desestructurar todos los campos
+      const {
         nom_boutique,
         domaine_boutique,
         slogan_boutique,
@@ -17,116 +22,145 @@ const boutiqueCtrl = {
         couleur_theme,
         plan,
         duree_abonnement,
-        accepte_conditions,
-        logo // URL de Cloudinary enviada desde el cliente
+        logo, // URL de Cloudinary enviada desde el frontend
+        user
       } = req.body;
 
-      console.log('Datos recibidos:', {
+      console.log('📊 Datos recibidos:', {
         nom_boutique,
         domaine_boutique,
         plan,
-        hasLogo: !!logo
+        hasLogo: !!logo,
+        user,
+        proprietaire: proprietaire ? 'Sí' : 'No'
       });
 
-      // Parsear campos que vienen como JSON strings
-      try {
-        if (categories_produits && typeof categories_produits === 'string') {
-          categories_produits = JSON.parse(categories_produits);
-        }
-        if (proprietaire && typeof proprietaire === 'string') {
-          proprietaire = JSON.parse(proprietaire);
-        }
-        if (reseaux_sociaux && typeof reseaux_sociaux === 'string') {
-          reseaux_sociaux = JSON.parse(reseaux_sociaux);
-        }
-      } catch (parseErr) {
-        console.error('Error parsing JSON fields:', parseErr);
-        // Continuar con valores por defecto
-      }
-
-      // Validar campos requeridos
-  /*    if (!nom_boutique || !domaine_boutique) {
+      // Validaciones básicas
+      if (!nom_boutique || !domaine_boutique) {
+        console.log('❌ Campos requeridos faltantes');
         return res.status(400).json({
           msg: "Le nom et le domaine de la boutique sont requis"
         });
       }
 
-      // Validar condiciones aceptadas
-      if (accepte_conditions !== 'true' && accepte_conditions !== true) {
-        return res.status(400).json({
-          msg: "Vous devez accepter les conditions d'utilisation"
-        });
-      }*/
-
       // Verificar si el dominio ya existe
       const existingBoutique = await Boutique.findOne({ 
-        domaine_boutique: domaine_boutique 
+        domaine_boutique: domaine_boutique.toLowerCase().trim() 
       });
       
       if (existingBoutique) {
+        console.log('❌ Dominio ya existe:', domaine_boutique);
         return res.status(400).json({
           msg: "Ce domaine de boutique est déjà utilisé"
         });
       }
 
-      // Preparar datos del logo (si viene desde Cloudinary)
+      // Parsear campos JSON si vienen como string
+      let parsedCategories = [];
+      let parsedProprietaire = {};
+      let parsedReseaux = {};
+      
+      try {
+        if (categories_produits) {
+          parsedCategories = typeof categories_produits === 'string' 
+            ? JSON.parse(categories_produits) 
+            : categories_produits;
+        }
+        
+        if (proprietaire) {
+          parsedProprietaire = typeof proprietaire === 'string'
+            ? JSON.parse(proprietaire)
+            : proprietaire;
+        }
+        
+        if (reseaux_sociaux) {
+          parsedReseaux = typeof reseaux_sociaux === 'string'
+            ? JSON.parse(reseaux_sociaux)
+            : reseaux_sociaux;
+        }
+      } catch (parseErr) {
+        console.error('❌ Error parseando JSON:', parseErr);
+        // Continuar con valores por defecto
+      }
+
+      // Preparar datos del logo
       let logoData = null;
-      if (logo && typeof logo === 'object') {
-        // Si logo es un objeto con url y public_id
+      if (logo) {
         logoData = {
           url: logo.url || logo,
           public_id: logo.public_id || null
         };
-      } else if (logo && typeof logo === 'string') {
-        // Si logo es solo una URL string
-        logoData = {
-          url: logo,
-          public_id: null
-        };
       }
 
-      // Crear boutique
-      const boutique = new Boutique({
-        nom_boutique,
-        domaine_boutique: domaine_boutique,
-        slogan_boutique: slogan_boutique || '',
-        description_boutique: description_boutique || '',
-        categories_produits: categories_produits || [],
+      // Crear objeto de boutique
+      const boutiqueData = {
+        nom_boutique: nom_boutique.trim(),
+        domaine_boutique: domaine_boutique.toLowerCase().trim(),
+        slogan_boutique: (slogan_boutique || '').trim(),
+        description_boutique: (description_boutique || '').trim(),
+        categories_produits: parsedCategories,
         proprietaire: {
-          nom: (proprietaire && proprietaire.nom) ? proprietaire.nom : 
-               (req.user && req.user.fullname) ? req.user.fullname : 
-               (req.user && req.user.username) ? req.user.username : '',
-          email: (proprietaire && proprietaire.email) ? proprietaire.email : 
-                 (req.user && req.user.email) ? req.user.email : '',
-          telephone: (proprietaire && proprietaire.telephone) ? proprietaire.telephone : 
-                     (req.user && req.user.phone) ? req.user.phone : '',
-          wilaya: (proprietaire && proprietaire.wilaya) ? proprietaire.wilaya : '',
-          adresse: (proprietaire && proprietaire.adresse) ? proprietaire.adresse : ''
+          nom: parsedProprietaire.nom || req.user.fullname || req.user.username || '',
+          email: parsedProprietaire.email || req.user.email || '',
+          telephone: parsedProprietaire.telephone || req.user.phone || '',
+          wilaya: parsedProprietaire.wilaya || '',
+          adresse: parsedProprietaire.adresse || ''
         },
-        reseaux_sociaux: reseaux_sociaux || {},
+        reseaux_sociaux: parsedReseaux,
         couleur_theme: couleur_theme || '#2563eb',
         plan: plan || 'gratuit',
         duree_abonnement: duree_abonnement || '1mois',
         accepte_conditions: true,
-        user: (req.user && req.user._id) ? req.user._id : null,
-        logo: logoData
+        user: user || req.user._id,
+        logo: logoData,
+        status: 'pending' // Estado por defecto
+      };
+
+      console.log('✅ Datos finales para crear boutique:', {
+        nom_boutique: boutiqueData.nom_boutique,
+        domaine_boutique: boutiqueData.domaine_boutique,
+        plan: boutiqueData.plan,
+        proprietaire: boutiqueData.proprietaire
       });
 
+      // Crear y guardar boutique
+      const boutique = new Boutique(boutiqueData);
       await boutique.save();
 
+      console.log('✅ Boutique creada exitosamente:', boutique._id);
+
       res.status(201).json({
-        msg: 'Boutique créée avec succès!',
+        msg: 'Boutique créée avec succès! Elle sera évaluée par nos administrateurs.',
         boutique: boutique
       });
 
     } catch (err) {
-      console.error('Error en createBoutique:', err);
+      console.error('❌ Error en createBoutique:', err.message);
+      console.error('Stack trace:', err.stack);
+      
+      // Manejar errores de validación de Mongoose
+      if (err.name === 'ValidationError') {
+        const messages = Object.values(err.errors).map(val => val.message);
+        return res.status(400).json({
+          msg: messages.join(', ')
+        });
+      }
+      
+      // Manejar errores de duplicado
+      if (err.code === 11000) {
+        return res.status(400).json({
+          msg: "Ce domaine de boutique est déjà utilisé"
+        });
+      }
+      
       return res.status(500).json({ 
         msg: err.message || 'Erreur interne du serveur' 
       });
     }
   },
 
+  // ... resto de funciones se mantienen igual
+ 
   // 📄 OBTENER BOUTIQUES
   getBoutiques: async (req, res) => {
     try {

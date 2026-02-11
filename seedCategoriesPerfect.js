@@ -1335,28 +1335,28 @@ const categoriesData = [
   },
 
   // ==================== 16. BOUTIQUES ====================
-  {
-    name: 'Boutiques',
-    slug: 'boutiques',
-    level: 1,
-    emoji: '🏪',
-    order: 16,
-    children: [
-      { name: 'Basic 50 (1 mois)', slug: 'boutiques-basic-50-1mois', level: 2, emoji: '⭐', order: 1, children: [] },
-      { name: 'Basic 50 (6 mois)', slug: 'boutiques-basic-50-6mois', level: 2, emoji: '⭐', order: 2, children: [] },
-      { name: 'Basic 50 (12 mois)', slug: 'boutiques-basic-50-12mois', level: 2, emoji: '⭐', order: 3, children: [] },
-      { name: 'Basic 100 (1 mois)', slug: 'boutiques-basic-100-1mois', level: 2, emoji: '⭐', order: 4, children: [] },
-      { name: 'Basic 100 (6 mois)', slug: 'boutiques-basic-100-6mois', level: 2, emoji: '⭐', order: 5, children: [] },
-      { name: 'Silver 200 (1 mois)', slug: 'boutiques-silver-200-1mois', level: 2, emoji: '🥈', order: 6, children: [] },
-      { name: 'Silver 200 (6 mois)', slug: 'boutiques-silver-200-6mois', level: 2, emoji: '🥈', order: 7, children: [] },
-      { name: 'Silver 500 (1 mois)', slug: 'boutiques-silver-500-1mois', level: 2, emoji: '🥈', order: 8, children: [] },
-      { name: 'Silver 500 (12 mois)', slug: 'boutiques-silver-500-12mois', level: 2, emoji: '🥈', order: 9, children: [] },
-      { name: 'Gold 1000 (1 mois)', slug: 'boutiques-gold-1000-1mois', level: 2, emoji: '🏆', order: 10, children: [] },
-      { name: 'Gold 1000 (6 mois)', slug: 'boutiques-gold-1000-6mois', level: 2, emoji: '🏆', order: 11, children: [] },
-      { name: 'Gold 6000 (1 mois)', slug: 'boutiques-gold-6000-1mois', level: 2, emoji: '👑', order: 12, children: [] },
-      { name: 'Gold 6000 (12 mois)', slug: 'boutiques-gold-6000-12mois', level: 2, emoji: '👑', order: 13, children: [] }
-    ]
-  }
+ // En tu archivo seed.js, cambia la categoría Boutiques:
+{
+  name: 'Boutiques',
+  slug: 'boutiques',
+  level: 1,
+  emoji: '🏪',
+  order: 16,
+  children: [
+    { name: 'Mode & Vêtements', slug: 'boutiques-mode-vetements', level: 2, emoji: '👗', order: 1, children: [] },
+    { name: 'Électronique & Technologie', slug: 'boutiques-electronique-technologie', level: 2, emoji: '📱', order: 2, children: [] },
+    { name: 'Maison & Décorations', slug: 'boutiques-maison-decorations', level: 2, emoji: '🏠', order: 3, children: [] },
+    { name: 'Cosmétique & Beauté', slug: 'boutiques-cosmetique-beaute', level: 2, emoji: '💄', order: 4, children: [] },
+    { name: 'Sport & Loisirs', slug: 'boutiques-sport-loisirs', level: 2, emoji: '⚽', order: 5, children: [] },
+    { name: 'Alimentation & Boissons', slug: 'boutiques-alimentation-boissons', level: 2, emoji: '🍎', order: 6, children: [] },
+    { name: 'Santé & Bien-être', slug: 'boutiques-sante-bien-etre', level: 2, emoji: '💊', order: 7, children: [] },
+    { name: 'Jouets & Enfants', slug: 'boutiques-jouets-enfants', level: 2, emoji: '🧸', order: 8, children: [] },
+    { name: 'Automobiles & Accessoires', slug: 'boutiques-automobiles-accessoires', level: 2, emoji: '🚗', order: 9, children: [] },
+    { name: 'Artisanat & Fait main', slug: 'boutiques-artisanat-fait-main', level: 2, emoji: '🎨', order: 10, children: [] },
+    { name: 'Services & Prestations', slug: 'boutiques-services-prestations', level: 2, emoji: '🔧', order: 11, children: [] },
+    { name: 'Autre', slug: 'boutiques-autre', level: 2, emoji: '📦', order: 12, children: [] }
+  ]
+}
 ];
 
 const seedCategories = async () => {

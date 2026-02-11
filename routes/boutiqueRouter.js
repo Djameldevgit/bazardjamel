@@ -11,7 +11,7 @@ router.get('/boutique/:id/products', boutiqueCtrl.getBoutiqueProducts);
 //router.get('/boutique/slug/:slug', boutiqueCtrl.getBoutiqueBySlug); // Nueva ruta para slugs
 
 // 🔥 RUTAS PROTEGIDAS
-router.post('/boutique',   boutiqueCtrl.createBoutique);
+router.post('/boutique', auth,  boutiqueCtrl.createBoutique);
 router.get('/boutique/:id',   boutiqueCtrl.getBoutique);
 router.put('/boutique/:id', auth, boutiqueCtrl.updateBoutique);
 router.delete('/boutique/:id', auth, boutiqueCtrl.deleteBoutique);

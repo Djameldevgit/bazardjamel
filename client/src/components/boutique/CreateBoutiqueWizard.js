@@ -1,12 +1,9 @@
-// 📂 src/components/boutique/CreateBoutiqueWizard.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button, Alert, Spinner, Badge, ProgressBar, Form } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
-import Select from 'react-select';
 import { createBoutique, updateBoutique } from '../../redux/actions/boutiqueAction';
 import { checkImage } from '../../utils/imageUpload';
-import { GLOBALTYPES } from '../../redux/actions/globalTypes';
 
 const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }) => {
   const dispatch = useDispatch();
@@ -17,21 +14,26 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [transactionId, setTransactionId] = useState('623279');
+  // ELIMINA ESTA LÍNEA: const domaine_boutique = formData.domaine_boutique || generateDomain(formData.nom_boutique);
   
   // Estados del formulario
   const [formData, setFormData] = useState({
+    // Step 1 - Campos del backend original
     nom_boutique: '',
     domaine_boutique: '',
     slogan_boutique: '',
     description_boutique: '',
+    logo: null,
+    logoPreview: '',
+    logoUrl: '',
+    
+    // Step 2 - Nuevos campos adaptados
     categories_produits: [],
-    couleur_theme: '#2563eb',
-    plan_boutique: '',
-    duree_abonnement: '',
     proprietaire: {
-      nom: '',
-      email: '',
-      telephone: '',
+      nom: auth?.user?.name || '',
+      email: auth?.user?.email || '',
+      telephone: auth?.user?.mobile || '',
       wilaya: '',
       adresse: ''
     },
@@ -42,84 +44,263 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
       whatsapp: '',
       website: ''
     },
-    logo: null,
-    logoPreview: '',
-    logoUrl: '',
+    couleur_theme: '#2563eb',
+    plan: 'gratuit',
+    duree_abonnement: '1mois',
+    
+    // Nuevos campos para sliders
+    categorie: '',
+    duree: '1',
+    offre: 'Store Basic 50',
+    
+    // Campos calculados
+    montant_initial: 0,
+    mois_offerts: 0,
+    montant_ttc: 0,
+    
+    // Step 4
+    methode_paiement: '',
+    client_nom: auth?.user?.name || '',
+    client_telephone: auth?.user?.mobile || '',
+    
     accepte_conditions: false
   });
   
-  // Opciones de categorías para react-select
-  const categoryOptions = [
-    { value: 'mode', label: 'Mode et vêtements' },
-    { value: 'technologie', label: 'Technologie et électronique' },
-    { value: 'cosmetique', label: 'Cosmétique et beauté' },
-    { value: 'maison', label: 'Maison et décoration' },
-    { value: 'enfants', label: 'Enfants et bébés' },
-    { value: 'sport', label: 'Sport et loisirs' },
-    { value: 'alimentation', label: 'Alimentation et boissons' },
-    { value: 'livres', label: 'Livres et éducation' },
-    { value: 'artisanat', label: 'Artisanat et fait main' },
-    { value: 'autre', label: 'Autre' }
+  
+  // Catégories pour le slider
+  const categories = [
+    'Automobiles & Véhicules',
+    'Informatique',
+    'Meubles & Maison',
+    'Matériaux & Equipement',
+    'Téléphonie & Accessoires',
+    'Pièces détachées',
+    'Electroménager & Electronique',
+    'Vêtements & Mode',
+    'Santé & Beauté',
+    'Loisirs & Divertissement',
+    'Offres & Demandes d\'emploi',
+    'Immobilier',
+    'Services',
+    'Voyages',
+    'Alimentaire',
+    'Sport'
   ];
   
-  // Planes disponibles
-  const PLANS = [
+  // Durées pour le slider
+  const durees = [
+    { id: '1', name: '1 Mois' },
+    { id: '2', name: '2 Mois' },
+    { id: '3', name: '3 Mois' },
+    { id: '4', name: '4 Mois' },
+    { id: '5', name: '5 Mois' },
+    { id: '6', name: '6 Mois' },
+    { id: '7', name: '7 Mois' },
+    { id: '8', name: '8 Mois' },
+    { id: '9', name: '9 Mois' },
+    { id: '10', name: '10 Mois' },
+    { id: '11', name: '11 Mois' },
+    { id: '12', name: '12 Mois' }
+  ];
+  
+  // Offres pour le slider
+  const offres = [
     {
-      id: 'gratuit',
-      name: 'Plan Gratuit',
-      credits: 0,
-      storage: '100 MB',
-      max_products: 10,
-      features: ['Site Builder', 'Tableau de bord', 'Support basic']
+      id: 'Store Basic 50',
+      name: 'Store Basic 50',
+      credits: 50,
+      storage: 100,
+      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      couleur: '#3b82f6',
+      prix_mois: 5000
     },
     {
-      id: 'basique',
-      name: 'Plan Basique',
+      id: 'Store Basic 100',
+      name: 'Store Basic 100',
+      credits: 100,
+      storage: 200,
+      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      couleur: '#3b82f6',
+      prix_mois: 8500
+    },
+    {
+      id: 'Store Basic 150',
+      name: 'Store Basic 150',
+      credits: 150,
+      storage: 300,
+      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      couleur: '#3b82f6',
+      prix_mois: 12000
+    },
+    {
+      id: 'Store Silver 200',
+      name: 'Store Silver 200',
+      credits: 200,
+      storage: 400,
+      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      couleur: '#6b7280',
+      prix_mois: 15000
+    },
+    {
+      id: 'Store Silver 300',
+      name: 'Store Silver 300',
+      credits: 300,
+      storage: 600,
+      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      couleur: '#6b7280',
+      prix_mois: 21000
+    },
+    {
+      id: 'Store Silver 500',
+      name: 'Store Silver 500',
       credits: 500,
-      storage: '1 GB',
-      max_products: 50,
-      features: ['Site Builder', 'Nom de domaine', 'Support prioritaire', 'Statistiques avancées']
+      storage: 1000,
+      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      couleur: '#6b7280',
+      prix_mois: 35000
     },
     {
-      id: 'premium',
-      name: 'Plan Premium',
+      id: 'Store Silver 750',
+      name: 'Store Silver 750',
+      credits: 750,
+      storage: 1500,
+      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      couleur: '#6b7280',
+      prix_mois: 50000
+    },
+    {
+      id: 'Store Gold 1000',
+      name: 'Store Gold 1000',
       credits: 1000,
-      storage: '5 GB',
-      max_products: 200,
-      features: ['Site Builder Pro', 'Nom de domaine', 'Marketing tools', 'Support 24/7', 'API access']
+      storage: 2000,
+      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      couleur: '#f59e0b',
+      prix_mois: 70000
     },
     {
-      id: 'entreprise',
-      name: 'Plan Entreprise',
+      id: 'Store Gold 1500',
+      name: 'Store Gold 1500',
+      credits: 1500,
+      storage: 3000,
+      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      couleur: '#f59e0b',
+      prix_mois: 100000
+    },
+    {
+      id: 'Store Gold 2000',
+      name: 'Store Gold 2000',
       credits: 2000,
-      storage: '20 GB',
-      max_products: 1000,
-      features: ['Site Builder Pro', 'Multi-domaines', 'Team management', 'Support dédié', 'Custom solutions']
+      storage: 4000,
+      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      couleur: '#f59e0b',
+      prix_mois: 130000
+    },
+    {
+      id: 'Store Gold 3000',
+      name: 'Store Gold 3000',
+      credits: 3000,
+      storage: 4000,
+      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      couleur: '#f59e0b',
+      prix_mois: 190000
+    },
+    {
+      id: 'Store Gold 6000',
+      name: 'Store Gold 6000',
+      credits: 6000,
+      storage: 12000,
+      features: ['Site Builder', 'Nom de domaine'],
+      couleur: '#f59e0b',
+      prix_mois: 350000
     }
   ];
   
-  // Opciones de durée d'abonnement
-  const DUREES = [
-    { id: '1mois', name: '1 Mois', creditsMultiplier: 1 },
-    { id: '3mois', name: '3 Mois', creditsMultiplier: 2.7, discount: '10%' },
-    { id: '6mois', name: '6 Mois', creditsMultiplier: 5.4, discount: '20%' },
-    { id: '1an', name: '1 An', creditsMultiplier: 10.8, discount: '30%' }
+  // Méthodes de paiement
+  const methodesPaiement = [
+    { value: 'ccp', label: 'CCP (Compte de Chèque Postal)' },
+    { value: 'cib', label: 'CIB - Banque' },
+    { value: 'carte', label: 'Carte de crédit' },
+    { value: 'edahabia', label: 'Edahabia' },
+    { value: 'cash', label: 'Espèces' },
+    { value: 'virement', label: 'Virement bancaire' }
   ];
   
-  // Calculer crédits totaux
-  const calculateTotalCredits = () => {
-    const plan = PLANS.find(p => p.id === formData.plan_boutique);
-    const duree = DUREES.find(d => d.id === formData.duree_abonnement);
-    
-    if (!plan || !duree) return 0;
-    return Math.round(plan.credits * duree.creditsMultiplier);
+  // Mapear oferta del slider al plan del backend
+  const mapOffreToPlan = (offreId) => {
+    const offreMapping = {
+      'Store Basic 50': 'gratuit',
+      'Store Basic 100': 'gratuit',
+      'Store Basic 150': 'gratuit',
+      'Store Silver 200': 'basique',
+      'Store Silver 300': 'basique',
+      'Store Silver 500': 'basique',
+      'Store Silver 750': 'premium',
+      'Store Gold 1000': 'premium',
+      'Store Gold 1500': 'premium',
+      'Store Gold 2000': 'entreprise',
+      'Store Gold 3000': 'entreprise',
+      'Store Gold 6000': 'entreprise'
+    };
+    return offreMapping[offreId] || 'gratuit';
   };
   
-  // Gérer cambios en el formulario - SIMPLIFICADO
+  // Mapear duración del slider a duración del backend
+  const mapDureeToAbonnement = (dureeId) => {
+    const dureeMapping = {
+      '1': '1mois',
+      '2': '1mois',
+      '3': '3mois',
+      '4': '3mois',
+      '5': '6mois',
+      '6': '6mois',
+      '7': '6mois',
+      '8': '6mois',
+      '9': '1an',
+      '10': '1an',
+      '11': '1an',
+      '12': '1an'
+    };
+    return dureeMapping[dureeId] || '1mois';
+  };
+  
+  // Calculer les montants
+  const calculerMontants = () => {
+    const offreSelectionnee = offres.find(o => o.id === formData.offre);
+    const dureeMois = parseInt(formData.duree);
+    
+    if (!offreSelectionnee) return;
+    
+    let montantInitial = offreSelectionnee.prix_mois * dureeMois;
+    let moisOfferts = 0;
+    
+    // Calculer mois offerts selon les règles
+    if (dureeMois >= 6) {
+      moisOfferts = 1;
+    }
+    if (dureeMois >= 12) {
+      moisOfferts = 3;
+    }
+    
+    // Appliquer les mois offerts
+    const moisPayer = Math.max(1, dureeMois - moisOfferts);
+    montantInitial = offreSelectionnee.prix_mois * moisPayer;
+    
+    // Calculer taxe 19%
+    const taxe = montantInitial * 0.19;
+    const montantTTC = montantInitial + taxe;
+    
+    setFormData(prev => ({
+      ...prev,
+      montant_initial: montantInitial,
+      mois_offerts: moisOfferts,
+      montant_ttc: montantTTC
+    }));
+  };
+  
+  // Gérer cambios en el formulario
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     
-    // Manejar campos anidados
     if (name.startsWith('proprietaire.')) {
       const field = name.split('.')[1];
       setFormData(prev => ({
@@ -129,8 +310,7 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
           [field]: type === 'checkbox' ? checked : value
         }
       }));
-    } 
-    else if (name.startsWith('reseaux_sociaux.')) {
+    } else if (name.startsWith('reseaux_sociaux.')) {
       const field = name.split('.')[1];
       setFormData(prev => ({
         ...prev,
@@ -139,8 +319,7 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
           [field]: value
         }
       }));
-    } 
-    else {
+    } else {
       setFormData(prev => ({
         ...prev,
         [name]: type === 'checkbox' ? checked : value
@@ -148,23 +327,12 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
     }
   };
   
-  // Manejar cambio de categorías (react-select)
-  const handleCategoriesChange = (selectedOptions) => {
-    const selectedValues = selectedOptions ? selectedOptions.map(option => option.value) : [];
-    
-    setFormData(prev => ({
-      ...prev,
-      categories_produits: selectedValues
-    }));
-  };
-  
-  // Manejar cambio de logo
+  // Manejar cambio de logo (MISMO CÓDIGO DEL ORIGINAL)
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     
     if (!file) return;
     
-    // Verificar la imagen usando la función checkImage
     const err = checkImage(file);
     if (err) {
       setError(err);
@@ -188,40 +356,58 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
     }));
   };
   
-  // Función especial para manejar selección de plan
-  const handlePlanSelect = (planId) => {
-    setFormData(prev => ({
-      ...prev,
-      plan_boutique: planId
+  // Sélectionner catégorie
+  const handleSelectCategorie = (categorie) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      categorie,
+      categories_produits: [categorie] // Mapear al array del backend
     }));
   };
   
-  // Función especial para manejar selección de duración
-  const handleDurationSelect = (durationId) => {
-    setFormData(prev => ({
-      ...prev,
-      duree_abonnement: durationId
+  // Sélectionner durée
+  const handleSelectDuree = (dureeId) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      duree: dureeId,
+      duree_abonnement: mapDureeToAbonnement(dureeId) // Mapear al formato del backend
     }));
   };
   
-  // Validar step actual - CORREGIDO
+  // Sélectionner offre
+  const handleSelectOffre = (offreId) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      offre: offreId,
+      plan: mapOffreToPlan(offreId) // Mapear al formato del backend
+    }));
+  };
+  
+  // Generar dominio automático basado en el nombre
+  const generateDomain = (nom) => {
+    if (!nom) return '';
+    return nom
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  };
+  
+  // Validar step actual
   const validateStep = (step) => {
     switch (step) {
       case 1:
         return formData.nom_boutique.trim() !== '' && 
-               formData.domaine_boutique.trim() !== '' &&
-               formData.categories_produits.length > 0;
+               formData.description_boutique.trim() !== '';
       case 2:
-        return formData.plan_boutique !== '' && 
-               formData.duree_abonnement !== '';
+        return formData.categorie !== '' && 
+               formData.duree !== '' &&
+               formData.offre !== '';
       case 3:
-        return formData.proprietaire.nom.trim() !== '' &&
-               formData.proprietaire.email.trim() !== '' &&
-               formData.proprietaire.telephone.trim() !== '';
+        return true; // Step 3 es solo visualización
       case 4:
-        return formData.accepte_conditions === true;
-      case 5:
-        return true;
+        return formData.methode_paiement !== '' && 
+               formData.accepte_conditions === true;
       default:
         return false;
     }
@@ -230,23 +416,23 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
   // Avanzar al siguiente step
   const nextStep = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, 5));
+      if (currentStep === 2) {
+        calculerMontants();
+      }
+      setCurrentStep(prev => Math.min(prev + 1, 4));
       setError('');
     } else {
       let errorMessage = 'Veuillez remplir tous les champs obligatoires de cette étape';
       if (currentStep === 1) {
-        if (!formData.nom_boutique.trim()) errorMessage = 'Nom de boutique requis';
-        else if (!formData.domaine_boutique.trim()) errorMessage = 'Domaine requis';
-        else if (!formData.categories_produits || formData.categories_produits.length === 0) errorMessage = 'Sélectionnez au moins une catégorie';
+        if (!formData.nom_boutique.trim()) errorMessage = 'Nom du store requis';
+        else if (!formData.description_boutique.trim()) errorMessage = 'Description du store requise';
       } else if (currentStep === 2) {
-        if (!formData.plan_boutique) errorMessage = 'Sélectionnez un plan';
-        else if (!formData.duree_abonnement) errorMessage = 'Sélectionnez une durée d\'abonnement';
-      } else if (currentStep === 3) {
-        if (!formData.proprietaire.nom.trim()) errorMessage = 'Nom du propriétaire requis';
-        else if (!formData.proprietaire.email.trim()) errorMessage = 'Email du propriétaire requis';
-        else if (!formData.proprietaire.telephone.trim()) errorMessage = 'Téléphone du propriétaire requis';
+        if (!formData.categorie) errorMessage = 'Sélectionnez une catégorie';
+        else if (!formData.duree) errorMessage = 'Sélectionnez une durée';
+        else if (!formData.offre) errorMessage = 'Sélectionnez une offre';
       } else if (currentStep === 4) {
-        errorMessage = 'Vous devez accepter les conditions générales';
+        if (!formData.methode_paiement) errorMessage = 'Sélectionnez une méthode de paiement';
+        else errorMessage = 'Vous devez accepter les conditions';
       }
       setError(errorMessage);
     }
@@ -258,26 +444,54 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
     setError('');
   };
   
-  // Preparar datos para enviar
+ 
   const prepareSubmitData = () => {
+    // Generar dominio automático si no existe
+    const domaine_boutique = formData.domaine_boutique || generateDomain(formData.nom_boutique);
+    
+    // Mapear valores del wizard al formato del backend
     const submitData = {
-      nom_boutique: formData.nom_boutique,
-      domaine_boutique: formData.domaine_boutique,
-      slogan_boutique: formData.slogan_boutique,
-      description_boutique: formData.description_boutique,
-      categories_produits: formData.categories_produits || [], // Asegurar que sea array
-      couleur_theme: formData.couleur_theme,
-      plan: formData.plan_boutique,
-      duree_abonnement: formData.duree_abonnement,
-      proprietaire: formData.proprietaire,
-      reseaux_sociaux: formData.reseaux_sociaux,
-      accepte_conditions: formData.accepte_conditions
+      // Campos requeridos por el backend
+      nom_boutique: formData.nom_boutique || '',
+      domaine_boutique: domaine_boutique || '',
+      slogan_boutique: formData.slogan_boutique || '',
+      description_boutique: formData.description_boutique || '',
+      
+      // Campos adaptados del wizard
+      categories_produits: formData.categories_produits || [],
+      plan: formData.plan || 'gratuit',
+      duree_abonnement: formData.duree_abonnement || '1mois',
+      
+      // Información del propietario - ASEGURAR VALORES DEL WIZARD
+      proprietaire: {
+        nom: formData.proprietaire?.nom || auth?.user?.name || '',
+        email: formData.proprietaire?.email || auth?.user?.email || '',
+        telephone: formData.proprietaire?.telephone || auth?.user?.mobile || '',
+        wilaya: formData.proprietaire?.wilaya || '',
+        adresse: formData.proprietaire?.adresse || ''
+      },
+      
+      // Redes sociales
+      reseaux_sociaux: formData.reseaux_sociaux || {},
+      
+      // Estilo
+      couleur_theme: formData.couleur_theme || '#2563eb',
+      
+      // Condiciones
+      accepte_conditions: true
     };
+    
+    console.log('✅ Datos preparados para enviar:', {
+      nom_boutique: submitData.nom_boutique,
+      domaine_boutique: submitData.domaine_boutique,
+      plan: submitData.plan,
+      proprietaire: submitData.proprietaire
+    });
     
     return submitData;
   };
   
-  // Enviar formulario
+  // En handleSubmit() del wizard:
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     
@@ -286,13 +500,24 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
       setError('');
       setSuccess('');
       
-      const userData = prepareSubmitData();
+      const boutiqueData = prepareSubmitData();
       const avatar = formData.logo;
       
-      // Disparar la acción de Redux
+      console.log('📤 Enviando al backend:', {
+        boutiqueData: {
+          nom_boutique: boutiqueData.nom_boutique,
+          domaine_boutique: boutiqueData.domaine_boutique,
+          plan: boutiqueData.plan
+        },
+        hasAvatar: !!avatar
+      });
+      
+      // Mostrar datos del proprietaire
+      console.log('👤 Proprietaire data:', boutiqueData.proprietaire);
+      
       if (isEdit && boutiqueData) {
         await dispatch(updateBoutique({ 
-          boutiqueData: userData, 
+          boutiqueData, 
           avatar, 
           auth,
           boutiqueId: boutiqueData._id 
@@ -300,15 +525,14 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
         setSuccess('Boutique mise à jour avec succès!');
       } else {
         const result = await dispatch(createBoutique({ 
-          boutiqueData: userData, 
+          boutiqueData, 
           avatar, 
           auth 
         }));
         
         if (result) {
-          setSuccess('Boutique créée avec succès!');
+          setSuccess('Votre demande de création de store a été soumise avec succès! Elle sera évaluée par nos administrateurs.');
           
-          // Redirigir después de 2 segundos
           setTimeout(() => {
             if (onSuccess) {
               onSuccess(result.boutique || result);
@@ -318,74 +542,15 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
                 history.push(`/boutique/${boutiqueId}`);
               }
             }
-          }, 2000);
+          }, 3000);
         }
       }
       
     } catch (err) {
-      console.error('Error creating boutique:', err);
-      
-      if (err.message && err.message.includes('Unexpected token')) {
-        setError('Erreur du serveur: Le serveur a retourné une réponse non valide.');
-      } else if (err.response && err.response.status === 404) {
-        setError('Erreur 404: La route API n\'existe pas.');
-      } else if (err.response && err.response.status === 500) {
-        setError('Erreur 500: Erreur interne du serveur.');
-      } else {
-        setError(err.message || 'Erreur lors de la création de la boutique');
-      }
+      console.error('❌ Error creating boutique:', err);
+      setError(err.message || 'Erreur lors de la création de la boutique');
     } finally {
       setLoading(false);
-    }
-  };
-  
-  // Renderizar step actual
-  const renderStep = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <Step1InfoBasique 
-            formData={formData} 
-            handleInputChange={handleInputChange}
-            handleCategoriesChange={handleCategoriesChange}
-            categoryOptions={categoryOptions}
-          />
-        );
-      case 2:
-        return (
-          <Step2Plan 
-            formData={formData}
-            handlePlanSelect={handlePlanSelect}
-            handleDurationSelect={handleDurationSelect}
-            plans={PLANS}
-            durees={DUREES}
-            calculateTotalCredits={calculateTotalCredits}
-          />
-        );
-      case 3:
-        return (
-          <Step3Proprietaire 
-            formData={formData}
-            handleInputChange={handleInputChange}
-          />
-        );
-      case 4:
-        return (
-          <Step4Conditions 
-            formData={formData}
-            handleInputChange={handleInputChange}
-          />
-        );
-      case 5:
-        return (
-          <Step5Logo 
-            formData={formData}
-            handleLogoChange={handleLogoChange}
-            handleRemoveLogo={handleRemoveLogo}
-          />
-        );
-      default:
-        return null;
     }
   };
   
@@ -394,34 +559,53 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
     if (isEdit && boutiqueData) {
       setFormData({
         nom_boutique: boutiqueData.nom_boutique || '',
+        description_boutique: boutiqueData.description_boutique || '',
         domaine_boutique: boutiqueData.domaine_boutique || '',
         slogan_boutique: boutiqueData.slogan_boutique || '',
-        description_boutique: boutiqueData.description_boutique || '',
-        categories_produits: boutiqueData.categories_produits || [],
-        couleur_theme: boutiqueData.couleur_theme || '#2563eb',
-        plan_boutique: boutiqueData.plan || '',
-        duree_abonnement: boutiqueData.duree_abonnement || '',
-        proprietaire: {
-          nom: boutiqueData.proprietaire?.nom || '',
-          email: boutiqueData.proprietaire?.email || '',
-          telephone: boutiqueData.proprietaire?.telephone || '',
-          wilaya: boutiqueData.proprietaire?.wilaya || '',
-          adresse: boutiqueData.proprietaire?.adresse || ''
-        },
-        reseaux_sociaux: {
-          facebook: boutiqueData.reseaux_sociaux?.facebook || '',
-          instagram: boutiqueData.reseaux_sociaux?.instagram || '',
-          tiktok: boutiqueData.reseaux_sociaux?.tiktok || '',
-          whatsapp: boutiqueData.reseaux_sociaux?.whatsapp || '',
-          website: boutiqueData.reseaux_sociaux?.website || ''
-        },
+        date_debut: boutiqueData.date_debut || new Date().toISOString().split('T')[0],
+        categorie: boutiqueData.categorie || '',
+        duree: boutiqueData.duree || '1',
+        offre: boutiqueData.offre || 'Store Basic 50',
         logo: null,
         logoPreview: boutiqueData.logo?.url || '',
         logoUrl: boutiqueData.logo?.url || '',
+        categories_produits: boutiqueData.categories_produits || [],
+        proprietaire: boutiqueData.proprietaire || {
+          nom: auth?.user?.name || '',
+          email: auth?.user?.email || '',
+          telephone: auth?.user?.mobile || '',
+          wilaya: '',
+          adresse: ''
+        },
+        reseaux_sociaux: boutiqueData.reseaux_sociaux || {
+          facebook: '',
+          instagram: '',
+          tiktok: '',
+          whatsapp: '',
+          website: ''
+        },
+        couleur_theme: boutiqueData.couleur_theme || '#2563eb',
+        plan: boutiqueData.plan || 'gratuit',
+        duree_abonnement: boutiqueData.duree_abonnement || '1mois',
+        montant_initial: boutiqueData.montant_initial || 0,
+        mois_offerts: boutiqueData.mois_offerts || 0,
+        montant_ttc: boutiqueData.montant_ttc || 0,
+        methode_paiement: boutiqueData.methode_paiement || '',
+        client_nom: boutiqueData.client_nom || auth?.user?.name || '',
+        client_telephone: boutiqueData.client_telephone || auth?.user?.mobile || '',
         accepte_conditions: boutiqueData.accepte_conditions || false
       });
+    } else {
+      // Para creación, establecer dominio automático cuando cambia el nombre
+      if (formData.nom_boutique && !formData.domaine_boutique) {
+        const domaine = generateDomain(formData.nom_boutique);
+        setFormData(prev => ({
+          ...prev,
+          domaine_boutique: domaine
+        }));
+      }
     }
-  }, [isEdit, boutiqueData]);
+  }, [isEdit, boutiqueData, auth, formData.nom_boutique]);
   
   // Efecto para manejar alertas de Redux
   useEffect(() => {
@@ -433,24 +617,47 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
     }
   }, [alert]);
   
+  // Renderizar step actual - CORREGIDO
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return <Step1Informations formData={formData} handleInputChange={handleInputChange} handleLogoChange={handleLogoChange} handleRemoveLogo={handleRemoveLogo} />;
+      case 2:
+        return <Step2ChoixOffre formData={formData} categories={categories} durees={durees} offres={offres} handleSelectCategorie={handleSelectCategorie} handleSelectDuree={handleSelectDuree} handleSelectOffre={handleSelectOffre} />;
+      case 3:
+        return <Step3Transaction formData={formData} transactionId={transactionId} offres={offres} durees={durees} />;
+      case 4:
+        return <Step4DetailTransaction 
+          formData={formData} 
+          methodesPaiement={methodesPaiement} 
+          handleInputChange={handleInputChange} 
+          offres={offres} 
+          durees={durees}
+          transactionId={transactionId}
+        />;
+      default:
+        return null;
+    }
+  };
+  
   return (
     <div className="create-boutique-wizard">
       {/* Header */}
       <div className="wizard-header mb-4">
         <h2 className="mb-2">
-          {isEdit ? '✏️ Modifier votre boutique' : '🏪 Créer votre boutique'}
+          {isEdit ? '✏️ Modifier votre store' : '🏪 Créer votre store'}
         </h2>
         <p className="text-muted mb-0">
           {isEdit 
-            ? 'Mettez à jour les informations de votre boutique'
-            : 'Créez votre boutique en ligne en quelques étapes simples'
+            ? 'Mettez à jour les informations de votre store'
+            : 'Créez votre store en ligne en quelques étapes simples'
           }
         </p>
         
         {/* Progress bar */}
         <div className="progress-container mt-4">
           <div className="d-flex justify-content-between mb-2">
-            {[1, 2, 3, 4, 5].map(step => (
+            {[1, 2, 3, 4].map(step => (
               <div 
                 key={step} 
                 className={`step-indicator ${currentStep >= step ? 'active' : ''} ${currentStep === step ? 'current' : ''}`}
@@ -459,17 +666,16 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
               >
                 <div className="step-number">{step}</div>
                 <div className="step-label">
-                  {step === 1 && 'Infos'}
-                  {step === 2 && 'Plan'}
-                  {step === 3 && 'Contact'}
-                  {step === 4 && 'Conditions'}
-                  {step === 5 && 'Logo'}
+                  {step === 1 && 'Informations'}
+                  {step === 2 && 'Offre'}
+                  {step === 3 && 'Transaction'}
+                  {step === 4 && 'Paiement'}
                 </div>
               </div>
             ))}
           </div>
           <ProgressBar 
-            now={(currentStep / 5) * 100} 
+            now={(currentStep / 4) * 100} 
             variant="primary" 
             style={{ height: '6px' }}
           />
@@ -510,7 +716,7 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
         </div>
         
         <div>
-          {currentStep < 5 ? (
+          {currentStep < 4 ? (
             <Button 
               variant="primary" 
               onClick={nextStep} 
@@ -528,12 +734,12 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
               {loading ? (
                 <>
                   <Spinner animation="border" size="sm" className="me-2" />
-                  {isEdit ? 'Mise à jour...' : 'Création...'}
+                  {isEdit ? 'Mise à jour...' : 'Soumettre...'}
                 </>
               ) : (
                 <>
-                  <i className={`fas ${isEdit ? 'fa-save' : 'fa-check'} me-2`}></i>
-                  {isEdit ? 'Mettre à jour' : 'Créer la boutique'}
+                  <i className="fas fa-paper-plane me-2"></i>
+                  {isEdit ? 'Mettre à jour' : 'Soumettre la demande'}
                 </>
               )}
             </Button>
@@ -541,19 +747,44 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
         </div>
       </div>
       
+      {/* Footer avec détails utilisateur */}
+      <div className="mt-4 pt-4 border-top">
+        <div className="row">
+          <div className="col-md-6">
+            <h6 className="text-muted mb-2">
+              <i className="fas fa-user-circle me-2"></i>
+              Informations du propriétaire
+            </h6>
+            <p className="mb-1"><strong>Nom:</strong> {auth?.user?.name || 'Non spécifié'}</p>
+            <p className="mb-1"><strong>Email:</strong> {auth?.user?.email || 'Non spécifié'}</p>
+            <p className="mb-0"><strong>Téléphone:</strong> {auth?.user?.mobile || 'Non spécifié'}</p>
+          </div>
+          <div className="col-md-6 text-md-end">
+            <h6 className="text-muted mb-2">
+              <i className="fas fa-info-circle me-2"></i>
+              Support
+            </h6>
+            <p className="mb-1">
+              <i className="fas fa-phone me-1"></i>
+              +213 XXX XX XX XX
+            </p>
+            <p className="mb-0">
+              <i className="fas fa-envelope me-1"></i>
+              support@marketplace.dz
+            </p>
+          </div>
+        </div>
+      </div>
+      
       {/* Estilos inline */}
       <style jsx="true">{`
         .create-boutique-wizard {
-          max-width: 900px;
+          max-width: 1000px;
           margin: 0 auto;
         }
         
         .wizard-header {
           text-align: center;
-        }
-        
-        .progress-container {
-          position: relative;
         }
         
         .step-indicator {
@@ -601,31 +832,120 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
           font-weight: 600;
         }
         
-        .plan-card {
-          border: 2px solid #dee2e6;
-          border-radius: 8px;
-          padding: 1.5rem;
-          height: 100%;
-          transition: all 0.3s ease;
-          cursor: pointer;
+        .slider-container {
+          position: relative;
+          padding: 0 40px;
         }
         
-        .plan-card:hover {
+        .slider-scroll {
+          display: flex;
+          overflow-x: auto;
+          scroll-behavior: smooth;
+          gap: 15px;
+          padding: 10px 0;
+          scrollbar-width: thin;
+        }
+        
+        .slider-scroll::-webkit-scrollbar {
+          height: 6px;
+        }
+        
+        .slider-scroll::-webkit-scrollbar-thumb {
+          background: #ccc;
+          border-radius: 3px;
+        }
+        
+        .slider-btn {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          background: white;
+          border: 1px solid #dee2e6;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        
+        .slider-btn:hover {
+          background: #f8f9fa;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .slider-btn-left {
+          left: 0;
+        }
+        
+        .slider-btn-right {
+          right: 0;
+        }
+        
+        .categorie-card {
+          min-width: 150px;
+          padding: 15px;
+          border: 2px solid #dee2e6;
+          border-radius: 8px;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          flex-shrink: 0;
+        }
+        
+        .categorie-card:hover {
           border-color: #0d6efd;
           transform: translateY(-2px);
+        }
+        
+        .categorie-card.selected {
+          border-color: #0d6efd;
+          background-color: rgba(13, 110, 253, 0.05);
+          font-weight: bold;
+        }
+        
+        .duree-card {
+          min-width: 100px;
+          padding: 15px;
+          border: 2px solid #dee2e6;
+          border-radius: 8px;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          flex-shrink: 0;
+        }
+        
+        .duree-card:hover {
+          border-color: #10b981;
+          transform: translateY(-2px);
+        }
+        
+        .duree-card.selected {
+          border-color: #10b981;
+          background-color: rgba(16, 185, 129, 0.05);
+          font-weight: bold;
+        }
+        
+        .offre-card {
+          min-width: 220px;
+          padding: 20px;
+          border: 2px solid #dee2e6;
+          border-radius: 10px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          flex-shrink: 0;
+        }
+        
+        .offre-card:hover {
+          transform: translateY(-3px);
           box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
         
-        .plan-card.selected {
-          border-color: #0d6efd;
-          background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        .offre-card.selected {
           border-width: 3px;
-        }
-        
-        .credits-display {
-          font-size: 1.5rem;
-          font-weight: bold;
-          color: #198754;
         }
         
         .info_avatar {
@@ -683,33 +1003,10 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
           cursor: pointer;
         }
         
-        .select-categories {
-          margin-bottom: 1rem;
-        }
-        
-        .select-categories .css-1s2u09g-control {
-          border-color: #ced4da;
-          min-height: 38px;
-        }
-        
-        .select-categories .css-1s2u09g-control:hover {
-          border-color: #86b7fe;
-        }
-        
-        .select-categories .css-1s2u09g-control:focus-within {
-          border-color: #86b7fe;
-          box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-        }
-        
-        .selected-categories {
-          margin-top: 0.5rem;
-        }
-        
-        .selected-categories .badge {
-          margin-right: 0.25rem;
-          margin-bottom: 0.25rem;
-          font-size: 0.8rem;
-          padding: 0.35em 0.65em;
+        .montant-ttc {
+          font-size: 1.8rem;
+          font-weight: bold;
+          color: #198754;
         }
         
         @media (max-width: 768px) {
@@ -717,8 +1014,12 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
             padding: 15px;
           }
           
-          .plan-card {
-            margin-bottom: 1rem;
+          .slider-container {
+            padding: 0 30px;
+          }
+          
+          .offre-card {
+            min-width: 280px;
           }
         }
       `}</style>
@@ -728,23 +1029,46 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
 
 // ============ COMPONENTES DE CADA STEP ============
 
-// Step 1: Informations de base - CON REACT-SELECT
-const Step1InfoBasique = ({ formData, handleInputChange, handleCategoriesChange, categoryOptions }) => {
-  
-  // Preparar valores seleccionados para react-select
-  const selectedCategories = categoryOptions.filter(option => 
-    formData.categories_produits && formData.categories_produits.includes(option.value)
-  );
+// Step 1: Informations du store - ACTUALIZADO
+const Step1Informations = ({ formData, handleInputChange, handleLogoChange, handleRemoveLogo }) => {
+  const hasLogo = formData.logo || formData.logoPreview || formData.logoUrl;
+  const logoPreview = formData.logoPreview || formData.logoUrl || '/default-logo.png';
   
   return (
-    <div className="step1-info-basique">
-      <h4 className="section-title">Informations de base</h4>
+    <div className="step1-informations">
+      <div className="d-flex align-items-center mb-3">
+        <div className="bg-primary rounded p-2 me-3">
+          <i className="fas fa-store text-white" style={{ fontSize: '1.5rem' }}></i>
+        </div>
+        <div>
+          <h4 className="mb-0">Informations du store</h4>
+          <p className="text-muted mb-0">Remplir les informations nécessaires</p>
+        </div>
+      </div>
       
       <div className="row g-3">
         <div className="col-md-6">
           <Form.Group className="mb-3">
             <Form.Label>
-              Nom de la boutique <span className="text-danger">*</span>
+              Commence le <span className="text-danger">*</span>
+            </Form.Label>
+            <Form.Control
+              type="date"
+              name="date_debut"
+              value={formData.date_debut}
+              onChange={handleInputChange}
+              required
+            />
+            <Form.Text className="text-muted">
+              Date de début d'activité de votre store
+            </Form.Text>
+          </Form.Group>
+        </div>
+        
+        <div className="col-md-6">
+          <Form.Group className="mb-3">
+            <Form.Label>
+              Nom du store <span className="text-danger">*</span>
             </Form.Label>
             <Form.Control
               type="text"
@@ -755,7 +1079,7 @@ const Step1InfoBasique = ({ formData, handleInputChange, handleCategoriesChange,
               required
             />
             <Form.Text className="text-muted">
-              Le nom qui apparaîtra sur votre boutique en ligne
+              Le nom qui apparaîtra sur votre store
             </Form.Text>
           </Form.Group>
         </div>
@@ -763,7 +1087,7 @@ const Step1InfoBasique = ({ formData, handleInputChange, handleCategoriesChange,
         <div className="col-md-6">
           <Form.Group className="mb-3">
             <Form.Label>
-              Nom de domaine <span className="text-danger">*</span>
+              Domaine du store <span className="text-danger">*</span>
             </Form.Label>
             <div className="input-group">
               <Form.Control
@@ -777,12 +1101,12 @@ const Step1InfoBasique = ({ formData, handleInputChange, handleCategoriesChange,
               <span className="input-group-text">.monsite.dz</span>
             </div>
             <Form.Text className="text-muted">
-              Votre boutique sera accessible à: https://{formData.domaine_boutique || 'exemple'}.monsite.dz
+              Votre store sera accessible à: {formData.domaine_boutique || 'exemple'}.monsite.dz
             </Form.Text>
           </Form.Group>
         </div>
         
-        <div className="col-12">
+        <div className="col-md-6">
           <Form.Group className="mb-3">
             <Form.Label>Slogan / Description courte</Form.Label>
             <Form.Control
@@ -797,256 +1121,82 @@ const Step1InfoBasique = ({ formData, handleInputChange, handleCategoriesChange,
         
         <div className="col-12">
           <Form.Group className="mb-3">
-            <Form.Label>Description détaillée</Form.Label>
+            <Form.Label>
+              Description détaillée <span className="text-danger">*</span>
+            </Form.Label>
             <Form.Control
               as="textarea"
               rows={3}
               name="description_boutique"
               value={formData.description_boutique}
               onChange={handleInputChange}
-              placeholder="Décrivez votre boutique, votre mission, vos valeurs..."
+              placeholder="Décrivez votre store, vos produits, vos services..."
+              required
             />
+            <Form.Text className="text-muted">
+              Cette description sera visible par vos clients
+            </Form.Text>
           </Form.Group>
         </div>
         
         <div className="col-12">
-          <Form.Group className="mb-3">
-            <Form.Label>
-              Catégories de produits <span className="text-danger">*</span>
-            </Form.Label>
-            <div className="select-categories">
-              <Select
-                options={categoryOptions}
-                isMulti
-                value={selectedCategories}
-                onChange={handleCategoriesChange}
-                placeholder="Sélectionnez vos catégories..."
-                className="basic-multi-select"
-                classNamePrefix="select"
-                noOptionsMessage={() => "Aucune option disponible"}
+          <div className="d-flex flex-column align-items-center mb-4">
+            <h6 className="mb-3">Logo du store</h6>
+            <div className="info_avatar mb-3">
+              <img 
+                src={logoPreview} 
+                alt="Logo preview" 
+                style={{ 
+                  borderRadius: '8px',
+                  width: '150px',
+                  height: '150px',
+                  objectFit: 'contain',
+                  backgroundColor: '#f8f9fa'
+                }}
               />
-            </div>
-            <Form.Text className="text-muted">
-              Sélectionnez une ou plusieurs catégories qui correspondent à vos produits
-            </Form.Text>
-            
-            {formData.categories_produits && formData.categories_produits.length > 0 && (
-              <div className="selected-categories mt-3">
-                <div className="mb-2">
-                  <small className="text-success">
-                    <i className="fas fa-check me-1"></i>
-                    {formData.categories_produits.length} catégorie(s) sélectionnée(s)
-                  </small>
-                </div>
-                <div className="d-flex flex-wrap">
-                  {selectedCategories.map(cat => (
-                    <Badge key={cat.value} bg="info" pill className="me-1 mb-1">
-                      {cat.label}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-          </Form.Group>
-        </div>
-        
-        <div className="col-md-6">
-          <Form.Group className="mb-3">
-            <Form.Label>Couleur du thème</Form.Label>
-            <div className="d-flex align-items-center">
-              <Form.Control
-                type="color"
-                name="couleur_theme"
-                value={formData.couleur_theme}
-                onChange={handleInputChange}
-                className="w-25 me-3"
-                style={{ minWidth: '60px' }}
-              />
-              <span className="text-muted">
-                Personnalisez l'apparence de votre boutique
+              <span>
+                <i className="fas fa-camera" />
+                <p>Changer</p>
+                <input 
+                  type="file" 
+                  name="logo" 
+                  id="logo_up"
+                  accept="image/*" 
+                  onChange={handleLogoChange} 
+                />
               </span>
             </div>
-          </Form.Group>
+            
+            {hasLogo ? (
+              <Button
+                variant="outline-danger"
+                size="sm"
+                onClick={handleRemoveLogo}
+                className="mt-2"
+              >
+                <i className="fas fa-trash me-1"></i>
+                Supprimer le logo
+              </Button>
+            ) : (
+              <p className="text-muted text-center">
+                Cliquez sur la zone du logo pour télécharger une image
+              </p>
+            )}
+          </div>
         </div>
-      </div>
-    </div>
-  );
-};
-
-// Step 2: Plan et abonnement
-const Step2Plan = ({ 
-  formData, 
-  handlePlanSelect, 
-  handleDurationSelect, 
-  plans, 
-  durees, 
-  calculateTotalCredits 
-}) => {
-  const totalCredits = calculateTotalCredits();
-  
-  return (
-    <div className="step2-plan">
-      <h4 className="section-title">Choisissez votre plan</h4>
-      
-      <div className="row g-3 mb-4">
-        {plans.map(plan => (
-          <div className="col-md-6 col-lg-3" key={plan.id}>
-            <div 
-              className={`plan-card ${formData.plan_boutique === plan.id ? 'selected' : ''}`}
-              onClick={() => handlePlanSelect(plan.id)}
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="d-flex justify-content-between align-items-start mb-2">
-                <div>
-                  <h5 className="mb-1">{plan.name}</h5>
-                  <div className="text-muted small">{plan.storage} stockage</div>
-                </div>
-                <Badge bg="primary">{plan.credits} crédits/mois</Badge>
-              </div>
-              
-              <div className="plan-features">
-                {plan.features.map((feature, idx) => (
-                  <div key={idx} className="plan-feature-item">
-                    <i className="fas fa-check text-success me-2"></i>
-                    <small>{feature}</small>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="text-center mt-3">
-                <Button
-                  size="sm"
-                  variant={formData.plan_boutique === plan.id ? 'primary' : 'outline-primary'}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handlePlanSelect(plan.id);
-                  }}
-                >
-                  {formData.plan_boutique === plan.id ? '✓ Sélectionné' : 'Sélectionner'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      
-      <h4 className="section-title mt-4">Durée d'abonnement</h4>
-      
-      <div className="row g-3 mb-4">
-        {durees.map(duree => (
-          <div className="col-md-6 col-lg-3" key={duree.id}>
-            <div 
-              className={`plan-card ${formData.duree_abonnement === duree.id ? 'selected' : ''}`}
-              onClick={() => handleDurationSelect(duree.id)}
-              style={{ cursor: 'pointer' }}
-            >
-              <h5 className="text-center mb-2">{duree.name}</h5>
-              {duree.discount && (
-                <Badge bg="success" className="d-block text-center mb-2">
-                  Économisez {duree.discount}
-                </Badge>
-              )}
-              <div className="text-center mt-3">
-                <Button
-                  size="sm"
-                  variant={formData.duree_abonnement === duree.id ? 'primary' : 'outline-primary'}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDurationSelect(duree.id);
-                  }}
-                >
-                  {formData.duree_abonnement === duree.id ? '✓ Choisi' : 'Choisir'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      
-      {/* Validación visual */}
-      {(!formData.plan_boutique || !formData.duree_abonnement) && (
-        <Alert variant="warning" className="mb-4">
-          <i className="fas fa-exclamation-triangle me-2"></i>
-          <strong>Attention:</strong> Vous devez sélectionner un plan ET une durée d'abonnement pour continuer.
-        </Alert>
-      )}
-      
-      {/* Résumé */}
-      {formData.plan_boutique && formData.duree_abonnement && (
-        <Card className="border-primary">
-          <Card.Body>
-            <h5 className="mb-3">
-              <i className="fas fa-check-circle text-success me-2"></i>
-              Récapitulatif de votre sélection
-            </h5>
-            <div className="row">
-              <div className="col-md-6">
-                <div className="mb-2">
-                  <strong>Plan:</strong> {plans.find(p => p.id === formData.plan_boutique)?.name}
-                </div>
-                <div className="mb-2">
-                  <strong>Durée:</strong> {durees.find(d => d.id === formData.duree_abonnement)?.name}
-                </div>
-                <div className="mb-2">
-                  <strong>Produits max:</strong> {plans.find(p => p.id === formData.plan_boutique)?.max_products}
-                </div>
-                <div className="mb-2">
-                  <strong>Stockage:</strong> {plans.find(p => p.id === formData.plan_boutique)?.storage}
-                </div>
-              </div>
-              <div className="col-md-6">
-                <div className="credits-display text-end">
-                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#198754' }}>
-                    {totalCredits} crédits
-                  </div>
-                  <small className="text-muted">
-                    ({plans.find(p => p.id === formData.plan_boutique)?.credits} crédits × 
-                    {durees.find(d => d.id === formData.duree_abonnement)?.creditsMultiplier})
-                  </small>
-                </div>
-                <p className="text-muted text-end mb-0">
-                  Ce montant sera débité de votre compte
-                </p>
-              </div>
-            </div>
-          </Card.Body>
-        </Card>
-      )}
-    </div>
-  );
-};
-
-// Step 3: Informations du propriétaire
-const Step3Proprietaire = ({ formData, handleInputChange }) => {
-  const wilayas = [
-    'Alger', 'Oran', 'Constantine', 'Annaba', 'Blida', 'Tizi Ouzou',
-    'Sétif', 'Batna', 'Djelfa', 'Sidi Bel Abbès', 'Biskra', 'Tébessa',
-    'El Oued', 'Skikda', 'Tiaret', 'Béjaïa', 'Tlemcen', 'Ouargla',
-    'Mostaganem', 'Boumerdès', 'Adrar', 'Chlef', 'Laghouat', 'Mascara'
-  ];
-  
-  return (
-    <div className="step3-proprietaire">
-      <h4 className="section-title">Informations du propriétaire</h4>
-      
-      <Alert variant="info" className="mb-4">
-        <i className="fas fa-info-circle me-2"></i>
-        Ces informations seront utilisées pour la facturation et le contact administratif.
-      </Alert>
-      
-      <div className="row g-3">
+        
         <div className="col-md-6">
           <Form.Group className="mb-3">
             <Form.Label>
-              Nom complet <span className="text-danger">*</span>
+              <i className="fab fa-facebook me-2 text-primary"></i>
+              Facebook (optionnel)
             </Form.Label>
             <Form.Control
-              type="text"
-              name="proprietaire.nom"
-              value={formData.proprietaire.nom}
+              type="url"
+              name="reseaux_sociaux.facebook"
+              value={formData.reseaux_sociaux.facebook}
               onChange={handleInputChange}
-              placeholder="Nom et prénom"
-              required
+              placeholder="https://facebook.com/votrestore"
             />
           </Form.Group>
         </div>
@@ -1054,247 +1204,472 @@ const Step3Proprietaire = ({ formData, handleInputChange }) => {
         <div className="col-md-6">
           <Form.Group className="mb-3">
             <Form.Label>
-              Email <span className="text-danger">*</span>
+              <i className="fab fa-instagram me-2 text-danger"></i>
+              Instagram (optionnel)
             </Form.Label>
             <Form.Control
-              type="email"
-              name="proprietaire.email"
-              value={formData.proprietaire.email}
+              type="url"
+              name="reseaux_sociaux.instagram"
+              value={formData.reseaux_sociaux.instagram}
               onChange={handleInputChange}
-              placeholder="exemple@email.com"
-              required
-            />
-          </Form.Group>
-        </div>
-        
-        <div className="col-md-6">
-          <Form.Group className="mb-3">
-            <Form.Label>
-              Téléphone <span className="text-danger">*</span>
-            </Form.Label>
-            <Form.Control
-              type="tel"
-              name="proprietaire.telephone"
-              value={formData.proprietaire.telephone}
-              onChange={handleInputChange}
-              placeholder="05 XX XX XX XX"
-              required
-            />
-          </Form.Group>
-        </div>
-        
-        <div className="col-md-6">
-          <Form.Group className="mb-3">
-            <Form.Label>Wilaya</Form.Label>
-            <Form.Select
-              name="proprietaire.wilaya"
-              value={formData.proprietaire.wilaya}
-              onChange={handleInputChange}
-            >
-              <option value="">Sélectionnez une wilaya</option>
-              {wilayas.map(wilaya => (
-                <option key={wilaya} value={wilaya}>{wilaya}</option>
-              ))}
-            </Form.Select>
-          </Form.Group>
-        </div>
-        
-        <div className="col-12">
-          <Form.Group className="mb-3">
-            <Form.Label>Adresse complète</Form.Label>
-            <Form.Control
-              type="text"
-              name="proprietaire.adresse"
-              value={formData.proprietaire.adresse}
-              onChange={handleInputChange}
-              placeholder="Rue, numéro, commune"
+              placeholder="https://instagram.com/votrestore"
             />
           </Form.Group>
         </div>
       </div>
+    </div>
+  );
+};
+
+// Step 2: Choix de l'offre con sliders horizontales
+const Step2ChoixOffre = ({ formData, categories, durees, offres, handleSelectCategorie, handleSelectDuree, handleSelectOffre }) => {
+  const sliderRefs = {
+    categories: useRef(null),
+    durees: useRef(null),
+    offres: useRef(null)
+  };
+
+  const scrollSlider = (sliderName, direction) => {
+    const slider = sliderRefs[sliderName].current;
+    if (slider) {
+      const scrollAmount = 300;
+      slider.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  return (
+    <div className="step2-choix-offre">
+      <h4 className="section-title">Choix de l'offre</h4>
       
-      <h4 className="section-title mt-4">Réseaux sociaux (optionnel)</h4>
-      
-      <div className="row g-3">
-        {['facebook', 'instagram', 'tiktok', 'whatsapp', 'website'].map(social => (
-          <div className="col-md-6" key={social}>
-            <Form.Group className="mb-3">
-              <Form.Label>
-                <i className={`fab fa-${social} me-2`}></i>
-                {social.charAt(0).toUpperCase() + social.slice(1)}
-              </Form.Label>
-              <Form.Control
-                type="url"
-                name={`reseaux_sociaux.${social}`}
-                value={formData.reseaux_sociaux[social]}
-                onChange={handleInputChange}
-                placeholder={`https://${social}.com/votreboutique`}
-              />
-            </Form.Group>
+      {/* Slider Catégories */}
+      <div className="mb-5">
+        <h5 className="mb-3">Choisir catégories</h5>
+        <div className="slider-container">
+          <button className="slider-btn slider-btn-left" onClick={() => scrollSlider('categories', 'left')}>
+            <i className="fas fa-chevron-left"></i>
+          </button>
+          <div className="slider-scroll" ref={sliderRefs.categories}>
+            {categories.map((categorie, index) => (
+              <div
+                key={index}
+                className={`categorie-card ${formData.categorie === categorie ? 'selected' : ''}`}
+                onClick={() => handleSelectCategorie(categorie)}
+              >
+                <i className="fas fa-tag mb-2" style={{ fontSize: '1.5rem', color: '#0d6efd' }}></i>
+                <div>{categorie}</div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Step 4: Conditions
-const Step4Conditions = ({ formData, handleInputChange }) => {
-  return (
-    <div className="step4-conditions">
-      <h4 className="section-title">Conditions générales</h4>
-      
-      <Alert variant="warning" className="mb-4">
-        <i className="fas fa-exclamation-triangle me-2"></i>
-        Veuillez lire attentivement les conditions avant de continuer.
-      </Alert>
-      
-      <div className="conditions-content border rounded p-3 mb-4" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-        <h6>Conditions Générales de Vente et d'Utilisation</h6>
-        
-        <h6>1. Acceptation des conditions</h6>
-        <p>En créant une boutique sur notre plateforme, vous acceptez sans réserve les présentes conditions générales.</p>
-        
-        <h6>2. Responsabilités du vendeur</h6>
-        <ul>
-          <li>Fournir des informations exactes et à jour</li>
-          <li>Respecter les lois et réglementations en vigueur</li>
-          <li>Assurer la qualité des produits vendus</li>
-          <li>Gérer les retours et réclamations</li>
-        </ul>
-        
-        <h6>3. Droits et obligations de la plateforme</h6>
-        <ul>
-          <li>Hébergement de la boutique en ligne</li>
-          <li>Maintien de la plateforme opérationnelle</li>
-          <li>Support technique dans les limites du plan choisi</li>
-          <li>Droit de suspendre une boutique en cas de non-respect des règles</li>
-        </ul>
-        
-        <h6>4. Tarification et paiement</h6>
-        <p>Les crédits sont débités lors de l'activation et renouvelés automatiquement à la fin de la période d'abonnement.</p>
-        
-        <h6>5. Propriété intellectuelle</h6>
-        <p>Vous conservez les derechos sur votre contenu, mais nous accordez une licence pour l'affichage sur notre plateforme.</p>
-        
-        <h6>6. Résiliation</h6>
-        <p>Vous pouvez résilier à tout moment, mais aucun remboursement n'est possible pour la période en cours.</p>
-        
-        <h6>7. Confidentialité</h6>
-        <p>Vos données sont protégées conformément à notre politique de confidentialité.</p>
-      </div>
-      
-      <Form.Group className="mb-3">
-        <Form.Check
-          type="checkbox"
-          name="accepte_conditions"
-          id="accepte_conditions"
-          label={
-            <span>
-              <strong>J'accepte les conditions générales de vente et d'utilisation</strong>
-              <span className="text-danger"> *</span>
-            </span>
-          }
-          checked={formData.accepte_conditions}
-          onChange={handleInputChange}
-          required
-        />
-        <Form.Text className="text-muted">
-          En cochant cette case, vous certifiez avoir lu et compris nos CGV et notre politique de confidentialité.
-        </Form.Text>
-      </Form.Group>
-    </div>
-  );
-};
-
-// Step 5: Logo
-const Step5Logo = ({ formData, handleLogoChange, handleRemoveLogo }) => {
-  const hasLogo = formData.logo || formData.logoPreview || formData.logoUrl;
-  const logoPreview = formData.logoPreview || formData.logoUrl || '/default-logo.png';
-  
-  return (
-    <div className="step5-logo">
-      <h4 className="section-title">Logo de votre boutique</h4>
-      
-      <Alert variant="info" className="mb-4">
-        <i className="fas fa-info-circle me-2"></i>
-        Un logo professionnel augmente la crédibilité de votre boutique. Vous pouvez ajouter ou modifier le logo plus tard.
-      </Alert>
-      
-      <div className="d-flex flex-column align-items-center mb-4">
-        <div className="info_avatar mb-3">
-          <img 
-            src={logoPreview} 
-            alt="Logo preview" 
-            style={{ 
-              borderRadius: '8px',
-              width: '150px',
-              height: '150px',
-              objectFit: 'contain',
-              backgroundColor: '#f8f9fa'
-            }}
-          />
-          <span>
-            <i className="fas fa-camera" />
-            <p>Changer</p>
-            <input 
-              type="file" 
-              name="logo" 
-              id="logo_up"
-              accept="image/*" 
-              onChange={handleLogoChange} 
-            />
-          </span>
+          <button className="slider-btn slider-btn-right" onClick={() => scrollSlider('categories', 'right')}>
+            <i className="fas fa-chevron-right"></i>
+          </button>
         </div>
-        
-        {hasLogo ? (
-          <Button
-            variant="outline-danger"
-            size="sm"
-            onClick={handleRemoveLogo}
-            className="mt-2"
-          >
-            <i className="fas fa-trash me-1"></i>
-            Supprimer le logo
-          </Button>
-        ) : (
-          <p className="text-muted text-center">
-            Cliquez sur la zone du logo pour télécharger une image
-          </p>
+        {formData.categorie && (
+          <div className="mt-2 text-center">
+            <Badge bg="primary" pill>
+              <i className="fas fa-check me-1"></i>
+              Sélectionné: {formData.categorie}
+            </Badge>
+          </div>
         )}
       </div>
       
-      <Form.Group className="mb-3">
-        <Form.Label>Télécharger un logo (optionnel)</Form.Label>
-        <div className="input-group">
-          <Form.Control
-            type="file"
-            name="logo"
-            accept="image/*"
-            onChange={handleLogoChange}
-          />
-          <Button 
-            variant="outline-secondary" 
-            onClick={() => document.getElementById('logo_up').click()}
-          >
-            <i className="fas fa-folder-open me-1"></i>
-            Parcourir
-          </Button>
+      {/* Slider Durées */}
+      <div className="mb-5">
+        <h5 className="mb-3">Choisir une durée</h5>
+        <div className="slider-container">
+          <button className="slider-btn slider-btn-left" onClick={() => scrollSlider('durees', 'left')}>
+            <i className="fas fa-chevron-left"></i>
+          </button>
+          <div className="slider-scroll" ref={sliderRefs.durees}>
+            {durees.map((duree) => (
+              <div
+                key={duree.id}
+                className={`duree-card ${formData.duree === duree.id ? 'selected' : ''}`}
+                onClick={() => handleSelectDuree(duree.id)}
+              >
+                <i className="fas fa-calendar-alt mb-2" style={{ fontSize: '1.5rem', color: '#10b981' }}></i>
+                <div>{duree.name}</div>
+              </div>
+            ))}
+          </div>
+          <button className="slider-btn slider-btn-right" onClick={() => scrollSlider('durees', 'right')}>
+            <i className="fas fa-chevron-right"></i>
+          </button>
         </div>
-        <Form.Text className="text-muted">
-          Format recommandé: PNG ou JPG, 300x300 pixels, taille max: 2MB
-        </Form.Text>
-      </Form.Group>
+        {formData.duree && (
+          <div className="mt-2 text-center">
+            <Badge bg="success" pill>
+              <i className="fas fa-check me-1"></i>
+              Sélectionné: {durees.find(d => d.id === formData.duree)?.name}
+            </Badge>
+          </div>
+        )}
+      </div>
       
-      <div className="alert alert-light border mt-4">
-        <h6 className="mb-2">
-          <i className="fas fa-check-circle text-success me-2"></i>
-          Prêt à créer votre boutique!
-        </h6>
-        <p className="mb-0">
-          Cliquez sur "Créer la boutique" pour finaliser la création.
-          Vous pourrez ajouter des produits immédiatement après.
-        </p>
+      {/* Slider Offres */}
+      <div className="mb-4">
+        <h5 className="mb-3">Choisir une offre</h5>
+        <div className="slider-container">
+          <button className="slider-btn slider-btn-left" onClick={() => scrollSlider('offres', 'left')}>
+            <i className="fas fa-chevron-left"></i>
+          </button>
+          <div className="slider-scroll" ref={sliderRefs.offres}>
+            {offres.map((offre) => (
+              <div
+                key={offre.id}
+                className={`offre-card ${formData.offre === offre.id ? 'selected' : ''}`}
+                onClick={() => handleSelectOffre(offre.id)}
+                style={{ borderColor: formData.offre === offre.id ? offre.couleur : '#dee2e6' }}
+              >
+                <div className="d-flex justify-content-between align-items-start mb-3">
+                  <h5 className="mb-0" style={{ color: offre.couleur }}>{offre.name}</h5>
+                  <Badge bg={offre.couleur === '#f59e0b' ? 'warning' : offre.couleur === '#6b7280' ? 'secondary' : 'primary'}>
+                    {offre.credits} crédits
+                  </Badge>
+                </div>
+                
+                <div className="mb-3">
+                  <div className="text-muted small">Limite de stockage</div>
+                  <div className="h4 mb-0">{offre.storage} MB</div>
+                </div>
+                
+                <div className="plan-features">
+                  {offre.features.map((feature, idx) => (
+                    <div key={idx} className="d-flex align-items-center mb-1">
+                      <i className="fas fa-check text-success me-2" style={{ fontSize: '0.8rem' }}></i>
+                      <small>{feature}</small>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="text-center mt-3">
+                  <Button
+                    size="sm"
+                    variant={formData.offre === offre.id ? 'primary' : 'outline-primary'}
+                    style={{ 
+                      backgroundColor: formData.offre === offre.id ? offre.couleur : '',
+                      borderColor: offre.couleur
+                    }}
+                  >
+                    {formData.offre === offre.id ? '✓ Sélectionné' : 'Sélectionner'}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button className="slider-btn slider-btn-right" onClick={() => scrollSlider('offres', 'right')}>
+            <i className="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+      
+      {/* Badges promotionnels */}
+      <div className="row g-2 mb-4">
+        <div className="col-md-4">
+          <div className="border rounded p-3 text-center">
+            <h6 className="text-primary mb-1">1 mois offert(s)</h6>
+            <small className="text-muted">A partir de 6 mois</small>
+          </div>
+        </div>
+        <div className="col-md-4">
+          <div className="border rounded p-3 text-center">
+            <h6 className="text-success mb-1">3 mois offert(s)</h6>
+            <small className="text-muted">A partir de 12 mois</small>
+          </div>
+        </div>
+        <div className="col-md-4">
+          <div className="border rounded p-3 text-center">
+            <h6 className="text-warning mb-1">Nom de domaine</h6>
+            <small className="text-muted">A partir de 3 mois</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Step 3: Résumé de la transaction
+const Step3Transaction = ({ formData, transactionId, offres, durees }) => {
+  const offreSelectionnee = offres.find(o => o.id === formData.offre);
+  const dureeSelectionnee = durees.find(d => d.id === formData.duree);
+  
+  return (
+    <div className="step3-transaction">
+      <div className="d-flex align-items-center mb-4">
+        <div className="bg-success rounded p-2 me-3">
+          <i className="fas fa-receipt text-white" style={{ fontSize: '1.5rem' }}></i>
+        </div>
+        <div>
+          <h4 className="mb-0">Transaction</h4>
+          <p className="text-muted mb-0">Résumé de la transaction</p>
+        </div>
+      </div>
+      
+      <div className="row">
+        <div className="col-md-8">
+          <Card className="border-success mb-4">
+            <Card.Body>
+              <h5 className="mb-3">Détails de la commande</h5>
+              
+              <div className="row mb-3">
+                <div className="col-6">
+                  <div className="text-muted small">Choix de l'offre</div>
+                  <div className="fw-bold">{formData.offre}</div>
+                </div>
+                <div className="col-6">
+                  <div className="text-muted small">Catégorie</div>
+                  <div className="fw-bold">{formData.categorie || 'Non sélectionné'}</div>
+                </div>
+              </div>
+              
+              <div className="row mb-3">
+                <div className="col-6">
+                  <div className="text-muted small">Durée du store</div>
+                  <div className="fw-bold">{dureeSelectionnee?.name || '1 Mois'}</div>
+                </div>
+                <div className="col-6">
+                  <div className="text-muted small">Commence le</div>
+                  <div className="fw-bold">{new Date(formData.date_debut).toLocaleDateString('fr-FR')}</div>
+                </div>
+              </div>
+              
+              <div className="row mb-3">
+                <div className="col-6">
+                  <div className="text-muted small">Logo du store</div>
+                  <div className="fw-bold">
+                    {(formData.logo || formData.logoPreview || formData.logoUrl) ? '✓ Défini' : 'Non défini'}
+                  </div>
+                </div>
+                <div className="col-6">
+                  <div className="text-muted small">Nom du store</div>
+                  <div className="fw-bold">{formData.nom_boutique || 'Non défini'}</div>
+                </div>
+              </div>
+              
+              <div className="mb-3">
+                <div className="text-muted small">Description du store</div>
+                <div className="fw-bold">
+                  {formData.description_boutique 
+                    ? (formData.description_boutique.length > 50 
+                      ? formData.description_boutique.substring(0, 50) + '...' 
+                      : formData.description_boutique)
+                    : 'Non définie'}
+                </div>
+              </div>
+              
+              <hr />
+              
+              <div className="row">
+                <div className="col-6">
+                  <div className="text-muted">Montant initial :</div>
+                  <div className="h5 text-primary">{formData.montant_initial.toLocaleString('fr-FR')} DA</div>
+                </div>
+                <div className="col-6 text-end">
+                  {formData.mois_offerts > 0 && (
+                    <Badge bg="success" className="mb-2">
+                      {formData.mois_offerts} mois offert(s)
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </Card.Body>
+          </Card>
+        </div>
+        
+        <div className="col-md-4">
+          <Card className="border-primary">
+            <Card.Body>
+              <h5 className="mb-3">Récapitulatif</h5>
+              
+              <div className="mb-3">
+                <div className="d-flex justify-content-between mb-1">
+                  <span>Crédits:</span>
+                  <span>{offreSelectionnee?.credits || 0}</span>
+                </div>
+                <div className="d-flex justify-content-between mb-1">
+                  <span>Stockage:</span>
+                  <span>{offreSelectionnee?.storage || 0} MB</span>
+                </div>
+                <div className="d-flex justify-content-between mb-1">
+                  <span>Durée:</span>
+                  <span>{dureeSelectionnee?.name || '1 Mois'}</span>
+                </div>
+                {formData.mois_offerts > 0 && (
+                  <div className="d-flex justify-content-between mb-1 text-success">
+                    <span>Mois offerts:</span>
+                    <span>-{formData.mois_offerts} mois</span>
+                  </div>
+                )}
+              </div>
+              
+              <hr />
+              
+              <div className="text-center">
+                <div className="text-muted small">Prix Total TTC</div>
+                <div className="montant-ttc">{formData.montant_ttc.toLocaleString('fr-FR')} DA</div>
+              </div>
+            </Card.Body>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Step 4: Détail de la transaction
+const Step4DetailTransaction = ({ formData, methodesPaiement, handleInputChange, offres, durees, transactionId }) => {
+  const offreSelectionnee = offres.find(o => o.id === formData.offre);
+  const dureeSelectionnee = durees.find(d => d.id === formData.duree);
+  
+  return (
+    <div className="step4-detail-transaction">
+      <h4 className="section-title">Détail de la transaction</h4>
+      
+      <Card className="mb-4">
+        <Card.Body>
+          <div className="row mb-3">
+            <div className="col-md-6">
+              <div className="text-muted small">Transaction #</div>
+              <div className="h5">{transactionId}</div>
+            </div>
+            <div className="col-md-6 text-md-end">
+              <div className="text-muted small">Date</div>
+              <div className="h5">{new Date().toLocaleString('fr-FR')}</div>
+            </div>
+          </div>
+          
+          <div className="table-responsive">
+            <table className="table table-bordered">
+              <thead className="table-light">
+                <tr>
+                  <th>Désignation</th>
+                  <th>Durée</th>
+                  <th>Commence le</th>
+                  <th>Montant HT</th>
+                  <th>Taxe 19%</th>
+                  <th>Montant TTC</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Achat d'un store {formData.offre}</td>
+                  <td>{dureeSelectionnee?.name || '1 Mois'}</td>
+                  <td>{new Date(formData.date_debut).toLocaleDateString('fr-FR')}</td>
+                  <td>{formData.montant_initial.toLocaleString('fr-FR')} DA</td>
+                  <td>{(formData.montant_initial * 0.19).toLocaleString('fr-FR')} DA</td>
+                  <td>{formData.montant_ttc.toLocaleString('fr-FR')} DA</td>
+                  <td>
+                    <Button variant="outline-primary" size="sm">
+                      <i className="fas fa-edit"></i>
+                    </Button>
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot className="table-secondary">
+                <tr>
+                  <td colSpan="5" className="text-end fw-bold">Prix Total</td>
+                  <td colSpan="2" className="fw-bold">
+                    <div className="montant-ttc">{formData.montant_ttc.toLocaleString('fr-FR')} DA</div>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </Card.Body>
+      </Card>
+      
+      <div className="row">
+        <div className="col-md-6">
+          <Card>
+            <Card.Body>
+              <h5 className="mb-3">Informations</h5>
+              
+              <Form.Group className="mb-3">
+                <Form.Label>Nom du client</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="client_nom"
+                  value={formData.client_nom}
+                  onChange={handleInputChange}
+                  required
+                />
+              </Form.Group>
+              
+              <Form.Group className="mb-3">
+                <Form.Label>Téléphone</Form.Label>
+                <Form.Control
+                  type="tel"
+                  name="client_telephone"
+                  value={formData.client_telephone}
+                  onChange={handleInputChange}
+                  placeholder="05 XX XX XX XX"
+                  required
+                />
+              </Form.Group>
+            </Card.Body>
+          </Card>
+        </div>
+        
+        <div className="col-md-6">
+          <Card>
+            <Card.Body>
+              <h5 className="mb-3">Paiement</h5>
+              
+              <Form.Group className="mb-3">
+                <Form.Label>
+                  Méthode de paiement <span className="text-danger">*</span>
+                </Form.Label>
+                <Form.Select
+                  name="methode_paiement"
+                  value={formData.methode_paiement}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="">Sélectionnez une méthode</option>
+                  {methodesPaiement.map((methode) => (
+                    <option key={methode.value} value={methode.value}>
+                      {methode.label}
+                    </option>
+                  ))}
+                </Form.Select>
+                <Form.Text className="text-muted">
+                  Sélectionnez votre méthode de paiement préférée
+                </Form.Text>
+              </Form.Group>
+              
+              <Form.Group className="mb-3">
+                <Form.Check
+                  type="checkbox"
+                  name="accepte_conditions"
+                  id="accepte_conditions"
+                  label={
+                    <span>
+                      <strong>J'accepte les conditions générales</strong>
+                      <span className="text-danger"> *</span>
+                    </span>
+                  }
+                  checked={formData.accepte_conditions}
+                  onChange={handleInputChange}
+                  required
+                />
+                <Form.Text className="text-muted">
+                  En cochant cette case, vous acceptez nos conditions générales de vente
+                </Form.Text>
+              </Form.Group>
+              
+              <Alert variant="info" className="mt-3">
+                <i className="fas fa-info-circle me-2"></i>
+                <strong>Important:</strong> Votre demande sera évaluée par nos administrateurs. 
+                Vous recevrez une confirmation par email une fois approuvée.
+              </Alert>
+            </Card.Body>
+          </Card>
+        </div>
       </div>
     </div>
   );

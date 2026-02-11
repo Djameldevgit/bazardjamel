@@ -2,7 +2,7 @@
 import { GLOBALTYPES } from './globalTypes';
 import { postDataAPI, getDataAPI, patchDataAPI, deleteDataAPI } from '../../utils/fetchData';
 
-// Types
+ import { imageUpload } from '../../utils/imageUpload'; 
 export const BOUTIQUE_TYPES = {
   // Basic CRUD operations
   CREATE_BOUTIQUE: 'CREATE_BOUTIQUE',
@@ -32,21 +32,38 @@ export const BOUTIQUE_TYPES = {
 };
 
 // Action creators
-export const createBoutique = (boutiqueData, token) => async (dispatch) => {
+export const createBoutique = ({ boutiqueData, avatar, auth }) => async (dispatch) => {
   try {
     dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: true });
     
-    let res;
-    if (boutiqueData instanceof FormData) {
-      // Convertir FormData a objeto para postDataAPI
-      const data = {};
-      for (let [key, value] of boutiqueData.entries()) {
-        data[key] = value;
-      }
-      res = await postDataAPI('boutique', data, token);
-    } else {
-      res = await postDataAPI('boutique', boutiqueData, token);
+    console.log('📤 Enviando creación de boutique:', {
+      boutiqueData: boutiqueData,
+      hasAvatar: !!avatar,
+      user: auth.user?._id
+    });
+    
+    let media;
+    if (avatar) {
+      console.log('📷 Subiendo avatar...');
+      media = await imageUpload([avatar]);
+      console.log('✅ Avatar subido:', media);
     }
+    
+    // Preparar datos finales
+    const finalData = {
+      ...boutiqueData,
+      user: auth.user?._id,
+      logo: media ? media[0] : null
+    };
+    
+    console.log('📦 Datos finales a enviar:', {
+      nom_boutique: finalData.nom_boutique,
+      domaine_boutique: finalData.domaine_boutique,
+      plan: finalData.plan,
+      hasLogo: !!finalData.logo
+    });
+    
+    const res = await postDataAPI('boutique', finalData, auth.token);
     
     dispatch({
       type: BOUTIQUE_TYPES.CREATE_BOUTIQUE,
@@ -63,6 +80,7 @@ export const createBoutique = (boutiqueData, token) => async (dispatch) => {
     return res.data;
     
   } catch (err) {
+    console.error('❌ Error en createBoutique action:', err);
     dispatch({
       type: GLOBALTYPES.ALERT,
       payload: {
@@ -122,7 +140,7 @@ export const getBoutiques = (query = '', token) => async (dispatch) => {
   try {
     dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: true });
     
-    let endpoint = 'boutique';
+    let endpoint = 'boutiques';
     if (query) endpoint += `?${query}`;
     
     const res = await getDataAPI(endpoint, token);
