@@ -5,14 +5,14 @@ const boutiqueCtrl = require('../controllers/boutiqueCtrl');
 const auth = require('../middleware/auth');
  
 // 🔥 RUTAS PÚBLICAS
-router.get('/boutiques', boutiqueCtrl.getBoutiques);
+router.get('/boutiques', boutiqueCtrl.getBoutiquesByCategory);
 router.get('/boutique/domaine/:domaine', boutiqueCtrl.getBoutiqueByDomain);
 router.get('/boutique/:id/products', boutiqueCtrl.getBoutiqueProducts);
 //router.get('/boutique/slug/:slug', boutiqueCtrl.getBoutiqueBySlug); // Nueva ruta para slugs
 
 // 🔥 RUTAS PROTEGIDAS
 router.post('/boutique', auth,  boutiqueCtrl.createBoutique);
-router.get('/boutique/:id',   boutiqueCtrl.getBoutique);
+router.get('/boutique/:id',   boutiqueCtrl.getBoutiqueById);
 router.put('/boutique/:id', auth, boutiqueCtrl.updateBoutique);
 router.delete('/boutique/:id', auth, boutiqueCtrl.deleteBoutique);
 

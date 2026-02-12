@@ -102,19 +102,24 @@ function App() {
           <Route exact path="/register" component={Register} />
           <Route exact path="/login" component={Login} />
           {/* Página dinámica de categoría (niveles 1, 2, 3) */}
-          <Route exact path="/category/:slug" component={CategoryPage} />
-          <Route exact path="/category/:slug/:subSlug" component={CategoryPage} />
-          <Route exact path="/category/:slug/:subSlug/:articleSlug" component={CategoryPage} />
+          <Route exact path="/:slug" component={CategoryPage} />
+          <Route exact path="/:slug/:subSlug" component={CategoryPage} />
+          <Route exact path="/:slug/:subSlug/:articleSlug" component={CategoryPage} />
           <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
           <Route exact path="/edit-post/:id" component={CreateAnnoncePage} />
  
           <Route exact path="/dashboard" component={DashboardPage} />
           <Route exact path="/create-boutique" component={CreateBoutiquePage} />
-          <Route exact path="/boutique/:domaine" component={BoutiquePage} />
-<Route exact path="/boutiques" component={BoutiquesListPage } />
+          
+
+<Route exact path="/store/:id" component={MyBoutiquesPage} />
+  {/* <Route exact path="/boutique/:domaine" component={BoutiquePage} />
+  <Route exact path="/boutiques" component={BoutiquesListPage } />
 <Route exact path="/boutiques/category/:categorySlug" component={BoutiquesCategoryPage} />
-<Route exact path="/my-boutiques" component={MyBoutiquesPage} />
-  {/*  <Route exact path="/manage-boutique/:id" component={ManageBoutiquePage} />
+  
+  
+  
+  <Route exact path="/manage-boutique/:id" component={ManageBoutiquePage} />
  <Route exact path="/edit-boutique/:id" component={EditBoutiquePage} /> */}
  
 

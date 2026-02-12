@@ -1,188 +1,445 @@
-import React, { useRef, useState, useEffect } from "react";
+// 📂 frontend/src/components/CategorySlider.jsx
+import React, { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import { useHistory } from "react-router-dom";
-
-const CategorySlider = ({ categories = [], onCategoryClick }) => {
+ 
+/**
+ * CategorySlider - Slider horizontal de categorías con emojis y colores dinámicos
+ * @param {Array} categories - Array de categorías [{ name, slug, emoji, level, ... }]
+ * @param {Function} onCategoryClick - Callback cuando se hace clic en una categoría
+ * @param {string} variant - 'home' | 'category' | 'subcategory'
+ */
+const CategorySlider = ({ 
+  categories = [], 
+  onCategoryClick, 
+  variant = 'home',
+  showCount = false 
+}) => {
   const history = useHistory();
   const sliderRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
-  
-  // Agrupar categorías en pares para mostrar 2 por columna
-  const groupedCategories = [];
-  for (let i = 0; i < categories.length; i += 2) {
-    groupedCategories.push({
-      top: categories[i],
-      bottom: categories[i + 1] || null
-    });
-  }
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeftStart, setScrollLeftStart] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
 
+  // 🎨 Paleta de colores vibrantes
+  const colorPalette = useMemo(() => [
+    '#4361ee', '#3a0ca3', '#4cc9f0', '#f72585', '#b5179e',
+    '#7209b7', '#560bad', '#480ca8', '#3f37c9', '#4895ef',
+    '#e63946', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51',
+    '#6d597a', '#b56576', '#e56b6f', '#9c89b8', '#ef476f',
+    '#ffd166', '#06d6a0', '#118ab2', '#073b4c', '#fb8b24',
+  ], []);
+
+  // 🎨 Generar color único basado en el nombre
+  const generateColorFromName = useCallback((name) => {
+    if (!name) return colorPalette[0];
+    
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colorPalette.length;
+    return colorPalette[index];
+  }, [colorPalette]);
+
+  // 🎨 Generar degradado suave
+  const generateGradient = useCallback((color) => {
+    return `linear-gradient(145deg, ${color}dd, ${color}aa)`;
+  }, []);
+
+  // 📏 Verificar capacidad de scroll
   useEffect(() => {
     const checkScroll = () => {
       if (sliderRef.current) {
         const { scrollLeft, scrollWidth, clientWidth } = sliderRef.current;
-        setCanScrollLeft(scrollLeft > 0);
+        setCanScrollLeft(scrollLeft > 5);
         setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+        
+        // Calcular página actual
+        const pageWidth = clientWidth * 0.9;
+        const currentPageCalc = Math.round(scrollLeft / pageWidth);
+        setCurrentPage(currentPageCalc);
       }
     };
     
-    checkScroll();
+    const timer = setTimeout(checkScroll, 100);
     window.addEventListener('resize', checkScroll);
-    return () => window.removeEventListener('resize', checkScroll);
-  }, [groupedCategories]);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [categories]);
 
-  const handleClick = (cat) => {
-    if (!cat) return;
-    if (onCategoryClick) {
-      onCategoryClick(cat);
-    } else {
-      history.push(`/category/${cat.slug}`);
+  // 🖱️ Drag to scroll
+  const handleMouseDown = (e) => {
+    if (window.innerWidth > 768) {
+      setIsDragging(true);
+      setStartX(e.pageX - sliderRef.current.offsetLeft);
+      setScrollLeftStart(sliderRef.current.scrollLeft);
+      sliderRef.current.style.cursor = 'grabbing';
+      sliderRef.current.style.scrollBehavior = 'auto';
     }
   };
 
-  const formatName = (name) => {
-    if (!name) return "";
-    const maxLength = window.innerWidth <= 767 ? 10 : 14;
-    if (name.length <= maxLength) return name;
-    return name.substring(0, maxLength) + "...";
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const x = e.pageX - sliderRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    sliderRef.current.scrollLeft = scrollLeftStart - walk;
   };
 
-  const scrollLeft = () => {
+  const handleMouseUp = () => {
+    if (isDragging) {
+      setIsDragging(false);
+      sliderRef.current.style.cursor = 'grab';
+      sliderRef.current.style.scrollBehavior = 'smooth';
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (isDragging) {
+      setIsDragging(false);
+      sliderRef.current.style.cursor = 'grab';
+      sliderRef.current.style.scrollBehavior = 'smooth';
+    }
+  };
+
+  // ⬅️➡️ Scroll handlers
+  const scrollLeft = useCallback(() => {
     if (sliderRef.current && canScrollLeft) {
-      sliderRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+      const scrollAmount = window.innerWidth <= 768 ? 280 : 350;
+      sliderRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
     }
-  };
+  }, [canScrollLeft]);
 
-  const scrollRight = () => {
+  const scrollRight = useCallback(() => {
     if (sliderRef.current && canScrollRight) {
-      sliderRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+      const scrollAmount = window.innerWidth <= 768 ? 280 : 350;
+      sliderRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     }
-  };
+  }, [canScrollRight]);
 
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     if (sliderRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = sliderRef.current;
-      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollLeft(scrollLeft > 5);
       setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+      
+      const pageWidth = clientWidth * 0.9;
+      const newPage = Math.round(scrollLeft / pageWidth);
+      if (newPage !== currentPage) setCurrentPage(newPage);
     }
-  };
+  }, [currentPage]);
 
-  // Si hay más de 4 columnas (8 categorías), mostrar scroll
-  const hasScroll = groupedCategories.length > 4;
+  // 🧮 Agrupar en pares SOLO para variante 'home'
+  const displayItems = useMemo(() => {
+    if (variant === 'home') {
+      const grouped = [];
+      for (let i = 0; i < categories.length; i += 2) {
+        grouped.push({
+          top: categories[i],
+          bottom: categories[i + 1] || null
+        });
+      }
+      return grouped;
+    }
+    return categories;
+  }, [categories, variant]);
 
+  // 📏 Verificar si necesita scroll
+  const needsScroll = useMemo(() => {
+    if (!categories.length) return false;
+    if (variant === 'home') {
+      return displayItems.length > 4;
+    }
+    return categories.length > 8;
+  }, [categories.length, displayItems.length, variant]);
+
+  // 📊 Número de páginas para paginación
+  const totalPages = useMemo(() => {
+    if (!needsScroll) return 1;
+    if (variant === 'home') {
+      return Math.ceil(displayItems.length / 4);
+    }
+    return Math.ceil(categories.length / 8);
+  }, [needsScroll, variant, displayItems.length, categories.length]);
+
+  // 🏷️ Formatear nombre según dispositivo
+  const formatName = useCallback((name) => {
+    if (!name) return "";
+    const maxLength = window.innerWidth <= 480 ? 8 : 
+                     window.innerWidth <= 768 ? 10 : 16;
+    if (name.length <= maxLength) return name;
+    return name.substring(0, maxLength) + "…";
+  }, []);
+
+  if (!categories || categories.length === 0) {
+    return (
+      <div className="category-slider-empty">
+        <span className="empty-emoji">📭</span>
+        <span className="empty-text">Aucune catégorie disponible</span>
+      </div>
+    );
+  }
+
+  // ========== RENDER PARA VARIANTE 'HOME' (PARES) ==========
+  if (variant === 'home') {
+    return (
+      <div className={`category-slider-wrapper ${variant}`}>
+        {/* Botones de navegación (solo desktop) */}
+        {needsScroll && window.innerWidth > 768 && (
+          <>
+            <button 
+              className={`nav-btn prev ${!canScrollLeft ? 'disabled' : ''}`}
+              onClick={scrollLeft}
+              disabled={!canScrollLeft}
+              aria-label="Précédent"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            <button 
+              className={`nav-btn next ${!canScrollRight ? 'disabled' : ''}`}
+              onClick={scrollRight}
+              disabled={!canScrollRight}
+              aria-label="Suivant"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </>
+        )}
+
+        {/* Slider principal - AHORA PERFECTAMENTE CENTRADO EN MÓVIL */}
+        <div 
+          ref={sliderRef}
+          className="category-slider"
+          onScroll={handleScroll}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
+          style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+        >
+          {displayItems.map((group, index) => (
+            <div
+              key={`group-${group.top?.slug || index}`}
+              className="category-slider-item-group"
+              style={{ animationDelay: `${index * 0.05}s` }}
+            >
+              {/* Categoría superior */}
+              <div className="category-item">
+                <div 
+                  className="category-icon-wrapper"
+                  style={{ 
+                    background: generateGradient(generateColorFromName(group.top.name)),
+                    boxShadow: `0 8px 16px ${generateColorFromName(group.top.name)}30`
+                  }}
+                  onClick={() => onCategoryClick ? onCategoryClick(group.top) : history.push(`/category/${group.top.slug}`)}
+                  onMouseEnter={() => setHoveredIndex(`top-${index}`)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                >
+                  <span className="category-emoji">
+                    {group.top.emoji || '📁'}
+                  </span>
+                  {showCount && (group.top.posts?.length || group.top.postCount || 0) > 0 && (
+                    <span className="category-badge">
+                      {group.top.posts?.length || group.top.postCount || 0}
+                    </span>
+                  )}
+                  {hoveredIndex === `top-${index}` && (
+                    <span className="category-hover-effect"></span>
+                  )}
+                </div>
+                <div 
+                  className="category-name"
+                  onClick={() => onCategoryClick ? onCategoryClick(group.top) : history.push(`/category/${group.top.slug}`)}
+                >
+                  {formatName(group.top.name)}
+                </div>
+              </div>
+
+              {/* Categoría inferior (si existe) */}
+              {group.bottom && (
+                <div className="category-item">
+                  <div 
+                    className="category-icon-wrapper"
+                    style={{ 
+                      background: generateGradient(generateColorFromName(group.bottom.name)),
+                      boxShadow: `0 8px 16px ${generateColorFromName(group.bottom.name)}30`
+                    }}
+                    onClick={() => onCategoryClick ? onCategoryClick(group.bottom) : history.push(`/category/${group.bottom.slug}`)}
+                    onMouseEnter={() => setHoveredIndex(`bottom-${index}`)}
+                    onMouseLeave={() => setHoveredIndex(null)}
+                  >
+                    <span className="category-emoji">
+                      {group.bottom.emoji || '📁'}
+                    </span>
+                    {showCount && (group.bottom.posts?.length || group.bottom.postCount || 0) > 0 && (
+                      <span className="category-badge">
+                        {group.bottom.posts?.length || group.bottom.postCount || 0}
+                      </span>
+                    )}
+                    {hoveredIndex === `bottom-${index}` && (
+                      <span className="category-hover-effect"></span>
+                    )}
+                  </div>
+                  <div 
+                    className="category-name"
+                    onClick={() => onCategoryClick ? onCategoryClick(group.bottom) : history.push(`/category/${group.bottom.slug}`)}
+                  >
+                    {formatName(group.bottom.name)}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* PAGINACIÓN - IGUAL QUE SLIDERUNIFICADO */}
+        {needsScroll && totalPages > 1 && (
+          <div className="category-pagination">
+            {Array.from({ length: totalPages }).map((_, idx) => (
+              <button
+                key={idx}
+                className={`pagination-dot ${currentPage === idx ? 'active' : ''}`}
+                onClick={() => {
+                  if (sliderRef.current) {
+                    const pageWidth = sliderRef.current.clientWidth * 0.9;
+                    sliderRef.current.scrollTo({
+                      left: pageWidth * idx,
+                      behavior: 'smooth'
+                    });
+                  }
+                }}
+                aria-label={`Page ${idx + 1}`}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* INDICADOR DE SCROLL MÓVIL - IGUAL QUE SLIDERUNIFICADO */}
+        {needsScroll && window.innerWidth <= 768 && (
+          <div className="category-scroll-hint">
+            <span>← Glisser pour voir plus →</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ========== RENDER PARA VARIANTE 'CATEGORY' (INDIVIDUALES) ==========
   return (
-    <div className="category-slider-container">
-      {/* Botones solo en desktop */}
-      {hasScroll && window.innerWidth > 767 && (
-        <div className="slider-nav-buttons">
+    <div className={`category-slider-wrapper ${variant}`}>
+      {/* Botones de navegación */}
+      {needsScroll && window.innerWidth > 768 && (
+        <>
           <button 
-            className={`nav-btn prev-btn ${!canScrollLeft ? 'disabled' : ''}`}
+            className={`nav-btn prev ${!canScrollLeft ? 'disabled' : ''}`}
             onClick={scrollLeft}
             disabled={!canScrollLeft}
-            aria-label="Précédent"
           >
-            <i className="fas fa-chevron-left"></i>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </button>
           <button 
-            className={`nav-btn next-btn ${!canScrollRight ? 'disabled' : ''}`}
+            className={`nav-btn next ${!canScrollRight ? 'disabled' : ''}`}
             onClick={scrollRight}
             disabled={!canScrollRight}
-            aria-label="Suivant"
           >
-            <i className="fas fa-chevron-right"></i>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </button>
-        </div>
+        </>
       )}
 
-      {/* Slider con UNA sola fila (scroll horizontal) */}
+      {/* Slider principal - AHORA PERFECTAMENTE CENTRADO EN MÓVIL */}
       <div 
         ref={sliderRef}
         className="category-slider"
         onScroll={handleScroll}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
       >
-        {groupedCategories.map((group, index) => (
+        {displayItems.map((category, index) => (
           <div
-            key={index}
+            key={category.slug || `cat-${index}`}
             className="category-slider-item"
             style={{ animationDelay: `${index * 0.03}s` }}
           >
-            {/* Categoría superior */}
             <div 
-              className="icon-container"
-              onClick={() => handleClick(group.top)}
+              className="category-icon-wrapper"
+              style={{ 
+                background: generateGradient(generateColorFromName(category.name)),
+                boxShadow: `0 8px 16px ${generateColorFromName(category.name)}30`
+              }}
+              onClick={() => onCategoryClick ? onCategoryClick(category) : history.push(`/category/${category.slug}`)}
+              onMouseEnter={() => setHoveredIndex(index)}
+              onMouseLeave={() => setHoveredIndex(null)}
             >
-              {group.top.icon ? (
-                <img 
-                  src={group.top.icon} 
-                  alt={group.top.name} 
-                  className="category-icon"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="icon-fallback">
-                  {group.top.name?.charAt(0).toUpperCase()}
-                </div>
+              <span className="category-emoji">
+                {category.emoji || '📁'}
+              </span>
+              {showCount && (category.posts?.length || category.postCount || 0) > 0 && (
+                <span className="category-badge">
+                  {category.posts?.length || category.postCount || 0}
+                </span>
               )}
-              
-              {group.top.count > 0 && (
-                <span className="item-count">{group.top.count}</span>
+              {hoveredIndex === index && (
+                <span className="category-hover-effect"></span>
               )}
             </div>
-            
-            {/* Nombre categoría superior */}
             <div 
               className="category-name"
-              onClick={() => handleClick(group.top)}
+              onClick={() => onCategoryClick ? onCategoryClick(category) : history.push(`/category/${category.slug}`)}
             >
-              {formatName(group.top.name)}
+              {formatName(category.name)}
             </div>
-
-            {/* Categoría inferior (si existe) */}
-            {group.bottom && (
-              <>
-                <div 
-                  className="icon-container"
-                  onClick={() => handleClick(group.bottom)}
-                  style={{ marginTop: '1rem' }}
-                >
-                  {group.bottom.icon ? (
-                    <img 
-                      src={group.bottom.icon} 
-                      alt={group.bottom.name} 
-                      className="category-icon"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="icon-fallback">
-                      {group.bottom.name?.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  
-                  {group.bottom.count > 0 && (
-                    <span className="item-count">{group.bottom.count}</span>
-                  )}
-                </div>
-                
-                {/* Nombre categoría inferior */}
-                <div 
-                  className="category-name"
-                  onClick={() => handleClick(group.bottom)}
-                >
-                  {formatName(group.bottom.name)}
-                </div>
-              </>
-            )}
           </div>
         ))}
       </div>
 
-      {/* Indicador para móvil */}
-      {hasScroll && window.innerWidth <= 767 && (
-        <div className="scroll-hint">
-          <span>← Glisser →</span>
+      {/* PAGINACIÓN - IGUAL QUE SLIDERUNIFICADO */}
+      {needsScroll && totalPages > 1 && (
+        <div className="category-pagination">
+          {Array.from({ length: totalPages }).map((_, idx) => (
+            <button
+              key={idx}
+              className={`pagination-dot ${currentPage === idx ? 'active' : ''}`}
+              onClick={() => {
+                if (sliderRef.current) {
+                  const pageWidth = sliderRef.current.clientWidth * 0.9;
+                  sliderRef.current.scrollTo({
+                    left: pageWidth * idx,
+                    behavior: 'smooth'
+                  });
+                }
+              }}
+              aria-label={`Page ${idx + 1}`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* INDICADOR DE SCROLL MÓVIL - IGUAL QUE SLIDERUNIFICADO */}
+      {needsScroll && window.innerWidth <= 768 && (
+        <div className="category-scroll-hint">
+          <span>← Glisser pour voir plus →</span>
         </div>
       )}
     </div>
   );
 };
 
-export default CategorySlider;
+export default React.memo(CategorySlider);

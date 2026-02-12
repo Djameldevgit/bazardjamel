@@ -72,11 +72,11 @@ const Home = () => {
       return;
     }
     
-    history.push(`/category/${slug}`);
+    history.push(`/${slug}`);
   };
 
   const handleViewMore = (slug, categoryName) => {
-    history.push(`/category/${slug}`, { fromHome: true, categoryName });
+    history.push(`/${slug}`, { fromHome: true, categoryName });
   };
 
   

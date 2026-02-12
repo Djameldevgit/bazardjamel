@@ -1,4 +1,4 @@
-// 📂 pages/CategoryPage.js - VERSIÓN SIMPLIFICADA
+// 📂 pagesPage.js - VERSIÓN SIMPLIFICADA
 import React, { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useHistory } from "react-router-dom";
@@ -65,15 +65,15 @@ const CategoryPage = () => {
     const items = [{ label: "Inicio", path: "/" }];
     if (slug) items.push({ 
       label: categoryInfo?.name || slug, 
-      path: `/category/${slug}` 
+      path: `/${slug}` 
     });
     if (currentSub) items.push({ 
       label: currentSub.name, 
-      path: `/category/${slug}/${currentSub.slug}` 
+      path: `/${slug}/${currentSub.slug}` 
     });
     if (currentArticle) items.push({
       label: currentArticle.name,
-      path: `/category/${slug}/${currentSub.slug}/${currentArticle.slug}`,
+      path: `/${slug}/${currentSub.slug}/${currentArticle.slug}`,
     });
     return items;
   };
@@ -99,10 +99,10 @@ const CategoryPage = () => {
   const handleSliderClick = useCallback((item) => {
     if (!currentSub || currentSub.articles?.length === 0) {
       // Click en subcategoría
-      history.push(`/category/${slug}/${item.slug}`);
+      history.push(`/${slug}/${item.slug}`);
     } else {
       // Click en artículo
-      history.push(`/category/${slug}/${currentSub.slug}/${item.slug}`);
+      history.push(`/${slug}/${currentSub.slug}/${item.slug}`);
     }
   }, [slug, currentSub, history]);
 

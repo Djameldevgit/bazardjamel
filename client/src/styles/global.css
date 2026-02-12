@@ -158,7 +158,7 @@ url("./header.css"); */
  
 @import url("./dashboard.css");
 @import url("./CategorySlider.css");
-@import url("./SubCategorySlider.css");
+@import url("./SliderUnificado.css");
 .rtl {
   direction: rtl;
   text-align: right;

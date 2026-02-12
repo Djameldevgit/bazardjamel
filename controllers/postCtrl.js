@@ -103,89 +103,7 @@ const postCtrl = {
 
 
 
-   /*bueno
-filterPosts: async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 12;
-    const skip = (page - 1) * limit;
-
-    const { category: categorySlug, sub, article } = req.query;
-
-    if (!categorySlug) {
-      return res.json({ success: true, posts: [], total: 0, page, hasMore: false, message: 'Se requiere categoría' });
-    }
-
-    // Nivel 1
-    const categoryDoc = await Category.findOne({ slug: categorySlug, level: 1, isActive: true }).lean();
-    if (!categoryDoc) return res.json({ success: true, posts: [], total: 0, page, hasMore: false, message: 'Categoría no encontrada' });
-
-    const filter = { category: categoryDoc._id, isActive: true };
-
-    // Nivel 2
-    if (sub) filter.subCategory = sub;
-
-    // Nivel 3
-    if (article) filter.articleType = article;
-
-    // Obtener posts
-    const [posts, total] = await Promise.all([
-      Post.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .select('_id title price images createdAt wilaya commune description etat views category subCategory articleType')
-        .populate('user', 'username avatar')
-        .lean(),
-      Post.countDocuments(filter)
-    ]);
-
-    const hasMore = page * limit < total;
-    const totalPages = Math.ceil(total / limit);
-
-    // Subcategorías (nivel 2)
-    const children = await Category.find({ parent: categoryDoc._id, level: 2, isActive: true })
-      .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf')
-      .sort({ order: 1 })
-      .lean();
-
-    // Hijos de nivel 3 para cada subcategoría (solo para sliders)
-    const articles = await Category.find({ parent: { $in: children.map(c => c._id) }, level: 3, isActive: true })
-      .select('_id name slug level parent emoji icon iconType iconColor bgColor hasChildren isLeaf')
-      .sort({ order: 1 })
-      .lean();
-
-    return res.json({
-      success: true,
-      posts,
-      total,
-      page,
-      limit,
-      hasMore,
-      totalPages,
-      categoryInfo: {
-        _id: categoryDoc._id,
-        name: categoryDoc.name,
-        slug: categoryDoc.slug,
-        level: categoryDoc.level,
-        emoji: categoryDoc.emoji || '',
-        icon: categoryDoc.icon || '',
-        iconType: categoryDoc.iconType || 'image-png',
-        iconColor: categoryDoc.iconColor || '#666666',
-        bgColor: categoryDoc.bgColor || '#FFFFFF'
-      },
-      children: children.map(c => ({
-        ...c,
-        articles: articles.filter(a => String(a.parent) === String(c._id)) // nivel 3 hijos de esta subcategoria
-      }))
-    });
-
-  } catch (error) {
-    console.error('❌ Error en filterPosts:', error);
-    res.status(500).json({ success: false, message: 'Error al filtrar posts', error: error.message });
-  }
-},*/
-filterPosts: async (req, res) => {
+   /*filterPosts: async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 12;
@@ -456,7 +374,318 @@ filterPosts: async (req, res) => {
     });
   }
 },
-   
+   */
+// 📂 controllers/postCtrl.js - filterPosts VERSIÓN UNIFICADA (POSTS + BOUTIQUES)
+filterPosts: async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
+
+    const { category: categorySlug, sub: subSlug, article: articleSlug } = req.query;
+
+    console.log('🔍 filterPosts - Parámetros:', {
+      category: categorySlug,
+      sub: subSlug,
+      article: articleSlug,
+      page: page,
+      limit: limit
+    });
+
+    if (!categorySlug) {
+      return res.json({
+        success: true,
+        posts: [],
+        total: 0,
+        page: page,
+        hasMore: false,
+        message: 'Se requiere categoría'
+      });
+    }
+
+    // 1. Buscar categoría nivel 1
+    const categoryDoc = await Category.findOne({ 
+      slug: categorySlug, 
+      level: 1, 
+      isActive: true 
+    }).lean();
+
+    if (!categoryDoc) {
+      return res.json({
+        success: true,
+        posts: [],
+        total: 0,
+        page: page,
+        hasMore: false,
+        message: 'Categoría no encontrada'
+      });
+    }
+
+    // ============ 🔥 CASO ESPECIAL: CATEGORÍA BOUTIQUES ============
+    if (categorySlug === 'boutiques') {
+      console.log('🏪 Categoría especial: BOUTIQUES');
+      
+      // Buscar subcategoría si existe
+      let subCategoryDoc = null;
+      if (subSlug) {
+        subCategoryDoc = await Category.findOne({
+          slug: subSlug,
+          level: 2,
+          isActive: true
+        }).lean();
+      }
+
+      // Construir filtro para boutiques
+      const boutiqueFilter = { 
+        statut: 'active',  // Solo boutiques activas
+        isActive: true 
+      };
+
+      // Si hay subcategoría, filtrar por categorie_boutique
+      if (subCategoryDoc) {
+        boutiqueFilter.categorie_boutique = subCategoryDoc.name;
+        console.log(`🎯 Filtrando boutiques por tipo: ${subCategoryDoc.name}`);
+      }
+
+      // Obtener boutiques
+      const [boutiques, total] = await Promise.all([
+        Boutique.find(boutiqueFilter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .select('_id nom_boutique slogan_boutique description_boutique logo categorie_boutique categories_produits proprietaire couleur_theme statut createdAt')
+          .populate('user', 'username avatar')
+          .lean(),
+        Boutique.countDocuments(boutiqueFilter)
+      ]);
+
+      console.log(`🏪 Boutiques encontradas: ${boutiques.length} / ${total}`);
+
+      // Formatear boutiques como posts (para que la UI las muestre)
+      const formattedBoutiques = boutiques.map(b => ({
+        _id: b._id,
+        title: b.nom_boutique,
+        description: b.slogan_boutique || b.description_boutique.substring(0, 100),
+        price: 0, // Las boutiques no tienen precio
+        images: b.logo.url ? [b.logo.url] : [],
+        wilaya: b.proprietaire.wilaya || '',
+        commune: b.proprietaire.adresse.substring(0, 30) || '',
+        user: b.user,
+        category: categoryDoc._id,
+        subCategory: b.categorie_boutique,
+        articleType: 'boutique',
+        isBoutique: true, // 🔥 Flag para identificar que es boutique
+        boutiqueData: {
+          _id: b._id,
+          nom_boutique: b.nom_boutique,
+          categorie_boutique: b.categorie_boutique,
+          categories_produits: b.categories_produits,
+          couleur_theme: b.couleur_theme,
+          statut: b.statut
+        },
+        createdAt: b.createdAt
+      }));
+
+      // Obtener subcategorías para el slider (tipos de boutique)
+      const children = await Category.find({ 
+        parent: categoryDoc._id, 
+        level: 2, 
+        isActive: true 
+      })
+        .select('_id name slug level emoji')
+        .sort({ order: 1 })
+        .lean();
+
+      const hasMore = page * limit < total;
+      const totalPages = Math.ceil(total / limit);
+
+      return res.json({
+        success: true,
+        posts: formattedBoutiques, // 🔥 Enviamos boutiques como posts
+        total: total,
+        page: page,
+        limit: limit,
+        hasMore: hasMore,
+        totalPages: totalPages,
+        categoryInfo: {
+          _id: categoryDoc._id,
+          name: categoryDoc.name,
+          slug: categoryDoc.slug,
+          level: categoryDoc.level,
+          emoji: categoryDoc.emoji || '🏪',
+          isBoutiqueCategory: true
+        },
+        children: children,
+        isBoutiqueCategory: true
+      });
+    }
+
+    // ============ CASO NORMAL: CATEGORÍAS DE PRODUCTOS ============
+    
+    // 2. Construir filtro base para POSTS
+    const filter = { 
+      category: categoryDoc._id, 
+      isActive: true 
+    };
+
+    // 3. Lógica para subcategorías
+    if (subSlug) {
+      const subCategoryDoc = await Category.findOne({
+        slug: subSlug,
+        level: 2,
+        isActive: true
+      }).lean();
+
+      if (subCategoryDoc) {
+        console.log('✅ Subcategoría encontrada:', {
+          slug: subCategoryDoc.slug,
+          name: subCategoryDoc.name
+        });
+
+        const subName = subCategoryDoc.name;
+        const articlesOfSub = await Category.find({
+          parent: subCategoryDoc._id,
+          level: 3,
+          isActive: true
+        }).lean();
+
+        const orConditions = [];
+        orConditions.push({ subCategory: subName });
+        orConditions.push({ articleType: { $regex: subSlug, $options: 'i' } });
+
+        if (articlesOfSub.length > 0) {
+          const articleSlugs = articlesOfSub.map(a => a.slug);
+          const articleNames = articlesOfSub.map(a => a.name);
+          orConditions.push({ articleType: { $in: articleSlugs } });
+          orConditions.push({ subCategory: { $in: articleNames } });
+        }
+
+        filter.$or = orConditions;
+      } else {
+        filter.subCategory = subSlug;
+      }
+    }
+
+    // 4. Lógica para artículos
+    if (articleSlug) {
+      const articleCategoryDoc = await Category.findOne({
+        slug: articleSlug,
+        level: 3,
+        isActive: true
+      }).lean();
+
+      if (articleCategoryDoc) {
+        filter.$and = [
+          { 
+            $or: [
+              { articleType: articleSlug },
+              { subCategory: articleCategoryDoc.name }
+            ]
+          }
+        ];
+      } else {
+        filter.articleType = articleSlug;
+      }
+    }
+
+    // 5. Combinar $and y $or si existen
+    if (filter.$or && filter.$and) {
+      const existingAnd = filter.$and || [];
+      filter.$and = [...existingAnd, { $or: filter.$or }];
+      delete filter.$or;
+    }
+
+    console.log('🎯 Filtro MongoDB para POSTS:', JSON.stringify(filter, null, 2));
+
+    // 6. Obtener posts paginados
+    const [posts, total] = await Promise.all([
+      Post.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .select('_id title price images createdAt wilaya commune description etat views category subCategory articleType user')
+        .populate('user', 'username avatar')
+        .lean(),
+      Post.countDocuments(filter)
+    ]);
+
+    // 7. Marcar posts normales
+    const formattedPosts = posts.map(p => ({
+      ...p,
+      isBoutique: false
+    }));
+
+    const hasMore = page * limit < total;
+    const totalPages = Math.ceil(total / limit);
+
+    console.log('📊 Resultados POSTS:', {
+      page: page,
+      postsEncontrados: posts.length,
+      totalPosts: total,
+      hasMore: hasMore
+    });
+
+    // 8. Obtener subcategorías para el slider
+    const children = await Category.find({ 
+      parent: categoryDoc._id, 
+      level: 2, 
+      isActive: true 
+    })
+      .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf')
+      .sort({ order: 1 })
+      .lean();
+
+    // 9. Obtener artículos para el slider
+    const articles = await Category.find({ 
+      parent: { $in: children.map(c => c._id) }, 
+      level: 3, 
+      isActive: true 
+    })
+      .select('_id name slug level parent emoji')
+      .sort({ order: 1 })
+      .lean();
+
+    // 10. Formatear hijos
+    const childrenFormatted = children.map(c => ({
+      ...c,
+      articles: articles.filter(a => String(a.parent) === String(c._id))
+    }));
+
+    // 11. Preparar respuesta
+    const response = {
+      success: true,
+      posts: formattedPosts,
+      total: total,
+      page: page,
+      limit: limit,
+      hasMore: hasMore,
+      totalPages: totalPages,
+      categoryInfo: {
+        _id: categoryDoc._id,
+        name: categoryDoc.name,
+        slug: categoryDoc.slug,
+        level: categoryDoc.level,
+        emoji: categoryDoc.emoji || '',
+        icon: categoryDoc.icon || '',
+        iconType: categoryDoc.iconType || 'image-png',
+        iconColor: categoryDoc.iconColor || '#666666',
+        bgColor: categoryDoc.bgColor || '#FFFFFF'
+      },
+      children: childrenFormatted,
+      isBoutiqueCategory: false
+    };
+
+    return res.json(response);
+
+  } catch (error) {
+    console.error('❌ Error en filterPosts:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al filtrar contenido', 
+      error: error.message 
+    });
+  }
+},
   getPosts: async (req, res) => {
     try {
       const { page = 1, limit = 9, category } = req.query;

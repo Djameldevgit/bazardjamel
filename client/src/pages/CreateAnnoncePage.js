@@ -487,7 +487,7 @@ const handleSubmit = async (e) => {
             className="step-content"
           >
             <Card className="border-0">
-              <Card.Body>
+               
                 <h5 className="text-center mb-3">
                   {isEdit ? '✏️ Modifier la catégorie' : '🏷️ Sélectionnez une catégorie'}
                 </h5>
@@ -555,7 +555,7 @@ const handleSubmit = async (e) => {
                     </Button>
                   </div>
                 )}
-              </Card.Body>
+            
             </Card>
           </motion.div>
         );
@@ -839,7 +839,7 @@ const handleSubmit = async (e) => {
       <style jsx>{`
         .step-content {
           min-height: 400px;
-          padding: 20px;
+          padding: 10px;
         }
         
         .step-indicator {
