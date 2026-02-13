@@ -132,25 +132,9 @@ function App() {
         {/* ============================= */}
   
         {/* Nivel 3 */}
-        <Route
-          exact
-          path="/:slug/:subSlug/:articleSlug"
-          component={CategoryPage}
-        />
-  
-        {/* Nivel 2 */}
-        <Route
-          exact
-          path="/:slug/:subSlug"
-          component={CategoryPage}
-        />
-  
-        {/* Nivel 1 */}
-        <Route
-          exact
-          path="/:slug"
-          component={CategoryPage}
-        />
+        <Route exact path="/:slug/:page?" component={CategoryPage} />
+<Route exact path="/:slug/:subSlug/:page?" component={CategoryPage} />
+<Route exact path="/:slug/:subSlug/:articleSlug/:page?" component={CategoryPage} />
   
   
         {/* ============================= */}

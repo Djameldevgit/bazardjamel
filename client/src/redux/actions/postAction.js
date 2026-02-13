@@ -78,11 +78,8 @@ export const loadMorePostsFail = (error) => ({
 });
 
 // 📂 redux/actions/categoryAction.js - VERSIÓN CORREGIDA
-export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = null, page = 1, limit = 12) => async (dispatch, getState) => {
+export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = null, page = 1, limit = 12) => async (dispatch) => {
   try {
-    console.log('🚀 getCategoryPosts - Página solicitada:', page);
-    
-    // 🎯 Si es página 1: GET_CATEGORY_POSTS, si es >1: LOADING_MORE_POSTS
     if (page === 1) {
       dispatch({ type: POST_TYPES.GET_CATEGORY_POSTS });
     } else {
@@ -90,75 +87,32 @@ export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = nul
     }
 
     const { data } = await axios.get(`${API_URL}/api/posts/filter`, {
-      params: {
-        category: categorySlug,
-        sub: subSlug,
-        article: articleSlug,
-        page: page,
-        limit: limit
-      }
+      params: { category: categorySlug, sub: subSlug, article: articleSlug, page, limit }
     });
 
-    console.log('📥 Respuesta del backend filterPosts:', {
-      page: data.page,
-      postsRecibidos: data.posts?.length,
-      hasMore: data.hasMore,
-      total: data.total
-    });
-
-    // 🎯 Preparar payload CON PAGINACIÓN CORRECTA
     const payload = {
-      posts: data.posts || [],
-      pagination: {
-        currentPage: page, // ✅ Página ACTUAL, no la siguiente
-        hasMore: data.hasMore || false,
-        totalPages: data.totalPages || 1,
-        totalPosts: data.total || 0,
-        limit: limit
-      },
-      categoryInfo: data.categoryInfo || {},
-      children: data.children || []
+      posts: data.posts,
+      pagination: data.pagination,
+      categoryInfo: data.categoryInfo,
+      children: data.children
     };
 
-    console.log('📤 Payload para reducer:', {
-      pagina: payload.pagination.currentPage,
-      posts: payload.posts.length,
-      hasMore: payload.pagination.hasMore
-    });
-
-    // 🎯 Despachar acción correcta
     if (page === 1) {
-      dispatch({
-        type: POST_TYPES.GET_CATEGORY_POSTS_SUCCESS,
-        payload: payload
-      });
+      dispatch({ type: POST_TYPES.GET_CATEGORY_POSTS_SUCCESS, payload });
     } else {
-      dispatch({
-        type: POST_TYPES.LOAD_MORE_POSTS_SUCCESS,
-        payload: payload
-      });
+      dispatch({ type: POST_TYPES.LOAD_MORE_POSTS_SUCCESS, payload });
     }
 
-    return { success: true, ...payload };
-
-  } catch (error) {
-    console.error('❌ Error en getCategoryPosts:', error);
-    
+  } catch (err) {
+    const error = err.response?.data?.message || err.message;
     if (page === 1) {
-      dispatch({
-        type: POST_TYPES.GET_CATEGORY_POSTS_FAIL,
-        payload: error.response?.data?.message || error.message
-      });
+      dispatch({ type: POST_TYPES.GET_CATEGORY_POSTS_FAIL, payload: error });
     } else {
-      dispatch({
-        type: POST_TYPES.LOAD_MORE_POSTS_FAIL,
-        payload: error.response?.data?.message || error.message
-      });
+      dispatch({ type: POST_TYPES.LOAD_MORE_POSTS_FAIL, payload: error });
     }
-    
-    return { success: false };
   }
 };
+
   // Helper para iconos por defecto
   const getDefaultIcon = (categoryName) => {
     const iconMap = {
