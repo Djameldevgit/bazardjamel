@@ -89,50 +89,80 @@ function App() {
 
   return (
     <Router>
-      <GoogleTranslateManager />
-
-      <div className="App">
-        <Navbar2 />
-
-        <div id="google_translate_element" style={{ display: 'none' }}></div>
-
-        <Switch>
-          {/* Redirección de raíz - opcional */}
-          <Route exact path="/" component={Home} />
-          <Route exact path="/register" component={Register} />
-          <Route exact path="/login" component={Login} />
-          {/* Página dinámica de categoría (niveles 1, 2, 3) */}
-          <Route exact path="/:slug" component={CategoryPage} />
-          <Route exact path="/:slug/:subSlug" component={CategoryPage} />
-          <Route exact path="/:slug/:subSlug/:articleSlug" component={CategoryPage} />
-          <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
-          <Route exact path="/edit-post/:id" component={CreateAnnoncePage} />
- 
-          <Route exact path="/dashboard" component={DashboardPage} />
-          <Route exact path="/create-boutique" component={CreateBoutiquePage} />
-          
-
-<Route exact path="/store/:id" component={MyBoutiquesPage} />
-  {/* <Route exact path="/boutique/:domaine" component={BoutiquePage} />
-  <Route exact path="/boutiques" component={BoutiquesListPage } />
-<Route exact path="/boutiques/category/:categorySlug" component={BoutiquesCategoryPage} />
+    <GoogleTranslateManager />
+  
+    <div className="App">
+      <Navbar2 />
+  
+      {/* Contenedor oculto del traductor */}
+      <div id="google_translate_element" style={{ display: 'none' }}></div>
+  
+      <Switch>
+  
+        {/* ============================= */}
+        {/* 1️⃣ RUTAS ESTÁTICAS (SIEMPRE PRIMERO) */}
+        {/* ============================= */}
+  
+        <Route exact path="/" component={Home} />
+        <Route exact path="/register" component={Register} />
+        <Route exact path="/login" component={Login} />
+  
+        {/* Crear / Editar anuncio */}
+        <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
+        <Route exact path="/edit-post/:id" component={CreateAnnoncePage} />
+  
+        {/* Dashboard */}
+        <Route exact path="/dashboard" component={DashboardPage} />
+  
+        {/* Boutiques */}
+        <Route exact path="/create-boutique" component={CreateBoutiquePage} />
+        <Route exact path="/store/:id" component={MyBoutiquesPage} />
+  
+        {/* Post individual */}
+        <Route exact path="/post/:id" component={PostId} />
+  
+        {/* Perfil y roles */}
+        <Route exact path="/profile/:id" component={profile} />
+        <Route exact path="/users/roles" component={roles} />
   
   
+        {/* ============================= */}
+        {/* 2️⃣ RUTAS DINÁMICAS DE CATEGORÍAS (SIEMPRE DESPUÉS) */}
+        {/* IMPORTANTE: van al final para evitar que capturen rutas fijas */}
+        {/* ============================= */}
   
-  <Route exact path="/manage-boutique/:id" component={ManageBoutiquePage} />
- <Route exact path="/edit-boutique/:id" component={EditBoutiquePage} /> */}
- 
-
-
-          {/* <PrivateRouter exact path="/:page/:id/:tab" component={PageRender}Detalle de post  />
-          <PrivateRouter exact path="/:page/:id" component={PageRender} />
-          <PrivateRouter exact path="/:page" component={PageRender} />*/}
-          <Route exact path="/post/:id" component={PostId} />
-          <Route exact path="/profile/:id" component={profile} />
-          <Route exact path="/users/roles" component={roles} />
-          <Route component={NotFound} />
-        </Switch></div>
-    </Router>
+        {/* Nivel 3 */}
+        <Route
+          exact
+          path="/:slug/:subSlug/:articleSlug"
+          component={CategoryPage}
+        />
+  
+        {/* Nivel 2 */}
+        <Route
+          exact
+          path="/:slug/:subSlug"
+          component={CategoryPage}
+        />
+  
+        {/* Nivel 1 */}
+        <Route
+          exact
+          path="/:slug"
+          component={CategoryPage}
+        />
+  
+  
+        {/* ============================= */}
+        {/* 3️⃣ NOT FOUND (ÚLTIMA SIEMPRE) */}
+        {/* ============================= */}
+  
+        <Route component={NotFound} />
+  
+      </Switch>
+    </div>
+  </Router>
+  
   );
 }
 
