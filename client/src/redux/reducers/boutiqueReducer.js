@@ -1,4 +1,4 @@
-// 📂 src/redux/reducers/boutiqueReducer.js - VERSIÓN CORREGIDA
+// 📂 redux/reducers/boutiqueReducer.js
 import { BOUTIQUE_TYPES } from '../actions/boutiqueAction';
 
 const initialState = {
@@ -7,9 +7,9 @@ const initialState = {
   total: 0,
   page: 1,
   totalPages: 0,
-  
-  // 🔥 Boutiques por categoría (para el slider)
-  boutiquesByCategory: {}, // Format: { 'categorie/sub/article': { boutiques, total, page, totalPages, hasMore } }
+  homeBoutiques: [],
+  // 🔥 Boutiques por categoría (para el slider) - MISMO FORMATO QUE POSTS
+  boutiquesByCategory: {}, // Format: { 'categorie/sub/article': { boutiques, total, page, totalPages, hasMore, categoryInfo, children } }
   
   // Current boutique details
   currentBoutique: null,
@@ -41,7 +41,11 @@ const boutiqueReducer = (state = initialState, action) => {
         ...state,
         loading: action.payload
       };
-      
+      case BOUTIQUE_TYPES.GET_BOUTIQUES_FOR_HOME:
+  return {
+    ...state,
+    homeBoutiques: action.payload
+  };
     case BOUTIQUE_TYPES.LOADING_BOUTIQUE_PRODUCTS:
       return {
         ...state,
@@ -58,28 +62,39 @@ const boutiqueReducer = (state = initialState, action) => {
         }
       };
     
-    // ============ 🔥 GET BOUTIQUES BY CATEGORY ============
+    // ============ 🔥 GET BOUTIQUES BY CATEGORY (NUEVO) ============
     case BOUTIQUE_TYPES.GET_BOUTIQUES_BY_CATEGORY:
-      // ✅ CORREGIDO: Usar nombres diferentes para evitar conflicto
       const { 
-        categoryPath: catPath, 
-        boutiques, 
-        total, 
-        page, 
-        totalPages, 
-        hasMore 
+        categoryPath,
+        boutiques,
+        total,
+        page,
+        totalPages,
+        hasMore,
+        categoryInfo,
+        children
       } = action.payload;
+      
+      // Si es página 1, reemplazar; si no, concatenar
+      const existingData = state.boutiquesByCategory[categoryPath];
+      const existingBoutiques = existingData?.boutiques || [];
+      
+      const updatedBoutiques = page === 1 
+        ? boutiques 
+        : [...existingBoutiques, ...boutiques];
       
       return {
         ...state,
         boutiquesByCategory: {
           ...state.boutiquesByCategory,
-          [catPath]: {
-            boutiques,
-            total,
-            page,
-            totalPages,
-            hasMore
+          [categoryPath]: {
+            boutiques: updatedBoutiques,
+            total: total,
+            page: page,
+            totalPages: totalPages,
+            hasMore: hasMore,
+            categoryInfo: categoryInfo,
+            children: children
           }
         },
         error: null
@@ -95,7 +110,7 @@ const boutiqueReducer = (state = initialState, action) => {
         userBoutiques: [newBoutique, ...state.userBoutiques],
         total: state.total + 1,
         
-        // 🔥 Limpiar caché de categorías al crear nueva boutique
+        // Limpiar caché de categorías al crear nueva boutique
         boutiquesByCategory: {},
         error: null
       };
@@ -103,10 +118,10 @@ const boutiqueReducer = (state = initialState, action) => {
     case BOUTIQUE_TYPES.GET_BOUTIQUES:
       return {
         ...state,
-        boutiques: action.payload.boutiques,
-        total: action.payload.total,
-        page: action.payload.page,
-        totalPages: action.payload.totalPages,
+        boutiques: action.payload.boutiques || [],
+        total: action.payload.total || 0,
+        page: action.payload.page || 1,
+        totalPages: action.payload.totalPages || 1,
         error: null
       };
       
@@ -127,7 +142,7 @@ const boutiqueReducer = (state = initialState, action) => {
     case BOUTIQUE_TYPES.GET_USER_BOUTIQUES:
       return {
         ...state,
-        userBoutiques: action.payload,
+        userBoutiques: action.payload || [],
         error: null
       };
       
@@ -135,9 +150,7 @@ const boutiqueReducer = (state = initialState, action) => {
       const updatedBoutique = action.payload;
       
       // Update in boutiques list
-      const updatedBoutiques = state.boutiques.map(boutique =>
-        boutique._id === updatedBoutique._id ? updatedBoutique : boutique
-      );
+     
       
       // Update in user boutiques list
       const updatedUserBoutiques = state.userBoutiques.map(boutique =>
@@ -181,10 +194,13 @@ const boutiqueReducer = (state = initialState, action) => {
       // 🔥 Eliminar de boutiquesByCategory
       const deletedFromCategory = {};
       Object.keys(state.boutiquesByCategory).forEach(key => {
+        const categoryData = state.boutiquesByCategory[key];
+        const filteredBoutiques = categoryData.boutiques.filter(b => b._id !== deletedId);
+        
         deletedFromCategory[key] = {
-          ...state.boutiquesByCategory[key],
-          boutiques: state.boutiquesByCategory[key].boutiques.filter(b => b._id !== deletedId),
-          total: Math.max(0, state.boutiquesByCategory[key].total - 1)
+          ...categoryData,
+          boutiques: filteredBoutiques,
+          total: Math.max(0, categoryData.total - (categoryData.boutiques.length - filteredBoutiques.length))
         };
       });
       
@@ -308,13 +324,15 @@ const boutiqueReducer = (state = initialState, action) => {
       // Remove product from boutique products list
       const boutiqueProductsDataRemove = state.boutiqueProducts[removeBoutiqueId];
       if (boutiqueProductsDataRemove) {
+        const filteredProducts = boutiqueProductsDataRemove.products.filter(p => p._id !== productId);
+        
         return {
           ...state,
           boutiqueProducts: {
             ...state.boutiqueProducts,
             [removeBoutiqueId]: {
               ...boutiqueProductsDataRemove,
-              products: boutiqueProductsDataRemove.products.filter(p => p._id !== productId),
+              products: filteredProducts,
               total: Math.max(0, boutiqueProductsDataRemove.total - 1)
             }
           },
@@ -391,17 +409,35 @@ const boutiqueReducer = (state = initialState, action) => {
     case 'CLEAR_BOUTIQUES_BY_CATEGORY':
       const { categoryPath: clearCategoryPath } = action.payload;
       
+      const newBoutiquesByCategory = { ...state.boutiquesByCategory };
+      delete newBoutiquesByCategory[clearCategoryPath];
+      
+      return {
+        ...state,
+        boutiquesByCategory: newBoutiquesByCategory
+      };
+      
+    // ============ RESET CATEGORY (útil para cambio de categoría) ============
+    case 'RESET_BOUTIQUE_CATEGORY':
+      const { categoryPath: resetCategoryPath } = action.payload;
+      
       return {
         ...state,
         boutiquesByCategory: {
           ...state.boutiquesByCategory,
-          [clearCategoryPath]: {
+          [resetCategoryPath]: {
             boutiques: [],
             total: 0,
             page: 1,
             totalPages: 1,
-            hasMore: false
+            hasMore: false,
+            categoryInfo: null,
+            children: []
           }
+        },
+        loadingByCategory: {
+          ...state.loadingByCategory,
+          [resetCategoryPath]: false
         }
       };
       

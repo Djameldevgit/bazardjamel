@@ -8,35 +8,7 @@ export const DYNAMIC_FIELDS_CONFIG = {
     step4: ['wilaya', 'telephone', 'email'],
     step5: ['images']
   },
-  'boutiques': {
-    // Campos comunes para todas las boutiques
-    step2: [
-      'nom_boutique', 
-      'domaine_boutique', 
-      'slogan_boutique', 
-      'description_boutique',
-      'categories_produits',
-      'couleur_theme'
-    ],
-    step3: [
-      'plan_boutique', 
-      'duree_abonnement',
-      'total_credits',
-      'stockage_max',
-      'inclusions_plan'
-    ],
-    step4: [
-      'proprietaire_nom', 
-      'proprietaire_email', 
-      'proprietaire_telephone',
-      'proprietaire_wilaya',
-      'proprietaire_adresse',
-      'reseaux_sociaux',
-      'accepte_conditions'
-    ],
-    step5: ['images', 'logo_boutique']
-  },
-  // ============ VÉHICULES ============
+    // ============ VÉHICULES ============
   'vehicules': {
     step2: ['title', 'description', 'etat', 'reference', 'marque', 'modele', 'annee', 'kilometrage', 'carburant', 'boiteVitesse'],
     step3: ['price', 'unite', 'typeOffre', 'echange', 'puissance', 'couleur', 'options'],
@@ -79,10 +51,10 @@ export const DYNAMIC_FIELDS_CONFIG = {
         step4: ['wilaya', 'adresse', 'telephone', 'email'],
         step5: ['images']
       },
-      'bus':{
-        step2: [  'marqueVehicules', 'modeleVehicules', 'annee', , 'couleur','kilometrage', 'carburant', 'description'],
+      'Bus': {
+        step2: [  'marque', 'modele', 'annee', , 'couleur','kilometrage', 'carburant', 'boiteVitesse' , 'optionduvoiture' ],
         step3: ['price','unite', 'typeOffre', 'echange'],
-        step4: ['wilaya', 'adresse', 'telephone', 'email'],
+        step4: ['wilaya', 'telephone', 'commune'],
         step5: ['images']
       },
       'engins': {

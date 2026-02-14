@@ -1,8 +1,9 @@
-// src/pages/Home.jsx - VERSIÓN CORREGIDA
+// src/pages/Home.jsx - VERSIÓN CON BOUTIQUES INTEGRADAS
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import { getAllCategoriesWithPosts, loadMoreCategories } from '../redux/actions/categoryAction';
+import { getBoutiquesForHome } from '../redux/actions/boutiqueAction'; // 🔥 NUEVO
 import { 
   Container, 
   Spinner, 
@@ -14,8 +15,9 @@ import {
 import InfiniteScroll from 'react-infinite-scroll-component';
 import MainCategorySlider from '../components/SlidersCategories/CategorySlider';
 import Header from '../components/SlidersCategories/HeaderCarousel';
-import PostCard from '../components/PostCard'; // ✅ IMPORTAR PostCard
-import { ArrowRight } from 'react-bootstrap-icons';
+import PostCard from '../components/PostCard';
+import BoutiqueCard from '../components/BoutiqueCard'; // 🔥 NUEVO
+import { ArrowRight  } from 'react-bootstrap-icons';
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -27,6 +29,7 @@ const Home = () => {
   
   const { theme = 'light' } = useSelector(state => state.theme || {});
   
+  // Estados para posts/categorías
   const {
     categories = [],
     loading,
@@ -35,11 +38,20 @@ const Home = () => {
     currentPage
   } = useSelector((state) => state.category || {});
 
+  // 🔥 NUEVO: Estado para boutiques del home
+  const { homeBoutiques = [] } = useSelector((state) => state.boutique || {});
+
+  // Carga inicial
   useEffect(() => {
     if (hasLoadedRef.current || loading) return;
     
     hasLoadedRef.current = true;
+    
+    // Cargar categorías con posts
     dispatch(getAllCategoriesWithPosts(1, 2));
+    
+    // 🔥 NUEVO: Cargar boutiques para el home
+    dispatch(getBoutiquesForHome(6));
     
     const timer = setTimeout(() => setInitialLoadDone(true), 1500);
     return () => clearTimeout(timer);
@@ -79,12 +91,15 @@ const Home = () => {
     history.push(`/${slug}`, { fromHome: true, categoryName });
   };
 
-  
+  // 🔥 NUEVO: Ver todas las boutiques
+  const handleViewAllBoutiques = () => {
+    history.push('/boutiques/1');
+  };
 
   // Render condicional
   if (loading && categories.length === 0 && !initialLoadDone) {
     return (
-      <div className="min-vh-100 d-flex flex-column bg-gradient-light">
+      <div className={`min-vh-100 d-flex flex-column ${theme === 'dark' ? 'bg-dark' : 'bg-gradient-light'}`}>
         <Header />
         <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
           <div className="text-center">
@@ -98,7 +113,7 @@ const Home = () => {
 
   if (error && categories.length === 0 && initialLoadDone) {
     return (
-      <div className="min-vh-100 d-flex flex-column">
+      <div className={`min-vh-100 d-flex flex-column ${theme === 'dark' ? 'bg-dark' : ''}`}>
         <Header />
         <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
           <Alert variant="danger" className="shadow-lg border-0 text-center">
@@ -106,10 +121,11 @@ const Home = () => {
             <h4 className="h5 mb-2">Error de conexión</h4>
             <p className="text-muted mb-4">No pudimos cargar el contenido</p>
             <Button 
-              variant="gradient-primary" 
+              variant="primary" 
               onClick={() => {
                 hasLoadedRef.current = false;
                 dispatch(getAllCategoriesWithPosts(1, 8));
+                dispatch(getBoutiquesForHome(6));
               }}
               className="rounded-pill px-4"
             >
@@ -122,15 +138,15 @@ const Home = () => {
     );
   }
 
-  if (!loading && categories.length === 0 && initialLoadDone) {
+  if (!loading && categories.length === 0 && homeBoutiques.length === 0 && initialLoadDone) {
     return (
-      <div className="min-vh-100 d-flex flex-column">
+      <div className={`min-vh-100 d-flex flex-column ${theme === 'dark' ? 'bg-dark' : ''}`}>
         <Header />
         <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
           <div className="text-center">
             <i className="fas fa-search fa-4x text-muted mb-4"></i>
             <h4 className="h5 mb-2">Marketplace vacío</h4>
-            <p className="text-muted mb-4">Aún no hay productos publicados</p>
+            <p className="text-muted mb-4">Aún no hay productos ni boutiques publicados</p>
             <Button variant="outline-primary" className="rounded-pill px-4">
               <i className="fas fa-plus me-2"></i>
               Publicar primer producto
@@ -155,8 +171,46 @@ const Home = () => {
           </Container>
         </section>
 
-        {/* Secciones de categorías */}
-        <Container className="">
+        <Container className="py-4">
+          {/* 🔥 NUEVA SECCIÓN: Boutiques destacadas */}
+          {homeBoutiques.length > 0 && (
+            <section className="mb-5">
+              <div className="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                  <div className="d-flex align-items-center gap-3 mb-2">
+                    <div className="category-icon bg-purple bg-opacity-10 rounded-3 p-3">
+                      <p className="text-purple" size={24} />
+                    </div>
+                    <div>
+                      <h3 className="h4 fw-bold mb-0">Boutiques à la une</h3>
+                      <p className="text-muted mb-0">
+                        {homeBoutiques.length} boutiques disponibles
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <Button 
+                  variant="outline-purple"
+                  className="rounded-pill px-4"
+                  onClick={handleViewAllBoutiques}
+                >
+                  Voir toutes les boutiques
+                  <ArrowRight className="ms-2" size={16} />
+                </Button>
+              </div>
+
+              <Row>
+                {homeBoutiques.map((boutique) => (
+                  <Col key={boutique._id} xs={6} md={4} lg={3} className="mb-4">
+                    <BoutiqueCard boutique={boutique} />
+                  </Col>
+                ))}
+              </Row>
+            </section>
+          )}
+
+          {/* Secciones de categorías con posts */}
           <InfiniteScroll
             dataLength={categories.length}
             next={fetchMoreData}
@@ -204,10 +258,9 @@ const Home = () => {
                 </div>
 
                 {category.posts && category.posts.length > 0 ? (
-                  <Row className='' >
+                  <Row>
                     {category.posts.slice(0, 6).map((post) => (
                       <Col key={post._id} xs={6} md={4} lg={2} className="mb-4">
-                        {/* ✅ USAR PostCard EN LUGAR DE CARD DIRECTA */}
                         <PostCard post={post} />
                       </Col>
                     ))}
@@ -223,6 +276,27 @@ const Home = () => {
           </InfiniteScroll>
         </Container>
       </main>
+
+      <style jsx="true">{`
+        .bg-purple {
+          background-color: #8B5CF6;
+        }
+        .text-purple {
+          color: #8B5CF6;
+        }
+        .bg-opacity-10 {
+          --bs-bg-opacity: 0.1;
+        }
+        .btn-outline-purple {
+          color: #8B5CF6;
+          border-color: #8B5CF6;
+        }
+        .btn-outline-purple:hover {
+          color: #fff;
+          background-color: #8B5CF6;
+          border-color: #8B5CF6;
+        }
+      `}</style>
     </div>
   );
 };

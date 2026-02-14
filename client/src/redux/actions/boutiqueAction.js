@@ -1,18 +1,19 @@
+// redux/actions/boutiqueAction.js
 import { GLOBALTYPES } from './globalTypes';
 import { postDataAPI, getDataAPI, patchDataAPI, deleteDataAPI } from '../../utils/fetchData';
 import { imageUpload } from '../../utils/imageUpload';
 
 export const BOUTIQUE_TYPES = {
-  // Basic CRUD operations
+  // Basic CRUD
   CREATE_BOUTIQUE: 'CREATE_BOUTIQUE',
   GET_BOUTIQUES: 'GET_BOUTIQUES',
   GET_BOUTIQUE: 'GET_BOUTIQUE',
   UPDATE_BOUTIQUE: 'UPDATE_BOUTIQUE',
   DELETE_BOUTIQUE: 'DELETE_BOUTIQUE',
   
-  // 🔥 NUEVO: Para búsqueda por categoría (mismo formato que posts)
+  // 🔥 Para búsqueda por categoría
   GET_BOUTIQUES_BY_CATEGORY: 'GET_BOUTIQUES_BY_CATEGORY',
-  
+  GET_BOUTIQUES_FOR_HOME: 'GET_BOUTIQUES_FOR_HOME',
   // User specific
   GET_USER_BOUTIQUES: 'GET_USER_BOUTIQUES',
   GET_BOUTIQUE_BY_DOMAIN: 'GET_BOUTIQUE_BY_DOMAIN',
@@ -22,7 +23,7 @@ export const BOUTIQUE_TYPES = {
   ADD_BOUTIQUE_PRODUCT: 'ADD_BOUTIQUE_PRODUCT',
   REMOVE_BOUTIQUE_PRODUCT: 'REMOVE_BOUTIQUE_PRODUCT',
   
-  // Status management
+  // Status
   UPDATE_BOUTIQUE_STATUS: 'UPDATE_BOUTIQUE_STATUS',
   
   // Stats
@@ -31,83 +32,198 @@ export const BOUTIQUE_TYPES = {
   // Loading states
   LOADING_BOUTIQUE: 'LOADING_BOUTIQUE',
   LOADING_BOUTIQUE_PRODUCTS: 'LOADING_BOUTIQUE_PRODUCTS',
-  
-  // 🔥 NUEVO: Para paginación de boutiques por categoría
   LOADING_BOUTIQUES_BY_CATEGORY: 'LOADING_BOUTIQUES_BY_CATEGORY'
 };
 
-// ============ CORE CRUD OPERATIONS ============
-
-export const createBoutique = ({ boutiqueData, avatar, auth }) => async (dispatch) => {
+// ============ 🔥 GET BOUTIQUES BY CATEGORY (PARA EL SLIDER) ============
+export const getBoutiquesByCategory = (categorySlug, subSlug = null, page = 1, limit = 12) => async (dispatch) => {
   try {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: true });
+    // Crear clave única para esta categoría/subcategoría
+    const categoryPath = subSlug ? `${categorySlug}/${subSlug}` : categorySlug;
     
-    console.log('📤 Enviando creación de boutique:', {
-      boutiqueData,
-      hasAvatar: !!avatar,
-      user: auth.user?._id
+    console.log('🔍 Cargando boutiques por categoría:', {
+      category: categorySlug,
+      sub: subSlug,
+      page,
+      limit,
+      categoryPath
     });
-    
-    let media;
-    if (avatar) {
-      console.log('📷 Subiendo avatar...');
-      media = await imageUpload([avatar]);
-      console.log('✅ Avatar subido:', media);
-    }
-    
-    // 🔥 CORREGIDO: Usar 'statut' no 'status'
-    const finalData = {
-      ...boutiqueData,
-      user: auth.user?._id,
-      logo: media ? media[0] : null,
-      statut: 'en_attente' // Campo correcto
+
+    // Set loading state
+    dispatch({ 
+      type: BOUTIQUE_TYPES.LOADING_BOUTIQUES_BY_CATEGORY, 
+      payload: { category: categoryPath, loading: true }
+    });
+
+    // Construir parámetros
+    const params = { 
+      category: categorySlug, 
+      page, 
+      limit 
     };
-    
-    console.log('📦 Datos finales a enviar:', {
-      nom_boutique: finalData.nom_boutique,
-      domaine_boutique: finalData.domaine_boutique,
-      plan: finalData.plan,
-      categories_count: finalData.categories_produits?.length || 0,
-      statut: finalData.statut
-    });
-    
-    const res = await postDataAPI('boutique', finalData, auth.token);
+    if (subSlug && subSlug !== 'undefined' && subSlug !== 'null') {
+      params.sub = subSlug;
+    }
+
+    // Llamar a la API
+    const res = await getDataAPI(`boutique/filter?${new URLSearchParams(params)}`);
     
     dispatch({
-      type: BOUTIQUE_TYPES.CREATE_BOUTIQUE,
+      type: BOUTIQUE_TYPES.GET_BOUTIQUES_BY_CATEGORY,
+      payload: {
+        categoryPath: categoryPath,
+        boutiques: res.data.boutiques || [],
+        total: res.data.total || 0,
+        page: res.data.page || page,
+        totalPages: res.data.totalPages || 1,
+        hasMore: res.data.hasMore || false,
+        categoryInfo: res.data.categoryInfo || null,
+        children: res.data.children || []
+      }
+    });
+
+    return {
+      boutiques: res.data.boutiques || [],
+      total: res.data.total || 0,
+      hasMore: res.data.hasMore || false,
+      categoryInfo: res.data.categoryInfo || null,
+      children: res.data.children || []
+    };
+
+  } catch (err) {
+    console.error('❌ Error en getBoutiquesByCategory:', err);
+    
+    // Usar GLOBALTYPES para errores ya que no tenemos tipo específico
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || err.message }
+    });
+    
+    throw err;
+  } finally {
+    const categoryPath = subSlug ? `${categorySlug}/${subSlug}` : categorySlug;
+    dispatch({ 
+      type: BOUTIQUE_TYPES.LOADING_BOUTIQUES_BY_CATEGORY, 
+      payload: { category: categoryPath, loading: false }
+    });
+  }
+};
+// redux/actions/boutiqueAction.js
+
+// ============ GET BOUTIQUES FOR HOME (NUEVA) ============
+export const getBoutiquesForHome = (limit = 6) => async (dispatch) => {
+  try {
+    console.log('🏪 Cargando boutiques para el home con límite:', limit);
+    
+    // ✅ CORREGIDO: Usar category='boutiques' fijo
+    const params = { 
+      category: 'boutiques', 
+      page: 1, 
+      limit: limit 
+    };
+    
+    const res = await getDataAPI(`boutique/filter?${new URLSearchParams(params)}`);
+    
+    dispatch({
+      type: BOUTIQUE_TYPES.GET_BOUTIQUES_FOR_HOME,
+      payload: res.data.boutiques || []
+    });
+    
+    return res.data.boutiques;
+    
+  } catch (err) {
+    console.error('❌ Error cargando boutiques para home:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || err.message }
+    });
+    return [];
+  }
+};
+// ============ RESET BOUTIQUES BY CATEGORY ============
+export const resetBoutiquesByCategory = (categoryPath) => ({
+  type: 'CLEAR_BOUTIQUES_BY_CATEGORY',  // Usamos string directo para este caso
+  payload: { categoryPath }
+});
+
+// ============ RESET ALL BOUTIQUES ============
+export const resetAllBoutiques = () => ({
+  type: 'CLEAR_BOUTIQUES'  // Usamos string directo para este caso
+});
+
+// ============ CREATE BOUTIQUE ============
+export const createBoutique = ({ 
+  boutiqueData, 
+  avatar, 
+  auth 
+}) => async (dispatch) => {
+  console.time('⏱️ createBoutique action time');
+  let media = [];
+  
+  try {
+    console.log('🟡 createBoutique action iniciada');
+    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: true} });
+    
+    // Verificar si hay avatar para subir
+    if (avatar) {
+      console.log(`📤 Subiendo avatar...`);
+      console.time('🖼️ Avatar upload time');
+      
+      const avatarArray = avatar ? [avatar] : [];
+      media = await imageUpload(avatarArray);
+      
+      console.timeEnd('🖼️ Avatar upload time');
+      console.log('✅ Avatar subido:', media.length ? media[0] : null);
+    }
+
+    // Preparar datos finales para enviar
+    const boutiqueToSend = {
+      ...boutiqueData,
+      avatar: media.length > 0 ? media[0] : null
+    };
+
+    console.log('📦 Datos a enviar al API:', {
+      nom_boutique: boutiqueToSend.nom_boutique,
+      categorie: boutiqueToSend.categorie,
+      hasAvatar: !!boutiqueToSend.avatar
+    });
+
+    // Enviar al API
+    const res = await postDataAPI('boutique', boutiqueToSend, auth.token);
+    
+    console.log('✅ Respuesta del API:', res.data);
+
+    dispatch({ 
+      type: BOUTIQUE_TYPES.CREATE_BOUTIQUE, 
       payload: res.data.boutique || res.data
     });
-    
-    dispatch({ 
-      type: GLOBALTYPES.ALERT, 
-      payload: { 
-        success: res.data.msg || 'Boutique créée avec succès'
-      } 
-    });
-    
+
+    dispatch({ type: GLOBALTYPES.ALERT, payload: {
+      success: res.data.message || 'Boutique créée avec succès!'
+    }});
+
     return res.data;
-    
+
   } catch (err) {
     console.error('❌ Error en createBoutique action:', err);
     dispatch({
       type: GLOBALTYPES.ALERT,
-      payload: {
-        error: err.response?.data?.msg || err.message || 'Erreur lors de la création de la boutique'
-      }
+      payload: {error: err.response?.data?.message || err.message}
     });
     throw err;
   } finally {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: false });
+    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: false} });
+    console.timeEnd('⏱️ createBoutique action time');
   }
 };
 
+// ============ UPDATE BOUTIQUE ============
 export const updateBoutique = (id, boutiqueData, auth) => async (dispatch) => {
   try {
     dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: true });
     
     let dataToSend = boutiqueData;
     
-    // Si es FormData, convertirlo para patch
     if (boutiqueData instanceof FormData) {
       dataToSend = {};
       for (let [key, value] of boutiqueData.entries()) {
@@ -144,72 +260,7 @@ export const updateBoutique = (id, boutiqueData, auth) => async (dispatch) => {
   }
 };
 
-// ============ 🔥 NUEVO: GET BOUTIQUES BY CATEGORY (PARA EL SLIDER) ============
-export const getBoutiquesByCategory = ({ 
-  category, 
-  sub = '', 
-  article = '', 
-  page = 1, 
-  limit = 12,
-  auth = null 
-}) => async (dispatch) => {
-  try {
-    const loadingType = category 
-      ? `${category}_${sub || ''}_${article || ''}` 
-      : 'all';
-      
-    dispatch({ 
-      type: BOUTIQUE_TYPES.LOADING_BOUTIQUES_BY_CATEGORY, 
-      payload: { category: loadingType, loading: true } 
-    });
-    
-    // Construir query string
-    let query = `page=${page}&limit=${limit}`;
-    if (category) query += `&category=${category}`;
-    if (sub) query += `&sub=${sub}`;
-    if (article) query += `&article=${article}`;
-    
-    console.log(`🔍 Buscando boutiques por categoría: ${category}/${sub}/${article}`, { page, limit });
-    
-    const res = await getDataAPI(`boutique/category?${query}`, auth?.token);
-    
-    dispatch({
-      type: BOUTIQUE_TYPES.GET_BOUTIQUES_BY_CATEGORY,
-      payload: {
-        categoryPath: `${category}/${sub}/${article}`.replace(/\/+$/, ''),
-        boutiques: res.data.boutiques || [],
-        total: res.data.total || 0,
-        page: res.data.page || 1,
-        totalPages: res.data.totalPages || 1,
-        hasMore: res.data.hasMore || false
-      }
-    });
-    
-    return res.data;
-    
-  } catch (err) {
-    console.error('❌ Error en getBoutiquesByCategory:', err);
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: {
-        error: err.response?.data?.msg || 'Erreur lors du chargement des boutiques'
-      }
-    });
-    throw err;
-  } finally {
-    const loadingType = category 
-      ? `${category}_${sub || ''}_${article || ''}` 
-      : 'all';
-      
-    dispatch({ 
-      type: BOUTIQUE_TYPES.LOADING_BOUTIQUES_BY_CATEGORY, 
-      payload: { category: loadingType, loading: false } 
-    });
-  }
-};
-
 // ============ GET BOUTIQUES (GENERAL) ============
-
 export const getBoutiques = (query = '', auth = null) => async (dispatch) => {
   try {
     dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: true });
@@ -244,6 +295,7 @@ export const getBoutiques = (query = '', auth = null) => async (dispatch) => {
   }
 };
 
+// ============ GET BOUTIQUE BY ID ============
 export const getBoutique = (id, auth = null) => async (dispatch) => {
   try {
     dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: true });
@@ -270,6 +322,7 @@ export const getBoutique = (id, auth = null) => async (dispatch) => {
   }
 };
 
+// ============ GET BOUTIQUE BY DOMAIN ============
 export const getBoutiqueByDomain = (domain) => async (dispatch) => {
   try {
     dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: true });
@@ -296,6 +349,7 @@ export const getBoutiqueByDomain = (domain) => async (dispatch) => {
   }
 };
 
+// ============ GET USER BOUTIQUES ============
 export const getUserBoutiques = (auth) => async (dispatch) => {
   try {
     dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: true });
@@ -322,6 +376,7 @@ export const getUserBoutiques = (auth) => async (dispatch) => {
   }
 };
 
+// ============ DELETE BOUTIQUE ============
 export const deleteBoutique = (id, auth) => async (dispatch) => {
   try {
     dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: true });
@@ -355,8 +410,7 @@ export const deleteBoutique = (id, auth) => async (dispatch) => {
   }
 };
 
-// ============ STATUS MANAGEMENT ============
-
+// ============ UPDATE BOUTIQUE STATUS ============
 export const updateBoutiqueStatus = (id, statut, auth) => async (dispatch) => {
   try {
     dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: true });
@@ -394,7 +448,6 @@ export const updateBoutiqueStatus = (id, statut, auth) => async (dispatch) => {
 };
 
 // ============ PRODUCTS MANAGEMENT ============
-
 export const getBoutiqueProducts = (boutiqueId, query = '', auth = null) => async (dispatch) => {
   try {
     dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE_PRODUCTS, payload: true });
@@ -503,7 +556,6 @@ export const removeBoutiqueProduct = (boutiqueId, productId, auth) => async (dis
 };
 
 // ============ STATISTICS ============
-
 export const getBoutiqueStats = (boutiqueId, auth) => async (dispatch) => {
   try {
     dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: true });
@@ -532,44 +584,3 @@ export const getBoutiqueStats = (boutiqueId, auth) => async (dispatch) => {
     dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: false });
   }
 };
-
-// ============ CLEAR OPERATIONS ============
-
-export const clearBoutiques = () => ({
-  type: BOUTIQUE_TYPES.GET_BOUTIQUES,
-  payload: {
-    boutiques: [],
-    total: 0,
-    page: 1,
-    totalPages: 0
-  }
-});
-
-export const clearCurrentBoutique = () => ({
-  type: BOUTIQUE_TYPES.GET_BOUTIQUE,
-  payload: null
-});
-
-export const clearBoutiqueProducts = (boutiqueId) => ({
-  type: BOUTIQUE_TYPES.GET_BOUTIQUE_PRODUCTS,
-  payload: {
-    boutiqueId,
-    products: [],
-    total: 0,
-    page: 1,
-    totalPages: 0
-  }
-});
-
-// 🔥 NUEVO: Limpiar boutiques por categoría
-export const clearBoutiquesByCategory = (categoryPath) => ({
-  type: BOUTIQUE_TYPES.GET_BOUTIQUES_BY_CATEGORY,
-  payload: {
-    categoryPath,
-    boutiques: [],
-    total: 0,
-    page: 1,
-    totalPages: 1,
-    hasMore: false
-  }
-});

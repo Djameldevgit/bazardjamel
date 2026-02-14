@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, Badge } from 'react-bootstrap';
 import { useHistory } from 'react-router-dom';
-import {   p, Star, CheckCircle } from 'react-bootstrap-icons';
+import { Star, CheckCircle, GeoAlt, Tag } from 'react-bootstrap-icons'; // ✅ Corregido
 
 const BoutiqueCard = ({ boutique }) => {
   const history = useHistory();
@@ -24,7 +24,13 @@ const BoutiqueCard = ({ boutique }) => {
     if (boutique.categories_produits && boutique.categories_produits.length > 0) {
       return boutique.categories_produits[0].level1Name;
     }
-    return 'Boutique';
+    return boutique.categorie || 'Boutique';
+  };
+
+  // Determinar el estado de la boutique
+  const getBoutiqueStatus = () => {
+    if (boutique.isVerified) return { text: '✓ Vérifiée', variant: 'success' };
+    return { text: '⏳ En attente', variant: 'warning' };
   };
 
   return (
@@ -44,9 +50,9 @@ const BoutiqueCard = ({ boutique }) => {
             borderTopRightRadius: '0.375rem'
           }}
         >
-          {boutique.logo?.url ? (
+          {boutique.avatar?.url ? (  // ✅ Cambiado de 'logo' a 'avatar'
             <img 
-              src={boutique.logo.url} 
+              src={boutique.avatar.url} 
               alt={boutique.nom_boutique}
               style={{ 
                 width: '100px', 
@@ -64,11 +70,11 @@ const BoutiqueCard = ({ boutique }) => {
 
         {/* Badge de estado */}
         <Badge 
-          bg={boutique.statut === 'active' ? 'success' : 'warning'}
+          bg={getBoutiqueStatus().variant}
           className="position-absolute top-0 end-0 m-2"
           pill
         >
-          {boutique.statut === 'active' ? '✓ Activa' : '⏳ Pendiente'}
+          {getBoutiqueStatus().text}
         </Badge>
       </div>
 
@@ -77,7 +83,7 @@ const BoutiqueCard = ({ boutique }) => {
           <h6 className="fw-bold mb-0 text-truncate" style={{ maxWidth: 'calc(100% - 24px)' }}>
             {boutique.nom_boutique}
           </h6>
-          {boutique.statut === 'active' && (
+          {boutique.isVerified && (
             <CheckCircle className="text-success ms-1" size={16} />
           )}
         </div>
@@ -89,13 +95,13 @@ const BoutiqueCard = ({ boutique }) => {
         )}
 
         <div className="d-flex align-items-center text-muted small mb-2">
-          <p size={14} className="me-1" />
+          <Tag size={14} className="me-1" />
           <span className="text-truncate">{getCategoryName()}</span>
         </div>
 
         {boutique.proprietaire?.wilaya && (
           <div className="d-flex align-items-center text-muted small">
-            <p size={14} className="me-1" />
+            <GeoAlt size={14} className="me-1" />
             <span className="text-truncate">{boutique.proprietaire.wilaya}</span>
           </div>
         )}
@@ -130,7 +136,9 @@ const BoutiqueCard = ({ boutique }) => {
             ))}
             <Star size={12} className="text-secondary" />
           </div>
-          <span className="small text-muted">(0)</span>
+          <span className="small text-muted">
+            ({boutique.stats?.avis || 0})
+          </span>
         </div>
       </Card.Body>
 

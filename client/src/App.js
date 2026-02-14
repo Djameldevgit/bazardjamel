@@ -20,20 +20,15 @@ import PostId from './pages/PostId';
 import DashboardPage from './pages/users/dashboardpage';
 import profile from './pages/profile';
 import CreateBoutiquePage from './pages/boutique/createBoutiquePage';
-import BoutiquePage from './pages/boutique/BoutiquePage';
  
-import BoutiquesCategoryPage from './pages/boutique/BoutiquesCategoryPage';
+ 
 import MyBoutiquesPage from './pages/boutique/MyBoutiquesPage';
-//import ManageBoutiquePage from './pages/boutique/ManageBoutiquePage';
-//import EditBoutiquePage from './pages/boutique/EditBoutiquePage';
-
-
-
-
-
-
+ 
 import roles from './pages/users/roles';
-import BoutiquesListPage from './pages/boutique/BoutiquesListePage';
+ 
+ 
+import BoutiqueDetailPage from './pages/boutique/BoutiqueDetailPage';
+import UserBoutiquesPage from './pages/boutique/UserBoutiquesPage';
 
 function App() {
   const { auth } = useSelector(state => state)
@@ -89,64 +84,48 @@ function App() {
 
   return (
     <Router>
-    <GoogleTranslateManager />
-  
-    <div className="App">
-      <Navbar2 />
-  
-      {/* Contenedor oculto del traductor */}
-      <div id="google_translate_element" style={{ display: 'none' }}></div>
-  
-      <Switch>
-  
-        {/* ============================= */}
-        {/* 1️⃣ RUTAS ESTÁTICAS (SIEMPRE PRIMERO) */}
-        {/* ============================= */}
-  
-        <Route exact path="/" component={Home} />
-        <Route exact path="/register" component={Register} />
-        <Route exact path="/login" component={Login} />
-  
-        {/* Crear / Editar anuncio */}
-        <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
-        <Route exact path="/edit-post/:id" component={CreateAnnoncePage} />
-  
-        {/* Dashboard */}
-        <Route exact path="/dashboard" component={DashboardPage} />
-  
-        {/* Boutiques */}
-        <Route exact path="/create-boutique" component={CreateBoutiquePage} />
-        <Route exact path="/store/:id" component={MyBoutiquesPage} />
-  
-        {/* Post individual */}
-        <Route exact path="/post/:id" component={PostId} />
-  
-        {/* Perfil y roles */}
-        <Route exact path="/profile/:id" component={profile} />
-        <Route exact path="/users/roles" component={roles} />
-  
-  
-        {/* ============================= */}
-        {/* 2️⃣ RUTAS DINÁMICAS DE CATEGORÍAS (SIEMPRE DESPUÉS) */}
-        {/* IMPORTANTE: van al final para evitar que capturen rutas fijas */}
-        {/* ============================= */}
-  
-        {/* Nivel 3 */}
-        <Route exact path="/:slug/:page?" component={CategoryPage} />
-<Route exact path="/:slug/:subSlug/:page?" component={CategoryPage} />
-<Route exact path="/:slug/:subSlug/:articleSlug/:page?" component={CategoryPage} />
-  
-  
-        {/* ============================= */}
-        {/* 3️⃣ NOT FOUND (ÚLTIMA SIEMPRE) */}
-        {/* ============================= */}
-  
-        <Route component={NotFound} />
-  
-      </Switch>
-    </div>
-  </Router>
-  
+  <GoogleTranslateManager />
+
+  <div className="App">
+    <Navbar2 />
+
+    {/* Contenedor oculto del traductor */}
+    <div id="google_translate_element" style={{ display: 'none' }}></div>
+
+    <Switch>
+      {/* ============ RUTAS PÚBLICAS ============ */}
+      <Route exact path="/" component={Home} />
+      <Route exact path="/register" component={Register} />
+      <Route exact path="/login" component={Login} />
+
+      {/* ============ RUTAS DE BOUTIQUES (específicas primero) ============ */}
+      <Route exact path="/create-boutique" component={CreateBoutiquePage} />
+      <Route exact path="/boutique/creer" component={CreateBoutiquePage} />
+      <Route exact path="/mes-boutiques" component={UserBoutiquesPage} />
+        {/* ============ <Route exact path="/boutique/:id/edit" component={EditBoutiquePage} / ============ */}
+     
+      <Route exact path="/boutique/:id" component={BoutiqueDetailPage} />
+      
+      {/* ============ RUTAS DE ANUNCIOS ============ */}
+      <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
+      <Route exact path="/edit-post/:id" component={CreateAnnoncePage} />
+      <Route exact path="/post/:id" component={PostId} />
+
+      {/* ============ DASHBOARD Y PERFILES ============ */}
+      <Route exact path="/dashboard" component={DashboardPage} />
+      <Route exact path="/profile/:id" component={profile} />
+      <Route exact path="/users/roles" component={roles} />
+
+      {/* ============ RUTAS DE CATEGORÍAS (genéricas al final) ============ */}
+      <Route exact path="/:slug/:page?" component={CategoryPage} />
+      <Route exact path="/:slug/:subSlug/:page?" component={CategoryPage} />
+      <Route exact path="/:slug/:subSlug/:articleSlug/:page?" component={CategoryPage} />
+
+      {/* ============ RUTA 404 (siempre al final) ============ */}
+      <Route component={NotFound} />
+    </Switch>
+  </div>
+</Router>
   );
 }
 

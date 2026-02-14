@@ -25,6 +25,7 @@ const BaseCategoryField = ({
   fieldName,
   mainCategory,
   subCategory, 
+  articleType,
   postData, 
   handleChangeInput,
   isRTL,

@@ -1,113 +1,185 @@
-// 📂 models/boutiqueModel.js - VERSIÓN CORREGIDA
+// models/Boutique.js
 const mongoose = require('mongoose');
 
-// 🔥 CORREGIDO: Schema que coincide EXACTAMENTE con lo que envía el frontend
-const CategorieProduitSchema = new mongoose.Schema({
-  level1: { type: String, required: true },
-  level1Name: { type: String, required: true },
-  level1Emoji: { type: String, default: '📦' },
-  level2: { type: String, default: null },
-  level2Name: { type: String, default: null },
-  level2Emoji: { type: String, default: null },
-  level3: { type: String, default: null },
-  level3Name: { type: String, default: null },
-  level3Emoji: { type: String, default: null },
-  fullPath: { type: String, required: true },
-  displayPath: { type: String, required: true },
-  level: { type: Number, required: true }
-  // ❌ ELIMINADOS: cachedName y categoryId - NO existen en tu frontend
-}, { _id: false });
-
-const BoutiqueSchema = new mongoose.Schema({
-  // ============ STEP 1: INFORMATIONS DU STORE ============
-  nom_boutique: { type: String, required: true },
-  domaine_boutique: { type: String, required: true, unique: true },
-  slogan_boutique: { type: String, default: '' },
-  description_boutique: { type: String, required: true },
-  logo: {
-    url: { type: String, default: '' },
-    public_id: { type: String, default: '' }
-  },
-  date_debut: { type: Date, default: Date.now },
-  
-  // ============ STEP 2: CONFIGURATION ============
-  // 🔥 CATEGORÍAS DE PRODUCTOS - ESTRUCTURA COMPLETA
-  categories_produits: { 
-    type: [CategorieProduitSchema], 
+const boutiqueSchema = new mongoose.Schema({
+  // 👤 Usuario propietario
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'user',
     required: true,
-    validate: {
-      validator: function(v) {
-        return v && v.length > 0;
-      },
-      message: 'Au moins une catégorie de produits est requise'
-    }
+    index: true
   },
-  categorySlugs: [{ type: String }],
-  
-  // Tipo de boutique (categorie_boutique del wizard)
-  categorie_boutique: { type: String, default: '' },
-  
-  // Duración y oferta
-  duree: { type: String, default: '1' },
-  offre: { type: String, default: 'Store Basic 50' },
-  plan: { 
-    type: String, 
+
+  // 🗂️ CATEGORÍAS (strings del cliente)
+  categorie: {
+    type: String,
+    required: true,
+    trim: true,
+    index: true
+  },
+
+  subCategory: {
+    type: String,
+    required: true,
+    trim: true,
+    index: true
+  },
+
+  articleType: {
+    type: String,
+    trim: true,
+    index: true
+  },
+
+  // 🔑 CATEGORÍA REAL (MongoDB)
+  category: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    required: true,
+    index: true
+  },
+
+  // 🏪 Información de la boutique
+  nom_boutique: {
+    type: String,
+    required: true,
+    trim: true
+  },
+
+  domaine_boutique: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true
+  },
+
+  slogan_boutique: {
+    type: String,
+    trim: true
+  },
+
+  description_boutique: {
+    type: String,
+    required: true
+  },
+
+  // 🖼️ AVATAR (un solo campo, como viene del cliente)
+  avatar: {
+    type: Object, // { url, public_id }
+    default: null
+  },
+
+  // 📦 Plan y suscripción
+  plan: {
+    type: String,
     enum: ['gratuit', 'basique', 'premium', 'entreprise'],
     default: 'gratuit'
   },
+
   duree_abonnement: {
     type: String,
     enum: ['1mois', '3mois', '6mois', '1an'],
     default: '1mois'
   },
-  
-  // ============ STEP 3: PROPRIÉTAIRE & CONTACT ============
+
+  date_debut: {
+    type: Date,
+    default: Date.now
+  },
+
+  date_fin: {
+    type: Date
+  },
+
+  // 🏷️ Categorías de productos que vende
+  categories_produits: [{
+    type: String
+  }],
+
+  // 👤 Propietario
   proprietaire: {
-    nom: { type: String, default: '' },
-    email: { type: String, default: '' },
-    telephone: { type: String, default: '' },
-    wilaya: { type: String, default: '' },
-    adresse: { type: String, default: '' }
+    nom: String,
+    email: String,
+    telephone: String,
+    wilaya: String,
+    adresse: String
   },
-  
+
+  // 🌐 Redes sociales
   reseaux_sociaux: {
-    facebook: { type: String, default: '' },
-    instagram: { type: String, default: '' },
-    tiktok: { type: String, default: '' },
-    whatsapp: { type: String, default: '' },
-    website: { type: String, default: '' }
+    facebook: String,
+    instagram: String,
+    tiktok: String,
+    whatsapp: String,
+    website: String
   },
-  
-  couleur_theme: { type: String, default: '#2563eb' },
-  
-  // ============ STEP 4: PAIEMENT ============
-  montant_initial: { type: Number, default: 0 },
-  mois_offerts: { type: Number, default: 0 },
-  montant_ttc: { type: Number, default: 0 },
-  methode_paiement: { type: String, default: '' },
-  client_nom: { type: String, default: '' },
-  client_telephone: { type: String, default: '' },
-  accepte_conditions: { type: Boolean, default: false },
-  
-  // ============ MÉTADONNÉES ============
-  statut: {
+
+  // 🎨 Personalización
+  couleur_theme: {
     type: String,
-    enum: ['en_attente', 'active', 'suspendue', 'rejetee'],
-    default: 'en_attente'
+    default: '#2563eb'
   },
-  
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  
-  isActive: { type: Boolean, default: true },
-  vues: { type: Number, default: 0 }
-  
-}, { timestamps: true });
 
-// Índices para búsquedas rápidas
-BoutiqueSchema.index({ domaine_boutique: 1 }, { unique: true });
-BoutiqueSchema.index({ user: 1 });
-BoutiqueSchema.index({ statut: 1 });
-BoutiqueSchema.index({ 'categories_produits.fullPath': 1 });
-BoutiqueSchema.index({ categorySlugs: 1 });
+  // 📊 Estadísticas
+  stats: {
+    vues: { type: Number, default: 0 },
+    produits: { type: Number, default: 0 },
+    notes: { type: Number, default: 0 },
+    avis: { type: Number, default: 0 }
+  },
 
-module.exports = mongoose.model('Boutique', BoutiqueSchema);
+  // ✅ Estado
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+
+  // 📝 Metadatos del wizard
+  offre_choisie: {
+    id: String,
+    nom: String,
+    credits: Number,
+    storage: Number,
+    prix_mois: Number
+  },
+
+  duree_choisie: {
+    id: String,
+    nom: String
+  },
+
+  montant_initial: Number,
+  mois_offerts: Number,
+  montant_ttc: Number,
+  methode_paiement: String,
+  transaction_id: String,
+
+  // ⏱️ Timestamps
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+}, {
+  timestamps: true
+});
+
+// Índices compuestos para búsquedas
+boutiqueSchema.index({ categorie: 1, isActive: 1 });
+boutiqueSchema.index({ subCategory: 1, isActive: 1 });
+boutiqueSchema.index({ articleType: 1, isActive: 1 });
+boutiqueSchema.index({ category: 1, isActive: 1 });
+boutiqueSchema.index({ user: 1, isActive: 1 });
+boutiqueSchema.index({ 'stats.notes': -1 });
+boutiqueSchema.index({ createdAt: -1 });
+
+module.exports = mongoose.model('Boutique', boutiqueSchema);
