@@ -1,7 +1,7 @@
 // 📂 pages/CategoryPage.js
 import React, { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams, useHistory } from "react-router-dom";
+import { useParams, useHistory, useLocation } from "react-router-dom";
 import { Container, Spinner, Row, Col } from "react-bootstrap";
 import InfiniteScroll from "react-infinite-scroll-component";
 
@@ -12,17 +12,22 @@ import SliderUnificado from "../../components/SlidersCategories/SliderUnificado"
 import PostCard from "../../components/PostCard";
 import BoutiqueCard from "../../components/BoutiqueCard";
 import PaginationComponent from "../../components/PaginationComponent";
+import CategoryCarousel from "../../components/SlidersCategories/CategoryCarousel";
 
 const POSTS_SCROLL_LIMIT = 50;
 
 const CategoryPage = () => {
   const dispatch = useDispatch();
   const history = useHistory();
+  const location = useLocation();
   const { slug, subSlug, articleSlug, page } = useParams();
 
   // Detectar si es boutique
   const isBoutique = slug === 'boutiques';
-
+  const { category } = useParams();
+  const categoryData = useSelector(state => state.category.currentCategory);
+  
+  
   // ============ ESTADOS DE REDUX ============
   // Estado para posts normales
   const {
@@ -60,31 +65,54 @@ const CategoryPage = () => {
     hasMore: boutiqueCategoryData?.hasMore || false
   };
 
-  // ============ ESTADO LOCAL ============
+  // ============ ESTADO LOCAL PARA FILTROS Y UI ============
   const [allChildren, setAllChildren] = useState([]);
   const [currentSub, setCurrentSub] = useState(null);
   const [currentArticle, setCurrentArticle] = useState(null);
   const [error, setError] = useState(null);
+  
+  // Estado para filtros (sin recarga de página)
+  const [filters, setFilters] = useState({
+    sub: subSlug || null,
+    article: articleSlug || null,
+    page: parseInt(page) || 1
+  });
 
-  const currentPage = parseInt(page) || 1;
+  const currentPage = filters.page;
+
+  // ============ ACTUALIZAR URL SIN RECARGAR ============
+  const updateUrlWithoutReload = useCallback((newFilters) => {
+    // Construir nueva URL
+    let basePath = `/${slug}`;
+    
+    if (newFilters.sub) {
+      basePath += `/${newFilters.sub}`;
+      if (newFilters.article) {
+        basePath += `/${newFilters.article}`;
+      }
+    }
+    
+    basePath += `/${newFilters.page}`;
+    
+    // Actualizar URL sin recargar el componente
+    history.replace(basePath, { filters: newFilters });
+  }, [slug, history]);
 
   // ============ LOGS DE DEPURACIÓN ============
   useEffect(() => {
     console.log('🔍 CategoryPage - Estado:', {
       slug,
       isBoutique,
-      subSlug,
-      articleSlug,
-      currentPage,
+      filters,
       postsCount: posts.length,
       boutiquesCount: boutiques.length,
       allChildrenCount: allChildren.length,
       categoryChildrenCount: categoryChildren.length,
       categoryPath
     });
-  }, [slug, isBoutique, subSlug, articleSlug, currentPage, posts.length, boutiques.length, allChildren, categoryChildren, categoryPath]);
+  }, [slug, isBoutique, filters, posts.length, boutiques.length, allChildren, categoryChildren, categoryPath]);
 
-  // ============ REDIRECCIÓN SEGURA ============
+  // ============ REDIRECCIÓN SEGURA (solo si no hay page) ============
   useEffect(() => {
     if (!slug) return;
 
@@ -96,42 +124,46 @@ const CategoryPage = () => {
     }
   }, [slug, subSlug, articleSlug, page, history]);
 
-  // ============ CARGA INICIAL ============
+  // ============ CARGA INICIAL Y CUANDO CAMBIAN FILTROS ============
   useEffect(() => {
-    if (!slug || !page) return;
-
-    // Resetear según el tipo
-    if (isBoutique) {
-      console.log('🔄 Resetando boutiques...');
-      dispatch(resetAllBoutiques());
-    } else {
-      console.log('🔄 Resetando posts...');
-      dispatch(resetCategoryPosts());
-    }
-    setAllChildren([]); // Reset local
-    setCurrentSub(null);
-    setCurrentArticle(null);
-
-    const subParam = subSlug && subSlug !== 'undefined' ? subSlug : null;
-    const articleParam = articleSlug && articleSlug !== 'undefined' ? articleSlug : null;
+    if (!slug) return;
 
     const loadData = async () => {
       try {
         if (isBoutique) {
-          // Cargar boutiques
-          console.log('🔄 Cargando boutiques...', { slug, subParam, currentPage });
-          const res = await dispatch(getBoutiquesByCategory(slug, subParam, currentPage, 12));
+          console.log('🔄 Cargando boutiques...', { slug, sub: filters.sub, page: filters.page });
+          const res = await dispatch(getBoutiquesByCategory(slug, filters.sub, filters.page, 12));
           if (res?.children) {
             console.log('✅ Hijos de boutique recibidos:', res.children.length);
             setAllChildren(res.children);
+            
+            // Actualizar currentSub si hay sub en filtros
+            if (filters.sub) {
+              const foundSub = res.children.find((c) => c.slug === filters.sub);
+              setCurrentSub(foundSub || null);
+            }
           }
         } else {
-          // Cargar posts normales
-          console.log('🔄 Cargando posts...', { slug, subParam, articleParam, currentPage });
-          const res = await dispatch(getCategoryPosts(slug, subParam, articleParam, currentPage, 12));
+          console.log('🔄 Cargando posts...', { slug, sub: filters.sub, article: filters.article, page: filters.page });
+          const res = await dispatch(getCategoryPosts(slug, filters.sub, filters.article, filters.page, 12));
           if (res?.children) {
             console.log('✅ Hijos de posts recibidos:', res.children.length);
             setAllChildren(res.children);
+            
+            if (filters.sub) {
+              const foundSub = res.children.find((c) => c.slug === filters.sub);
+              setCurrentSub(foundSub || null);
+              
+              if (filters.article && foundSub?.articles) {
+                const foundArticle = foundSub.articles.find((a) => a.slug === filters.article);
+                setCurrentArticle(foundArticle || null);
+              } else {
+                setCurrentArticle(null);
+              }
+            } else {
+              setCurrentSub(null);
+              setCurrentArticle(null);
+            }
           }
         }
       } catch (err) {
@@ -141,25 +173,7 @@ const CategoryPage = () => {
     };
 
     loadData();
-  }, [slug, subSlug, articleSlug, currentPage, dispatch, page, isBoutique]);
-
-  // ============ ACTUALIZAR SUB Y ARTICLE ============
-  useEffect(() => {
-    if (subSlug && allChildren.length > 0) {
-      const foundSub = allChildren.find((c) => c.slug === subSlug);
-      setCurrentSub(foundSub || null);
-
-      if (!isBoutique && articleSlug && foundSub?.articles) {
-        const foundArticle = foundSub.articles.find((a) => a.slug === articleSlug);
-        setCurrentArticle(foundArticle || null);
-      } else {
-        setCurrentArticle(null);
-      }
-    } else {
-      setCurrentSub(null);
-      setCurrentArticle(null);
-    }
-  }, [subSlug, articleSlug, allChildren, isBoutique]);
+  }, [slug, filters, dispatch, isBoutique]);
 
   // ============ BREADCRUMB ============
   const buildBreadcrumbItems = () => {
@@ -192,94 +206,130 @@ const CategoryPage = () => {
     return items;
   };
 
-  // ============ CARGAR MÁS ============
+  // ============ CARGAR MÁS (INFINITE SCROLL) ============
   const loadMore = useCallback(() => {
     if (isBoutique) {
-      if (!hasMoreBoutiques || boutiquesLoading) {
-        console.log('⏸️ No más boutiques para cargar');
-        return;
-      }
-      const nextPage = currentPage + 1;
-      console.log('📦 Cargando más boutiques:', { nextPage });
-      dispatch(getBoutiquesByCategory(slug, subSlug || null, nextPage, 12));
+      if (!hasMoreBoutiques || boutiquesLoading) return;
+      
+      const nextPage = filters.page + 1;
+      const newFilters = { ...filters, page: nextPage };
+      
+      setFilters(newFilters);
+      updateUrlWithoutReload(newFilters);
+      dispatch(getBoutiquesByCategory(slug, filters.sub, nextPage, 12));
+      
     } else {
-      if (!hasMorePosts || postsLoading || posts.length >= POSTS_SCROLL_LIMIT) {
-        console.log('⏸️ No más posts para cargar');
-        return;
-      }
-      const nextPage = currentPage + 1;
-      console.log('📦 Cargando más posts:', { nextPage });
-      dispatch(getCategoryPosts(slug, subSlug || null, articleSlug || null, nextPage, 12));
+      if (!hasMorePosts || postsLoading || posts.length >= POSTS_SCROLL_LIMIT) return;
+      
+      const nextPage = filters.page + 1;
+      const newFilters = { ...filters, page: nextPage };
+      
+      setFilters(newFilters);
+      updateUrlWithoutReload(newFilters);
+      dispatch(getCategoryPosts(slug, filters.sub, filters.article, nextPage, 12));
     }
   }, [isBoutique, hasMoreBoutiques, boutiquesLoading, hasMorePosts, postsLoading, posts.length, 
-      currentPage, dispatch, slug, subSlug, articleSlug]);
+      filters, dispatch, slug, updateUrlWithoutReload]);
 
-  // ============ CLICK EN SLIDER ============
+  // ============ CLICK EN SLIDER (SIN RECARGAR) ============
   const handleSliderClick = useCallback((item) => {
-    console.log('🖱️ Click en slider:', item);
+    console.log('🖱️ Click en slider SIN RECARGAR:', item);
+    
+    let newFilters;
     
     if (isBoutique) {
       // Para boutiques: solo nivel 2
-      history.push(`/${slug}/${item.slug}/1`);
+      newFilters = {
+        sub: item.slug,
+        article: null,
+        page: 1
+      };
+      
+      setFilters(newFilters);
+      updateUrlWithoutReload(newFilters);
+      
+      // Cargar boutiques de esta subcategoría
+      dispatch(getBoutiquesByCategory(slug, item.slug, 1, 12));
+      
+      // Actualizar UI
+      setCurrentSub(item);
+      setCurrentArticle(null);
+      
     } else {
-      // Para posts: puede ser nivel 2 o 3
-      if (!currentSub || currentSub.articles?.length === 0) {
-        history.push(`/${slug}/${item.slug}/1`);
+      // Para posts
+      if (!item.articles || item.articles.length === 0) {
+        // Es subcategoría final - cargar posts
+        newFilters = {
+          sub: item.slug,
+          article: null,
+          page: 1
+        };
+        
+        setFilters(newFilters);
+        updateUrlWithoutReload(newFilters);
+        
+        dispatch(getCategoryPosts(slug, item.slug, null, 1, 12));
+        setCurrentSub(item);
+        setCurrentArticle(null);
+        
       } else {
-        history.push(`/${slug}/${currentSub.slug}/${item.slug}/1`);
+        // Es subcategoría con artículos - solo mostrar artículos en slider
+        setCurrentSub(item);
+        setCurrentArticle(null);
+        
+        // No cambiar URL ni cargar posts todavía
+        // El usuario debe hacer click en un artículo para ver posts
       }
     }
-  }, [slug, currentSub, history, isBoutique]);
+  }, [slug, dispatch, isBoutique, updateUrlWithoutReload]);
+
+  // ============ CLICK EN ARTÍCULO (NIVEL 3) ============
+  const handleArticleClick = useCallback((article) => {
+    console.log('🖱️ Click en artículo SIN RECARGAR:', article);
+    
+    if (!currentSub) return;
+    
+    const newFilters = {
+      sub: currentSub.slug,
+      article: article.slug,
+      page: 1
+    };
+    
+    setFilters(newFilters);
+    updateUrlWithoutReload(newFilters);
+    
+    // Cargar posts filtrados por este artículo
+    dispatch(getCategoryPosts(slug, currentSub.slug, article.slug, 1, 12));
+    
+    // Actualizar UI
+    setCurrentArticle(article);
+  }, [slug, currentSub, dispatch, updateUrlWithoutReload]);
 
   // ============ DETERMINAR ITEMS DEL SLIDER =================
   const getSliderItems = () => {
-    console.log('🎯 getSliderItems:', {
-      isBoutique,
-      allChildrenLength: allChildren.length,
-      currentSub: currentSub?.name,
-      hasArticles: currentSub?.articles?.length,
-      categoryChildrenLength: categoryChildren.length
-    });
-
     // Para boutiques
     if (isBoutique) {
-      // Prioridad 1: hijos del estado local (de la API)
-      if (allChildren.length > 0) {
-        return allChildren;
-      }
-      // Prioridad 2: hijos de categoryInfo
-      if (categoryChildren.length > 0) {
-        return categoryChildren;
-      }
+      if (allChildren.length > 0) return allChildren;
+      if (categoryChildren.length > 0) return categoryChildren;
       return [];
     }
 
     // Para posts normales
-    // Prioridad 1: artículos de la subcategoría actual
+    // Si hay subcategoría con artículos, mostrar los artículos
     if (currentSub && currentSub.articles?.length > 0) {
       return currentSub.articles;
     }
     
-    // Prioridad 2: hijos del estado local (de la API)
-    if (allChildren.length > 0) {
-      return allChildren;
-    }
-    
-    // Prioridad 3: hijos de categoryInfo
-    if (categoryChildren.length > 0) {
-      return categoryChildren;
-    }
+    // Si no, mostrar las subcategorías
+    if (allChildren.length > 0) return allChildren;
+    if (categoryChildren.length > 0) return categoryChildren;
     
     return [];
   };
 
   // ================= DETERMINAR ITEM ACTIVO =================
   const getActiveItem = () => {
-    if (isBoutique) {
-      return currentSub;
-    }
-    
-    // Para posts: priorizar artículo actual, luego subcategoría
+    if (isBoutique) return currentSub;
     if (currentArticle) return currentArticle;
     if (currentSub) return currentSub;
     return null;
@@ -297,24 +347,28 @@ const CategoryPage = () => {
     }
   };
 
+  // ============ MANEJAR CAMBIO DE PÁGINA ============
+  const handlePageChange = (newPage) => {
+    const newFilters = { ...filters, page: newPage };
+    
+    setFilters(newFilters);
+    updateUrlWithoutReload(newFilters);
+    
+    if (isBoutique) {
+      dispatch(getBoutiquesByCategory(slug, filters.sub, newPage, 12));
+    } else {
+      dispatch(getCategoryPosts(slug, filters.sub, filters.article, newPage, 12));
+    }
+  };
+
   // ============ ESTADO DE CARGA Y DATOS ============
   const isLoading = isBoutique ? boutiquesLoading : postsLoading;
   const items = isBoutique ? boutiques : posts;
   const hasMore = isBoutique ? hasMoreBoutiques : hasMorePosts;
   const paginationData = isBoutique ? boutiquePagination : rawPagination;
 
-  // Log para ver qué se va a renderizar
-  console.log('🎨 Renderizando contenido:', {
-    isBoutique,
-    isLoading,
-    itemsCount: items.length,
-    hasMore,
-    sliderItemsCount: getSliderItems().length
-  });
-
   // ============ RENDER DEL CONTENIDO ============
   const renderContent = () => {
-    // Mostrar error si existe
     if (error) {
       return (
         <div className="text-center py-5">
@@ -325,7 +379,6 @@ const CategoryPage = () => {
       );
     }
 
-    // Mostrar loading
     if (isLoading && items.length === 0) {
       return (
         <div className="text-center py-5">
@@ -337,12 +390,11 @@ const CategoryPage = () => {
       );
     }
 
-    // Mostrar items
     if (items.length > 0) {
       return (
         <>
           <InfiniteScroll
-            key={currentPage}
+            key={filters.page}
             dataLength={items.length}
             hasMore={hasMore && (!isBoutique ? items.length < POSTS_SCROLL_LIMIT : true)}
             loader={
@@ -367,20 +419,12 @@ const CategoryPage = () => {
             </Row>
           </InfiniteScroll>
 
-          {/* Paginación numérica */}
           {paginationData.totalPages > 1 && (
             <div className="mt-4">
               <PaginationComponent
                 currentPage={paginationData.currentPage}
                 totalPages={paginationData.totalPages}
-                onPageChange={(newPage) => {
-                  history.push(buildCategoryUrl(newPage));
-                  if (isBoutique) {
-                    dispatch(getBoutiquesByCategory(slug, subSlug || null, newPage, 12));
-                  } else {
-                    dispatch(getCategoryPosts(slug, subSlug || null, articleSlug || null, newPage, 12));
-                  }
-                }}
+                onPageChange={handlePageChange}
               />
             </div>
           )}
@@ -388,7 +432,6 @@ const CategoryPage = () => {
       );
     }
 
-    // No hay resultados
     return (
       <div className="text-center py-5">
         <div className="mb-4">
@@ -410,6 +453,12 @@ const CategoryPage = () => {
 
   return (
     <div className="category-page">
+
+<CategoryCarousel
+        categorySlug={category} 
+        categoryName={categoryData?.name} 
+      />
+
       <main className="category-content">
         <Container className="py-4">
           {/* Breadcrumb */}
@@ -417,7 +466,7 @@ const CategoryPage = () => {
             <BreadcrumbNav items={buildBreadcrumbItems()} />
           </div>
 
-          {/* Slider de categorías */}
+          {/* Slider de categorías - AHORA USA handleSliderClick y handleArticleClick */}
           {getSliderItems().length > 0 && (
             <div className="mb-4">
               <SliderUnificado
@@ -426,7 +475,9 @@ const CategoryPage = () => {
                 variant="categoryPage"
                 showCount={true}
                 maxRows={2}
-                onItemClick={handleSliderClick}
+                onItemClick={isBoutique || !currentSub?.articles?.length 
+                  ? handleSliderClick 
+                  : handleArticleClick}
               />
             </div>
           )}

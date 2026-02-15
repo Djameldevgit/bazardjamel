@@ -9,3 +9,4 @@ Sitemap: https://djamelvetements.onrender.com/sitemap.xml
 
 # Crawl delay (opcional)
 Crawl-delay: 1
+
