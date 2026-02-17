@@ -1,3 +1,5 @@
+// postReducer.js - VERSIÓN CORREGIDA (ELIMINAR DUPLICADOS)
+
 import { POST_TYPES } from '../actions/postAction';
 import { GLOBALTYPES } from '../actions/globalTypes';
 import { DeleteData } from '../actions/globalTypes';
@@ -8,13 +10,6 @@ const initialState = {
   result: 0,
   page: 1,
   detailPost: null,
-  similarPosts: {
-    posts: [],
-    currentPostId: null,
-    page: 1,
-    total: 0,
-    loading: false
-  },
   error: null,
   filters: {
     categoryId: null,
@@ -23,6 +18,8 @@ const initialState = {
     priceRange: null,
     location: null
   },
+  
+  // ✅ UNIFICADO: solo similarPostsArray
   similarPostsArray: [],
   similarPostsTotal: 0,
   similarPostsPage: 1,
@@ -41,7 +38,7 @@ const initialState = {
     totalPages: 1,
     totalPosts: 0,
     limit: 12
-  }
+  },
 };
 
 const postReducer = (state = initialState, action) => {
@@ -155,44 +152,65 @@ const postReducer = (state = initialState, action) => {
         pagination: { ...initialState.pagination }
       };
 
-    // ========== POSTS SIMILARES ==========
+    // ========== POSTS SIMILARES (ÚNICO CASO) ==========
     case POST_TYPES.LOADING_SIMILAR_POSTS:
-      return { ...state, similarPosts: { ...state.similarPosts, loading: action.payload } };
+      console.log('⏳ REDUCER LOADING_SIMILAR_POSTS:', action.payload);
+      return {
+        ...state,
+        similarLoading: action.payload
+      };
 
-    case POST_TYPES.GET_SIMILAR_POSTS: {
-      const { posts: newSimilarPosts = [], page: newSimilarPage = 1, total: newSimilarTotal = 0, totalPages: newSimilarTotalPages = 1, hasMore: newSimilarHasMore = false, currentPostId: newCurrentPostId } = action.payload;
+    case POST_TYPES.GET_SIMILAR_POSTS:
+      console.log('🔥 REDUCER GET_SIMILAR_POSTS - payload completo:', action.payload);
+      
+      const { 
+        posts: newSimilarPosts = [],
+        page: newPage = 1,
+        total: newTotal = 0,
+        totalPages: newTotalPages = 1,
+        hasMore: newHasMore = false,
+        currentPostId: newCurrentPostId 
+      } = action.payload;
+      
+      // Validar que sea un array
       const safeSimilarPosts = Array.isArray(newSimilarPosts) ? newSimilarPosts : [];
-
-      if (newSimilarPage === 1 || newCurrentPostId !== state.currentSimilarPostId) {
+      
+      console.log('📊 Similar posts procesados:', {
+        safeLength: safeSimilarPosts.length,
+        guardandoEn: 'similarPostsArray'
+      });
+      
+      // Si es página 1 o es un post diferente, reemplazar
+      if (newPage === 1 || newCurrentPostId !== state.currentSimilarPostId) {
         return {
           ...state,
-          similarPostsArray: safeSimilarPosts,
-          similarPostsTotal: newSimilarTotal,
-          similarPostsPage: newSimilarPage,
-          similarPostsTotalPages: newSimilarTotalPages,
-          similarPostsHasMore: newSimilarHasMore,
+          similarPosts: safeSimilarPosts,
+          similarPostsTotal: newTotal,
+          similarPostsPage: newPage,
+          similarPostsTotalPages: newTotalPages,
+          similarPostsHasMore: newHasMore,
           similarLoading: false,
           currentSimilarPostId: newCurrentPostId,
           error: null
         };
       }
-
+      
+      // Agregar más posts (paginación)
       return {
         ...state,
-        similarPostsArray: [...state.similarPostsArray, ...safeSimilarPosts],
-        similarPostsTotal: newSimilarTotal,
-        similarPostsPage: newSimilarPage,
-        similarPostsTotalPages: newSimilarTotalPages,
-        similarPostsHasMore: newSimilarHasMore,
+        similarPostsArray: [...state.similarPostsArray, ...safeSimilarPosts],  // ✅ Agregamos a similarPostsArray
+        similarPostsTotal: newTotal,
+        similarPostsPage: newPage,
+        similarPostsTotalPages: newTotalPages,
+        similarPostsHasMore: newHasMore,
         similarLoading: false,
         error: null
       };
-    }
 
     case POST_TYPES.CLEAR_SIMILAR_POSTS:
       return {
         ...state,
-        similarPostsArray: [],
+        similarPostsArray: [],  // ✅ Limpiamos similarPostsArray
         similarPostsTotal: 0,
         similarPostsPage: 1,
         similarPostsTotalPages: 1,
@@ -224,7 +242,7 @@ const postReducer = (state = initialState, action) => {
 
     // ========== ERRORES ==========
     case POST_TYPES.ERROR_POST:
-      return { ...state, error: action.payload, loading: false, similarPosts: { ...state.similarPosts, loading: false } };
+      return { ...state, error: action.payload, loading: false, similarLoading: false };
 
     case POST_TYPES.CLEAR_POST_ERROR:
       return { ...state, error: null };
@@ -233,7 +251,9 @@ const postReducer = (state = initialState, action) => {
       return { ...initialState };
 
     case GLOBALTYPES.ALERT:
-      if (action.payload.error && action.payload.error.includes('post')) return { ...state, error: action.payload.error };
+      if (action.payload.error && action.payload.error.includes('post')) {
+        return { ...state, error: action.payload.error };
+      }
       return state;
 
     default:
@@ -242,4 +262,3 @@ const postReducer = (state = initialState, action) => {
 };
 
 export default postReducer;
-

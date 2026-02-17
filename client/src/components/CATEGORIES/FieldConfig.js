@@ -63,7 +63,7 @@ export const DYNAMIC_FIELDS_CONFIG = {
         step4: ['wilaya', 'adresse', 'telephone', 'email'],
         step5: ['images']
       },
-      'tracteurs': {
+      'Tracteurs': {
         step2: [  'marqueVehicules', 'modeleVehicules', 'annee', , 'couleur','kilometrage', 'carburant', 'description'],
         step3: ['price','unite', 'typeOffre', 'echange'],
         step4: ['wilaya', 'adresse', 'telephone', 'email'],

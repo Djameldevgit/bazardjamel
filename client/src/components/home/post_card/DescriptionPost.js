@@ -1,4 +1,4 @@
-// 📁 src/components/post/DescriptionPost.js - ACTUALIZADO PARA TU MODELO
+// 📁 src/components/post/DescriptionPost.js - VERSIÓN MEJORADA
 import React, { useMemo } from 'react';
 import { Container, Row, Col, Badge, Button, Card } from 'react-bootstrap';
 import { useSelector, useDispatch } from 'react-redux';
@@ -19,7 +19,6 @@ const DescriptionPost = ({ post }) => {
         
         // Si existe categorySpecificData, combinarlo al nivel principal
         if (post.categorySpecificData && typeof post.categorySpecificData === 'object') {
-            // Para facilitar el acceso en la UI
             Object.assign(allData, post.categorySpecificData);
         }
         
@@ -28,150 +27,142 @@ const DescriptionPost = ({ post }) => {
     
     const user = post?.user || {};
     
-    // 🎨 EMOJIS PARA TODOS LOS CAMPOS (optimizado)
-    const getFieldEmoji = (field, value) => {
-        // Mapa de emojis por campo
-        const fieldEmojiMap = {
-            // Campos del modelo
-            'title': '🏷️',
-            'description': '📄',
-            'categorie': '🏷️',
-            'subCategory': '🏷️',
-            'articleType': '🏷️',
-            'category': '📂',
-            'price': '💰',
-            'etat': '⭐',
-            'wilaya': '🏙️',
-            'commune': '🏘️',
-            'address': '📍',
-            'phone': '📱',
-            'email': '📧',
-            'views': '👁️',
-            'isActive': '✅',
-            'createdAt': '📅',
-            'updatedAt': '🔄',
-            
-            // Campos comunes en categorySpecificData
-            'marque': '🚗', 'modele': '🚘', 'annee': '📅',
-            'kilometrage': '🛣️', 'carburant': '⛽', 'boiteVitesse': '⚙️',
-            'surface': '📏', 'chambres': '🛏️', 'sallesBain': '🚿',
-            'ram': '💾', 'stockage': '💿', 'processeur': '⚙️',
-            'ecran': '🖥️', 'camera': '📷', 'batterie': '🔋',
-            
-            // Por defecto según valor
-            'default': '📋'
-        };
+    // 🎨 MAPA DE EMOJIS POR CATEGORÍA Y CAMPO
+    const fieldEmojiMap = {
+        // Campos base
+        'title': '🏷️',
+        'description': '📄',
+        'categorie': '📂',
+        'subCategory': '📁',
+        'articleType': '📌',
+        'price': '💰',
+        'etat': '⭐',
+        'wilaya': '🏙️',
+        'commune': '🏘️',
+        'address': '📍',
+        'phone': '📱',
+        'email': '📧',
+        'views': '👁️',
         
-        // Emojis especiales según valor (para etat/condition)
+        // Automobile
+        'marque': '🚗',
+        'modele': '🚘',
+        'annee': '📅',
+        'kilometrage': '🛣️',
+        'carburant': '⛽',
+        'boiteVitesse': '⚙️',
+        'couleur': '🎨',
+        'puissance': '⚡',
+        'places': '👥',
+        'portes': '🚪',
+        
+        // Immobilier
+        'surface': '📏',
+        'chambres': '🛏️',
+        'sallesBain': '🚿',
+        'etage': '🏢',
+        'meuble': '🪑',
+        'jardin': '🌳',
+        'parking': '🅿️',
+        'climatisation': '❄️',
+        'chauffage': '🔥',
+        
+        // Électronique
+        'ram': '💾',
+        'stockage': '💿',
+        'processeur': '⚙️',
+        'ecran': '🖥️',
+        'camera': '📷',
+        'batterie': '🔋',
+        'systeme': '💻',
+        'connectivite': '📶',
+        'garantie': '🛡️',
+        
+        // Mode
+        'taille': '📏',
+        'matiere': '🧵',
+        'couleur': '🎨',
+        'marque': '👔',
+        'genre': '👤',
+        'age': '🔞',
+        
+        // Sport
+        'type': '⚽',
+        'marque': '🏷️',
+        'etat': '⭐',
+        'taille': '📏',
+        
+        // Services
+        'duree': '⏱️',
+        'disponibilite': '📅',
+        'tarif': '💰',
+        'zone': '📍',
+        
+        'default': '📋'
+    };
+    
+    // 🎯 OBTENER EMOJI SEGÚN CATEGORÍA Y CAMPO
+    const getFieldEmoji = (field, value, category) => {
+        // Prioridad: mapa por campo
+        if (fieldEmojiMap[field]) return fieldEmojiMap[field];
+        
+        // Emojis especiales según valor
         if (field === 'etat' || field === 'condition') {
             const val = String(value).toLowerCase();
             if (val.includes('neuf') || val === 'new') return '✨';
             if (val.includes('occasion') || val === 'used') return '🔄';
         }
         
-        return fieldEmojiMap[field] || fieldEmojiMap.default;
+        return fieldEmojiMap.default;
     };
     
-    // 📝 FORMATO DE VALORES (optimizado para tu modelo)
+    // 📝 FORMATO DE VALORES
     const formatValue = (field, value) => {
         if (value === undefined || value === null || value === '') {
-            return 'Non spécifié';
+            return null;
         }
         
         // Booleanos
         if (typeof value === 'boolean') {
-            return value ? '✅ Oui' : '❌ Non';
-        }
-        
-        // Fechas
-        if (field === 'createdAt' || field === 'updatedAt') {
-            return new Date(value).toLocaleDateString('fr-FR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
+            return value ? 'Oui' : 'Non';
         }
         
         // Números
         if (typeof value === 'number') {
-            // Precio
             if (field === 'price') {
-                return new Intl.NumberFormat('fr-FR').format(value) + ' DA';
+                return new Intl.NumberFormat('fr-DZ').format(value) + ' DA';
             }
-            // Vistas
-            if (field === 'views') {
-                return new Intl.NumberFormat('fr-FR').format(value) + ' vues';
-            }
-            // Kilometraje
             if (field === 'kilometrage') {
-                return new Intl.NumberFormat('fr-FR').format(value) + ' km';
+                return new Intl.NumberFormat('fr-DZ').format(value) + ' km';
             }
-            // Superficie
             if (field === 'surface') {
-                return new Intl.NumberFormat('fr-FR').format(value) + ' m²';
+                return new Intl.NumberFormat('fr-DZ').format(value) + ' m²';
             }
-            // Año
+            if (field === 'chambres' || field === 'sallesBain' || field === 'places' || field === 'portes') {
+                return value;
+            }
             if (field === 'annee') {
                 return value;
             }
-            return new Intl.NumberFormat('fr-FR').format(value);
+            return new Intl.NumberFormat('fr-DZ').format(value);
         }
         
-        // Arrays (imágenes)
-        if (Array.isArray(value) && field === 'images') {
-            return `${value.length} image${value.length > 1 ? 's' : ''}`;
-        }
+        // Strings
+        const stringValue = String(value).trim();
         
-        // Strings con valores especiales
-        const stringValue = String(value).trim().toLowerCase();
-        
-        const specialValues = {
-            // Estados del producto
-            'neuf': '✨ Neuf',
-            'occasion': '🔄 Occasion',
-            'comme neuf': '✨ Comme neuf',
-            'reconditionne': '🔄 Reconditionné',
-            
-            // Booleanos en texto
-            'true': '✅ Oui',
-            'false': '❌ Non',
-            'oui': '✅ Oui',
-            'non': '❌ Non',
-            
-            // Combustibles
-            'diesel': '⛽ Diesel',
-            'essence': '⛽ Essence',
-            'electrique': '⚡ Électrique',
-            'hybride': '🔋 Hybride',
-            
-            // Transmisión
-            'manuel': '⚙️ Manuel',
-            'automatique': '⚙️ Automatique',
-            'semi-automatique': '⚙️ Semi-automatique',
-            
-            // Estado de actividad
-            'active': '✅ Active',
-            'inactive': '❌ Inactive'
-        };
-        
-        if (specialValues[stringValue]) {
-            return specialValues[stringValue];
-        }
-        
-        // Capitalizar primera letra para strings normales
-        return String(value).charAt(0).toUpperCase() + String(value).slice(1);
+        // Capitalizar primera letra
+        return stringValue.charAt(0).toUpperCase() + stringValue.slice(1);
     };
     
     // 🏷️ TRADUCIR NOMBRES DE CAMPOS
     const translateField = (field) => {
         const translations = {
-            // Campos del modelo
+            // Campos base
             'title': 'Titre',
             'description': 'Description',
             'categorie': 'Catégorie',
             'subCategory': 'Sous-catégorie',
-            'articleType': 'Type d\'article',
-            'category': 'Catégorie (ID)',
+            'articleType': 'Type',
             'price': 'Prix',
             'etat': 'État',
             'wilaya': 'Wilaya',
@@ -180,89 +171,121 @@ const DescriptionPost = ({ post }) => {
             'phone': 'Téléphone',
             'email': 'Email',
             'views': 'Vues',
-            'isActive': 'Active',
-            'createdAt': 'Date de publication',
-            'updatedAt': 'Dernière mise à jour',
-            'images': 'Images',
             
-            // Campos comunes
+            // Automobile
             'marque': 'Marque',
             'modele': 'Modèle',
             'annee': 'Année',
             'kilometrage': 'Kilométrage',
             'carburant': 'Carburant',
-            'boiteVitesse': 'Boîte vitesse',
+            'boiteVitesse': 'Boîte de vitesse',
             'couleur': 'Couleur',
+            'puissance': 'Puissance',
+            'places': 'Places',
+            'portes': 'Portes',
+            
+            // Immobilier
             'surface': 'Surface',
             'chambres': 'Chambres',
             'sallesBain': 'Salles de bain',
             'etage': 'Étage',
             'meuble': 'Meublé',
+            'jardin': 'Jardin',
+            'parking': 'Parking',
+            'climatisation': 'Climatisation',
+            'chauffage': 'Chauffage',
+            
+            // Électronique
             'ram': 'RAM',
             'stockage': 'Stockage',
             'processeur': 'Processeur',
             'ecran': 'Écran',
-            'systeme': 'Système',
             'camera': 'Caméra',
-            'batterie': 'Batterie'
+            'batterie': 'Batterie',
+            'systeme': 'Système',
+            'connectivite': 'Connectivité',
+            'garantie': 'Garantie',
+            
+            // Mode
+            'taille': 'Taille',
+            'matiere': 'Matière',
+            'couleur': 'Couleur',
+            'marque': 'Marque',
+            'genre': 'Genre',
+            'age': 'Âge',
+            
+            // Sport
+            'type': 'Type',
+            'marque': 'Marque',
+            'taille': 'Taille',
+            
+            // Services
+            'duree': 'Durée',
+            'disponibilite': 'Disponibilité',
+            'tarif': 'Tarif',
+            'zone': 'Zone'
         };
         
         return translations[field] || field;
     };
     
-    // 📊 ORDEN DE CAMPOS (prioridad según importancia)
-    const orderedFields = useMemo(() => {
+    // 📊 FILTRAR Y ORDENAR CAMPOS
+    const getFieldsToDisplay = useMemo(() => {
         if (!postData) return [];
         
+        // Campos a excluir
+        const excludeFields = [
+            '_id', '__v', 'user', 'categorySpecificData', 'images',
+            'createdAt', 'updatedAt', 'isActive'
+        ];
+        
+        // Campos que van en el header
+        const headerFields = ['title', 'description', 'price', 'etat', 'categorie', 'subCategory', 'articleType'];
+        
+        // Obtener todos los campos disponibles
         const fields = Object.keys(postData).filter(field => {
-            // Excluir campos internos o vacíos
-            const value = postData[field];
-            const excludeFields = ['_id', '__v', 'user', 'categorySpecificData'];
-            
+            // Excluir campos internos
             if (excludeFields.includes(field)) return false;
+            
+            // Excluir header fields
+            if (headerFields.includes(field)) return false;
+            
+            const value = postData[field];
+            
+            // Excluir valores vacíos
             if (value === undefined || value === null || value === '') return false;
-            if (field === 'images' && Array.isArray(value) && value.length === 0) return false;
+            
+            // Excluir arrays vacíos
+            if (Array.isArray(value) && value.length === 0) return false;
             
             return true;
         });
         
-        // Orden de prioridad
+        // Orden de prioridad por categoría
         const priorityOrder = [
-            // Información esencial
-            'title', 'description', 'categorie', 'subCategory', 'articleType',
-            
-            // Precio y estado
-            'price', 'etat',
-            
-            // Características principales
-            'marque', 'modele', 'annee', 'kilometrage', 'surface', 'chambres',
-            'ram', 'stockage', 'processeur',
-            
-            // Especificaciones
-            'carburant', 'boiteVitesse', 'couleur', 'sallesBain', 'meuble',
-            'ecran', 'camera', 'batterie',
-            
-            // Contacto
-            'phone', 'email',
-            
-            // Ubicación
-            'wilaya', 'commune', 'address',
-            
-            // Metadatos
-            'views', 'createdAt'
+            // Auto
+            'marque', 'modele', 'annee', 'kilometrage', 'carburant', 'boiteVitesse', 'couleur', 'places', 'portes',
+            // Immobilier
+            'surface', 'chambres', 'sallesBain', 'etage', 'meuble', 'jardin', 'parking', 'climatisation', 'chauffage',
+            // Électronique
+            'ram', 'stockage', 'processeur', 'ecran', 'camera', 'batterie', 'systeme', 'connectivite', 'garantie',
+            // Mode
+            'taille', 'matiere', 'couleur', 'marque', 'genre', 'age',
+            // Sport
+            'type', 'marque', 'taille',
+            // Services
+            'duree', 'disponibilite', 'tarif', 'zone',
+            // Contact
+            'phone', 'email', 'wilaya', 'commune', 'address'
         ];
         
         return fields.sort((a, b) => {
             const indexA = priorityOrder.indexOf(a);
             const indexB = priorityOrder.indexOf(b);
             
-            // Si ambos están en la lista de prioridad
             if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-            // Si solo A está en la lista
             if (indexA !== -1) return -1;
-            // Si solo B está en la lista
             if (indexB !== -1) return 1;
-            // Si ninguno está, orden alfabético
             return a.localeCompare(b);
         });
     }, [postData]);
@@ -295,28 +318,90 @@ const DescriptionPost = ({ post }) => {
         history.push(`/message/${user._id}`);
     };
     
-    // 📱 COMPONENTE CAMPO-VALOR
-    const FieldRow = ({ field }) => {
-        const value = postData[field];
-        const emoji = getFieldEmoji(field, value);
-        const formattedValue = formatValue(field, value);
-        const label = translateField(field);
-        
-        // No mostrar si no hay valor significativo
-        if (formattedValue === 'Non spécifié') return null;
+    // 🏷️ RENDER HEADER
+    const renderHeader = () => {
+        const title = postData.title || 'Annonce';
+        const price = postData.price;
+        const categorie = postData.categorie;
+        const subCategory = postData.subCategory;
+        const articleType = postData.articleType;
+        const etat = postData.etat;
         
         return (
-            <div className="field-row d-flex align-items-center p-3 border-bottom">
-                <div className="field-label d-flex align-items-center gap-2" style={{ flex: 1 }}>
-                    <span className="field-emoji" style={{ fontSize: '1.2rem', minWidth: '32px' }}>
+            <Card className="border-0 shadow-sm mb-4">
+                <Card.Body className="p-4">
+                    <div className="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
+                        <div className="flex-grow-1">
+                            <h1 className="fw-bold mb-2" style={{ fontSize: '1.8rem' }}>
+                                {title}
+                            </h1>
+                            
+                            <div className="d-flex flex-wrap gap-2 mb-3">
+                                {categorie && (
+                                    <Badge bg="primary" className="px-3 py-2">
+                                        {categorie}
+                                    </Badge>
+                                )}
+                                {subCategory && (
+                                    <Badge bg="secondary" className="px-3 py-2">
+                                        {subCategory}
+                                    </Badge>
+                                )}
+                                {articleType && (
+                                    <Badge bg="info" className="px-3 py-2">
+                                        {articleType}
+                                    </Badge>
+                                )}
+                                {etat && (
+                                    <Badge bg="success" className="px-3 py-2">
+                                        {formatValue('etat', etat)}
+                                    </Badge>
+                                )}
+                            </div>
+                            
+                            {postData.description && (
+                                <p className="text-muted mb-0" style={{ fontSize: '1rem', lineHeight: '1.6' }}>
+                                    {postData.description}
+                                </p>
+                            )}
+                        </div>
+                        
+                        {price > 0 && (
+                            <div className="text-start text-md-end">
+                                <div className="text-muted small mb-1">Prix</div>
+                                <div className="fw-bold text-success" style={{ fontSize: '2rem' }}>
+                                    {formatValue('price', price)}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </Card.Body>
+            </Card>
+        );
+    };
+    
+    // 🎯 RENDER CAMPO (en formato horizontal)
+    const FieldItem = ({ field }) => {
+        const value = postData[field];
+        const formattedValue = formatValue(field, value);
+        
+        if (!formattedValue) return null;
+        
+        const emoji = getFieldEmoji(field, value, postData.categorie);
+        const label = translateField(field);
+        
+        return (
+            <div className="field-item d-flex align-items-center p-3 border-bottom">
+                <div className="d-flex align-items-center" style={{ minWidth: '150px' }}>
+                    <span className="field-emoji me-2" style={{ fontSize: '1.2rem' }}>
                         {emoji}
                     </span>
-                    <span className="fw-medium text-muted" style={{ fontSize: '0.9rem' }}>
+                    <span className="fw-medium text-muted">
                         {label}:
                     </span>
                 </div>
-                <div className="field-value text-end" style={{ flex: 1 }}>
-                    <span className="fw-bold" style={{ color: '#1a202c' }}>
+                <div className="field-value ms-3">
+                    <span className="fw-bold">
                         {formattedValue}
                     </span>
                 </div>
@@ -324,70 +409,10 @@ const DescriptionPost = ({ post }) => {
         );
     };
     
-    // 🏷️ HEADER DE LA PUBLICACIÓN
-    const renderHeader = () => {
-        const title = postData.title || 'Annonce';
-        const price = postData.price;
-        const categorie = postData.categorie;
-        const subCategory = postData.subCategory;
-        const etat = postData.etat;
-        
-        return (
-            <div className="mb-4">
-                <div className="d-flex justify-content-between align-items-start gap-3">
-                    <div style={{ flex: 1 }}>
-                        <h1 className="fw-bold mb-2" style={{ 
-                            fontSize: '1.5rem', 
-                            color: '#1a202c',
-                            lineHeight: '1.3'
-                        }}>
-                            {title}
-                        </h1>
-                        <div className="d-flex flex-wrap gap-2 align-items-center">
-                            {categorie && (
-                                <Badge bg="primary" className="px-2 py-1">
-                                    {categorie}
-                                </Badge>
-                            )}
-                            {subCategory && (
-                                <Badge bg="secondary" className="px-2 py-1">
-                                    {subCategory}
-                                </Badge>
-                            )}
-                            {etat && (
-                                <Badge bg="info" className="px-2 py-1">
-                                    {formatValue('etat', etat)}
-                                </Badge>
-                            )}
-                        </div>
-                    </div>
-                    
-                    {price > 0 && (
-                        <div className="text-end">
-                            <div className="text-muted small">Prix</div>
-                            <div className="fw-bold fs-4 text-success">
-                                {formatValue('price', price)}
-                            </div>
-                        </div>
-                    )}
-                </div>
-                
-                {/* Descripción */}
-                {postData.description && (
-                    <div className="mt-3 p-3 bg-light rounded">
-                        <p className="mb-0" style={{ lineHeight: '1.6' }}>
-                            {postData.description}
-                        </p>
-                    </div>
-                )}
-            </div>
-        );
-    };
-    
     // ✅ VALIDACIONES
     if (!post) {
         return (
-            <Container className="py-4 text-center">
+            <Container className="py-5 text-center">
                 <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Chargement...</span>
                 </div>
@@ -396,40 +421,34 @@ const DescriptionPost = ({ post }) => {
         );
     }
     
-    if (orderedFields.length === 0) {
-        return (
-            <Container className="py-4">
-                <div className="alert alert-info">
-                    <h6 className="mb-0">Aucune information disponible</h6>
-                </div>
-            </Container>
-        );
-    }
+    const fieldsToDisplay = getFieldsToDisplay;
     
     return (
-        <Container className="py-3">
+        <Container className="py-4">
             {/* HEADER */}
             {renderHeader()}
             
-            {/* DETALLES */}
-            <Card className="border-0 shadow-sm mb-4">
-                <Card.Header className="bg-white border-0 py-3">
-                    <h5 className="mb-0 fw-bold">📋 Détails de l'annonce</h5>
-                </Card.Header>
-                <Card.Body className="p-0">
-                    {orderedFields
-                        .filter(field => !['title', 'description', 'price', 'etat'].includes(field))
-                        .map(field => (
-                            <FieldRow key={field} field={field} />
+            {/* DÉTAILS SPÉCIFIQUES */}
+            {fieldsToDisplay.length > 0 && (
+                <Card className="border-0 shadow-sm mb-4">
+                    <Card.Header className="bg-white border-0 py-3">
+                        <h5 className="mb-0 fw-bold">📋 Caractéristiques détaillées</h5>
+                    </Card.Header>
+                    <Card.Body className="p-0">
+                        {fieldsToDisplay.map(field => (
+                            <FieldItem key={field} field={field} />
                         ))}
-                </Card.Body>
-            </Card>
+                    </Card.Body>
+                </Card>
+            )}
             
-            {/* BOTONES DE ACCIÓN */}
-            <div className="d-flex gap-3">
+           
+            {/* BOUTONS D'ACTION */}
+            <div className="d-flex flex-column flex-sm-row gap-3 mt-4">
                 {postData.phone && (
                     <Button 
                         variant="success" 
+                        size="lg"
                         className="flex-grow-1 d-flex align-items-center justify-content-center gap-2"
                         onClick={() => window.location.href = `tel:${postData.phone}`}
                     >
@@ -441,23 +460,34 @@ const DescriptionPost = ({ post }) => {
                 {auth.user && user?._id && auth.user._id !== user._id && (
                     <Button 
                         variant="primary" 
+                        size="lg"
                         className="flex-grow-1 d-flex align-items-center justify-content-center gap-2"
                         onClick={handleContact}
                     >
                         <span>💬</span>
-                        <span>Contacter</span>
+                        <span>Contacter le vendeur</span>
                     </Button>
                 )}
+                
+                <Button 
+                    variant="outline-secondary" 
+                    size="lg"
+                    className="flex-grow-1 d-flex align-items-center justify-content-center gap-2"
+                    onClick={() => window.history.back()}
+                >
+                    <span>←</span>
+                    <span>Retour</span>
+                </Button>
             </div>
             
             {/* ESTILOS */}
-            <style jsx>{`
-                .field-row {
+            <style jsx="true">{`
+                .field-item {
                     min-height: 60px;
                     transition: background-color 0.2s;
                 }
                 
-                .field-row:hover {
+                .field-item:hover {
                     background-color: #f8f9fa;
                 }
                 
@@ -465,19 +495,24 @@ const DescriptionPost = ({ post }) => {
                     border-color: #e9ecef !important;
                 }
                 
-                .border-bottom:last-child {
-                    border-bottom: none !important;
+                .field-value {
+                    flex: 1;
                 }
                 
-                @media (max-width: 768px) {
-                    .field-row {
+                @media (max-width: 576px) {
+                    .field-item {
                         flex-direction: column;
                         align-items: flex-start !important;
                         gap: 8px;
+                        padding: 15px !important;
+                    }
+                    
+                    .field-item > div:first-child {
+                        min-width: 100%;
                     }
                     
                     .field-value {
-                        text-align: left !important;
+                        margin-left: 0 !important;
                         width: 100%;
                     }
                 }

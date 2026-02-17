@@ -582,77 +582,62 @@ filterPosts: async (req, res) => {
     }
   },
  
- updatePost : async (req, res) => {
+ // controllers/postController.js - updatePost CORREGIDO
+updatePost: async (req, res) => {
   try {
-    const userId = req.user._id;
     const { id } = req.params;
-     
-    const { 
-      categorie, subCategory, articleType, title, description,
-      price, etat, wilaya, commune, address, phone, email,
-      images, ...categorySpecificData  // ← Campos dinámicos
-    } = req.body;
+    const userId = req.user._id;
+    const updateData = req.body;
 
-    // 🎯 Buscar el post existente
-    const post = await Post.findOne({ _id: id, user: userId });
+    console.log('🔄 Actualizando post:', { id, userId: userId.toString() });
+
+    // Buscar el post
+    const post = await Post.findById(id);
     if (!post) {
-      return res.status(404).json({ msg: "Annonce non trouvée" });
+      return res.status(404).json({ msg: "Post non trouvé" });
     }
 
-    // 🎯 Si cambia la categoría, buscar la nueva
-    let categoryId = post.category;
-    if (categorie && categorie !== post.categorie) {
-      const category = await Category.findOne({ 
-        $or: [{ slug: categorie }, { slug: subCategory }],
-        isActive: true 
-      }).select('_id').lean();
-
-      if (!category) {
-        return res.status(404).json({ msg: "Nouvelle catégorie non trouvée" });
-      }
-      categoryId = category._id;
+    // Verificar propiedad - ¡CORREGIDO!
+    if (post.user.toString() !== userId.toString()) {
+      console.log('❌ No autorizado:', {
+        postUser: post.user.toString(),
+        requestUser: userId.toString()
+      });
+      return res.status(403).json({ msg: "Non autorisé" });
     }
 
-    // 🎯 Actualizar TODOS los campos (igual que createPost pero con update)
-    const updatedData = {
-      categorie: categorie || post.categorie,
-      subCategory: subCategory || post.subCategory,
-      articleType: articleType || post.articleType,
-      category: categoryId,
-      title: (title || post.title).trim(),
-      description: (description || post.description).trim(),
-      price: price ? parseFloat(price) : post.price,
-      etat: etat || post.etat,
-      wilaya: (wilaya || post.wilaya).toString().trim(),
-      commune: (commune || post.commune).toString().trim(),
-      address: (address || post.address).trim(),
-      phone: (phone || post.phone).trim(),
-      email: (email || post.email).trim().toLowerCase(),
-      images: images || post.images,
-      categorySpecificData: categorySpecificData || post.categorySpecificData
-    };
+    // Actualizar campos (solo si existen en updateData)
+    const fieldsToUpdate = [
+      'categorie', 'subCategory', 'articleType', 'title', 'description',
+      'price', 'etat', 'wilaya', 'commune', 'address', 'phone', 'email',
+      'images', 'categorySpecificData'
+    ];
 
-    // 🎯 Actualizar el post (misma simplicidad)
-    const updatedPost = await Post.findByIdAndUpdate(
-      id,
-      updatedData,
-      { new: true }
-    ).populate('user', 'username avatar email');
-
-    res.json({
-      msg: 'Annonce modifiée!',
-      updatedPost: {
-        ...updatedPost._doc,
-        user: req.user
+    fieldsToUpdate.forEach(field => {
+      if (updateData[field] !== undefined) {
+        post[field] = updateData[field];
       }
     });
 
+    // Guardar cambios
+    await post.save();
+
+    // Poblar el usuario para la respuesta
+    const updatedPost = await Post.findById(id)
+      .populate('user', 'username avatar')
+      .lean();
+
+    res.json({
+      success: true,
+      msg: "Post mis à jour",
+      post: updatedPost
+    });
+
   } catch (err) {
-    console.error('UpdatePost error:', err.message);
+    console.error('❌ Error updatePost:', err);
     res.status(500).json({ msg: err.message });
   }
 },
-  // 📂 controllers/postCtrl.js
    
   getPostById : async (req, res) => {
     try {
@@ -1014,83 +999,74 @@ filterPosts: async (req, res) => {
     }
   },
 
-  /**
-   * 🔍 POSTS SIMILARES
-   */
-/*  getSimilarPosts: async (req, res) => {
-    try {
-      console.log('📥 getSimilarPosts recibió:', req.query);
+  // controllers/postController.js - getSimilarPosts CORREGIDO
+// controllers/postCtrl.js
+getSimilarPosts: async (req, res) => {
+  try {
+    console.log('📥 getSimilarPosts - Query:', req.query);
 
-      const {
-        categorie,
-        subCategory,
-        excludeId,
-        limit = 6,
-        page = 1
-      } = req.query;
+    const {
+      categorie,
+      subCategory,
+      excludeId,
+      limit = 6,
+      page = 1
+    } = req.query;
 
-      // Validación
-      if (!categorie || !subCategory) {
-        return res.status(400).json({
-          success: false,
-          message: 'Se requiere categorie y subCategory'
-        });
-      }
-
-      // Construir query
-      let query = {
-        categorie: categorie.trim(),
-        subCategory: subCategory.trim(),
-        isActive: true,
-        status: 'active'
-      };
-
-      // Excluir post actual
-      if (excludeId && mongoose.Types.ObjectId.isValid(excludeId)) {
-        query._id = { $ne: new mongoose.Types.ObjectId(excludeId) };
-      }
-
-      console.log('🔍 Query de búsqueda:', query);
-
-      // Paginación
-      const skip = (parseInt(page) - 1) * parseInt(limit);
-
-      // Buscar posts
-      const posts = await Post.find(query)
-        .populate('user', 'username avatar')
-        .populate('categoryRef', 'name slug')
-        .sort({ isPromoted: -1, createdAt: -1 })
-        .skip(skip)
-        .limit(parseInt(limit));
-
-      const total = await Post.countDocuments(query);
-      const totalPages = Math.ceil(total / parseInt(limit));
-      const hasMore = page < totalPages;
-
-      console.log(`✅ Encontrados ${posts.length} posts de ${total}`);
-
-      res.json({
-        success: true,
-        posts,
-        total,
-        page: parseInt(page),
-        totalPages,
-        hasMore
-      });
-
-    } catch (error) {
-      console.error('❌ getSimilarPosts error:', error);
-      res.status(500).json({
+    // Validación
+    if (!categorie || !subCategory) {
+      return res.status(400).json({
         success: false,
-        message: 'Error del servidor',
-        error: error.message
+        message: 'Se requiere categorie y subCategory'
       });
     }
-  },
-*/
-  /**
-   * 🩺 HEALTH CHECK
-   */
+
+    // Construir query
+    let query = {
+      categorie: categorie.trim(),
+      subCategory: subCategory.trim(),
+      isActive: true
+    };
+
+    // Excluir post actual
+    if (excludeId && excludeId.match(/^[0-9a-fA-F]{24}$/)) {
+      query._id = { $ne: excludeId };
+    }
+
+    console.log('🔍 Query:', query);
+
+    // Paginación
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Buscar posts
+    const posts = await Post.find(query)
+      .populate('user', 'username avatar')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    const total = await Post.countDocuments(query);
+
+    res.json({
+      success: true,
+      posts,
+      total,
+      page: parseInt(page),
+      totalPages: Math.ceil(total / parseInt(limit)),
+      hasMore: page * limit < total
+    });
+
+  } catch (error) {
+    console.error('❌ getSimilarPosts error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error del servidor',
+      error: error.message
+    });
+  }
+},
+   
   healthCheck: async (req, res) => {
     try {
       // Verificar conexión a MongoDB

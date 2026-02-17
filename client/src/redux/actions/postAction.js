@@ -200,57 +200,70 @@ export const createPost = ({
 // 📂 redux/actions/postAction.js
 
 // 🎯 ACCIÓN UPDATE - CORREGIDA para recibir postId en lugar de status
-export const updatePost = ({
-  postId,    // ✅ Recibe postId
+// actions/postAction.js - updatePost DEBE SER ASÍ
+export const updatePost = ({ 
+  postId, 
   postData, 
   images, 
-  auth
+  auth 
 }) => async (dispatch) => {
+  console.time('⏱️ updatePost action time');
   let media = []
   
   try {
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+    console.log('🟡 updatePost action iniciada', { postId });
+    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: true} })
     
-    // ✅ Filtrar imágenes nuevas (no existentes)
-    const imgNewUrl = images.filter(img => !img.isExisting);
-    const imgOldUrl = images.filter(img => img.isExisting);
+    // Subir imágenes nuevas si las hay
+    const newImages = images.filter(img => !img.isExisting && img.url?.startsWith('blob:'));
+    const existingImages = images.filter(img => img.isExisting);
     
-    // Subir solo imágenes nuevas
-    if (imgNewUrl.length > 0) {
-      media = await imageUpload(imgNewUrl);
+    if(newImages.length > 0) {
+      console.log(`📤 Subiendo ${newImages.length} imágenes nuevas...`);
+      media = await imageUpload(newImages);
     }
+    
+    // Combinar imágenes existentes con las nuevas
+    const finalImages = [...existingImages, ...media];
 
-    // ✅ Combinar imágenes antiguas + nuevas
-    const allImages = [...imgOldUrl, ...media];
+    // Preparar datos para actualizar
+    const postToSend = {
+      ...postData,
+      images: finalImages,
+      categorySpecificData: postData.categorySpecificData || {}
+    };
+
+    console.log('📦 Enviando actualización:', {
+      postId,
+      imagesCount: finalImages.length
+    });
+
+    // Enviar al backend
+    const res = await patchDataAPI(`posts/${postId}`, postToSend, auth.token);
     
-    // ✅ Usar postId en lugar de status._id
-    const res = await patchDataAPI(`post/${postId}`, {  // ← postId aquí
-      ...postData,  // ← Enviar postData directamente
-      images: allImages 
-    }, auth.token);
-    
+    console.log('✅ Respuesta:', res.data);
+
     dispatch({ 
       type: POST_TYPES.UPDATE_POST, 
-      payload: res.data.updatedPost 
+      payload: {
+        ...res.data.post,
+        user: auth.user,
+        categorySpecificData: postData.categorySpecificData || {}
+      } 
     });
-    
-    dispatch({ 
-      type: GLOBALTYPES.ALERT, 
-      payload: { success: res.data.msg } 
-    });
-    
+
+    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: false} });
+
   } catch (err) {
+    console.error('❌ Error en updatePost:', err);
     dispatch({
       type: GLOBALTYPES.ALERT,
-      payload: { 
-        error: err.response?.data?.msg || 
-               'Échec de la mise à jour' 
-      }
+      payload: {error: err.response?.data?.msg || err.message}
     });
-    throw err;
+  } finally {
+    console.timeEnd('⏱️ updatePost action time');
   }
 }
- 
 
 export const getPost = (id) => async (dispatch) => {
     try {
@@ -485,4 +498,90 @@ export const unSavePost = ({ post, auth }) => async (dispatch) => {
     }
 };
 
- 
+// actions/postAction.js - VERSIÓN CORREGIDA
+export const getSimilarPosts = (postId, options = {}) => async (dispatch, getState) => {
+  try {
+    console.log('🚀 ======= INICIO BÚSQUEDA SIMILARES =======');
+    console.log('📌 Post ID objetivo:', postId);
+    
+    dispatch({ 
+      type: POST_TYPES.LOADING_SIMILAR_POSTS, 
+      payload: true 
+    });
+    
+    // Obtener el post actual
+    const state = getState();
+    let currentPost = null;
+    
+    // Buscar el post en diferentes lugares
+    if (state.detailPost && state.detailPost._id === postId) {
+      currentPost = state.detailPost;
+    } else if (state.posts?.posts) {
+      currentPost = state.posts.posts.find(p => p._id === postId);
+    }
+    
+    // Si no está, obtener de API
+    if (!currentPost) {
+      const res = await getDataAPI(`post/${postId}`);
+      currentPost = res.data?.post || res.data;
+      dispatch({ type: 'GET_POST', payload: currentPost });
+    }
+    
+    if (!currentPost || !currentPost.categorie || !currentPost.subCategory) {
+      console.error('❌ Post sin categoría completa');
+      dispatch({ type: POST_TYPES.LOADING_SIMILAR_POSTS, payload: false });
+      return;
+    }
+    
+    // Construir parámetros
+    const params = new URLSearchParams({
+      categorie: currentPost.categorie,
+      subCategory: currentPost.subCategory,
+      excludeId: postId,
+      limit: options.limit || 6,
+      page: options.page || 1
+    });
+    
+    console.log('🌐 Llamando API:', `/posts/similar?${params}`);
+    
+    const res = await getDataAPI(`posts/similar?${params}`);
+    
+    console.log('📦 Respuesta API:', {
+      success: res.data.success,
+      postsCount: res.data.posts?.length,
+      data: res.data
+    });
+    
+    if (res.data.success) {
+      // ✅ AHORA GUARDAMOS EN similarPostsArray (consistente con el reducer)
+      dispatch({
+        type: POST_TYPES.GET_SIMILAR_POSTS,
+        payload: {
+          posts: res.data.posts || [],
+          page: options.page || 1,
+          total: res.data.total || 0,
+          totalPages: res.data.totalPages || 1,
+          hasMore: res.data.hasMore || false,
+          currentPostId: postId
+        }
+      });
+    } else {
+      throw new Error(res.data.message || 'Error en el servidor');
+    }
+    
+  } catch (err) {
+    console.error('❌ ERROR en getSimilarPosts:', err.message);
+    dispatch({ 
+      type: POST_TYPES.ERROR_POST, 
+      payload: err.message 
+    });
+  } finally {
+    dispatch({ 
+      type: POST_TYPES.LOADING_SIMILAR_POSTS, 
+      payload: false 
+    });
+  }
+};
+export const clearSimilarPosts = () => (dispatch) => {
+  dispatch({ type: POST_TYPES.CLEAR_SIMILAR_POSTS });
+};

@@ -380,6 +380,8 @@ const CreateAnnoncePage = () => {
 // 🚀 Enviar formulario - CON LOGS DE DEPURACIÓN
 // 🚀 Enviar formulario - Mismo patrón simple
 // 🚀 Enviar formulario - Versión simplificada SIN status
+// En CreateAnnoncePage.js - handleSubmit CORREGIDO
+// En CreateAnnoncePage.js - handleSubmit CORREGIDO
 const handleSubmit = async (e) => {
   e.preventDefault();
   
@@ -396,7 +398,7 @@ const handleSubmit = async (e) => {
   setIsSubmitting(true);
 
   try {
-    // 🎯 Preparar los datos COMO UN SOLO OBJETO
+    // 🎯 Preparar los datos - AHORA CON categorySpecificData
     const postContent = {
       // Datos de categoría
       categorie: categoryData.categorie,
@@ -414,17 +416,23 @@ const handleSubmit = async (e) => {
       phone: commonData.phone || commonData.telephone || '',
       email: commonData.email || '',
       
-      // 🎯 Campos dinámicos
-      ...specificData
+      // 🎯 IMPORTANTE: Enviar campos específicos DENTRO de categorySpecificData
+      categorySpecificData: specificData
     };
 
-    console.log('📤 Enviando postContent:', postContent);
-    console.log('🖼️ Imágenes:', images.length);
+    console.log('📤 Enviando postContent:', {
+      common: {
+        categorie: postContent.categorie,
+        subCategory: postContent.subCategory,
+        title: postContent.title,
+        price: postContent.price
+      },
+      specificData: postContent.categorySpecificData  // ← Esto es lo importante
+    });
 
     if (isEdit && postToEdit?._id) {
-      // 🎯 PARA EDITAR: Enviar postId directamente (NO status)
       await dispatch(updatePost({
-        postId: postToEdit._id,  // ← Solo el ID, no todo el objeto
+        postId: postToEdit._id,
         postData: postContent,
         images, 
         auth
@@ -434,7 +442,6 @@ const handleSubmit = async (e) => {
       setTimeout(() => history.push('/'), 1200);
       
     } else {
-      // 🎯 PARA CREAR: Igual que antes
       await dispatch(createPost({
         postData: postContent,
         images,
