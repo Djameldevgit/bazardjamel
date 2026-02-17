@@ -1,0 +1,169 @@
+FUNCIÓN filterPosts(request, response)
+
+  INICIAR try
+
+    --------------------------------------------------
+    1️⃣ PAGINACIÓN
+    --------------------------------------------------
+
+    page  ← convertir request.query.page a número
+    limit ← convertir request.query.limit a número
+    SI no existen:
+        page ← 1
+        limit ← 12
+
+    skip ← (page - 1) * limit
+
+    --------------------------------------------------
+    2️⃣ OBTENER PARÁMETROS
+    --------------------------------------------------
+
+    categorySlug ← request.query.category
+    subSlug      ← request.query.sub
+    articleSlug  ← request.query.article
+
+    SI categorySlug NO existe:
+        DEVOLVER respuesta vacía con mensaje "Se requiere categoría"
+
+    --------------------------------------------------
+    3️⃣ BUSCAR CATEGORÍA NIVEL 1
+    --------------------------------------------------
+
+    categoryDoc ← buscar categoría donde:
+        slug = categorySlug
+        level = 1
+        isActive = true
+
+    SI no existe:
+        DEVOLVER respuesta vacía con mensaje "Categoría no encontrada"
+
+    --------------------------------------------------
+    4️⃣ CREAR FILTRO BASE
+    --------------------------------------------------
+
+    filter ←
+        category = categoryDoc._id
+        isActive = true
+
+    --------------------------------------------------
+    5️⃣ SI EXISTE SUBCATEGORÍA (nivel 2)
+    --------------------------------------------------
+
+    SI subSlug existe:
+
+        subCategoryDoc ← buscar categoría donde:
+            slug = subSlug
+            level = 2
+            isActive = true
+
+        SI subCategoryDoc existe:
+
+            articlesOfSub ← buscar categorías donde:
+                parent = subCategoryDoc._id
+                level = 3
+                isActive = true
+
+            orConditions ← lista vacía
+
+            AGREGAR condición:
+                subCategory = nombre de subCategoryDoc
+
+            AGREGAR condición:
+                articleType contiene subSlug
+
+            SI existen artículos nivel 3:
+                AGREGAR condición:
+                    articleType está dentro de slugs de artículos
+
+                AGREGAR condición:
+                    subCategory está dentro de nombres de artículos
+
+            filter.$or ← orConditions
+
+        SI NO existe subCategoryDoc:
+            filter.subCategory ← subSlug
+
+    --------------------------------------------------
+    6️⃣ SI EXISTE ARTÍCULO (nivel 3)
+    --------------------------------------------------
+
+    SI articleSlug existe:
+
+        articleCategoryDoc ← buscar categoría donde:
+            slug = articleSlug
+            level = 3
+            isActive = true
+
+        SI existe:
+
+            filter.$and ←
+                (
+                  articleType = articleSlug
+                  O
+                  subCategory = nombre del artículo
+                )
+
+        SI NO existe:
+            filter.articleType ← articleSlug
+
+    --------------------------------------------------
+    7️⃣ COMBINAR $or Y $and SI EXISTEN
+    --------------------------------------------------
+
+    SI existen filter.$or y filter.$and:
+
+        combinar ambos correctamente dentro de $and
+        eliminar filter.$or original
+
+    --------------------------------------------------
+    8️⃣ OBTENER POSTS
+    --------------------------------------------------
+
+    posts ← buscar posts con:
+        filter
+        ordenados por fecha descendente
+        aplicar skip y limit
+
+    total ← contar documentos con filter
+
+    hasMore ← (page * limit) < total
+    totalPages ← redondear hacia arriba total / limit
+
+    --------------------------------------------------
+    9️⃣ OBTENER SUBCATEGORÍAS PARA SLIDER
+    --------------------------------------------------
+
+    children ← buscar categorías donde:
+        parent = categoryDoc._id
+        level = 2
+        isActive = true
+
+    articles ← buscar categorías donde:
+        parent ∈ children
+        level = 3
+        isActive = true
+
+    PARA cada child en children:
+        asignar artículos correspondientes
+
+    --------------------------------------------------
+    🔟 PREPARAR RESPUESTA
+    --------------------------------------------------
+
+    response ←
+        success: true
+        posts
+        total
+        page
+        limit
+        hasMore
+        totalPages
+        categoryInfo
+        children (con artículos anidados)
+
+    DEVOLVER response
+
+  CAPTURAR error
+    devolver error 500
+
+FIN FUNCIÓN

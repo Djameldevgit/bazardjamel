@@ -388,8 +388,7 @@ filterPosts: async (req, res) => {
       category: categorySlug,
       sub: subSlug,
       article: articleSlug,
-      page: page,
-      limit: limit
+      page, limit
     });
 
     if (!categorySlug) {
@@ -397,7 +396,7 @@ filterPosts: async (req, res) => {
         success: true,
         posts: [],
         total: 0,
-        page: page,
+        page,
         hasMore: false,
         message: 'Se requiere categoría'
       });
@@ -415,231 +414,120 @@ filterPosts: async (req, res) => {
         success: true,
         posts: [],
         total: 0,
-        page: page,
+        page,
         hasMore: false,
         message: 'Categoría no encontrada'
       });
     }
 
-    // 2. Construir filtro base
+    // 2. Obtener subcategorías y artículos
+    const [allSubCategories, allArticles] = await Promise.all([
+      Category.find({ parent: categoryDoc._id, level: 2, isActive: true }).lean(),
+      Category.find({ level: 3, isActive: true }).lean()
+    ]);
+
+    // 3. FILTRO BASE - TODOS los posts de la categoría
     const filter = { 
-      category: categoryDoc._id, 
-      isActive: true 
+      isActive: true,
+      $or: [
+        { category: categoryDoc._id },
+        { categorie: { $regex: new RegExp(categoryDoc.name, 'i') } }
+      ]
     };
 
-    // 3. 🎯 LÓGICA MEJORADA PARA SUBCATEGORÍAS
+    // 4. Si hay subcategoría
     if (subSlug) {
-      // Buscar la subcategoría en la colección Category
-      const subCategoryDoc = await Category.findOne({
-        slug: subSlug,
-        level: 2,
-        isActive: true
-      }).lean();
+      const subCategoryDoc = allSubCategories.find(
+        sub => sub.slug === subSlug || sub.name.toLowerCase() === subSlug.toLowerCase()
+      );
 
       if (subCategoryDoc) {
-        console.log('✅ Subcategoría encontrada:', {
-          slug: subCategoryDoc.slug,
-          name: subCategoryDoc.name
-        });
+        console.log('✅ Subcategoría:', subCategoryDoc.name);
 
-        // 🎯 OPCIÓN 1: Buscar por subCategory = nombre de subcategoría
-        // 🎯 OPCIÓN 2: Buscar por articleType que contenga el slug de subcategoría
-        // 🎯 OPCIÓN 3: Buscar artículos (nivel 3) que pertenezcan a esta subcategoría
-        const subName = subCategoryDoc.name;
-        
-        // Primero, obtener todos los artículos (nivel 3) de esta subcategoría
-        const articlesOfSub = await Category.find({
-          parent: subCategoryDoc._id,
-          level: 3,
-          isActive: true
-        }).lean();
-
-        console.log('📊 Artículos de esta subcategoría:', 
-          articlesOfSub.map(a => ({ slug: a.slug, name: a.name }))
+        // Obtener TODOS los artículos de esta subcategoría
+        const articlesOfSub = allArticles.filter(
+          article => String(article.parent) === String(subCategoryDoc._id)
         );
 
-        // Crear array de condiciones $or
-        const orConditions = [];
-
-        // Condición 1: subCategory exacto
-        orConditions.push({ subCategory: subName });
-
-        // Condición 2: articleType contiene el slug de subcategoría
-        orConditions.push({ articleType: { $regex: subSlug, $options: 'i' } });
-
-        // Condición 3: articleType igual al slug de algún artículo de esta subcategoría
-        if (articlesOfSub.length > 0) {
-          const articleSlugs = articlesOfSub.map(a => a.slug);
-          orConditions.push({ articleType: { $in: articleSlugs } });
-          
-          // Condición 4: subCategory igual al nombre de algún artículo de esta subcategoría
-          const articleNames = articlesOfSub.map(a => a.name);
-          orConditions.push({ subCategory: { $in: articleNames } });
-        }
-
-        filter.$or = orConditions;
-
-        console.log('🎯 Condiciones de búsqueda ($or):');
-        orConditions.forEach((cond, i) => {
-          console.log(`${i+1}. ${JSON.stringify(cond)}`);
-        });
-
-      } else {
-        console.log('⚠️ Subcategoría no encontrada en DB');
-        filter.subCategory = subSlug;
-      }
-    }
-
-    // 4. 🎯 LÓGICA PARA ARTÍCULOS (NIVEL 3)
-    if (articleSlug) {
-      // Buscar el artículo en la colección Category
-      const articleCategoryDoc = await Category.findOne({
-        slug: articleSlug,
-        level: 3,
-        isActive: true
-      }).lean();
-
-      if (articleCategoryDoc) {
-        console.log('✅ Artículo encontrado:', {
-          slug: articleCategoryDoc.slug,
-          name: articleCategoryDoc.name
-        });
-
-        // 🎯 Buscar por articleType (slug) O por subCategory (nombre)
-        filter.$and = [
-          { 
-            $or: [
-              { articleType: articleSlug },          // Por slug
-              { subCategory: articleCategoryDoc.name }  // Por nombre (caso "Robes")
-            ]
-          }
+        // Construir slugs a buscar
+        const searchSlugs = [
+          subCategoryDoc.slug,
+          ...articlesOfSub.map(a => a.slug)
         ];
 
-        console.log('🎯 Buscando posts con:');
-        console.log(`   articleType: "${articleSlug}"`);
-        console.log(`   O subCategory: "${articleCategoryDoc.name}"`);
+        console.log('🔍 Buscando posts con slugs:', searchSlugs);
 
-      } else {
-        console.log('⚠️ Artículo no encontrado en DB');
-        filter.articleType = articleSlug;
+        // Filtrar posts que tengan estos slugs en subCategory O articleType
+        filter.$and = [{
+          $or: [
+            { subCategory: { $in: searchSlugs } },
+            { articleType: { $in: searchSlugs } }
+          ]
+        }];
       }
     }
 
-    // 🎯 LIMPIAR FILTRO: Si tenemos $and y $or, asegurarse de que se combinen correctamente
-    if (filter.$or && filter.$and) {
-      // Combinar $and con condiciones existentes
-      const existingAnd = filter.$and || [];
-      filter.$and = [...existingAnd, { $or: filter.$or }];
-      delete filter.$or;
+    // 5. Si hay artículo (sobreescribe subcategoría)
+    if (articleSlug) {
+      const articleDoc = allArticles.find(
+        article => article.slug === articleSlug || article.name.toLowerCase() === articleSlug.toLowerCase()
+      );
+
+      if (articleDoc) {
+        console.log('✅ Artículo:', articleDoc.name);
+        
+        filter.$and = [{
+          $or: [
+            { subCategory: articleDoc.slug },
+            { articleType: articleDoc.slug }
+          ]
+        }];
+      }
     }
 
-    console.log('🎯 Filtro MongoDB final:', JSON.stringify(filter, null, 2));
+    console.log('🎯 FILTRO FINAL:', JSON.stringify(filter, null, 2));
 
-    // 5. Obtener posts paginados
+    // 6. Ejecutar consulta
     const [posts, total] = await Promise.all([
       Post.find(filter)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .select('_id title price images createdAt wilaya commune description etat views category subCategory articleType')
+        .select('_id title price images createdAt wilaya commune description etat views categorie subCategory articleType category')
         .populate('user', 'username avatar')
         .lean(),
       Post.countDocuments(filter)
     ]);
 
-    // 6. Calcular hasMore
-    const hasMore = page * limit < total;
-    const totalPages = Math.ceil(total / limit);
+    console.log(`📊 Encontrados: ${posts.length} de ${total}`);
 
-    console.log('📊 Resultados:', {
-      page: page,
-      postsEncontrados: posts.length,
-      totalPosts: total,
-      hasMore: hasMore
-    });
-
-    // 7. Obtener subcategorías (nivel 2) para el slider
-    const children = await Category.find({ 
-      parent: categoryDoc._id, 
-      level: 2, 
-      isActive: true 
-    })
-      .select('_id name slug level emoji icon iconType iconColor bgColor hasChildren isLeaf')
-      .sort({ order: 1 })
-      .lean();
-
-    // 8. Obtener artículos (nivel 3) para el slider
-    const articles = await Category.find({ 
-      parent: { $in: children.map(c => c._id) }, 
-      level: 3, 
-      isActive: true 
-    })
-      .select('_id name slug level parent emoji icon iconType iconColor bgColor hasChildren isLeaf')
-      .sort({ order: 1 })
-      .lean();
-
-    // 9. Formatear para el frontend
-    const childrenFormatted = children.map(c => ({
-      ...c,
-      articles: articles.filter(a => String(a.parent) === String(c._id))
+    // 7. Preparar slider
+    const childrenWithArticles = allSubCategories.map(child => ({
+      ...child,
+      articles: allArticles.filter(a => String(a.parent) === String(child._id)),
+      isLeaf: false
     }));
 
-    // 10. Preparar respuesta
-    const response = {
+    res.json({
       success: true,
-      posts: posts,
-      total: total,
-      page: page,
-      limit: limit,
-      hasMore: hasMore,
-      totalPages: totalPages,
+      posts,
+      total,
+      page,
+      limit,
+      hasMore: page * limit < total,
+      totalPages: Math.ceil(total / limit),
       categoryInfo: {
         _id: categoryDoc._id,
         name: categoryDoc.name,
         slug: categoryDoc.slug,
         level: categoryDoc.level,
-        emoji: categoryDoc.emoji || '',
-        icon: categoryDoc.icon || '',
-        iconType: categoryDoc.iconType || 'image-png',
-        iconColor: categoryDoc.iconColor || '#666666',
-        bgColor: categoryDoc.bgColor || '#FFFFFF'
+        emoji: categoryDoc.emoji || ''
       },
-      children: childrenFormatted
-    };
-
-    // 11. Debug detallado
-    if (posts.length > 0) {
-      console.log('✅ Posts encontrados:');
-      posts.slice(0, 3).forEach((post, i) => {
-        console.log(`${i+1}. ${post.title}`);
-        console.log(`   subCategory: "${post.subCategory}"`);
-        console.log(`   articleType: "${post.articleType}"`);
-      });
-    } else {
-      console.log('⚠️ No se encontraron posts');
-      console.log('💡 Filtro aplicado:', JSON.stringify(filter, null, 2));
-      
-      // Debug extra: ver posts sin filtro
-      const allPosts = await Post.find({ 
-        category: categoryDoc._id, 
-        isActive: true 
-      })
-        .select('title subCategory articleType')
-        .limit(5)
-        .lean();
-      
-      console.log('🔍 Primeros 5 posts en esta categoría:');
-      allPosts.forEach((post, i) => {
-        console.log(`${i+1}. ${post.title}`);
-        console.log(`   subCategory: "${post.subCategory}"`);
-        console.log(`   articleType: "${post.articleType}"`);
-      });
-    }
-
-    return res.json(response);
+      children: childrenWithArticles
+    });
 
   } catch (error) {
-    console.error('❌ Error en filterPosts:', error);
+    console.error('❌ Error:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error al filtrar posts', 
@@ -647,9 +535,6 @@ filterPosts: async (req, res) => {
     });
   }
 },
-
-
-
 
 
 

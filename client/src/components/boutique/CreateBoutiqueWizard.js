@@ -1,35 +1,39 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Button, Alert, Spinner, Badge, ProgressBar, Form } from 'react-bootstrap';
+import { Card, Button, Alert, Spinner, Badge, ProgressBar, Form, Row, Col } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import { createBoutique, updateBoutique } from '../../redux/actions/boutiqueAction';
-import { checkImage } from '../../utils/imageUpload';
+import ImageUploadBoutique from './ImageUploadBoutique';
 
 const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }) => {
   const dispatch = useDispatch();
   const history = useHistory();
   const { auth, alert } = useSelector(state => state);
-  
+
   const [currentStep, setCurrentStep] = useState(1);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [transactionId, setTransactionId] = useState('623279');
-  // ELIMINA ESTA LÍNEA: const domaine_boutique = formData.domaine_boutique || generateDomain(formData.nom_boutique);
-  
-  // Estados del formulario
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [transactionId] = useState('BTR-' + Date.now().toString().slice(-6));
+
+  // 🖼️ Estado para imágenes - IGUAL QUE EN CreateAnnoncePage
+  const [images, setImages] = useState([]);
+
+  // Estado del formulario
   const [formData, setFormData] = useState({
-    // Step 1 - Campos del backend original
+    // Informations
     nom_boutique: '',
     domaine_boutique: '',
     slogan_boutique: '',
     description_boutique: '',
-    logo: null,
-    logoPreview: '',
-    logoUrl: '',
-    
-    // Step 2 - Nuevos campos adaptados
-    categories_produits: [],
+    date_debut: new Date().toISOString().split('T')[0],
+
+    // Choix
+    categorie: '',
+    duree: '1',
+    offre: 'Store Basic 50',
+
+    // Propriétaire
     proprietaire: {
       nom: auth?.user?.name || '',
       email: auth?.user?.email || '',
@@ -37,6 +41,8 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
       wilaya: '',
       adresse: ''
     },
+
+    // Réseaux sociaux
     reseaux_sociaux: {
       facebook: '',
       instagram: '',
@@ -44,50 +50,42 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
       whatsapp: '',
       website: ''
     },
+
+    // Autres
     couleur_theme: '#2563eb',
-    plan: 'gratuit',
-    duree_abonnement: '1mois',
-    
-    // Nuevos campos para sliders
-    categorie: '',
-    duree: '1',
-    offre: 'Store Basic 50',
-    
-    // Campos calculados
+
+    // Calculés
     montant_initial: 0,
     mois_offerts: 0,
     montant_ttc: 0,
-    
-    // Step 4
+
+    // Paiement
     methode_paiement: '',
     client_nom: auth?.user?.name || '',
     client_telephone: auth?.user?.mobile || '',
-    
     accepte_conditions: false
   });
-  
-  
-  // Catégories pour le slider
+
+  // Données pour les sliders
   const categories = [
-    'Automobiles & Véhicules',
-    'Informatique',
-    'Meubles & Maison',
-    'Matériaux & Equipement',
-    'Téléphonie & Accessoires',
-    'Pièces détachées',
-    'Electroménager & Electronique',
-    'Vêtements & Mode',
-    'Santé & Beauté',
-    'Loisirs & Divertissement',
-    'Offres & Demandes d\'emploi',
-    'Immobilier',
-    'Services',
-    'Voyages',
-    'Alimentaire',
-    'Sport'
+    { id: 'auto', name: 'Automobiles & Véhicules', icon: 'fa-car' },
+    { id: 'informatique', name: 'Informatique', icon: 'fa-laptop' },
+    { id: 'meubles', name: 'Meubles & Maison', icon: 'fa-couch' },
+    { id: 'materiaux', name: 'Matériaux & Equipement', icon: 'fa-tools' },
+    { id: 'telephonie', name: 'Téléphonie & Accessoires', icon: 'fa-mobile-alt' },
+    { id: 'pieces', name: 'Pièces détachées', icon: 'fa-car-battery' },
+    { id: 'electromenager', name: 'Electroménager & Electronique', icon: 'fa-tv' },
+    { id: 'vetements', name: 'Vêtements & Mode', icon: 'fa-tshirt' },
+    { id: 'sante', name: 'Santé & Beauté', icon: 'fa-heartbeat' },
+    { id: 'loisirs', name: 'Loisirs & Divertissement', icon: 'fa-gamepad' },
+    { id: 'emploi', name: 'Offres & Demandes d\'emploi', icon: 'fa-briefcase' },
+    { id: 'immobilier', name: 'Immobilier', icon: 'fa-building' },
+    { id: 'services', name: 'Services', icon: 'fa-concierge-bell' },
+    { id: 'voyages', name: 'Voyages', icon: 'fa-plane' },
+    { id: 'alimentaire', name: 'Alimentaire', icon: 'fa-utensils' },
+    { id: 'sport', name: 'Sport', icon: 'fa-futbol' }
   ];
-  
-  // Durées pour le slider
+
   const durees = [
     { id: '1', name: '1 Mois' },
     { id: '2', name: '2 Mois' },
@@ -102,221 +100,171 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
     { id: '11', name: '11 Mois' },
     { id: '12', name: '12 Mois' }
   ];
-  
-  // Offres pour le slider
+
   const offres = [
     {
       id: 'Store Basic 50',
       name: 'Store Basic 50',
       credits: 50,
       storage: 100,
-      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      features: ['Site Builder', 'Nom de domaine', 'Store à la une'],
       couleur: '#3b82f6',
-      prix_mois: 5000
+      prix_mois: 5000,
+      badge: 'Débutant'
     },
     {
       id: 'Store Basic 100',
       name: 'Store Basic 100',
       credits: 100,
       storage: 200,
-      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      features: ['Site Builder', 'Nom de domaine', 'Store à la une', 'Stats avancées'],
       couleur: '#3b82f6',
-      prix_mois: 8500
+      prix_mois: 8500,
+      badge: 'Populaire'
     },
     {
       id: 'Store Basic 150',
       name: 'Store Basic 150',
       credits: 150,
       storage: 300,
-      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      features: ['Site Builder', 'Nom de domaine', 'Store à la une', 'Stats avancées', 'Support prioritaire'],
       couleur: '#3b82f6',
-      prix_mois: 12000
+      prix_mois: 12000,
+      badge: 'Recommandé'
     },
     {
       id: 'Store Silver 200',
       name: 'Store Silver 200',
       credits: 200,
       storage: 400,
-      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      features: ['Site Builder', 'Nom de domaine', 'Store à la une', 'API Access'],
       couleur: '#6b7280',
-      prix_mois: 15000
+      prix_mois: 15000,
+      badge: 'Professionnel'
     },
     {
       id: 'Store Silver 300',
       name: 'Store Silver 300',
       credits: 300,
       storage: 600,
-      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      features: ['Site Builder', 'Nom de domaine', 'Store à la une', 'API Access', 'Marketing tools'],
       couleur: '#6b7280',
-      prix_mois: 21000
+      prix_mois: 21000,
+      badge: 'Professionnel+'
     },
     {
       id: 'Store Silver 500',
       name: 'Store Silver 500',
       credits: 500,
       storage: 1000,
-      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      features: ['Site Builder', 'Nom de domaine', 'Store à la une', 'API Access', 'Marketing tools', 'Multi-vendeurs'],
       couleur: '#6b7280',
-      prix_mois: 35000
-    },
-    {
-      id: 'Store Silver 750',
-      name: 'Store Silver 750',
-      credits: 750,
-      storage: 1500,
-      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
-      couleur: '#6b7280',
-      prix_mois: 50000
+      prix_mois: 35000,
+      badge: 'Business'
     },
     {
       id: 'Store Gold 1000',
       name: 'Store Gold 1000',
       credits: 1000,
       storage: 2000,
-      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      features: ['Tout inclus', 'Support 24/7', 'Formation', 'Certificat SSL'],
       couleur: '#f59e0b',
-      prix_mois: 70000
-    },
-    {
-      id: 'Store Gold 1500',
-      name: 'Store Gold 1500',
-      credits: 1500,
-      storage: 3000,
-      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
-      couleur: '#f59e0b',
-      prix_mois: 100000
+      prix_mois: 70000,
+      badge: 'Premium'
     },
     {
       id: 'Store Gold 2000',
       name: 'Store Gold 2000',
       credits: 2000,
       storage: 4000,
-      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
+      features: ['Tout inclus', 'Support 24/7', 'Formation', 'SSL', 'Nom de domaine offert'],
       couleur: '#f59e0b',
-      prix_mois: 130000
-    },
-    {
-      id: 'Store Gold 3000',
-      name: 'Store Gold 3000',
-      credits: 3000,
-      storage: 4000,
-      features: ['Site Builder', 'Nom de domaine', 'Store à la une Listing'],
-      couleur: '#f59e0b',
-      prix_mois: 190000
+      prix_mois: 130000,
+      badge: 'Enterprise'
     },
     {
       id: 'Store Gold 6000',
       name: 'Store Gold 6000',
       credits: 6000,
       storage: 12000,
-      features: ['Site Builder', 'Nom de domaine'],
+      features: ['Solution complète', 'Dédié', 'Formation sur site', 'SLA 99.9%'],
       couleur: '#f59e0b',
-      prix_mois: 350000
+      prix_mois: 350000,
+      badge: 'Ultimate'
     }
   ];
-  
-  // Méthodes de paiement
+
   const methodesPaiement = [
-    { value: 'ccp', label: 'CCP (Compte de Chèque Postal)' },
-    { value: 'cib', label: 'CIB - Banque' },
-    { value: 'carte', label: 'Carte de crédit' },
-    { value: 'edahabia', label: 'Edahabia' },
-    { value: 'cash', label: 'Espèces' },
-    { value: 'virement', label: 'Virement bancaire' }
+    { value: 'ccp', label: 'CCP', icon: 'fa-credit-card', description: 'Compte de Chèque Postal' },
+    { value: 'cib', label: 'CIB', icon: 'fa-university', description: 'Carte Interbancaire' },
+    { value: 'edahabia', label: 'Edahabia', icon: 'fa-mobile-alt', description: 'Carte Edahabia' },
+    { value: 'baridimob', label: 'BaridiMob', icon: 'fa-mobile-alt', description: 'Mobile Money' },
+    { value: 'virement', label: 'Virement', icon: 'fa-exchange-alt', description: 'Virement bancaire' }
   ];
+
+  // ============ HANDLERS POUR IMAGES - MEJORADOS ============
+  // 🖼️ Handlers para imágenes - VERSIÓN CORREGIDA
+const handleChangeImages = (e) => {
+  const files = Array.from(e.target.files);
   
-  // Mapear oferta del slider al plan del backend
-  const mapOffreToPlan = (offreId) => {
-    const offreMapping = {
-      'Store Basic 50': 'gratuit',
-      'Store Basic 100': 'gratuit',
-      'Store Basic 150': 'gratuit',
-      'Store Silver 200': 'basique',
-      'Store Silver 300': 'basique',
-      'Store Silver 500': 'basique',
-      'Store Silver 750': 'premium',
-      'Store Gold 1000': 'premium',
-      'Store Gold 1500': 'premium',
-      'Store Gold 2000': 'entreprise',
-      'Store Gold 3000': 'entreprise',
-      'Store Gold 6000': 'entreprise'
-    };
-    return offreMapping[offreId] || 'gratuit';
+  // Filtrar archivos válidos
+  const validFiles = files.filter(file => {
+      const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB max
+      const isValidType = file.type.startsWith('image/');
+      
+      if (!isValidSize) setError('Image trop volumineuse (max 5MB)');
+      if (!isValidType) setError('Format non supporté');
+      
+      return isValidSize && isValidType;
+  });
+  
+  if (validFiles.length > 0) {
+      // 🎯 Convertir File a objeto con blob URL
+      const newImages = validFiles.map(file => ({
+          url: URL.createObjectURL(file),
+          name: file.name,
+          file: file,
+          isExisting: false
+      }));
+      
+      setImages(prev => [...prev, ...newImages]);
+      setSuccess(`${validFiles.length} image(s) ajoutée(s)`);
+      setTimeout(() => setSuccess(''), 2000);
+  }
+};
+
+const deleteImages = (index) => {
+  // Liberar memoria de blob URLs
+  if (images[index]?.url?.startsWith('blob:')) {
+      URL.revokeObjectURL(images[index].url);
+  }
+  setImages(prev => prev.filter((_, i) => i !== index));
+};
+
+// Cleanup al desmontar
+useEffect(() => {
+  return () => {
+      images.forEach(img => {
+          if (img.url?.startsWith('blob:')) {
+              URL.revokeObjectURL(img.url);
+          }
+      });
   };
+}, []);
+
   
-  // Mapear duración del slider a duración del backend
-  const mapDureeToAbonnement = (dureeId) => {
-    const dureeMapping = {
-      '1': '1mois',
-      '2': '1mois',
-      '3': '3mois',
-      '4': '3mois',
-      '5': '6mois',
-      '6': '6mois',
-      '7': '6mois',
-      '8': '6mois',
-      '9': '1an',
-      '10': '1an',
-      '11': '1an',
-      '12': '1an'
-    };
-    return dureeMapping[dureeId] || '1mois';
-  };
-  
-  // Calculer les montants
-  const calculerMontants = () => {
-    const offreSelectionnee = offres.find(o => o.id === formData.offre);
-    const dureeMois = parseInt(formData.duree);
-    
-    if (!offreSelectionnee) return;
-    
-    let montantInitial = offreSelectionnee.prix_mois * dureeMois;
-    let moisOfferts = 0;
-    
-    // Calculer mois offerts selon les règles
-    if (dureeMois >= 6) {
-      moisOfferts = 1;
-    }
-    if (dureeMois >= 12) {
-      moisOfferts = 3;
-    }
-    
-    // Appliquer les mois offerts
-    const moisPayer = Math.max(1, dureeMois - moisOfferts);
-    montantInitial = offreSelectionnee.prix_mois * moisPayer;
-    
-    // Calculer taxe 19%
-    const taxe = montantInitial * 0.19;
-    const montantTTC = montantInitial + taxe;
-    
-    setFormData(prev => ({
-      ...prev,
-      montant_initial: montantInitial,
-      mois_offerts: moisOfferts,
-      montant_ttc: montantTTC
-    }));
-  };
-  
-  // Gérer cambios en el formulario
+
+  // Handlers pour le formulaire
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
-    if (name.startsWith('proprietaire.')) {
-      const field = name.split('.')[1];
+
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
       setFormData(prev => ({
         ...prev,
-        proprietaire: {
-          ...prev.proprietaire,
-          [field]: type === 'checkbox' ? checked : value
-        }
-      }));
-    } else if (name.startsWith('reseaux_sociaux.')) {
-      const field = name.split('.')[1];
-      setFormData(prev => ({
-        ...prev,
-        reseaux_sociaux: {
-          ...prev.reseaux_sociaux,
-          [field]: value
+        [parent]: {
+          ...prev[parent],
+          [child]: type === 'checkbox' ? checked : value
         }
       }));
     } else {
@@ -325,189 +273,186 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
         [name]: type === 'checkbox' ? checked : value
       }));
     }
-  };
-  
-  // Manejar cambio de logo (MISMO CÓDIGO DEL ORIGINAL)
-  const handleLogoChange = (e) => {
-    const file = e.target.files[0];
-    
-    if (!file) return;
-    
-    const err = checkImage(file);
-    if (err) {
-      setError(err);
-      return;
+
+    // Générer le domaine automatiquement
+    if (name === 'nom_boutique' && !formData.domaine_boutique && !isEdit) {
+      const domaine = value
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      setFormData(prev => ({ ...prev, domaine_boutique: domaine }));
     }
-    
-    setFormData(prev => ({
-      ...prev,
-      logo: file,
-      logoPreview: URL.createObjectURL(file)
-    }));
   };
-  
-  // Eliminar logo
-  const handleRemoveLogo = () => {
-    setFormData(prev => ({
-      ...prev,
-      logo: null,
-      logoPreview: '',
-      logoUrl: ''
-    }));
-  };
-  
-  // Sélectionner catégorie
+
+  // Handlers pour les sélections
   const handleSelectCategorie = (categorie) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      categorie,
-      categories_produits: [categorie] // Mapear al array del backend
-    }));
+    setFormData(prev => ({ ...prev, categorie }));
   };
-  
-  // Sélectionner durée
+
   const handleSelectDuree = (dureeId) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      duree: dureeId,
-      duree_abonnement: mapDureeToAbonnement(dureeId) // Mapear al formato del backend
-    }));
+    setFormData(prev => ({ ...prev, duree: dureeId }));
+    setTimeout(() => calculerMontants(), 100);
   };
-  
-  // Sélectionner offre
+
   const handleSelectOffre = (offreId) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      offre: offreId,
-      plan: mapOffreToPlan(offreId) // Mapear al formato del backend
+    setFormData(prev => ({ ...prev, offre: offreId }));
+    setTimeout(() => calculerMontants(), 100);
+  };
+
+  // Calculer les montants
+  const calculerMontants = () => {
+    const offreSelectionnee = offres.find(o => o.id === formData.offre);
+    const dureeMois = parseInt(formData.duree);
+
+    if (!offreSelectionnee) return;
+
+    let moisOfferts = 0;
+    if (dureeMois >= 12) moisOfferts = 3;
+    else if (dureeMois >= 6) moisOfferts = 1;
+
+    const moisPayer = Math.max(1, dureeMois - moisOfferts);
+    const montantInitial = offreSelectionnee.prix_mois * moisPayer;
+    const taxe = montantInitial * 0.19;
+    const montantTTC = montantInitial + taxe;
+
+    setFormData(prev => ({
+      ...prev,
+      montant_initial: montantInitial,
+      mois_offerts: moisOfferts,
+      montant_ttc: montantTTC
     }));
   };
-  
-  // Generar dominio automático basado en el nombre
-  const generateDomain = (nom) => {
-    if (!nom) return '';
-    return nom
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
-  };
-  
-  // Validar step actual
+
+  // Validation des steps
   const validateStep = (step) => {
     switch (step) {
       case 1:
-        return formData.nom_boutique.trim() !== '' && 
-               formData.description_boutique.trim() !== '';
+        return formData.nom_boutique?.trim() !== '' &&
+          formData.description_boutique?.trim() !== '' &&
+          images.length > 0;
       case 2:
-        return formData.categorie !== '' && 
-               formData.duree !== '' &&
-               formData.offre !== '';
+        return formData.categorie !== '' &&
+          formData.duree !== '' &&
+          formData.offre !== '';
       case 3:
-        return true; // Step 3 es solo visualización
+        return true;
       case 4:
-        return formData.methode_paiement !== '' && 
-               formData.accepte_conditions === true;
+        return formData.methode_paiement !== '' &&
+          formData.accepte_conditions === true &&
+          formData.client_telephone?.trim() !== '';
       default:
         return false;
     }
   };
-  
-  // Avanzar al siguiente step
+
+  // Navigation
   const nextStep = () => {
     if (validateStep(currentStep)) {
-      if (currentStep === 2) {
-        calculerMontants();
-      }
-      setCurrentStep(prev => Math.min(prev + 1, 4));
+      if (currentStep === 2) calculerMontants();
+      setCurrentStep(prev => prev + 1);
       setError('');
     } else {
-      let errorMessage = 'Veuillez remplir tous les champs obligatoires de cette étape';
-      if (currentStep === 1) {
-        if (!formData.nom_boutique.trim()) errorMessage = 'Nom du store requis';
-        else if (!formData.description_boutique.trim()) errorMessage = 'Description du store requise';
-      } else if (currentStep === 2) {
-        if (!formData.categorie) errorMessage = 'Sélectionnez une catégorie';
-        else if (!formData.duree) errorMessage = 'Sélectionnez une durée';
-        else if (!formData.offre) errorMessage = 'Sélectionnez une offre';
-      } else if (currentStep === 4) {
-        if (!formData.methode_paiement) errorMessage = 'Sélectionnez une méthode de paiement';
-        else errorMessage = 'Vous devez accepter les conditions';
+      let message = '';
+      switch (currentStep) {
+        case 1:
+          if (!formData.nom_boutique) message = 'Nom de la boutique requis';
+          else if (!formData.description_boutique) message = 'Description requise';
+          else if (images.length === 0) message = 'Logo obligatoire';
+          break;
+        case 2:
+          if (!formData.categorie) message = 'Catégorie requise';
+          else if (!formData.duree) message = 'Durée requise';
+          else if (!formData.offre) message = 'Pack requis';
+          break;
+        case 4:
+          if (!formData.methode_paiement) message = 'Mode de paiement requis';
+          else if (!formData.client_telephone) message = 'Téléphone requis';
+          else if (!formData.accepte_conditions) message = 'Vous devez accepter les conditions';
+          break;
       }
-      setError(errorMessage);
+      setError(message || 'Veuillez remplir tous les champs');
     }
   };
-  
-  // Retroceder al step anterior
+
   const prevStep = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
+    setCurrentStep(prev => prev - 1);
     setError('');
   };
-  
- 
- // En CreateBoutiqueWizard.js, actualiza prepareSubmitData:
 
-// En CreateBoutiqueWizard.js, actualiza prepareSubmitData:
-
-// En CreateBoutiqueWizard.js, actualiza prepareSubmitData:
-
-// En CreateBoutiqueWizard.js - prepareSubmitData
-
+  // Préparer les données pour l'envoi
+  // Préparer les données pour l'envoi - VERSIÓN CORREGIDA
+// 📦 Préparer les données pour l'envoi - VERSIÓN CORREGIDA
+// En CreateBoutiqueWizard.js - FUNCIÓN CORREGIDA
 const prepareSubmitData = () => {
-  // Generar dominio automático si no existe
-  const domaine_boutique = formData.domaine_boutique || generateDomain(formData.nom_boutique);
-  
-  // Encontrar la oferta y duración seleccionadas
   const offreSelectionnee = offres.find(o => o.id === formData.offre);
   const dureeSelectionnee = durees.find(d => d.id === formData.duree);
   
-  // IMPORTANTE: NO incluimos avatar aquí, se maneja en la acción
-  const submitData = {
-    // Campos requeridos
-    nom_boutique: formData.nom_boutique || '',
-    domaine_boutique: domaine_boutique || '',
-    slogan_boutique: formData.slogan_boutique || '',
-    description_boutique: formData.description_boutique || '',
-    date_debut: formData.date_debut || new Date().toISOString().split('T')[0],
-    
-    // 🗂️ CATEGORÍAS
-    categorie: formData.categorie || '',
-    subCategory: formData.categorie ? `boutique-${formData.categorie.toLowerCase()
+  const planMapping = {
+    'Store Basic 50': 'gratuit',
+    'Store Basic 100': 'gratuit',
+    'Store Basic 150': 'gratuit',
+    'Store Silver 200': 'basique',
+    'Store Silver 300': 'basique',
+    'Store Silver 500': 'basique',
+    'Store Gold 1000': 'premium',
+    'Store Gold 2000': 'entreprise',
+    'Store Gold 6000': 'entreprise'
+  };
+
+  const dureeMapping = {
+    '1': '1mois', '2': '1mois', '3': '3mois', '4': '3mois',
+    '5': '6mois', '6': '6mois', '7': '6mois', '8': '6mois',
+    '9': '1an', '10': '1an', '11': '1an', '12': '1an'
+  };
+
+  const generateSubCategory = (categorie) => {
+    if (!categorie) return '';
+    return 'boutique-' + categorie
+      .toLowerCase()
       .replace(/[&]/g, 'et')
       .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')}` : '',
-    articleType: '',
+      .replace(/^-|-$/g, '');
+  };
+
+  // 🎯 Generar dominio ÚNICO
+  const generateUniqueDomain = () => {
+    const baseDomain = formData.nom_boutique
+      ? formData.nom_boutique.toLowerCase()
+          .replace(/[^a-z0-9]/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '')
+      : 'boutique';
     
-    // Plan y duración
-    plan: mapOffreToPlan(formData.offre),
-    duree_abonnement: mapDureeToAbonnement(formData.duree),
+    // Añadir timestamp para hacerlo único
+    const timestamp = Date.now().toString().slice(-4);
+    return `${baseDomain}-${timestamp}`;
+  };
+
+  const subCategory = generateSubCategory(formData.categorie);
+  
+  // Usar el dominio personalizado si existe, si no generar uno único
+  const domaine_boutique = formData.domaine_boutique?.trim() 
+    ? formData.domaine_boutique 
+    : generateUniqueDomain();
+
+  return {
+    nom_boutique: formData.nom_boutique,
+    domaine_boutique: domaine_boutique,  // ← Ahora siempre único
+    slogan_boutique: formData.slogan_boutique || '',
+    description_boutique: formData.description_boutique,
+    date_debut: formData.date_debut,
     
-    // Categorías de productos
-    categories_produits: formData.categories_produits || 
-                         (formData.categorie ? [formData.categorie] : []),
+    categorie: formData.categorie,
+    subCategory: subCategory,
     
-    // Información del propietario
-    proprietaire: {
-      nom: formData.proprietaire?.nom || auth.user?.name || '',
-      email: formData.proprietaire?.email || auth.user?.email || '',
-      telephone: formData.proprietaire?.telephone || auth.user?.mobile || '',
-      wilaya: formData.proprietaire?.wilaya || '',
-      adresse: formData.proprietaire?.adresse || ''
-    },
+    plan: planMapping[formData.offre] || 'gratuit',
+    duree_abonnement: dureeMapping[formData.duree] || '1mois',
     
-    // Redes sociales
-    reseaux_sociaux: {
-      facebook: formData.reseaux_sociaux?.facebook || '',
-      instagram: formData.reseaux_sociaux?.instagram || '',
-      tiktok: formData.reseaux_sociaux?.tiktok || '',
-      whatsapp: formData.reseaux_sociaux?.whatsapp || '',
-      website: formData.reseaux_sociaux?.website || ''
-    },
+    proprietaire: formData.proprietaire,
+    reseaux_sociaux: formData.reseaux_sociaux,
+    couleur_theme: formData.couleur_theme,
     
-    // Estilo
-    couleur_theme: formData.couleur_theme || '#2563eb',
-    
-    // Metadatos del wizard
     offre_choisie: offreSelectionnee ? {
       id: offreSelectionnee.id,
       nom: offreSelectionnee.name,
@@ -521,116 +466,101 @@ const prepareSubmitData = () => {
       nom: dureeSelectionnee.name
     } : null,
     
-    montant_initial: formData.montant_initial || 0,
-    mois_offerts: formData.mois_offerts || 0,
-    montant_ttc: formData.montant_ttc || 0,
-    methode_paiement: formData.methode_paiement || '',
-  };
-  
-  console.log('✅ Datos preparados para enviar (sin avatar):', {
-    nom_boutique: submitData.nom_boutique,
-    categorie: submitData.categorie,
-    plan: submitData.plan
-  });
-  
-  return submitData;
-};
-  // En handleSubmit() del wizard:
-  const handleSubmit = async (e) => {
-    if (e) e.preventDefault();
+    montant_initial: formData.montant_initial,
+    mois_offerts: formData.mois_offerts,
+    montant_ttc: formData.montant_ttc,
+    methode_paiement: formData.methode_paiement,
+    transaction_id: transactionId,
     
+    client_nom: formData.client_nom,
+    client_telephone: formData.client_telephone
+  };
+};
+
+  // 🚀 Submit - VERSIÓN MEJORADA CON IMÁGENES
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (images.length === 0) {
+      setError('Au moins une image est requise');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
     try {
-      setLoading(true);
-      setError('');
-      setSuccess('');
-      
+      // Preparar datos SIN imágenes (las imágenes van aparte)
       const boutiqueData = prepareSubmitData();
-      const avatar = formData.logo;
-      
-      console.log('📤 Enviando al backend:', {
-        boutiqueData: {
-          nom_boutique: boutiqueData.nom_boutique,
-          domaine_boutique: boutiqueData.domaine_boutique,
-          plan: boutiqueData.plan
-        },
-        hasAvatar: !!avatar
+
+      console.log('📤 Enviando boutique:', {
+        nom: boutiqueData.nom_boutique,
+        imagesCount: images.length,
+        imagesType: images.map(img => img instanceof File ? 'File' : 'Existing')
       });
-      
-      // Mostrar datos del proprietaire
-      console.log('👤 Proprietaire data:', boutiqueData.proprietaire);
-      
-      if (isEdit && boutiqueData) {
-        await dispatch(updateBoutique({ 
-          boutiqueData, 
-          avatar, 
-          auth,
-          boutiqueId: boutiqueData._id 
+
+      if (isEdit && boutiqueId) {
+        await dispatch(updateBoutique({
+          boutiqueId,
+          boutiqueData,
+          images,  // ← Las imágenes van aparte
+          auth
         }));
         setSuccess('Boutique mise à jour avec succès!');
       } else {
-        const result = await dispatch(createBoutique({ 
-          boutiqueData, 
-          avatar, 
-          auth 
+        const result = await dispatch(createBoutique({
+          boutiqueData,
+          images,  // ← Las imágenes van aparte
+          auth
         }));
-        
+
         if (result) {
-          setSuccess('Votre demande de création de store a été soumise avec succès! Elle sera évaluée par nos administrateurs.');
-          
+          setSuccess('Boutique créée avec succès!');
           setTimeout(() => {
             if (onSuccess) {
               onSuccess(result.boutique || result);
             } else {
-              const boutiqueId = result.boutique?._id || result._id;
-              if (boutiqueId) {
-                history.push(`/boutique/${boutiqueId}`);
-              }
+              const newId = result.boutique?._id || result._id;
+              if (newId) history.push(`/boutique/${newId}`);
             }
-          }, 3000);
+          }, 2000);
         }
       }
-      
     } catch (err) {
-      console.error('❌ Error creating boutique:', err);
-      setError(err.message || 'Erreur lors de la création de la boutique');
+      console.error('❌ Erreur:', err);
+      setError(err.message || 'Erreur lors de la création');
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
-  
-  // Efecto para cargar datos en modo edición
+
+  // Chargement des données en mode édition
   useEffect(() => {
     if (isEdit && boutiqueData) {
       setFormData({
         nom_boutique: boutiqueData.nom_boutique || '',
-        description_boutique: boutiqueData.description_boutique || '',
         domaine_boutique: boutiqueData.domaine_boutique || '',
         slogan_boutique: boutiqueData.slogan_boutique || '',
-        date_debut: boutiqueData.date_debut || new Date().toISOString().split('T')[0],
+        description_boutique: boutiqueData.description_boutique || '',
+        date_debut: boutiqueData.date_debut?.split('T')[0] || new Date().toISOString().split('T')[0],
         categorie: boutiqueData.categorie || '',
-        duree: boutiqueData.duree || '1',
-        offre: boutiqueData.offre || 'Store Basic 50',
-        logo: null,
-        logoPreview: boutiqueData.logo?.url || '',
-        logoUrl: boutiqueData.logo?.url || '',
-        categories_produits: boutiqueData.categories_produits || [],
-        proprietaire: boutiqueData.proprietaire || {
-          nom: auth?.user?.name || '',
-          email: auth?.user?.email || '',
-          telephone: auth?.user?.mobile || '',
-          wilaya: '',
-          adresse: ''
+        duree: boutiqueData.duree_choisie?.id || '1',
+        offre: boutiqueData.offre_choisie?.id || 'Store Basic 50',
+        proprietaire: {
+          nom: boutiqueData.proprietaire?.nom || auth?.user?.name || '',
+          email: boutiqueData.proprietaire?.email || auth?.user?.email || '',
+          telephone: boutiqueData.proprietaire?.telephone || auth?.user?.mobile || '',
+          wilaya: boutiqueData.proprietaire?.wilaya || '',
+          adresse: boutiqueData.proprietaire?.adresse || ''
         },
-        reseaux_sociaux: boutiqueData.reseaux_sociaux || {
-          facebook: '',
-          instagram: '',
-          tiktok: '',
-          whatsapp: '',
-          website: ''
+        reseaux_sociaux: {
+          facebook: boutiqueData.reseaux_sociaux?.facebook || '',
+          instagram: boutiqueData.reseaux_sociaux?.instagram || '',
+          tiktok: boutiqueData.reseaux_sociaux?.tiktok || '',
+          whatsapp: boutiqueData.reseaux_sociaux?.whatsapp || '',
+          website: boutiqueData.reseaux_sociaux?.website || ''
         },
         couleur_theme: boutiqueData.couleur_theme || '#2563eb',
-        plan: boutiqueData.plan || 'gratuit',
-        duree_abonnement: boutiqueData.duree_abonnement || '1mois',
         montant_initial: boutiqueData.montant_initial || 0,
         mois_offerts: boutiqueData.mois_offerts || 0,
         montant_ttc: boutiqueData.montant_ttc || 0,
@@ -639,254 +569,600 @@ const prepareSubmitData = () => {
         client_telephone: boutiqueData.client_telephone || auth?.user?.mobile || '',
         accepte_conditions: boutiqueData.accepte_conditions || false
       });
-    } else {
-      // Para creación, establecer dominio automático cuando cambia el nombre
-      if (formData.nom_boutique && !formData.domaine_boutique) {
-        const domaine = generateDomain(formData.nom_boutique);
-        setFormData(prev => ({
-          ...prev,
-          domaine_boutique: domaine
-        }));
+
+      // 🖼️ Charger les images existantes
+      if (boutiqueData.images?.length > 0) {
+        setImages(boutiqueData.images.map((img, idx) => ({
+          url: img.url,
+          public_id: img.public_id || `existing_${idx}`,
+          isExisting: true
+        })));
       }
     }
-  }, [isEdit, boutiqueData, auth, formData.nom_boutique]);
-  
-  // Efecto para manejar alertas de Redux
+  }, [isEdit, boutiqueData, auth]);
+
   useEffect(() => {
-    if (alert.error) {
-      setError(alert.error);
-    }
-    if (alert.success) {
-      setSuccess(alert.success);
-    }
+    if (alert.error) setError(alert.error);
+    if (alert.success) setSuccess(alert.success);
   }, [alert]);
-  
-  // Renderizar step actual - CORREGIDO
-  const renderStep = () => {
-    switch (currentStep) {
-      case 1:
-        return <Step1Informations formData={formData} handleInputChange={handleInputChange} handleLogoChange={handleLogoChange} handleRemoveLogo={handleRemoveLogo} />;
-      case 2:
-        return <Step2ChoixOffre formData={formData} categories={categories} durees={durees} offres={offres} handleSelectCategorie={handleSelectCategorie} handleSelectDuree={handleSelectDuree} handleSelectOffre={handleSelectOffre} />;
-      case 3:
-        return <Step3Transaction formData={formData} transactionId={transactionId} offres={offres} durees={durees} />;
-      case 4:
-        return <Step4DetailTransaction 
-          formData={formData} 
-          methodesPaiement={methodesPaiement} 
-          handleInputChange={handleInputChange} 
-          offres={offres} 
-          durees={durees}
-          transactionId={transactionId}
-        />;
-      default:
-        return null;
-    }
-  };
-  
+
+  // ============ RENDER ============
   return (
     <div className="create-boutique-wizard">
       {/* Header */}
-      <div className="wizard-header mb-4">
-        <h2 className="mb-2">
-          {isEdit ? '✏️ Modifier votre store' : '🏪 Créer votre store'}
+      <div className="text-center mb-4">
+        <h2 className="fw-bold">
+          {isEdit ? '✏️ Modifier votre boutique' : '🏪 Créer votre boutique'}
         </h2>
-        <p className="text-muted mb-0">
-          {isEdit 
-            ? 'Mettez à jour les informations de votre store'
-            : 'Créez votre store en ligne en quelques étapes simples'
-          }
+        <p className="text-muted">
+          {isEdit ? 'Mettez à jour vos informations' : 'Créez votre boutique en ligne'}
         </p>
-        
-        {/* Progress bar */}
-        <div className="progress-container mt-4">
-          <div className="d-flex justify-content-between mb-2">
-            {[1, 2, 3, 4].map(step => (
-              <div 
-                key={step} 
-                className={`step-indicator ${currentStep >= step ? 'active' : ''} ${currentStep === step ? 'current' : ''}`}
-                onClick={() => currentStep > step && setCurrentStep(step)}
-                style={{ cursor: currentStep > step ? 'pointer' : 'default' }}
-              >
-                <div className="step-number">{step}</div>
-                <div className="step-label">
-                  {step === 1 && 'Informations'}
-                  {step === 2 && 'Offre'}
-                  {step === 3 && 'Transaction'}
-                  {step === 4 && 'Paiement'}
-                </div>
-              </div>
-            ))}
-          </div>
-          <ProgressBar 
-            now={(currentStep / 4) * 100} 
-            variant="primary" 
-            style={{ height: '6px' }}
-          />
-        </div>
       </div>
-      
-      {/* Contenido del step */}
+
+      {/* Progress Bar */}
+      <div className="mb-5">
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          {[
+            { step: 1, label: 'Informations', icon: '📝' },
+            { step: 2, label: 'Pack', icon: '💼' },
+            { step: 3, label: 'Récap', icon: '📋' },
+            { step: 4, label: 'Paiement', icon: '💳' }
+          ].map((item, idx) => (
+            <React.Fragment key={item.step}>
+              <div className="text-center">
+                <div
+                  className={`step-circle ${currentStep >= item.step ? 'completed' : ''} ${currentStep === item.step ? 'active' : ''}`}
+                  onClick={() => currentStep > item.step && setCurrentStep(item.step)}
+                >
+                  {currentStep > item.step ? '✓' : item.icon}
+                </div>
+                <small className={`step-label ${currentStep === item.step ? 'active' : ''}`}>
+                  {item.label}
+                </small>
+              </div>
+              {idx < 3 && (
+                <div className={`step-connector ${currentStep > item.step ? 'completed' : ''}`} />
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+        <ProgressBar
+          now={(currentStep / 4) * 100}
+          variant="primary"
+          className="mt-2"
+          style={{ height: '4px' }}
+        />
+      </div>
+
+      {/* Contenu */}
       <Card className="border-0 shadow-sm mb-4">
-       
-          {renderStep()}
-        
+        <Card.Body className="p-4">
+          {currentStep === 1 && (
+            <Step1Informations
+              formData={formData}
+              handleInputChange={handleInputChange}
+              images={images}
+              handleChangeImages={handleChangeImages}
+              deleteImages={deleteImages}
+            />
+          )}
+
+          {currentStep === 2 && (
+            <Step2ChoixOffre
+              formData={formData}
+              categories={categories}
+              durees={durees}
+              offres={offres}
+              handleSelectCategorie={handleSelectCategorie}
+              handleSelectDuree={handleSelectDuree}
+              handleSelectOffre={handleSelectOffre}
+            />
+          )}
+
+          {currentStep === 3 && (
+            <Step3Resume
+              formData={formData}
+              offres={offres}
+              durees={durees}
+              transactionId={transactionId}
+            />
+          )}
+
+          {currentStep === 4 && (
+            <Step4Paiement
+              formData={formData}
+              methodesPaiement={methodesPaiement}
+              handleInputChange={handleInputChange}
+              offres={offres}
+              durees={durees}
+              transactionId={transactionId}
+            />
+          )}
+        </Card.Body>
       </Card>
-      
-      {/* Mensajes de error/success */}
+
+      {/* Messages */}
       {error && (
-        <Alert variant="danger" dismissible onClose={() => setError('')}>
+        <Alert variant="danger" dismissible onClose={() => setError('')} className="mb-3">
           <i className="fas fa-exclamation-circle me-2"></i>
           {error}
         </Alert>
       )}
-      
+
       {success && (
-        <Alert variant="success" dismissible onClose={() => setSuccess('')}>
+        <Alert variant="success" dismissible onClose={() => setSuccess('')} className="mb-3">
           <i className="fas fa-check-circle me-2"></i>
           {success}
         </Alert>
       )}
-      
-      {/* Navegación */}
-      <div className="wizard-navigation d-flex justify-content-between">
-        <div>
-          {currentStep > 1 && (
-            <Button variant="outline-secondary" onClick={prevStep} disabled={loading}>
-              <i className="fas fa-arrow-left me-2"></i>
-              Précédent
-            </Button>
-          )}
-        </div>
-        
-        <div>
-          {currentStep < 4 ? (
-            <Button 
-              variant="primary" 
-              onClick={nextStep} 
-              disabled={loading || !validateStep(currentStep)}
-            >
-              Suivant
-              <i className="fas fa-arrow-right ms-2"></i>
-            </Button>
-          ) : (
-            <Button 
-              variant={isEdit ? 'warning' : 'success'} 
-              onClick={handleSubmit} 
-              disabled={loading || !validateStep(currentStep)}
-            >
-              {loading ? (
-                <>
-                  <Spinner animation="border" size="sm" className="me-2" />
-                  {isEdit ? 'Mise à jour...' : 'Soumettre...'}
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-paper-plane me-2"></i>
-                  {isEdit ? 'Mettre à jour' : 'Soumettre la demande'}
-                </>
-              )}
-            </Button>
-          )}
+
+      {/* Navigation */}
+      <div className="d-flex justify-content-between">
+        <Button
+          variant="outline-secondary"
+          onClick={prevStep}
+          disabled={currentStep === 1 || isSubmitting}
+          size="lg"
+          className="px-4"
+        >
+          <i className="fas fa-arrow-left me-2"></i>
+          Retour
+        </Button>
+
+        {currentStep < 4 ? (
+          <Button
+            variant="primary"
+            onClick={nextStep}
+            disabled={isSubmitting || !validateStep(currentStep)}
+            size="lg"
+            className="px-4"
+          >
+            Suivant
+            <i className="fas fa-arrow-right ms-2"></i>
+          </Button>
+        ) : (
+          <Button
+            variant="success"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            size="lg"
+            className="px-4"
+          >
+            {isSubmitting ? (
+              <>
+                <Spinner size="sm" animation="border" className="me-2" />
+                Création...
+              </>
+            ) : (
+              <>
+                <i className="fas fa-check-circle me-2"></i>
+                {isEdit ? 'Mettre à jour' : 'Créer ma boutique'}
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ============ STEP 1: INFORMATIONS ============
+const Step1Informations = ({ formData, handleInputChange, images, handleChangeImages, deleteImages }) => {
+  return (
+    <div>
+      <h5 className="mb-4">
+        <i className="fas fa-store text-primary me-2"></i>
+        Informations générales
+      </h5>
+
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label>
+              Nom de la boutique <span className="text-danger">*</span>
+            </Form.Label>
+            <Form.Control
+              type="text"
+              name="nom_boutique"
+              value={formData.nom_boutique}
+              onChange={handleInputChange}
+              placeholder="Ex: Fashion Store Algérie"
+              required
+            />
+          </Form.Group>
+        </Col>
+
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label>
+              Domaine <span className="text-danger">*</span>
+            </Form.Label>
+            <div className="input-group">
+              <Form.Control
+                type="text"
+                name="domaine_boutique"
+                value={formData.domaine_boutique}
+                onChange={handleInputChange}
+                placeholder="ma-boutique"
+                required
+              />
+              <span className="input-group-text">.marketplace.dz</span>
+            </div>
+            <Form.Text className="text-muted">
+              Votre boutique sera accessible à: {formData.domaine_boutique || 'ma-boutique'}.marketplace.dz
+            </Form.Text>
+          </Form.Group>
+        </Col>
+
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label>Slogan</Form.Label>
+            <Form.Control
+              type="text"
+              name="slogan_boutique"
+              value={formData.slogan_boutique}
+              onChange={handleInputChange}
+              placeholder="Ex: La mode à prix discount"
+            />
+          </Form.Group>
+        </Col>
+
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label>Date de début</Form.Label>
+            <Form.Control
+              type="date"
+              name="date_debut"
+              value={formData.date_debut}
+              onChange={handleInputChange}
+            />
+          </Form.Group>
+        </Col>
+
+        <Col xs={12}>
+          <Form.Group className="mb-3">
+            <Form.Label>
+              Description <span className="text-danger">*</span>
+            </Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              name="description_boutique"
+              value={formData.description_boutique}
+              onChange={handleInputChange}
+              placeholder="Décrivez votre boutique, vos produits, vos services..."
+              required
+            />
+          </Form.Group>
+        </Col>
+
+        <Col xs={12}>
+          <Form.Group className="mb-3">
+            <Form.Label>
+              Logo <span className="text-danger">*</span>
+            </Form.Label>
+            <ImageUploadBoutique
+              images={images}
+              handleChangeImages={handleChangeImages}
+              deleteImages={deleteImages}
+            />
+            {images.length === 0 && (
+              <Form.Text className="text-danger">
+                <i className="fas fa-exclamation-circle me-1"></i>
+                Le logo est obligatoire
+              </Form.Text>
+            )}
+          </Form.Group>
+        </Col>
+      </Row>
+
+      <hr className="my-4" />
+
+      <h5 className="mb-4">
+        <i className="fas fa-user text-primary me-2"></i>
+        Propriétaire
+      </h5>
+
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label>Nom complet</Form.Label>
+            <Form.Control
+              type="text"
+              name="proprietaire.nom"
+              value={formData.proprietaire.nom}
+              onChange={handleInputChange}
+            />
+          </Form.Group>
+        </Col>
+
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label>Email</Form.Label>
+            <Form.Control
+              type="email"
+              name="proprietaire.email"
+              value={formData.proprietaire.email}
+              onChange={handleInputChange}
+            />
+          </Form.Group>
+        </Col>
+
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label>Téléphone</Form.Label>
+            <Form.Control
+              type="tel"
+              name="proprietaire.telephone"
+              value={formData.proprietaire.telephone}
+              onChange={handleInputChange}
+              placeholder="05 XX XX XX XX"
+            />
+          </Form.Group>
+        </Col>
+
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label>Wilaya</Form.Label>
+            <Form.Control
+              type="text"
+              name="proprietaire.wilaya"
+              value={formData.proprietaire.wilaya}
+              onChange={handleInputChange}
+            />
+          </Form.Group>
+        </Col>
+
+        <Col xs={12}>
+          <Form.Group className="mb-3">
+            <Form.Label>Adresse</Form.Label>
+            <Form.Control
+              type="text"
+              name="proprietaire.adresse"
+              value={formData.proprietaire.adresse}
+              onChange={handleInputChange}
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+
+      <hr className="my-4" />
+
+      <h5 className="mb-4">
+        <i className="fas fa-share-alt text-primary me-2"></i>
+        Réseaux sociaux
+      </h5>
+
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label>
+              <i className="fab fa-facebook text-primary me-1"></i> Facebook
+            </Form.Label>
+            <Form.Control
+              type="url"
+              name="reseaux_sociaux.facebook"
+              value={formData.reseaux_sociaux.facebook}
+              onChange={handleInputChange}
+              placeholder="https://facebook.com/..."
+            />
+          </Form.Group>
+        </Col>
+
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label>
+              <i className="fab fa-instagram text-danger me-1"></i> Instagram
+            </Form.Label>
+            <Form.Control
+              type="url"
+              name="reseaux_sociaux.instagram"
+              value={formData.reseaux_sociaux.instagram}
+              onChange={handleInputChange}
+              placeholder="https://instagram.com/..."
+            />
+          </Form.Group>
+        </Col>
+
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label>
+              <i className="fab fa-tiktok me-1"></i> TikTok
+            </Form.Label>
+            <Form.Control
+              type="url"
+              name="reseaux_sociaux.tiktok"
+              value={formData.reseaux_sociaux.tiktok}
+              onChange={handleInputChange}
+              placeholder="https://tiktok.com/..."
+            />
+          </Form.Group>
+        </Col>
+
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label>
+              <i className="fab fa-whatsapp text-success me-1"></i> WhatsApp
+            </Form.Label>
+            <Form.Control
+              type="text"
+              name="reseaux_sociaux.whatsapp"
+              value={formData.reseaux_sociaux.whatsapp}
+              onChange={handleInputChange}
+              placeholder="05 XX XX XX XX"
+            />
+          </Form.Group>
+        </Col>
+
+        <Col xs={12}>
+          <Form.Group className="mb-3">
+            <Form.Label>
+              <i className="fas fa-globe me-1"></i> Site web
+            </Form.Label>
+            <Form.Control
+              type="url"
+              name="reseaux_sociaux.website"
+              value={formData.reseaux_sociaux.website}
+              onChange={handleInputChange}
+              placeholder="https://..."
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+    </div>
+  );
+};
+
+// ============ STEP 2: CHOIX OFFRE ============
+const Step2ChoixOffre = ({
+  formData,
+  categories,
+  durees,
+  offres,
+  handleSelectCategorie,
+  handleSelectDuree,
+  handleSelectOffre
+}) => {
+  const categoriesRef = useRef(null);
+  const dureesRef = useRef(null);
+  const offresRef = useRef(null);
+
+  const scroll = (ref, direction) => {
+    if (ref.current) {
+      const scrollAmount = 300;
+      ref.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  return (
+    <div>
+      {/* Catégories */}
+      <div className="mb-5">
+        <h6 className="mb-3">
+          <i className="fas fa-tag text-primary me-2"></i>
+          Catégorie <span className="text-danger">*</span>
+        </h6>
+        <div className="slider-container">
+          <button className="slider-btn slider-btn-left" onClick={() => scroll(categoriesRef, 'left')}>
+            <i className="fas fa-chevron-left"></i>
+          </button>
+          <div className="slider-scroll" ref={categoriesRef}>
+            {categories.map(cat => (
+              <div
+                key={cat.id}
+                className={`categorie-card text-center ${formData.categorie === cat.name ? 'selected' : ''}`}
+                onClick={() => handleSelectCategorie(cat.name)}
+              >
+                <i className={`fas ${cat.icon} mb-2`} style={{ fontSize: '2rem', color: '#0d6efd' }}></i>
+                <div className="small fw-bold">{cat.name}</div>
+              </div>
+            ))}
+          </div>
+          <button className="slider-btn slider-btn-right" onClick={() => scroll(categoriesRef, 'right')}>
+            <i className="fas fa-chevron-right"></i>
+          </button>
         </div>
       </div>
-      
-      {/* Footer avec détails utilisateur */}
-      <div className="mt-4 pt-4 border-top">
-        <div className="row">
-          <div className="col-md-6">
-            <h6 className="text-muted mb-2">
-              <i className="fas fa-user-circle me-2"></i>
-              Informations du propriétaire
-            </h6>
-            <p className="mb-1"><strong>Nom:</strong> {auth?.user?.name || 'Non spécifié'}</p>
-            <p className="mb-1"><strong>Email:</strong> {auth?.user?.email || 'Non spécifié'}</p>
-            <p className="mb-0"><strong>Téléphone:</strong> {auth?.user?.mobile || 'Non spécifié'}</p>
+
+      {/* Durées */}
+      <div className="mb-5">
+        <h6 className="mb-3">
+          <i className="fas fa-calendar-alt text-primary me-2"></i>
+          Durée <span className="text-danger">*</span>
+        </h6>
+        <div className="slider-container">
+          <button className="slider-btn slider-btn-left" onClick={() => scroll(dureesRef, 'left')}>
+            <i className="fas fa-chevron-left"></i>
+          </button>
+          <div className="slider-scroll" ref={dureesRef}>
+            {durees.map(d => (
+              <div
+                key={d.id}
+                className={`duree-card text-center ${formData.duree === d.id ? 'selected' : ''}`}
+                onClick={() => handleSelectDuree(d.id)}
+              >
+                <i className="fas fa-clock mb-2" style={{ fontSize: '2rem', color: '#10b981' }}></i>
+                <div className="fw-bold">{d.name}</div>
+                {parseInt(d.id) >= 6 && (
+                  <Badge bg="success" className="mt-2">
+                    {parseInt(d.id) >= 12 ? '3 mois offerts' : '1 mois offert'}
+                  </Badge>
+                )}
+              </div>
+            ))}
           </div>
-          <div className="col-md-6 text-md-end">
-            <h6 className="text-muted mb-2">
-              <i className="fas fa-info-circle me-2"></i>
-              Support
-            </h6>
-            <p className="mb-1">
-              <i className="fas fa-phone me-1"></i>
-              +213 XXX XX XX XX
-            </p>
-            <p className="mb-0">
-              <i className="fas fa-envelope me-1"></i>
-              support@marketplace.dz
-            </p>
-          </div>
+          <button className="slider-btn slider-btn-right" onClick={() => scroll(dureesRef, 'right')}>
+            <i className="fas fa-chevron-right"></i>
+          </button>
         </div>
       </div>
-      
-      {/* Estilos inline */}
+
+      {/* Offres */}
+      <div className="mb-4">
+        <h6 className="mb-3">
+          <i className="fas fa-gem text-primary me-2"></i>
+          Pack <span className="text-danger">*</span>
+        </h6>
+        <div className="slider-container">
+          <button className="slider-btn slider-btn-left" onClick={() => scroll(offresRef, 'left')}>
+            <i className="fas fa-chevron-left"></i>
+          </button>
+          <div className="slider-scroll" ref={offresRef}>
+            {offres.map(offre => (
+              <div
+                key={offre.id}
+                className={`offre-card position-relative ${formData.offre === offre.id ? 'selected' : ''}`}
+                onClick={() => handleSelectOffre(offre.id)}
+              >
+                {offre.badge && (
+                  <span className="offre-badge">{offre.badge}</span>
+                )}
+                <div className="d-flex justify-content-between align-items-start mb-3">
+                  <h6 className="mb-0" style={{ color: offre.couleur }}>{offre.name}</h6>
+                  <Badge bg={offre.couleur === '#f59e0b' ? 'warning' : 'secondary'}>
+                    {offre.credits} crédits
+                  </Badge>
+                </div>
+                <div className="mb-3">
+                  <div className="text-muted small">Stockage</div>
+                  <div className="h5 mb-0">{offre.storage} MB</div>
+                </div>
+                <div className="small">
+                  {offre.features.map((f, i) => (
+                    <div key={i} className="d-flex align-items-center mb-1">
+                      <i className="fas fa-check text-success me-2" style={{ fontSize: '0.7rem' }}></i>
+                      <span>{f}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-center mt-3 pt-2 border-top">
+                  <span className="fw-bold text-primary">{offre.prix_mois.toLocaleString()} DA</span>
+                  <small className="text-muted d-block">/mois</small>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button className="slider-btn slider-btn-right" onClick={() => scroll(offresRef, 'right')}>
+            <i className="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+
       <style jsx="true">{`
-        .create-boutique-wizard {
-          max-width: 1000px;
-          margin: 0 auto;
-        }
-        
-        .wizard-header {
-          text-align: center;
-        }
-        
-        .step-indicator {
-          text-align: center;
-          position: relative;
-          z-index: 1;
-          transition: all 0.3s ease;
-        }
-        
-        .step-indicator.active .step-number {
-          background: #0d6efd;
-          color: white;
-          border-color: #0d6efd;
-        }
-        
-        .step-indicator.current .step-number {
-          transform: scale(1.2);
-          box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.2);
-        }
-        
-        .step-number {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          background: #e9ecef;
-          border: 2px solid #dee2e6;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 auto 8px;
-          font-weight: bold;
-          transition: all 0.3s ease;
-        }
-        
-        .step-label {
-          font-size: 0.85rem;
-          color: #6c757d;
-          white-space: nowrap;
-        }
-        
-        .section-title {
-          border-bottom: 2px solid #f0f0f0;
-          padding-bottom: 0.5rem;
-          margin-bottom: 1.5rem;
-          font-weight: 600;
-        }
-        
         .slider-container {
           position: relative;
-          padding: 0 5px;
+          padding: 0 40px;
         }
         
         .slider-scroll {
           display: flex;
           overflow-x: auto;
           scroll-behavior: smooth;
-          gap: 10px;
-          padding: 7px 0;
+          gap: 15px;
+          padding: 10px 0;
           scrollbar-width: thin;
         }
         
@@ -903,22 +1179,22 @@ const prepareSubmitData = () => {
           position: absolute;
           top: 50%;
           transform: translateY(-50%);
-          background: white;
-          border: 1px solid #dee2e6;
           width: 36px;
           height: 36px;
           border-radius: 50%;
+          background: white;
+          border: 1px solid #dee2e6;
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 10;
           cursor: pointer;
           transition: all 0.3s ease;
+          z-index: 10;
         }
         
         .slider-btn:hover {
           background: #f8f9fa;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
         .slider-btn-left {
@@ -929,141 +1205,64 @@ const prepareSubmitData = () => {
           right: 0;
         }
         
-        .categorie-card {
-          min-width: 150px;
-          padding: 10px;
-          border: 2px solid #dee2e6;
-          border-radius: 8px;
-          text-align: center;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          flex-shrink: 0;
-        }
-        
-        .categorie-card:hover {
-          border-color: #0d6efd;
-          transform: translateY(-2px);
-        }
-        
-        .categorie-card.selected {
-          border-color: #0d6efd;
-          background-color: rgba(13, 110, 253, 0.05);
-          font-weight: bold;
-        }
-        
-        .duree-card {
-          min-width: 100px;
-          padding: 10px;
-          border: 2px solid #dee2e6;
-          border-radius: 8px;
-          text-align: center;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          flex-shrink: 0;
-        }
-        
-        .duree-card:hover {
-          border-color: #10b981;
-          transform: translateY(-2px);
-        }
-        
-        .duree-card.selected {
-          border-color: #10b981;
-          background-color: rgba(16, 185, 129, 0.05);
-          font-weight: bold;
-        }
-        
-        .offre-card {
-          min-width: 220px;
-          padding: 14px;
+        .categorie-card, .duree-card, .offre-card {
+          min-width: 180px;
+          padding: 15px;
           border: 2px solid #dee2e6;
           border-radius: 10px;
           cursor: pointer;
           transition: all 0.3s ease;
           flex-shrink: 0;
+          background: white;
         }
         
-        .offre-card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        .categorie-card:hover, .duree-card:hover, .offre-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .categorie-card.selected {
+          border-color: #0d6efd;
+          background: rgba(13, 110, 253, 0.05);
+        }
+        
+        .duree-card.selected {
+          border-color: #10b981;
+          background: rgba(16, 185, 129, 0.05);
         }
         
         .offre-card.selected {
-          border-width: 3px;
+          border-color: #f59e0b;
+          background: rgba(245, 158, 11, 0.05);
         }
         
-        .info_avatar {
-          position: relative;
-          width: 150px;
-          height: 150px;
-          margin: 0 auto;
-          border-radius: 50%;
-          overflow: hidden;
-          border: 1px solid #ddd;
-          cursor: pointer;
+        .offre-card {
+          min-width: 250px;
         }
         
-        .info_avatar img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        
-        .info_avatar span {
+        .offre-badge {
           position: absolute;
-          bottom: -100%;
-          left: 0;
-          width: 100%;
-          height: 50%;
-          background: rgba(255, 255, 255, 0.9);
-          text-align: center;
-          font-weight: 400;
-          transition: 0.3s ease-in-out;
-        }
-        
-        .info_avatar:hover span {
-          bottom: 0;
-        }
-        
-        .info_avatar span i {
-          font-size: 1.2rem;
-          color: #333;
-          margin-top: 10px;
-        }
-        
-        .info_avatar span p {
-          margin: 0;
-          font-size: 0.8rem;
-          color: #333;
-        }
-        
-        .info_avatar input {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          opacity: 0;
-          cursor: pointer;
-        }
-        
-        .montant-ttc {
-          font-size: 1.8rem;
+          top: -10px;
+          right: 10px;
+          background: #f59e0b;
+          color: white;
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-size: 0.75rem;
           font-weight: bold;
-          color: #198754;
         }
         
         @media (max-width: 768px) {
-          .create-boutique-wizard {
-            padding: 15px;
-          }
-          
-          .slider-container {
-            padding: 0 20px;
+          .categorie-card, .duree-card {
+            min-width: 140px;
           }
           
           .offre-card {
-            min-width: 280px;
+            min-width: 220px;
+          }
+          
+          .slider-container {
+            padding: 0 30px;
           }
         }
       `}</style>
@@ -1071,509 +1270,137 @@ const prepareSubmitData = () => {
   );
 };
 
-// ============ COMPONENTES DE CADA STEP ============
-
-// Step 1: Informations du store - ACTUALIZADO
-const Step1Informations = ({ formData, handleInputChange, handleLogoChange, handleRemoveLogo }) => {
-  const hasLogo = formData.logo || formData.logoPreview || formData.logoUrl;
-  const logoPreview = formData.logoPreview || formData.logoUrl || '/default-logo.png';
-  
-  return (
-    <div className="step1-informations">
-      <div className="d-flex align-items-center mb-3">
-        <div className="bg-primary rounded p-2 me-3">
-          <i className="fas fa-store text-white" style={{ fontSize: '1.5rem' }}></i>
-        </div>
-        <div>
-          <h4 className="mb-0">Informations du store</h4>
-          <p className="text-muted mb-0">Remplir les informations nécessaires</p>
-        </div>
-      </div>
-      
-      <div className="row g-3">
-        <div className="col-md-6">
-          <Form.Group className="mb-3">
-            <Form.Label>
-              Commence le <span className="text-danger">*</span>
-            </Form.Label>
-            <Form.Control
-              type="date"
-              name="date_debut"
-              value={formData.date_debut}
-              onChange={handleInputChange}
-              required
-            />
-            <Form.Text className="text-muted">
-              Date de début d'activité de votre store
-            </Form.Text>
-          </Form.Group>
-        </div>
-        
-        <div className="col-md-6">
-          <Form.Group className="mb-3">
-            <Form.Label>
-              Nom du store <span className="text-danger">*</span>
-            </Form.Label>
-            <Form.Control
-              type="text"
-              name="nom_boutique"
-              value={formData.nom_boutique}
-              onChange={handleInputChange}
-              placeholder="Ex: Fashion Store Algérie"
-              required
-            />
-            <Form.Text className="text-muted">
-              Le nom qui apparaîtra sur votre store
-            </Form.Text>
-          </Form.Group>
-        </div>
-        
-        <div className="col-md-6">
-          <Form.Group className="mb-3">
-            <Form.Label>
-              Domaine du store <span className="text-danger">*</span>
-            </Form.Label>
-            <div className="input-group">
-              <Form.Control
-                type="text"
-                name="domaine_boutique"
-                value={formData.domaine_boutique}
-                onChange={handleInputChange}
-                placeholder="monboutique"
-                required
-              />
-              <span className="input-group-text">.monsite.dz</span>
-            </div>
-            <Form.Text className="text-muted">
-              Votre store sera accessible à: {formData.domaine_boutique || 'exemple'}.monsite.dz
-            </Form.Text>
-          </Form.Group>
-        </div>
-        
-        <div className="col-md-6">
-          <Form.Group className="mb-3">
-            <Form.Label>Slogan / Description courte</Form.Label>
-            <Form.Control
-              type="text"
-              name="slogan_boutique"
-              value={formData.slogan_boutique}
-              onChange={handleInputChange}
-              placeholder="Ex: Votre boutique de mode en ligne"
-            />
-          </Form.Group>
-        </div>
-        
-        <div className="col-12">
-          <Form.Group className="mb-3">
-            <Form.Label>
-              Description détaillée <span className="text-danger">*</span>
-            </Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={3}
-              name="description_boutique"
-              value={formData.description_boutique}
-              onChange={handleInputChange}
-              placeholder="Décrivez votre store, vos produits, vos services..."
-              required
-            />
-            <Form.Text className="text-muted">
-              Cette description sera visible par vos clients
-            </Form.Text>
-          </Form.Group>
-        </div>
-        
-        <div className="col-12">
-          <div className="d-flex flex-column align-items-center mb-4">
-            <h6 className="mb-3">Logo du store</h6>
-            <div className="info_avatar mb-3">
-              <img 
-                src={logoPreview} 
-                alt="Logo preview" 
-                style={{ 
-                  borderRadius: '8px',
-                  width: '150px',
-                  height: '150px',
-                  objectFit: 'contain',
-                  backgroundColor: '#f8f9fa'
-                }}
-              />
-              <span>
-                <i className="fas fa-camera" />
-                <p>Changer</p>
-                <input 
-                  type="file" 
-                  name="logo" 
-                  id="logo_up"
-                  accept="image/*" 
-                  onChange={handleLogoChange} 
-                />
-              </span>
-            </div>
-            
-            {hasLogo ? (
-              <Button
-                variant="outline-danger"
-                size="sm"
-                onClick={handleRemoveLogo}
-                className="mt-2"
-              >
-                <i className="fas fa-trash me-1"></i>
-                Supprimer le logo
-              </Button>
-            ) : (
-              <p className="text-muted text-center">
-                Cliquez sur la zone du logo pour télécharger une image
-              </p>
-            )}
-          </div>
-        </div>
-        
-        <div className="col-md-6">
-          <Form.Group className="mb-3">
-            <Form.Label>
-              <i className="fab fa-facebook me-2 text-primary"></i>
-              Facebook (optionnel)
-            </Form.Label>
-            <Form.Control
-              type="url"
-              name="reseaux_sociaux.facebook"
-              value={formData.reseaux_sociaux.facebook}
-              onChange={handleInputChange}
-              placeholder="https://facebook.com/votrestore"
-            />
-          </Form.Group>
-        </div>
-        
-        <div className="col-md-6">
-          <Form.Group className="mb-3">
-            <Form.Label>
-              <i className="fab fa-instagram me-2 text-danger"></i>
-              Instagram (optionnel)
-            </Form.Label>
-            <Form.Control
-              type="url"
-              name="reseaux_sociaux.instagram"
-              value={formData.reseaux_sociaux.instagram}
-              onChange={handleInputChange}
-              placeholder="https://instagram.com/votrestore"
-            />
-          </Form.Group>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Step 2: Choix de l'offre con sliders horizontales
-const Step2ChoixOffre = ({ formData, categories, durees, offres, handleSelectCategorie, handleSelectDuree, handleSelectOffre }) => {
-  const sliderRefs = {
-    categories: useRef(null),
-    durees: useRef(null),
-    offres: useRef(null)
-  };
-
-  const scrollSlider = (sliderName, direction) => {
-    const slider = sliderRefs[sliderName].current;
-    if (slider) {
-      const scrollAmount = 300;
-      slider.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth'
-      });
-    }
-  };
-
-  return (
-    <div className="step2-choix-offre">
-      <h4 className="section-title">Choix de l'offre</h4>
-      
-      {/* Slider Catégories */}
-      <div className="mb-5">
-        <h5 className="mb-3">Choisir catégories</h5>
-        <div className="slider-container">
-          <button className="slider-btn slider-btn-left" onClick={() => scrollSlider('categories', 'left')}>
-            <i className="fas fa-chevron-left"></i>
-          </button>
-          <div className="slider-scroll" ref={sliderRefs.categories}>
-            {categories.map((categorie, index) => (
-              <div
-                key={index}
-                className={`categorie-card ${formData.categorie === categorie ? 'selected' : ''}`}
-                onClick={() => handleSelectCategorie(categorie)}
-              >
-                <i className="fas fa-tag mb-2" style={{ fontSize: '1.5rem', color: '#0d6efd' }}></i>
-                <div>{categorie}</div>
-              </div>
-            ))}
-          </div>
-          <button className="slider-btn slider-btn-right" onClick={() => scrollSlider('categories', 'right')}>
-            <i className="fas fa-chevron-right"></i>
-          </button>
-        </div>
-        {formData.categorie && (
-          <div className="mt-2 text-center">
-            <Badge bg="primary" pill>
-              <i className="fas fa-check me-1"></i>
-              Sélectionné: {formData.categorie}
-            </Badge>
-          </div>
-        )}
-      </div>
-      
-      {/* Slider Durées */}
-      <div className="mb-5">
-        <h5 className="mb-3">Choisir une durée</h5>
-        <div className="slider-container">
-          <button className="slider-btn slider-btn-left" onClick={() => scrollSlider('durees', 'left')}>
-            <i className="fas fa-chevron-left"></i>
-          </button>
-          <div className="slider-scroll" ref={sliderRefs.durees}>
-            {durees.map((duree) => (
-              <div
-                key={duree.id}
-                className={`duree-card ${formData.duree === duree.id ? 'selected' : ''}`}
-                onClick={() => handleSelectDuree(duree.id)}
-              >
-                <i className="fas fa-calendar-alt mb-2" style={{ fontSize: '1.5rem', color: '#10b981' }}></i>
-                <div>{duree.name}</div>
-              </div>
-            ))}
-          </div>
-          <button className="slider-btn slider-btn-right" onClick={() => scrollSlider('durees', 'right')}>
-            <i className="fas fa-chevron-right"></i>
-          </button>
-        </div>
-        {formData.duree && (
-          <div className="mt-2 text-center">
-            <Badge bg="success" pill>
-              <i className="fas fa-check me-1"></i>
-              Sélectionné: {durees.find(d => d.id === formData.duree)?.name}
-            </Badge>
-          </div>
-        )}
-      </div>
-      
-      {/* Slider Offres */}
-      <div className="mb-4">
-        <h5 className="mb-3">Choisir une offre</h5>
-        <div className="slider-container">
-          <button className="slider-btn slider-btn-left" onClick={() => scrollSlider('offres', 'left')}>
-            <i className="fas fa-chevron-left"></i>
-          </button>
-          <div className="slider-scroll" ref={sliderRefs.offres}>
-            {offres.map((offre) => (
-              <div
-                key={offre.id}
-                className={`offre-card ${formData.offre === offre.id ? 'selected' : ''}`}
-                onClick={() => handleSelectOffre(offre.id)}
-                style={{ borderColor: formData.offre === offre.id ? offre.couleur : '#dee2e6' }}
-              >
-                <div className="d-flex justify-content-between align-items-start mb-3">
-                  <h5 className="mb-0" style={{ color: offre.couleur }}>{offre.name}</h5>
-                  <Badge bg={offre.couleur === '#f59e0b' ? 'warning' : offre.couleur === '#6b7280' ? 'secondary' : 'primary'}>
-                    {offre.credits} crédits
-                  </Badge>
-                </div>
-                
-                <div className="mb-3">
-                  <div className="text-muted small">Limite de stockage</div>
-                  <div className="h4 mb-0">{offre.storage} MB</div>
-                </div>
-                
-                <div className="plan-features">
-                  {offre.features.map((feature, idx) => (
-                    <div key={idx} className="d-flex align-items-center mb-1">
-                      <i className="fas fa-check text-success me-2" style={{ fontSize: '0.8rem' }}></i>
-                      <small>{feature}</small>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="text-center mt-3">
-                  <Button
-                    size="sm"
-                    variant={formData.offre === offre.id ? 'primary' : 'outline-primary'}
-                    style={{ 
-                      backgroundColor: formData.offre === offre.id ? offre.couleur : '',
-                      borderColor: offre.couleur
-                    }}
-                  >
-                    {formData.offre === offre.id ? '✓ Sélectionné' : 'Sélectionner'}
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-          <button className="slider-btn slider-btn-right" onClick={() => scrollSlider('offres', 'right')}>
-            <i className="fas fa-chevron-right"></i>
-          </button>
-        </div>
-      </div>
-      
-      {/* Badges promotionnels */}
-      <div className="row g-2 mb-4">
-        <div className="col-md-4">
-          <div className="border rounded p-3 text-center">
-            <h6 className="text-primary mb-1">1 mois offert(s)</h6>
-            <small className="text-muted">A partir de 6 mois</small>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="border rounded p-3 text-center">
-            <h6 className="text-success mb-1">3 mois offert(s)</h6>
-            <small className="text-muted">A partir de 12 mois</small>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="border rounded p-3 text-center">
-            <h6 className="text-warning mb-1">Nom de domaine</h6>
-            <small className="text-muted">A partir de 3 mois</small>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Step 3: Résumé de la transaction
-const Step3Transaction = ({ formData, transactionId, offres, durees }) => {
+// ============ STEP 3: RÉSUMÉ ============
+const Step3Resume = ({ formData, offres, durees, transactionId }) => {
   const offreSelectionnee = offres.find(o => o.id === formData.offre);
   const dureeSelectionnee = durees.find(d => d.id === formData.duree);
-  
+
   return (
-    <div className="step3-transaction">
-      <div className="d-flex align-items-center mb-4">
-        <div className="bg-success rounded p-2 me-3">
-          <i className="fas fa-receipt text-white" style={{ fontSize: '1.5rem' }}></i>
-        </div>
-        <div>
-          <h4 className="mb-0">Transaction</h4>
-          <p className="text-muted mb-0">Résumé de la transaction</p>
-        </div>
-      </div>
-      
-      <div className="row">
-        <div className="col-md-8">
-          <Card className="border-success mb-4">
+    <div>
+      <h5 className="mb-4">
+        <i className="fas fa-file-invoice text-primary me-2"></i>
+        Récapitulatif de votre commande
+      </h5>
+
+      <Card className="bg-light border-0 mb-4">
+        <Card.Body>
+          <div className="d-flex justify-content-between mb-2">
+            <span className="text-muted">Transaction N°</span>
+            <span className="fw-bold">{transactionId}</span>
+          </div>
+          <div className="d-flex justify-content-between mb-2">
+            <span className="text-muted">Date</span>
+            <span>{new Date().toLocaleDateString('fr-FR')}</span>
+          </div>
+          <div className="d-flex justify-content-between">
+            <span className="text-muted">Statut</span>
+            <Badge bg="warning">En attente de paiement</Badge>
+          </div>
+        </Card.Body>
+      </Card>
+
+      <Row>
+        <Col lg={8}>
+          <Card className="mb-4">
             <Card.Body>
-              <h5 className="mb-3">Détails de la commande</h5>
-              
-              <div className="row mb-3">
-                <div className="col-6">
-                  <div className="text-muted small">Choix de l'offre</div>
-                  <div className="fw-bold">{formData.offre}</div>
-                </div>
-                <div className="col-6">
-                  <div className="text-muted small">Catégorie</div>
-                  <div className="fw-bold">{formData.categorie || 'Non sélectionné'}</div>
-                </div>
+              <h6 className="border-bottom pb-2 mb-3">Détails de la boutique</h6>
+
+              <Row className="mb-2">
+                <Col xs={5} className="text-muted">Nom</Col>
+                <Col xs={7} className="fw-bold">{formData.nom_boutique}</Col>
+              </Row>
+
+              <Row className="mb-2">
+                <Col xs={5} className="text-muted">Domaine</Col>
+                <Col xs={7}>{formData.domaine_boutique}.marketplace.dz</Col>
+              </Row>
+
+              <Row className="mb-2">
+                <Col xs={5} className="text-muted">Catégorie</Col>
+                <Col xs={7}>{formData.categorie}</Col>
+              </Row>
+
+              <Row className="mb-2">
+                <Col xs={5} className="text-muted">Pack</Col>
+                <Col xs={7}>
+                  {formData.offre}
+                  <Badge bg="info" className="ms-2">{offreSelectionnee?.credits} crédits</Badge>
+                </Col>
+              </Row>
+
+              <Row className="mb-2">
+                <Col xs={5} className="text-muted">Durée</Col>
+                <Col xs={7}>{dureeSelectionnee?.name}</Col>
+              </Row>
+
+              {formData.mois_offerts > 0 && (
+                <Row className="mb-2">
+                  <Col xs={5} className="text-muted">Offre spéciale</Col>
+                  <Col xs={7}>
+                    <Badge bg="success">🎁 {formData.mois_offerts} mois offert(s)</Badge>
+                  </Col>
+                </Row>
+              )}
+
+              <Row className="mb-2">
+                <Col xs={5} className="text-muted">Propriétaire</Col>
+                <Col xs={7}>{formData.proprietaire.nom || 'Non renseigné'}</Col>
+              </Row>
+
+              <Row className="mb-2">
+                <Col xs={5} className="text-muted">Contact</Col>
+                <Col xs={7}>{formData.proprietaire.telephone || 'Non renseigné'}</Col>
+              </Row>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        <Col lg={4}>
+          <Card className="bg-primary text-white border-0 sticky-top" style={{ top: '20px' }}>
+            <Card.Body>
+              <h6 className="text-white-50 mb-3">Total à payer</h6>
+              <div className="display-5 fw-bold mb-3">
+                {formData.montant_ttc.toLocaleString()} DA
               </div>
-              
-              <div className="row mb-3">
-                <div className="col-6">
-                  <div className="text-muted small">Durée du store</div>
-                  <div className="fw-bold">{dureeSelectionnee?.name || '1 Mois'}</div>
+
+              <hr className="bg-white opacity-25" />
+
+              <div className="small text-white-50">
+                <div className="d-flex justify-content-between mb-2">
+                  <span>Montant HT</span>
+                  <span>{formData.montant_initial.toLocaleString()} DA</span>
                 </div>
-                <div className="col-6">
-                  <div className="text-muted small">Commence le</div>
-                  <div className="fw-bold">{new Date(formData.date_debut).toLocaleDateString('fr-FR')}</div>
+                <div className="d-flex justify-content-between mb-2">
+                  <span>TVA 19%</span>
+                  <span>{(formData.montant_initial * 0.19).toLocaleString()} DA</span>
                 </div>
-              </div>
-              
-              <div className="row mb-3">
-                <div className="col-6">
-                  <div className="text-muted small">Logo du store</div>
-                  <div className="fw-bold">
-                    {(formData.logo || formData.logoPreview || formData.logoUrl) ? '✓ Défini' : 'Non défini'}
-                  </div>
-                </div>
-                <div className="col-6">
-                  <div className="text-muted small">Nom du store</div>
-                  <div className="fw-bold">{formData.nom_boutique || 'Non défini'}</div>
-                </div>
-              </div>
-              
-              <div className="mb-3">
-                <div className="text-muted small">Description du store</div>
-                <div className="fw-bold">
-                  {formData.description_boutique 
-                    ? (formData.description_boutique.length > 50 
-                      ? formData.description_boutique.substring(0, 50) + '...' 
-                      : formData.description_boutique)
-                    : 'Non définie'}
-                </div>
-              </div>
-              
-              <hr />
-              
-              <div className="row">
-                <div className="col-6">
-                  <div className="text-muted">Montant initial :</div>
-                  <div className="h5 text-primary">{formData.montant_initial.toLocaleString('fr-FR')} DA</div>
-                </div>
-                <div className="col-6 text-end">
-                  {formData.mois_offerts > 0 && (
-                    <Badge bg="success" className="mb-2">
-                      {formData.mois_offerts} mois offert(s)
-                    </Badge>
-                  )}
+                <div className="d-flex justify-content-between">
+                  <span>Mois facturés</span>
+                  <span>{parseInt(formData.duree) - formData.mois_offerts}</span>
                 </div>
               </div>
             </Card.Body>
           </Card>
-        </div>
-        
-        <div className="col-md-4">
-          <Card className="border-primary">
-            <Card.Body>
-              <h5 className="mb-3">Récapitulatif</h5>
-              
-              <div className="mb-3">
-                <div className="d-flex justify-content-between mb-1">
-                  <span>Crédits:</span>
-                  <span>{offreSelectionnee?.credits || 0}</span>
-                </div>
-                <div className="d-flex justify-content-between mb-1">
-                  <span>Stockage:</span>
-                  <span>{offreSelectionnee?.storage || 0} MB</span>
-                </div>
-                <div className="d-flex justify-content-between mb-1">
-                  <span>Durée:</span>
-                  <span>{dureeSelectionnee?.name || '1 Mois'}</span>
-                </div>
-                {formData.mois_offerts > 0 && (
-                  <div className="d-flex justify-content-between mb-1 text-success">
-                    <span>Mois offerts:</span>
-                    <span>-{formData.mois_offerts} mois</span>
-                  </div>
-                )}
-              </div>
-              
-              <hr />
-              
-              <div className="text-center">
-                <div className="text-muted small">Prix Total TTC</div>
-                <div className="montant-ttc">{formData.montant_ttc.toLocaleString('fr-FR')} DA</div>
-              </div>
-            </Card.Body>
-          </Card>
-        </div>
-      </div>
+        </Col>
+      </Row>
     </div>
   );
 };
 
-// Step 4: Détail de la transaction
-const Step4DetailTransaction = ({ formData, methodesPaiement, handleInputChange, offres, durees, transactionId }) => {
+// ============ STEP 4: PAIEMENT ============
+const Step4Paiement = ({ formData, methodesPaiement, handleInputChange, offres, durees, transactionId }) => {
   const offreSelectionnee = offres.find(o => o.id === formData.offre);
   const dureeSelectionnee = durees.find(d => d.id === formData.duree);
-  
+
   return (
-    <div className="step4-detail-transaction">
-      <h4 className="section-title">Détail de la transaction</h4>
-      
-      <Card className="mb-4">
+    <div className="step4-paiement">
+      <h4 className="section-title mb-4">
+        <i className="fas fa-credit-card me-2 text-primary"></i>
+        Détail de la transaction
+      </h4>
+
+      {/* Transaction Info Card */}
+      <Card className="mb-4 border-0 shadow-sm">
         <Card.Body>
           <div className="row mb-3">
             <div className="col-md-6">
@@ -1582,12 +1409,13 @@ const Step4DetailTransaction = ({ formData, methodesPaiement, handleInputChange,
             </div>
             <div className="col-md-6 text-md-end">
               <div className="text-muted small">Date</div>
-              <div className="h5">{new Date().toLocaleString('fr-FR')}</div>
+              <div className="h5">{new Date().toLocaleDateString('fr-FR')}</div>
             </div>
           </div>
-          
+
+          {/* Table responsive */}
           <div className="table-responsive">
-            <table className="table table-bordered">
+            <table className="table table-bordered table-hover">
               <thead className="table-light">
                 <tr>
                   <th>Désignation</th>
@@ -1601,12 +1429,16 @@ const Step4DetailTransaction = ({ formData, methodesPaiement, handleInputChange,
               </thead>
               <tbody>
                 <tr>
-                  <td>Achat d'un store {formData.offre}</td>
+                  <td>
+                    <span className="fw-bold">Achat d'un store</span>
+                    <br />
+                    <small className="text-muted">{formData.offre}</small>
+                  </td>
                   <td>{dureeSelectionnee?.name || '1 Mois'}</td>
                   <td>{new Date(formData.date_debut).toLocaleDateString('fr-FR')}</td>
-                  <td>{formData.montant_initial.toLocaleString('fr-FR')} DA</td>
-                  <td>{(formData.montant_initial * 0.19).toLocaleString('fr-FR')} DA</td>
-                  <td>{formData.montant_ttc.toLocaleString('fr-FR')} DA</td>
+                  <td>{formData.montant_initial?.toLocaleString('fr-FR') || 0} DA</td>
+                  <td>{((formData.montant_initial || 0) * 0.19).toLocaleString('fr-FR')} DA</td>
+                  <td className="fw-bold text-primary">{formData.montant_ttc?.toLocaleString('fr-FR') || 0} DA</td>
                   <td>
                     <Button variant="outline-primary" size="sm">
                       <i className="fas fa-edit"></i>
@@ -1616,65 +1448,115 @@ const Step4DetailTransaction = ({ formData, methodesPaiement, handleInputChange,
               </tbody>
               <tfoot className="table-secondary">
                 <tr>
-                  <td colSpan="5" className="text-end fw-bold">Prix Total</td>
+                  <td colSpan="5" className="text-end fw-bold">Prix Total TTC</td>
                   <td colSpan="2" className="fw-bold">
-                    <div className="montant-ttc">{formData.montant_ttc.toLocaleString('fr-FR')} DA</div>
+                    <span className="montant-ttc text-primary">
+                      {formData.montant_ttc?.toLocaleString('fr-FR') || 0} DA
+                    </span>
                   </td>
                 </tr>
               </tfoot>
             </table>
           </div>
+
+          {/* Promotion badge */}
+          {formData.mois_offerts > 0 && (
+            <div className="mt-3">
+              <Badge bg="success" className="p-2">
+                <i className="fas fa-gift me-2"></i>
+                {formData.mois_offerts} mois offert(s)
+              </Badge>
+            </div>
+          )}
         </Card.Body>
       </Card>
-      
-      <div className="row">
+
+      {/* Client Information */}
+      <div className="row g-4">
         <div className="col-md-6">
-          <Card>
+          <Card className="h-100 border-0 shadow-sm">
             <Card.Body>
-              <h5 className="mb-3">Informations</h5>
-              
-              <Form.Group className="mb-3">
-                <Form.Label>Nom du client</Form.Label>
+              <h5 className="mb-4">
+                <i className="fas fa-user-circle me-2 text-primary"></i>
+                Informations client
+              </h5>
+
+              <Form.Group className="mb-4">
+                <Form.Label className="fw-bold">Nom complet</Form.Label>
                 <Form.Control
                   type="text"
                   name="client_nom"
-                  value={formData.client_nom}
+                  value={formData.client_nom || ''}
                   onChange={handleInputChange}
+                  placeholder="Entrez votre nom complet"
                   required
+                  className="py-2"
                 />
+                <Form.Text className="text-muted">
+                  Tel qu'il apparaîtra sur la facture
+                </Form.Text>
               </Form.Group>
-              
+
               <Form.Group className="mb-3">
-                <Form.Label>Téléphone</Form.Label>
+                <Form.Label className="fw-bold">Téléphone</Form.Label>
                 <Form.Control
                   type="tel"
                   name="client_telephone"
-                  value={formData.client_telephone}
+                  value={formData.client_telephone || ''}
                   onChange={handleInputChange}
                   placeholder="05 XX XX XX XX"
                   required
+                  className="py-2"
                 />
+                <Form.Text className="text-muted">
+                  Pour vous contacter en cas de besoin
+                </Form.Text>
               </Form.Group>
+
+              {/* Résumé rapide */}
+              <div className="bg-light p-3 rounded mt-4">
+                <h6 className="mb-3">Récapitulatif</h6>
+                <div className="d-flex justify-content-between mb-2">
+                  <span>Pack:</span>
+                  <span className="fw-bold">{formData.offre}</span>
+                </div>
+                <div className="d-flex justify-content-between mb-2">
+                  <span>Durée:</span>
+                  <span className="fw-bold">{dureeSelectionnee?.name}</span>
+                </div>
+                <div className="d-flex justify-content-between">
+                  <span>Total TTC:</span>
+                  <span className="fw-bold text-primary">
+                    {formData.montant_ttc?.toLocaleString('fr-FR')} DA
+                  </span>
+                </div>
+              </div>
             </Card.Body>
           </Card>
         </div>
-        
+
+        {/* Payment Information */}
         <div className="col-md-6">
-          <Card>
+          <Card className="h-100 border-0 shadow-sm">
             <Card.Body>
-              <h5 className="mb-3">Paiement</h5>
-              
-              <Form.Group className="mb-3">
-                <Form.Label>
+              <h5 className="mb-4">
+                <i className="fas fa-credit-card me-2 text-primary"></i>
+                Paiement
+              </h5>
+
+              <Form.Group className="mb-4">
+                <Form.Label className="fw-bold">
                   Méthode de paiement <span className="text-danger">*</span>
                 </Form.Label>
                 <Form.Select
                   name="methode_paiement"
-                  value={formData.methode_paiement}
+                  value={formData.methode_paiement || ''}
                   onChange={handleInputChange}
                   required
+                  className="py-2"
+                  size="lg"
                 >
-                  <option value="">Sélectionnez une méthode</option>
+                  <option value="">Choisissez une méthode</option>
                   {methodesPaiement.map((methode) => (
                     <option key={methode.value} value={methode.value}>
                       {methode.label}
@@ -1682,11 +1564,35 @@ const Step4DetailTransaction = ({ formData, methodesPaiement, handleInputChange,
                   ))}
                 </Form.Select>
                 <Form.Text className="text-muted">
-                  Sélectionnez votre méthode de paiement préférée
+                  Vous recevrez les instructions après validation
                 </Form.Text>
               </Form.Group>
-              
-              <Form.Group className="mb-3">
+
+              {/* Méthodes de paiement visuelles */}
+              <div className="payment-methods-grid mb-4">
+                <Row className="g-2">
+                  {methodesPaiement.map((method) => (
+                    <Col xs={6} key={method.value}>
+                      <div
+                        className={`payment-method-card p-3 text-center rounded cursor-pointer ${formData.methode_paiement === method.value ? 'selected border-primary' : 'border'}`}
+                        onClick={() => handleInputChange({ target: { name: 'methode_paiement', value: method.value } })}
+                        style={{
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          border: formData.methode_paiement === method.value ? '2px solid #0d6efd' : '1px solid #dee2e6',
+                          backgroundColor: formData.methode_paiement === method.value ? '#f0f7ff' : 'white'
+                        }}
+                      >
+                        <i className={`fas ${method.icon} mb-2`} style={{ fontSize: '1.5rem', color: '#0d6efd' }}></i>
+                        <div className="small fw-bold">{method.label}</div>
+                      </div>
+                    </Col>
+                  ))}
+                </Row>
+              </div>
+
+              {/* Conditions */}
+              <Form.Group className="mb-4">
                 <Form.Check
                   type="checkbox"
                   name="accepte_conditions"
@@ -1697,24 +1603,76 @@ const Step4DetailTransaction = ({ formData, methodesPaiement, handleInputChange,
                       <span className="text-danger"> *</span>
                     </span>
                   }
-                  checked={formData.accepte_conditions}
+                  checked={formData.accepte_conditions || false}
                   onChange={handleInputChange}
                   required
+                  className="py-2"
                 />
-                <Form.Text className="text-muted">
-                  En cochant cette case, vous acceptez nos conditions générales de vente
+                <Form.Text className="text-muted d-block mt-1">
+                  En validant, vous acceptez nos conditions de vente et d'utilisation
                 </Form.Text>
               </Form.Group>
-              
-              <Alert variant="info" className="mt-3">
-                <i className="fas fa-info-circle me-2"></i>
-                <strong>Important:</strong> Votre demande sera évaluée par nos administrateurs. 
-                Vous recevrez une confirmation par email une fois approuvée.
+
+              {/* Alert info */}
+              <Alert variant="info" className="mt-3 mb-0">
+                <div className="d-flex">
+                  <i className="fas fa-info-circle me-3 mt-1" style={{ fontSize: '1.2rem' }}></i>
+                  <div>
+                    <strong>Important:</strong> Votre demande sera évaluée par nos administrateurs.
+                    Vous recevrez une confirmation par email une fois approuvée.
+                  </div>
+                </div>
               </Alert>
             </Card.Body>
           </Card>
         </div>
       </div>
+
+      <style jsx="true">{`
+        .montant-ttc {
+          font-size: 1.2rem;
+          font-weight: bold;
+        }
+        
+        .payment-method-card {
+          transition: all 0.3s ease;
+          cursor: pointer;
+        }
+        
+        .payment-method-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .cursor-pointer {
+          cursor: pointer;
+        }
+        
+        .table th {
+          font-weight: 600;
+          font-size: 0.9rem;
+        }
+        
+        .table td {
+          vertical-align: middle;
+        }
+        
+        .section-title {
+          font-size: 1.5rem;
+          font-weight: 600;
+          color: #333;
+        }
+        
+        @media (max-width: 768px) {
+          .payment-method-card {
+            padding: 0.75rem !important;
+          }
+          
+          .payment-method-card i {
+            font-size: 1.2rem !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

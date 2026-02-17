@@ -8,43 +8,42 @@ const boutiqueCtrl = {
   // ==================== CREAR BOUTIQUE ====================
   // controllers/boutiqueController.js
 
+// ctrls/boutiqueCtrl.js - createBoutique
+
+// ctrls/boutiqueCtrl.js
+// controllers/boutiqueController.js - VERSIÓN SIMPLIFICADA
+// controllers/boutiqueController.js - MEJORAR MENSAJE DE ERROR
 createBoutique: async (req, res) => {
   try {
-    // Los datos vienen directamente en req.body
     const boutiqueData = req.body;
     const user = req.user;
     
-    console.log('📦 Creando boutique para usuario:', user._id);
-    console.log('📦 Datos recibidos:', {
+    console.log('📦 Creando boutique:', {
       nom_boutique: boutiqueData.nom_boutique,
       categorie: boutiqueData.categorie,
-      hasAvatar: !!boutiqueData.avatar
+      domaine: boutiqueData.domaine_boutique,
+      imagesCount: boutiqueData.images.length || 0
     });
 
     // Validaciones básicas
-    if (!boutiqueData.nom_boutique) {
+    const { nom_boutique, categorie, images } = boutiqueData;
+    if (!nom_boutique || !categorie || !images) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Le nom de la boutique est obligatoire' 
+        message: 'Champs requis manquants' 
       });
     }
 
-    if (!boutiqueData.categorie) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Vous devez sélectionner une catégorie' 
-      });
-    }
-
-    // Verificar dominio único
+    // Verificar si el dominio ya existe
     if (boutiqueData.domaine_boutique) {
       const existing = await Boutique.findOne({ 
         domaine_boutique: boutiqueData.domaine_boutique 
       });
+      
       if (existing) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Ce domaine est déjà utilisé' 
+          message: 'Ce domaine est déjà utilisé. Veuillez en choisir un autre.' 
         });
       }
     }
@@ -62,22 +61,29 @@ createBoutique: async (req, res) => {
       });
     }
 
-    // Crear la boutique (avatar ya viene procesado)
+    // Generar subCategory slug
+    const subCategory = boutiqueData.categorie 
+      ? 'boutique-' + boutiqueData.categorie
+          .toLowerCase()
+          .replace(/[&]/g, 'et')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '')
+      : '';
+
     const newBoutique = new Boutique({
       user: user._id,
       categorie: boutiqueData.categorie,
-      subCategory: boutiqueData.subCategory || boutiqueData.categorie,
+      subCategory: subCategory,
       articleType: boutiqueData.articleType || '',
       category: boutiquesCategory._id,
       nom_boutique: boutiqueData.nom_boutique,
       domaine_boutique: boutiqueData.domaine_boutique,
       slogan_boutique: boutiqueData.slogan_boutique || '',
       description_boutique: boutiqueData.description_boutique,
-      avatar: boutiqueData.avatar, // Tal como llega de la acción
+      images: boutiqueData.images,
       plan: boutiqueData.plan || 'gratuit',
       duree_abonnement: boutiqueData.duree_abonnement || '1mois',
       date_debut: boutiqueData.date_debut || new Date(),
-      categories_produits: boutiqueData.categories_produits || [],
       proprietaire: boutiqueData.proprietaire || {},
       reseaux_sociaux: boutiqueData.reseaux_sociaux || {},
       couleur_theme: boutiqueData.couleur_theme || '#2563eb',
@@ -90,119 +96,44 @@ createBoutique: async (req, res) => {
       transaction_id: 'TR-' + Date.now() + '-' + Math.floor(Math.random() * 1000)
     });
 
+    console.log('💾 Boutique à sauvegarder:', {
+      nom: newBoutique.nom_boutique,
+      domaine: newBoutique.domaine_boutique,
+      imagesCount: newBoutique.images.length
+    });
+
     await newBoutique.save();
+
+    console.log('✅ Boutique créée avec succès, ID:', newBoutique._id);
 
     res.status(201).json({
       success: true,
       message: 'Boutique créée avec succès!',
-      boutique: newBoutique
+      boutique: {
+        _id: newBoutique._id,
+        nom_boutique: newBoutique.nom_boutique,
+        domaine_boutique: newBoutique.domaine_boutique,
+        images: newBoutique.images
+      }
     });
 
   } catch (error) {
-    console.error('❌ Error:', error);
+    console.error('❌ Error en createBoutique:', error);
+    
+    // Error de duplicado
+    if (error.code === 11000) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Ce domaine est déjà utilisé. Veuillez en choisir un autre.' 
+      });
+    }
+    
     res.status(500).json({ 
       success: false, 
       message: error.message 
     });
   }
 },
-  // ==================== ACTUALIZAR BOUTIQUE ====================
-  updateBoutique: async (req, res) => {
-    try {
-      const id = req.params.id;
-      const { boutiqueData } = req.body;
-      const user = req.user;
-      
-      const boutique = await Boutique.findById(id);
-      
-      if (!boutique) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Boutique non trouvée' 
-        });
-      }
-      
-      if (boutique.user.toString() !== user._id.toString()) {
-        return res.status(403).json({ 
-          success: false, 
-          message: 'Non autorisé à modifier cette boutique' 
-        });
-      }
-      
-      // Actualizar campos
-      if (boutiqueData.nom_boutique) boutique.nom_boutique = boutiqueData.nom_boutique;
-      if (boutiqueData.domaine_boutique) boutique.domaine_boutique = boutiqueData.domaine_boutique;
-      if (boutiqueData.slogan_boutique !== undefined) boutique.slogan_boutique = boutiqueData.slogan_boutique;
-      if (boutiqueData.description_boutique) boutique.description_boutique = boutiqueData.description_boutique;
-      
-      // Actualizar avatar si viene nuevo
-      if (boutiqueData.avatar !== undefined) {
-        boutique.avatar = boutiqueData.avatar;
-      }
-      
-      if (boutiqueData.categorie) {
-        boutique.categorie = boutiqueData.categorie;
-        
-        let subCategorySlug = '';
-        if (boutiqueData.categorie) {
-          subCategorySlug = 'boutique-' + boutiqueData.categorie.toLowerCase()
-            .replace(/[&]/g, 'et')
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-|-$/g, '');
-        }
-          
-        const subCategory = await Category.findOne({ slug: subCategorySlug });
-        if (subCategory) {
-          boutique.subCategory = subCategory.name;
-        } else {
-          boutique.subCategory = boutiqueData.categorie;
-        }
-      }
-      
-      if (boutiqueData.plan) boutique.plan = boutiqueData.plan;
-      if (boutiqueData.duree_abonnement) boutique.duree_abonnement = boutiqueData.duree_abonnement;
-      if (boutiqueData.categories_produits) boutique.categories_produits = boutiqueData.categories_produits;
-      
-      if (boutiqueData.proprietaire) {
-        boutique.proprietaire = {
-          nom: boutiqueData.proprietaire.nom || boutique.proprietaire.nom || '',
-          email: boutiqueData.proprietaire.email || boutique.proprietaire.email || '',
-          telephone: boutiqueData.proprietaire.telephone || boutique.proprietaire.telephone || '',
-          wilaya: boutiqueData.proprietaire.wilaya || boutique.proprietaire.wilaya || '',
-          adresse: boutiqueData.proprietaire.adresse || boutique.proprietaire.adresse || ''
-        };
-      }
-      
-      if (boutiqueData.reseaux_sociaux) {
-        boutique.reseaux_sociaux = {
-          facebook: boutiqueData.reseaux_sociaux.facebook || boutique.reseaux_sociaux.facebook || '',
-          instagram: boutiqueData.reseaux_sociaux.instagram || boutique.reseaux_sociaux.instagram || '',
-          tiktok: boutiqueData.reseaux_sociaux.tiktok || boutique.reseaux_sociaux.tiktok || '',
-          whatsapp: boutiqueData.reseaux_sociaux.whatsapp || boutique.reseaux_sociaux.whatsapp || '',
-          website: boutiqueData.reseaux_sociaux.website || boutique.reseaux_sociaux.website || ''
-        };
-      }
-      
-      if (boutiqueData.couleur_theme) boutique.couleur_theme = boutiqueData.couleur_theme;
-      
-      await boutique.save();
-      
-      res.json({
-        success: true,
-        message: 'Boutique mise à jour avec succès',
-        boutique: boutique
-      });
-      
-    } catch (error) {
-      console.error('❌ Error en updateBoutique:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Erreur lors de la mise à jour de la boutique', 
-        error: error.message 
-      });
-    }
-  },
-
   // ==================== OTRAS FUNCIONES (sin cambios) ====================
   getBoutique: async (req, res) => {
     try {

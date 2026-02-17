@@ -27,9 +27,7 @@ const CategoryPage = () => {
   const { category } = useParams();
   const categoryData = useSelector(state => state.category.currentCategory);
   
-  
   // ============ ESTADOS DE REDUX ============
-  // Estado para posts normales
   const {
     categoryInfo = {},
     posts = [],
@@ -38,7 +36,6 @@ const CategoryPage = () => {
     pagination: rawPagination = {}
   } = useSelector((state) => state.category || {});
 
-  // Obtener hijos para posts normales desde categoryInfo
   const categoryChildren = categoryInfo?.children || [];
 
   // Estado para boutiques
@@ -65,23 +62,31 @@ const CategoryPage = () => {
     hasMore: boutiqueCategoryData?.hasMore || false
   };
 
-  // ============ ESTADO LOCAL PARA FILTROS Y UI ============
+  // ============ ESTADO LOCAL ============
   const [allChildren, setAllChildren] = useState([]);
   const [currentSub, setCurrentSub] = useState(null);
   const [currentArticle, setCurrentArticle] = useState(null);
   const [error, setError] = useState(null);
   
-  // Estado para filtros (sin recarga de página)
+  // Estado para filtros - INICIALIZAR desde URL
   const [filters, setFilters] = useState({
     sub: subSlug || null,
     article: articleSlug || null,
     page: parseInt(page) || 1
   });
 
-  const currentPage = filters.page;
+  // ============ SINCRONIZAR ESTADO CON URL ============
+  useEffect(() => {
+    console.log('🔄 Sincronizando con URL:', { subSlug, articleSlug, page });
+    setFilters({
+      sub: subSlug || null,
+      article: articleSlug || null,
+      page: parseInt(page) || 1
+    });
+  }, [subSlug, articleSlug, page]);
 
-  // ============ ACTUALIZAR URL SIN RECARGAR ============
-  const updateUrlWithoutReload = useCallback((newFilters) => {
+  // ============ ACTUALIZAR URL (CON REEMPLAZO) ============
+  const updateUrl = useCallback((newFilters) => {
     // Construir nueva URL
     let basePath = `/${slug}`;
     
@@ -94,37 +99,26 @@ const CategoryPage = () => {
     
     basePath += `/${newFilters.page}`;
     
-    // Actualizar URL sin recargar el componente
-    history.replace(basePath, { filters: newFilters });
+    console.log('📍 Actualizando URL:', basePath);
+    
+    // Usar push para que el botón "atrás" del navegador funcione
+    history.push(basePath);
   }, [slug, history]);
 
-  // ============ LOGS DE DEPURACIÓN ============
+  // ============ LOGS ============
   useEffect(() => {
     console.log('🔍 CategoryPage - Estado:', {
       slug,
       isBoutique,
       filters,
       postsCount: posts.length,
-      boutiquesCount: boutiques.length,
-      allChildrenCount: allChildren.length,
-      categoryChildrenCount: categoryChildren.length,
-      categoryPath
+      currentSub: currentSub?.name,
+      currentArticle: currentArticle?.name,
+      url: location.pathname
     });
-  }, [slug, isBoutique, filters, posts.length, boutiques.length, allChildren, categoryChildren, categoryPath]);
+  }, [slug, isBoutique, filters, posts.length, currentSub, currentArticle, location.pathname]);
 
-  // ============ REDIRECCIÓN SEGURA (solo si no hay page) ============
-  useEffect(() => {
-    if (!slug) return;
-
-    if (!page) {
-      if (articleSlug) history.replace(`/${slug}/${subSlug}/${articleSlug}/1`);
-      else if (subSlug) history.replace(`/${slug}/${subSlug}/1`);
-      else history.replace(`/${slug}/1`);
-      return;
-    }
-  }, [slug, subSlug, articleSlug, page, history]);
-
-  // ============ CARGA INICIAL Y CUANDO CAMBIAN FILTROS ============
+  // ============ CARGA INICIAL ============
   useEffect(() => {
     if (!slug) return;
 
@@ -134,10 +128,8 @@ const CategoryPage = () => {
           console.log('🔄 Cargando boutiques...', { slug, sub: filters.sub, page: filters.page });
           const res = await dispatch(getBoutiquesByCategory(slug, filters.sub, filters.page, 12));
           if (res?.children) {
-            console.log('✅ Hijos de boutique recibidos:', res.children.length);
             setAllChildren(res.children);
             
-            // Actualizar currentSub si hay sub en filtros
             if (filters.sub) {
               const foundSub = res.children.find((c) => c.slug === filters.sub);
               setCurrentSub(foundSub || null);
@@ -147,7 +139,6 @@ const CategoryPage = () => {
           console.log('🔄 Cargando posts...', { slug, sub: filters.sub, article: filters.article, page: filters.page });
           const res = await dispatch(getCategoryPosts(slug, filters.sub, filters.article, filters.page, 12));
           if (res?.children) {
-            console.log('✅ Hijos de posts recibidos:', res.children.length);
             setAllChildren(res.children);
             
             if (filters.sub) {
@@ -173,7 +164,7 @@ const CategoryPage = () => {
     };
 
     loadData();
-  }, [slug, filters, dispatch, isBoutique]);
+  }, [slug, filters.sub, filters.article, filters.page, dispatch, isBoutique]);
 
   // ============ BREADCRUMB ============
   const buildBreadcrumbItems = () => {
@@ -186,13 +177,16 @@ const CategoryPage = () => {
       } else if (categoryInfo?.name) {
         nombreCategoria = categoryInfo.name;
       }
-      items.push({ label: nombreCategoria, path: `/${slug}/1` });
+      items.push({ 
+        label: nombreCategoria, 
+        path: `/${slug}/1`  // ← IMPORTANTE: incluir /1
+      });
     }
     
     if (currentSub) {
       items.push({ 
         label: currentSub.name, 
-        path: `/${slug}/${currentSub.slug}/1` 
+        path: `/${slug}/${currentSub.slug}/1`  // ← IMPORTANTE: incluir /1
       });
     }
     
@@ -206,7 +200,13 @@ const CategoryPage = () => {
     return items;
   };
 
-  // ============ CARGAR MÁS (INFINITE SCROLL) ============
+  // ============ MANEJAR CLICK EN BREADCRUMB ============
+  const handleBreadcrumbClick = (path) => {
+    console.log('🍞 Breadcrumb click:', path);
+    history.push(path);
+  };
+
+  // ============ CARGAR MÁS ============
   const loadMore = useCallback(() => {
     if (isBoutique) {
       if (!hasMoreBoutiques || boutiquesLoading) return;
@@ -215,7 +215,7 @@ const CategoryPage = () => {
       const newFilters = { ...filters, page: nextPage };
       
       setFilters(newFilters);
-      updateUrlWithoutReload(newFilters);
+      updateUrl(newFilters);
       dispatch(getBoutiquesByCategory(slug, filters.sub, nextPage, 12));
       
     } else {
@@ -225,109 +225,107 @@ const CategoryPage = () => {
       const newFilters = { ...filters, page: nextPage };
       
       setFilters(newFilters);
-      updateUrlWithoutReload(newFilters);
+      updateUrl(newFilters);
       dispatch(getCategoryPosts(slug, filters.sub, filters.article, nextPage, 12));
     }
   }, [isBoutique, hasMoreBoutiques, boutiquesLoading, hasMorePosts, postsLoading, posts.length, 
-      filters, dispatch, slug, updateUrlWithoutReload]);
+      filters, dispatch, slug, updateUrl]);
 
-  // ============ CLICK EN SLIDER (SIN RECARGAR) ============
+  // ============ CLICK EN SLIDER ============
   const handleSliderClick = useCallback((item) => {
-    console.log('🖱️ Click en slider SIN RECARGAR:', item);
+    console.log('🖱️ Click en slider:', item);
     
     let newFilters;
     
     if (isBoutique) {
-      // Para boutiques: solo nivel 2
       newFilters = {
         sub: item.slug,
         article: null,
         page: 1
       };
       
-      setFilters(newFilters);
-      updateUrlWithoutReload(newFilters);
-      
-      // Cargar boutiques de esta subcategoría
-      dispatch(getBoutiquesByCategory(slug, item.slug, 1, 12));
-      
-      // Actualizar UI
       setCurrentSub(item);
       setCurrentArticle(null);
       
     } else {
-      // Para posts
-      if (!item.articles || item.articles.length === 0) {
-        // Es subcategoría final - cargar posts
-        newFilters = {
-          sub: item.slug,
-          article: null,
-          page: 1
-        };
-        
-        setFilters(newFilters);
-        updateUrlWithoutReload(newFilters);
-        
-        dispatch(getCategoryPosts(slug, item.slug, null, 1, 12));
+      // Determinar si es subcategoría (nivel 2) o artículo (nivel 3)
+      const isSubCategory = item.level === 2;
+      
+      newFilters = {
+        sub: item.slug,
+        article: null,
+        page: 1
+      };
+      
+      if (isSubCategory) {
         setCurrentSub(item);
         setCurrentArticle(null);
-        
       } else {
-        // Es subcategoría con artículos - solo mostrar artículos en slider
-        setCurrentSub(item);
-        setCurrentArticle(null);
-        
-        // No cambiar URL ni cargar posts todavía
-        // El usuario debe hacer click en un artículo para ver posts
+        setCurrentArticle(item);
+        setCurrentSub(null);
       }
     }
-  }, [slug, dispatch, isBoutique, updateUrlWithoutReload]);
-
-  // ============ CLICK EN ARTÍCULO (NIVEL 3) ============
-  const handleArticleClick = useCallback((article) => {
-    console.log('🖱️ Click en artículo SIN RECARGAR:', article);
     
-    if (!currentSub) return;
+    console.log('🎯 Nuevos filtros:', newFilters);
+    
+    setFilters(newFilters);
+    updateUrl(newFilters);  // ← AHORA USA UPDATEURL CON PUSH
+    
+    if (isBoutique) {
+      dispatch(getBoutiquesByCategory(slug, newFilters.sub, 1, 12));
+    } else {
+      dispatch(getCategoryPosts(slug, newFilters.sub, null, 1, 12));
+    }
+  }, [slug, dispatch, isBoutique, updateUrl]);
+
+  // ============ CLICK EN ARTÍCULO ============
+  const handleArticleClick = useCallback((article) => {
+    console.log('🖱️ Click en artículo:', article);
+    
+    let subCategorySlug = currentSub?.slug;
+    
+    if (!subCategorySlug) {
+      subCategorySlug = article.slug;
+    }
     
     const newFilters = {
-      sub: currentSub.slug,
+      sub: subCategorySlug,
       article: article.slug,
       page: 1
     };
     
+    console.log('🎯 Nuevos filtros (artículo):', newFilters);
+    
     setFilters(newFilters);
-    updateUrlWithoutReload(newFilters);
+    updateUrl(newFilters);  // ← AHORA USA UPDATEURL CON PUSH
     
-    // Cargar posts filtrados por este artículo
-    dispatch(getCategoryPosts(slug, currentSub.slug, article.slug, 1, 12));
+    dispatch(getCategoryPosts(slug, subCategorySlug, article.slug, 1, 12));
     
-    // Actualizar UI
     setCurrentArticle(article);
-  }, [slug, currentSub, dispatch, updateUrlWithoutReload]);
+    if (!currentSub) {
+      setCurrentSub(article);
+    }
+  }, [slug, currentSub, dispatch, updateUrl]);
 
-  // ============ DETERMINAR ITEMS DEL SLIDER =================
+  // ============ DETERMINAR ITEMS DEL SLIDER ============
   const getSliderItems = () => {
-    // Para boutiques
     if (isBoutique) {
       if (allChildren.length > 0) return allChildren;
       if (categoryChildren.length > 0) return categoryChildren;
       return [];
     }
 
-    // Para posts normales
-    // Si hay subcategoría con artículos, mostrar los artículos
     if (currentSub && currentSub.articles?.length > 0) {
       return currentSub.articles;
     }
     
-    // Si no, mostrar las subcategorías
     if (allChildren.length > 0) return allChildren;
     if (categoryChildren.length > 0) return categoryChildren;
     
     return [];
   };
 
-  // ================= DETERMINAR ITEM ACTIVO =================
+  // ============ DETERMINAR ITEM ACTIVO ============
   const getActiveItem = () => {
     if (isBoutique) return currentSub;
     if (currentArticle) return currentArticle;
@@ -335,24 +333,12 @@ const CategoryPage = () => {
     return null;
   };
 
-  // ============ GENERAR URL PARA PAGINACIÓN ============
-  const buildCategoryUrl = (pageNumber) => {
-    if (isBoutique) {
-      if (currentSub) return `/${slug}/${currentSub.slug}/${pageNumber}`;
-      return `/${slug}/${pageNumber}`;
-    } else {
-      if (currentArticle) return `/${slug}/${currentSub?.slug}/${currentArticle.slug}/${pageNumber}`;
-      if (currentSub) return `/${slug}/${currentSub.slug}/${pageNumber}`;
-      return `/${slug}/${pageNumber}`;
-    }
-  };
-
   // ============ MANEJAR CAMBIO DE PÁGINA ============
   const handlePageChange = (newPage) => {
     const newFilters = { ...filters, page: newPage };
     
     setFilters(newFilters);
-    updateUrlWithoutReload(newFilters);
+    updateUrl(newFilters);
     
     if (isBoutique) {
       dispatch(getBoutiquesByCategory(slug, filters.sub, newPage, 12));
@@ -361,13 +347,12 @@ const CategoryPage = () => {
     }
   };
 
-  // ============ ESTADO DE CARGA Y DATOS ============
+  // ============ RENDER ============
   const isLoading = isBoutique ? boutiquesLoading : postsLoading;
   const items = isBoutique ? boutiques : posts;
   const hasMore = isBoutique ? hasMoreBoutiques : hasMorePosts;
   const paginationData = isBoutique ? boutiquePagination : rawPagination;
 
-  // ============ RENDER DEL CONTENIDO ============
   const renderContent = () => {
     if (error) {
       return (
@@ -453,20 +438,14 @@ const CategoryPage = () => {
 
   return (
     <div className="category-page">
-
-<CategoryCarousel
+      <CategoryCarousel
         categorySlug={category} 
         categoryName={categoryData?.name} 
       />
 
       <main className="category-content">
-        <Container className="py-4">
-          {/* Breadcrumb */}
-          <div className="mb-3">
-            <BreadcrumbNav items={buildBreadcrumbItems()} />
-          </div>
-
-          {/* Slider de categorías - AHORA USA handleSliderClick y handleArticleClick */}
+        <Container className=" ">
+          {/* Slider de categorías */}
           {getSliderItems().length > 0 && (
             <div className="mb-4">
               <SliderUnificado
@@ -475,13 +454,27 @@ const CategoryPage = () => {
                 variant="categoryPage"
                 showCount={true}
                 maxRows={2}
-                onItemClick={isBoutique || !currentSub?.articles?.length 
-                  ? handleSliderClick 
-                  : handleArticleClick}
+                onItemClick={(item) => {
+                  if (isBoutique) {
+                    handleSliderClick(item);
+                  } else if (item.level === 3) {
+                    handleArticleClick(item);
+                  } else {
+                    handleSliderClick(item);
+                  }
+                }}
               />
             </div>
           )}
-
+          
+          {/* Breadcrumb con manejador de clicks */}
+          <div className="mb-3">
+            <BreadcrumbNav 
+              items={buildBreadcrumbItems()} 
+              onItemClick={handleBreadcrumbClick}
+            />
+          </div>
+          
           {/* Título de la sección */}
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h4 className="mb-0">

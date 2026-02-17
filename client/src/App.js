@@ -84,48 +84,47 @@ function App() {
 
   return (
     <Router>
-  <GoogleTranslateManager />
-
-  <div className="App">
-    <Navbar2 />
-
-    {/* Contenedor oculto del traductor */}
-    <div id="google_translate_element" style={{ display: 'none' }}></div>
-
-    <Switch>
-      {/* ============ RUTAS PÚBLICAS ============ */}
-      <Route exact path="/" component={Home} />
-      <Route exact path="/register" component={Register} />
-      <Route exact path="/login" component={Login} />
-
-      {/* ============ RUTAS DE BOUTIQUES (específicas primero) ============ */}
-      <Route exact path="/create-boutique" component={CreateBoutiquePage} />
-      <Route exact path="/boutique/creer" component={CreateBoutiquePage} />
-      <Route exact path="/mes-boutiques" component={UserBoutiquesPage} />
-        {/* ============ <Route exact path="/boutique/:id/edit" component={EditBoutiquePage} / ============ */}
-     
-      <Route exact path="/boutique/:id" component={BoutiqueDetailPage} />
-      
-      {/* ============ RUTAS DE ANUNCIOS ============ */}
-      <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
-      <Route exact path="/edit-post/:id" component={CreateAnnoncePage} />
-      <Route exact path="/post/:id" component={PostId} />
-
-      {/* ============ DASHBOARD Y PERFILES ============ */}
-      <Route exact path="/dashboard" component={DashboardPage} />
-      <Route exact path="/profile/:id" component={profile} />
-      <Route exact path="/users/roles" component={roles} />
-
-      {/* ============ RUTAS DE CATEGORÍAS (genéricas al final) ============ */}
-      <Route exact path="/:slug/:page?" component={CategoryPage} />
-      <Route exact path="/:slug/:subSlug/:page?" component={CategoryPage} />
-      <Route exact path="/:slug/:subSlug/:articleSlug/:page?" component={CategoryPage} />
-
-      {/* ============ RUTA 404 (siempre al final) ============ */}
-      <Route component={NotFound} />
-    </Switch>
-  </div>
-</Router>
+    <GoogleTranslateManager />
+  
+    <div className="App">
+      <Navbar2 />
+  
+      {/* Contenedor oculto del traductor */}
+      <div id="google_translate_element" style={{ display: 'none' }}></div>
+  
+      <Switch>
+        {/* ============ RUTAS PÚBLICAS ============ */}
+        <Route exact path="/" component={Home} />
+        <Route exact path="/register" component={Register} />
+        <Route exact path="/login" component={Login} />
+  
+        {/* ============ RUTAS DE BOUTIQUES (específicas primero) ============ */}
+        <Route exact path="/create-boutique" component={CreateBoutiquePage} />
+        <Route exact path="/edit-boutique/:id" component={CreateBoutiquePage} />  {/* ← AÑADIR :id */}
+        <Route exact path="/boutique/creer" component={CreateBoutiquePage} />
+        <Route exact path="/mes-boutiques" component={UserBoutiquesPage} />
+        <Route exact path="/boutique/:id" component={BoutiqueDetailPage} />
+        
+        {/* ============ RUTAS DE ANUNCIOS ============ */}
+        <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
+        <Route exact path="/edit-post/:id" component={CreateAnnoncePage} />
+        <Route exact path="/post/:id" component={PostId} />
+  
+        {/* ============ DASHBOARD Y PERFILES ============ */}
+        <Route exact path="/dashboard" component={DashboardPage} />
+        <Route exact path="/profile/:id" component={profile} />
+        <Route exact path="/users/roles" component={roles} />
+  
+        {/* ============ RUTAS DE CATEGORÍAS (genéricas al final) ============ */}
+        <Route exact path="/:slug/:page?" component={CategoryPage} />
+        <Route exact path="/:slug/:subSlug/:page?" component={CategoryPage} />
+        <Route exact path="/:slug/:subSlug/:articleSlug/:page?" component={CategoryPage} />
+  
+        {/* ============ RUTA 404 (siempre al final) ============ */}
+        <Route component={NotFound} />
+      </Switch>
+    </div>
+  </Router>
   );
 }
 

@@ -1,8 +1,5 @@
-// models/Boutique.js
-const mongoose = require('mongoose');
-
+const mongoose = require('mongoose')
 const boutiqueSchema = new mongoose.Schema({
-  // 👤 Usuario propietario
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'user',
@@ -10,7 +7,6 @@ const boutiqueSchema = new mongoose.Schema({
     index: true
   },
 
-  // 🗂️ CATEGORÍAS (strings del cliente)
   categorie: {
     type: String,
     required: true,
@@ -31,7 +27,6 @@ const boutiqueSchema = new mongoose.Schema({
     index: true
   },
 
-  // 🔑 CATEGORÍA REAL (MongoDB)
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
@@ -39,7 +34,6 @@ const boutiqueSchema = new mongoose.Schema({
     index: true
   },
 
-  // 🏪 Información de la boutique
   nom_boutique: {
     type: String,
     required: true,
@@ -64,13 +58,11 @@ const boutiqueSchema = new mongoose.Schema({
     required: true
   },
 
-  // 🖼️ AVATAR (un solo campo, como viene del cliente)
-  avatar: {
-    type: Object, // { url, public_id }
-    default: null
-  },
-
-  // 📦 Plan y suscripción
+  // 🟢 Cambiar de avatar a images
+  images: {
+    type: Array,
+    required: true
+},
   plan: {
     type: String,
     enum: ['gratuit', 'basique', 'premium', 'entreprise'],
@@ -92,12 +84,6 @@ const boutiqueSchema = new mongoose.Schema({
     type: Date
   },
 
-  // 🏷️ Categorías de productos que vende
-  categories_produits: [{
-    type: String
-  }],
-
-  // 👤 Propietario
   proprietaire: {
     nom: String,
     email: String,
@@ -106,7 +92,6 @@ const boutiqueSchema = new mongoose.Schema({
     adresse: String
   },
 
-  // 🌐 Redes sociales
   reseaux_sociaux: {
     facebook: String,
     instagram: String,
@@ -115,13 +100,11 @@ const boutiqueSchema = new mongoose.Schema({
     website: String
   },
 
-  // 🎨 Personalización
   couleur_theme: {
     type: String,
     default: '#2563eb'
   },
 
-  // 📊 Estadísticas
   stats: {
     vues: { type: Number, default: 0 },
     produits: { type: Number, default: 0 },
@@ -129,7 +112,6 @@ const boutiqueSchema = new mongoose.Schema({
     avis: { type: Number, default: 0 }
   },
 
-  // ✅ Estado
   isActive: {
     type: Boolean,
     default: true
@@ -140,7 +122,6 @@ const boutiqueSchema = new mongoose.Schema({
     default: false
   },
 
-  // 📝 Metadatos del wizard
   offre_choisie: {
     id: String,
     nom: String,
@@ -160,7 +141,6 @@ const boutiqueSchema = new mongoose.Schema({
   methode_paiement: String,
   transaction_id: String,
 
-  // ⏱️ Timestamps
   createdAt: {
     type: Date,
     default: Date.now
@@ -173,7 +153,7 @@ const boutiqueSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Índices compuestos para búsquedas
+// Índices
 boutiqueSchema.index({ categorie: 1, isActive: 1 });
 boutiqueSchema.index({ subCategory: 1, isActive: 1 });
 boutiqueSchema.index({ articleType: 1, isActive: 1 });

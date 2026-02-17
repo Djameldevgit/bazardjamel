@@ -478,8 +478,8 @@
 
 @media (max-width: 480px) {
   .category-slider {
-    padding: 0rem 0rem;
-    gap: 0.62rem;/* Móvil 480px - 4 iconos */
+    padding: 0rem 0.0rem;
+    gap: 0.1rem;/* Móvil 480px - 4 iconos */
   }
   
   .category-slider-wrapper.home .category-icon-wrapper {

@@ -34,7 +34,7 @@ const Drawer = ({
                          location.pathname.includes('/profile') ||
                          location.pathname.startsWith('/mes-');
 
-  // ✅ CATEGORÍAS ACTUALIZADAS - Coinciden con el seed
+  // ✅ CATEGORÍAS ACTUALIZADAS - Coinciden con el seed (SIN subcategorías de boutique)
   const categories = [
     { name: 'Boutiques', emoji: '🏪', slug: 'boutiques', color: '#667eea', isStore: true },
     { name: 'Immobilier', emoji: '🏠', slug: 'immobilier', color: '#f093fb' },
@@ -55,22 +55,6 @@ const Drawer = ({
     { name: 'Voyages', emoji: '✈️', slug: 'voyages', color: '#a18cd1' }
   ];
 
-  // ✅ SUBCATEGORÍAS DE BOUTIQUES (para mostrar cuando se selecciona "Boutiques")
-  const boutiqueSubcategories = [
-    { name: 'Mode & Vêtements', emoji: '👗', slug: 'boutiques-mode-vetements', color: '#ec4899' },
-    { name: 'Électronique & Technologie', emoji: '📱', slug: 'boutiques-electronique-technologie', color: '#3b82f6' },
-    { name: 'Maison & Décorations', emoji: '🏠', slug: 'boutiques-maison-decorations', color: '#f59e0b' },
-    { name: 'Cosmétique & Beauté', emoji: '💄', slug: 'boutiques-cosmetique-beaute', color: '#ef4444' },
-    { name: 'Sport & Loisirs', emoji: '⚽', slug: 'boutiques-sport-loisirs', color: '#10b981' },
-    { name: 'Alimentation & Boissons', emoji: '🍎', slug: 'boutiques-alimentation-boissons', color: '#8b5cf6' },
-    { name: 'Santé & Bien-être', emoji: '💊', slug: 'boutiques-sante-bien-etre', color: '#06b6d4' },
-    { name: 'Jouets & Enfants', emoji: '🧸', slug: 'boutiques-jouets-enfants', color: '#f97316' },
-    { name: 'Automobiles & Accessoires', emoji: '🚗', slug: 'boutiques-automobiles-accessoires', color: '#6366f1' },
-    { name: 'Artisanat & Fait main', emoji: '🎨', slug: 'boutiques-artisanat-fait-main', color: '#ec4899' },
-    { name: 'Services & Prestations', emoji: '🔧', slug: 'boutiques-services-prestations', color: '#6b7280' },
-    { name: 'Autre', emoji: '📦', slug: 'boutiques-autre', color: '#9ca3af' }
-  ];
-
   // Emojis
   const emojis = {
     home: '🏠', user: '👤', logout: '🚪', bell: '🔔', list: '📋',
@@ -79,21 +63,14 @@ const Drawer = ({
     mail: '✉️', shield: '🛡️', arrow: '➡️', globe: '🌍',
     sun: '☀️', moon: '🌙', fire: '🔥', chart: '📈',
     message: '💬', shopping: '🛒', megaphone: '📢', gear: '⚙️',
-    verified: '✅', warning: '⚠️', star: '⭐', heart: '❤️'
+    verified: '✅', warning: '⚠️', star: '⭐', heart: '❤️',
+    annonce: '📢', commande: '📦', voyage: '✈️', pub: '🎯',
+    transaction: '💰', credit: '💳'
   };
 
-  // Estado para manejar subcategorías de boutiques
-  const [showBoutiqueCategories, setShowBoutiqueCategories] = useState(false);
-  const [activeMainCategory, setActiveMainCategory] = useState(null);
-
-  // 📍 FUNCIÓN CORREGIDA PARA GENERAR RUTAS
-  const getCategoryPath = (categorySlug, isBoutiqueSubcategory = false) => {
-    // Si es una subcategoría de boutiques
-    if (isBoutiqueSubcategory) {
-      return `/boutiques/category/${categorySlug}`;
-    }
-    
-    // Si es la categoría principal "Boutiques"
+  // 📍 FUNCIÓN PARA GENERAR RUTAS
+  const getCategoryPath = (categorySlug) => {
+    // Si es la categoría "Boutiques"
     if (categorySlug === 'boutiques') {
       return '/boutiques';
     }
@@ -102,35 +79,10 @@ const Drawer = ({
     return `/category/${categorySlug}`;
   };
 
-  // Manejar clic en categoría principal
-  const handleMainCategoryClick = (category) => {
-    if (category.slug === 'boutiques') {
-      // Si ya está mostrando subcategorías, navegar a la página principal
-      if (showBoutiqueCategories && activeMainCategory === 'boutiques') {
-        setShowBoutiqueCategories(false);
-        setActiveMainCategory(null);
-        onHide();
-        history.push('/boutiques');
-      } else {
-        // Mostrar subcategorías de boutiques
-        setShowBoutiqueCategories(true);
-        setActiveMainCategory('boutiques');
-      }
-    } else {
-      // Navegar directamente a la categoría
-      setShowBoutiqueCategories(false);
-      setActiveMainCategory(null);
-      onHide();
-      history.push(getCategoryPath(category.slug));
-    }
-  };
-
-  // Manejar clic en subcategoría de boutiques
-  const handleBoutiqueSubcategoryClick = (subcategory) => {
-    setShowBoutiqueCategories(false);
-    setActiveMainCategory(null);
+  // Manejar clic en categoría
+  const handleCategoryClick = (category) => {
     onHide();
-    history.push(getCategoryPath(subcategory.slug, true));
+    history.push(getCategoryPath(category.slug));
   };
 
   // 🔥 FUNCIÓN SIMPLE para cambiar idioma
@@ -178,7 +130,7 @@ const Drawer = ({
     document.body.classList.toggle('dark-mode', newDarkMode);
   };
 
-  // Componente LinkItem ACTUALIZADO
+  // Componente LinkItem
   const LinkItem = ({ 
     emoji, 
     name, 
@@ -187,10 +139,9 @@ const Drawer = ({
     color = '#667eea', 
     badge = null, 
     isDashboardLink = false,
-    isBackButton = false,
-    isSubcategory = false
+    isBackButton = false
   }) => {
-    const isActive = location.pathname === path || (isDashboardLink && location.pathname === '/dashboard');
+    const isActive = location.pathname === path || (isDashboardLink && location.pathname.startsWith('/dashboard'));
     
     const handleClick = (e) => {
       if (onClick) onClick(e);
@@ -209,8 +160,7 @@ const Drawer = ({
           justifyContent: 'space-between',
           cursor: 'pointer',
           backgroundColor: isActive ? `${color}15` : 'transparent',
-          borderLeft: isActive ? `3px solid ${color}` : 'none',
-          marginLeft: isSubcategory ? '20px' : '0'
+          borderLeft: isActive ? `3px solid ${color}` : 'none'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
@@ -245,9 +195,9 @@ const Drawer = ({
             </div>
           )}
           <span style={{
-            fontSize: isSubcategory ? '0.9rem' : '0.95rem',
-            fontWeight: isSubcategory ? '400' : '500',
-            color: isActive ? color : (isSubcategory ? '#555' : '#333')
+            fontSize: '0.95rem',
+            fontWeight: isActive ? '600' : '500',
+            color: isActive ? color : '#333'
           }}>
             {name}
           </span>
@@ -281,165 +231,167 @@ const Drawer = ({
     return <div style={{ display: 'block' }}>{content}</div>;
   };
 
-  // Renderizar contenido de subcategorías de boutiques
-  const renderBoutiqueCategoriesContent = () => (
+  // 🎯 CONTENIDO PARA USUARIO SIN AUTENTICAR
+  const renderGuestContent = () => (
     <>
-      {/* Botón para volver atrás */}
+      {/* Modo oscuro/claro */}
       <LinkItem 
-        name="Retour aux catégories" 
-        onClick={() => {
-          setShowBoutiqueCategories(false);
-          setActiveMainCategory(null);
-        }}
-        isBackButton={true}
-        color="#6b7280"
+        emoji={darkMode ? emojis.sun : emojis.moon} 
+        name={darkMode ? 'Mode Clair' : 'Mode Sombre'} 
+        onClick={toggleDarkMode} 
+        color={darkMode ? '#f59e0b' : '#4b5563'} 
       />
-      
-      {/* Título */}
-      <div style={{ 
-        margin: '20px 0 5px 16px', 
-        fontSize: '0.9rem', 
-        fontWeight: '600', 
-        color: '#555',
-        textTransform: 'uppercase',
-        letterSpacing: '0.5px'
-      }}>
-        🏪 Choisir une catégorie de boutique
+
+      {/* Sección Cuenta */}
+      <div style={{ margin: '20px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
+        {emojis.user} Compte
       </div>
       
-      {/* Subcategorías de boutiques */}
-      {boutiqueSubcategories.map((subcategory, index) => (
-        <LinkItem 
-          key={index}
-          emoji={subcategory.emoji} 
-          name={subcategory.name} 
-          onClick={() => handleBoutiqueSubcategoryClick(subcategory)}
-          color={subcategory.color}
-          isSubcategory={true}
-        />
-      ))}
-      
-      {/* Ver todas las boutiques */}
-      <div style={{ marginTop: '20px', padding: '0 16px' }}>
-        <Link to="/boutiques" style={{ textDecoration: 'none' }} onClick={onHide}>
-          <div style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #8b5cf6 100%)',
-            color: 'white',
-            padding: '12px 16px',
-            borderRadius: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px',
-            fontWeight: '600',
-            fontSize: '0.9rem',
-            textAlign: 'center',
-            transition: 'all 0.3s ease'
-          }}>
-            <i className="fas fa-store"></i>
-            Voir toutes les boutiques
-          </div>
-        </Link>
-      </div>
+      <LinkItem emoji={emojis.login} name="Se connecter" path="/login" color="#10b981" />
+      <LinkItem emoji={emojis.register} name="S'inscrire" path="/register" color="#667eea" />
     </>
   );
 
-  // Renderizar contenido principal (categorías normales)
-  const renderMainCategoriesContent = () => (
+  // 🎯 CONTENIDO PARA USUARIO AUTENTICADO (VISTA NORMAL)
+  const renderLoggedInContent = () => (
     <>
-      {/* Categorías principales */}
-      <div style={{ margin: '15px 0 8px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
-        📂 Toutes les catégories
-      </div>
-      
-      {categories.map((category, index) => (
-        <LinkItem 
-          key={index} 
-          emoji={category.emoji} 
-          name={category.name} 
-          onClick={() => handleMainCategoryClick(category)} 
-          color={category.color} 
-        />
-      ))}
-      
-      {/* Separador */}
-      <div style={{ margin: '25px 0', borderTop: '1px solid #e5e7eb' }}></div>
+      {/* Modo oscuro/claro */}
+      <LinkItem 
+        emoji={darkMode ? emojis.sun : emojis.moon} 
+        name={darkMode ? 'Mode Clair' : 'Mode Sombre'} 
+        onClick={toggleDarkMode} 
+        color={darkMode ? '#f59e0b' : '#4b5563'} 
+      />
+
+      {/* Enlace rápido al dashboard */}
+      <LinkItem 
+        emoji={emojis.dashboard} 
+        name="Mon Tableau de bord" 
+        path="/dashboard" 
+        color="#8b5cf6" 
+        isDashboardLink={true}
+      />
     </>
   );
 
-  // Renderizar contenido basado en estado de autenticación
-  const renderUserContent = () => {
+  // 🎯 CONTENIDO PARA DASHBOARD (VISTA PRIVADA)
+  const renderDashboardContent = () => (
+    <>
+      {/* En-tête du dashboard */}
+      <div style={{
+        padding: '16px',
+        margin: '0 16px 10px 16px',
+        background: 'linear-gradient(135deg, #667eea 0%, #8b5cf6 100%)',
+        borderRadius: '12px',
+        color: 'white'
+      }}>
+        <div style={{ fontSize: '1.2rem', marginBottom: '5px' }}>{emojis.dashboard}</div>
+        <div style={{ fontWeight: '700', fontSize: '1rem' }}>Mon Espace</div>
+        <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>{auth.user?.name || auth.user?.username}</div>
+      </div>
+
+      {/* Mon compte */}
+      <div style={{ margin: '15px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
+        {emojis.user} Mon compte
+      </div>
+      <LinkItem emoji={emojis.dashboard} name="Tableau de bord" path="/dashboard" color="#8b5cf6" />
+      <LinkItem emoji="⚙️" name="Paramètres du profil" path="/profile/settings" color="#6b7280" />
+      <LinkItem emoji={emojis.logout} name="Se déconnecter" onClick={handleLogout} color="#ef4444" />
+
+      {/* Annonces */}
+      <div style={{ margin: '20px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
+        {emojis.annonce} Annonces
+      </div>
+      <LinkItem emoji="📋" name="Mes Annonces" path="/mes-annonces" color="#3b82f6" />
+      <LinkItem emoji={emojis.plus} name="Ajouter Annonce" path="/creer-annonce" color="#10b981" />
+
+      {/* Commandes */}
+      <div style={{ margin: '20px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
+        {emojis.commande} Commandes
+      </div>
+      <LinkItem emoji="📦" name="Mes Commandes" path="/mes-commandes" color="#f59e0b" />
+      <LinkItem emoji="🧾" name="Mes Tickets de livraison" path="/mes-tickets" color="#ec4899" />
+
+      {/* Voyage */}
+      <div style={{ margin: '20px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
+        {emojis.voyage} Voyage
+      </div>
+      <LinkItem emoji="📋" name="Mes Demandes de Devis" path="/mes-devis" color="#06b6d4" />
+
+      {/* Publicité */}
+      <div style={{ margin: '20px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
+        {emojis.pub} Publicité
+      </div>
+      <LinkItem emoji="🏪" name="Achat Store" path="/create-boutique" color="#8b5cf6" />
+      <LinkItem emoji="📢" name="Achat Publicité" path="/acheter-publicite" color="#f97316" />
+
+      {/* Transactions */}
+      <div style={{ margin: '20px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
+        {emojis.transaction} Transactions
+      </div>
+      <LinkItem emoji={emojis.credit} name="Mes Crédits" path="/mes-credits" color="#10b981" />
+      <LinkItem emoji="📊" name="Historique" path="/historique-transactions" color="#6b7280" />
+    </>
+  );
+
+  // Renderizar contenido principal del drawer
+  const renderMainContent = () => {
+    // Si está en dashboard o páginas de perfil
+    if (isDashboardPage && auth.user) {
+      return renderDashboardContent();
+    }
+    
+    // Si no está autenticado
     if (!auth.user) {
-      // Usuario no logueado
       return (
         <>
-          <LinkItem 
-            emoji={darkMode ? emojis.sun : emojis.moon} 
-            name={darkMode ? 'Mode Clair' : 'Mode Sombre'} 
-            onClick={toggleDarkMode} 
-            color={darkMode ? '#f59e0b' : '#4b5563'} 
-          />
-
-          {/* Cuenta */}
+          {renderGuestContent()}
+          
+          {/* Categorías principales (para invitados) */}
           <div style={{ margin: '20px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
-            {emojis.user} Compte
+            📂 Catégories
           </div>
           
-          <LinkItem emoji={emojis.login} name="Se connecter" path="/login" color="#10b981" />
-          <LinkItem emoji={emojis.register} name="S'inscrire" path="/register" color="#667eea" />
+          {categories.map((category, index) => (
+            <LinkItem 
+              key={index} 
+              emoji={category.emoji} 
+              name={category.name} 
+              onClick={() => handleCategoryClick(category)} 
+              color={category.color} 
+            />
+          ))}
         </>
       );
-    } else if (isDashboardPage) {
-      // Usuario en dashboard
-      return renderDashboardContent();
-    } else {
-      // Usuario logueado normal
-      return null;
     }
-  };
-
-  // Contenido del drawer principal
-  const renderMainContent = () => (
-    <>
-      {renderUserContent()}
-      
-      {/* Boutiques destacadas */}
-      <div style={{ margin: '25px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
-        🏪 Boutiques
-      </div>
-      
-      <LinkItem emoji="🏪➕" name="Créer une boutique" path="/create-boutique" color="#8b5cf6" />
-      <LinkItem emoji="📊" name="Voir toutes les boutiques" path="/boutiques" color="#667eea" />
-      
-      {/* Categorías */}
-      {showBoutiqueCategories ? renderBoutiqueCategoriesContent() : renderMainCategoriesContent()}
-      
-      {/* Enlaces útiles */}
-      <div style={{ margin: '20px 0 8px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
-        🔗 Liens utiles
-      </div>
-      
-      <LinkItem emoji="❓" name="Comment annoncer ?" path="/bloginfo" color="#6b7280" />
-      <LinkItem emoji="✉️" name="Contactez-nous" path="/users/contactt" color="#6b7280" />
-      <LinkItem emoji="🛡️" name="Politique de confidentialité" path="/bloginfo" color="#6b7280" />
-      
-      {/* Logout si está logueado */}
-      {auth.user && (
-        <div style={{ marginTop: '25px', paddingTop: '15px', borderTop: '1px solid #e5e7eb' }}>
-          <LinkItem emoji={emojis.logout} name="Se déconnecter" onClick={handleLogout} color="#ef4444" />
+    
+    // Usuario autenticado en vista normal
+    return (
+      <>
+        {renderLoggedInContent()}
+        
+        {/* Categorías principales (para usuarios autenticados) */}
+        <div style={{ margin: '20px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
+          📂 Catégories
         </div>
-      )}
-    </>
-  );
+        
+        {categories.map((category, index) => (
+          <LinkItem 
+            key={index} 
+            emoji={category.emoji} 
+            name={category.name} 
+            onClick={() => handleCategoryClick(category)} 
+            color={category.color} 
+          />
+        ))}
+      </>
+    );
+  };
 
   return (
     <Offcanvas 
       show={show} 
-      onHide={() => {
-        setShowBoutiqueCategories(false);
-        setActiveMainCategory(null);
-        onHide();
-      }}
+      onHide={onHide}
       placement="start"
       className="drawer"
       style={{
@@ -458,25 +410,6 @@ const Drawer = ({
         background: '#f8fafc'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {showBoutiqueCategories ? (
-            <button
-              onClick={() => {
-                setShowBoutiqueCategories(false);
-                setActiveMainCategory(null);
-              }}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '1.2rem',
-                cursor: 'pointer',
-                padding: '5px',
-                borderRadius: '5px',
-                color: '#6b7280'
-              }}
-            >
-              ←
-            </button>
-          ) : null}
           <div style={{ 
             fontWeight: '700', 
             fontSize: '1.1rem', 
@@ -485,9 +418,9 @@ const Drawer = ({
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent'
           }}>
-            {showBoutiqueCategories ? 'Boutiques' : 'Menu'}
+            Menu
           </div>
-          {auth.user && !showBoutiqueCategories && (
+          {auth.user && (
             <span style={{
               backgroundColor: '#10b981',
               color: 'white',
@@ -496,65 +429,59 @@ const Drawer = ({
               borderRadius: '10px',
               fontWeight: '600'
             }}>
-              Connecté
+              {auth.user.name || auth.user.username}
             </span>
           )}
         </div>
         
         {/* Selector de idioma y botón cerrar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {!showBoutiqueCategories && (
-            <div style={{ 
-              display: 'flex', 
-              gap: '6px', 
-              marginRight: '10px',
-              background: '#f3f4f6',
-              padding: '4px',
-              borderRadius: '10px'
-            }}>
-              {[
-                { code: 'ar', label: 'ع', title: 'العربية' },
-                { code: 'fr', label: 'FR', title: 'Français' },
-                { code: 'en', label: 'EN', title: 'English' }
-              ].map((lang) => {
-                const isActive = currentLang === lang.code;
-                const useGoogleTranslate = localStorage.getItem('useGoogleTranslate') === 'true';
-                const isTranslateActive = useGoogleTranslate && localStorage.getItem('targetTranslateLang') === lang.code;
-                
-                return (
-                  <button
-                    key={lang.code}
-                    onClick={() => handleLanguageChange(lang.code)}
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '8px',
-                      background: isActive || isTranslateActive ? '#667eea' : 'transparent',
-                      border: isTranslateActive ? '2px solid #28a745' : 'none',
-                      color: isActive || isTranslateActive ? 'white' : '#6b7280',
-                      fontWeight: '600',
-                      fontSize: lang.code === 'ar' ? '1rem' : '0.8rem',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.2s ease'
-                    }}
-                    title={lang.title}
-                  >
-                    {lang.label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          <div style={{ 
+            display: 'flex', 
+            gap: '6px', 
+            marginRight: '10px',
+            background: '#f3f4f6',
+            padding: '4px',
+            borderRadius: '10px'
+          }}>
+            {[
+              { code: 'ar', label: 'ع', title: 'العربية' },
+              { code: 'fr', label: 'FR', title: 'Français' },
+              { code: 'en', label: 'EN', title: 'English' }
+            ].map((lang) => {
+              const isActive = currentLang === lang.code;
+              const useGoogleTranslate = localStorage.getItem('useGoogleTranslate') === 'true';
+              const isTranslateActive = useGoogleTranslate && localStorage.getItem('targetTranslateLang') === lang.code;
+              
+              return (
+                <button
+                  key={lang.code}
+                  onClick={() => handleLanguageChange(lang.code)}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    background: isActive || isTranslateActive ? '#667eea' : 'transparent',
+                    border: isTranslateActive ? '2px solid #28a745' : 'none',
+                    color: isActive || isTranslateActive ? 'white' : '#6b7280',
+                    fontWeight: '600',
+                    fontSize: lang.code === 'ar' ? '1rem' : '0.8rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s ease'
+                  }}
+                  title={lang.title}
+                >
+                  {lang.label}
+                </button>
+              );
+            })}
+          </div>
          
           <button
-            onClick={() => {
-              setShowBoutiqueCategories(false);
-              setActiveMainCategory(null);
-              onHide();
-            }}
+            onClick={onHide}
             style={{
               width: '36px',
               height: '36px',
@@ -584,6 +511,15 @@ const Drawer = ({
       }}>
         {renderMainContent()}
         
+        {/* Enlaces útiles (siempre visibles) */}
+        <div style={{ margin: '30px 0 15px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
+          🔗 Liens utiles
+        </div>
+        
+        <LinkItem emoji="❓" name="Comment annoncer ?" path="/bloginfo" color="#6b7280" />
+        <LinkItem emoji="✉️" name="Contactez-nous" path="/users/contactt" color="#6b7280" />
+        <LinkItem emoji="🛡️" name="Politique de confidentialité" path="/bloginfo" color="#6b7280" />
+        
         {/* Footer */}
         <div style={{
           marginTop: '30px',
@@ -603,8 +539,5 @@ const Drawer = ({
     </Offcanvas>
   );
 };
-
-// Funciones auxiliares (renderDashboardContent, renderLoggedInContent)
-// ... mantén las mismas funciones que ya tienes ...
 
 export default Drawer;

@@ -34,7 +34,71 @@ export const BOUTIQUE_TYPES = {
   LOADING_BOUTIQUE_PRODUCTS: 'LOADING_BOUTIQUE_PRODUCTS',
   LOADING_BOUTIQUES_BY_CATEGORY: 'LOADING_BOUTIQUES_BY_CATEGORY'
 };
+// actions/boutiqueAction.js
+// actions/boutiqueAction.js
+// actions/boutiqueAction.js - VERSIÓN SIMPLIFICADA
+export const createBoutique = ({ 
+  boutiqueData, 
+  images, 
+  auth 
+}) => async (dispatch) => {
+  console.time('⏱️ createBoutique action time');
+  
+  try {
+    console.log('🟡 createBoutique action iniciada');
+    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: true} });
+    
+    let finalImages = [];
+    
+    // Subir imágenes nuevas a Cloudinary
+    const newImages = images.filter(img => !img.isExisting && img.url?.startsWith('blob:'));
+    const existingImages = images.filter(img => img.isExisting);
+    
+    if (newImages.length > 0) {
+      console.log(`📤 Subiendo ${newImages.length} imagen(es) a Cloudinary...`);
+      const uploaded = await imageUpload(newImages);
+      finalImages = [...existingImages, ...uploaded];
+    } else {
+      finalImages = existingImages;
+    }
+    
+    // Preparar datos finales (SIN DUPLICAR images)
+    const boutiqueToSend = {
+      ...boutiqueData,
+      images: finalImages  // ← SOLO UNA VEZ
+    };
 
+    console.log('📦 Enviando al API:', {
+      nom_boutique: boutiqueToSend.nom_boutique,
+      imagesCount: boutiqueToSend.images.length
+    });
+
+    const res = await postDataAPI('boutique', boutiqueToSend, auth.token);
+    
+    dispatch({ 
+      type: BOUTIQUE_TYPES.CREATE_BOUTIQUE, 
+      payload: res.data.boutique
+    });
+
+    dispatch({ 
+      type: GLOBALTYPES.ALERT, 
+      payload: { success: res.data.message }
+    });
+
+    return res.data;
+
+  } catch (err) {
+    console.error('❌ Error:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: {error: err.response?.data?.message || err.message}
+    });
+    throw err;
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: false} });
+    console.timeEnd('⏱️ createBoutique action time');
+  }
+};
 // ============ 🔥 GET BOUTIQUES BY CATEGORY (PARA EL SLIDER) ============
 export const getBoutiquesByCategory = (categorySlug, subSlug = null, page = 1, limit = 12) => async (dispatch) => {
   try {
@@ -152,113 +216,10 @@ export const resetAllBoutiques = () => ({
 });
 
 // ============ CREATE BOUTIQUE ============
-export const createBoutique = ({ 
-  boutiqueData, 
-  avatar, 
-  auth 
-}) => async (dispatch) => {
-  console.time('⏱️ createBoutique action time');
-  let media = [];
-  
-  try {
-    console.log('🟡 createBoutique action iniciada');
-    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: true} });
-    
-    // Verificar si hay avatar para subir
-    if (avatar) {
-      console.log(`📤 Subiendo avatar...`);
-      console.time('🖼️ Avatar upload time');
-      
-      const avatarArray = avatar ? [avatar] : [];
-      media = await imageUpload(avatarArray);
-      
-      console.timeEnd('🖼️ Avatar upload time');
-      console.log('✅ Avatar subido:', media.length ? media[0] : null);
-    }
-
-    // Preparar datos finales para enviar
-    const boutiqueToSend = {
-      ...boutiqueData,
-      avatar: media.length > 0 ? media[0] : null
-    };
-
-    console.log('📦 Datos a enviar al API:', {
-      nom_boutique: boutiqueToSend.nom_boutique,
-      categorie: boutiqueToSend.categorie,
-      hasAvatar: !!boutiqueToSend.avatar
-    });
-
-    // Enviar al API
-    const res = await postDataAPI('boutique', boutiqueToSend, auth.token);
-    
-    console.log('✅ Respuesta del API:', res.data);
-
-    dispatch({ 
-      type: BOUTIQUE_TYPES.CREATE_BOUTIQUE, 
-      payload: res.data.boutique || res.data
-    });
-
-    dispatch({ type: GLOBALTYPES.ALERT, payload: {
-      success: res.data.message || 'Boutique créée avec succès!'
-    }});
-
-    return res.data;
-
-  } catch (err) {
-    console.error('❌ Error en createBoutique action:', err);
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: {error: err.response?.data?.message || err.message}
-    });
-    throw err;
-  } finally {
-    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: false} });
-    console.timeEnd('⏱️ createBoutique action time');
-  }
-};
-
+ 
 // ============ UPDATE BOUTIQUE ============
-export const updateBoutique = (id, boutiqueData, auth) => async (dispatch) => {
-  try {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: true });
-    
-    let dataToSend = boutiqueData;
-    
-    if (boutiqueData instanceof FormData) {
-      dataToSend = {};
-      for (let [key, value] of boutiqueData.entries()) {
-        dataToSend[key] = value;
-      }
-    }
-    
-    const res = await patchDataAPI(`boutique/${id}`, dataToSend, auth.token);
-    
-    dispatch({
-      type: BOUTIQUE_TYPES.UPDATE_BOUTIQUE,
-      payload: res.data.boutique || res.data
-    });
-    
-    dispatch({ 
-      type: GLOBALTYPES.ALERT, 
-      payload: { 
-        success: res.data.msg || 'Boutique mise à jour avec succès'
-      } 
-    });
-    
-    return res.data;
-    
-  } catch (err) {
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: {
-        error: err.response?.data?.msg || err.message
-      }
-    });
-    throw err;
-  } finally {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: false });
-  }
-};
+ 
+ 
 
 // ============ GET BOUTIQUES (GENERAL) ============
 export const getBoutiques = (query = '', auth = null) => async (dispatch) => {
@@ -377,76 +338,10 @@ export const getUserBoutiques = (auth) => async (dispatch) => {
 };
 
 // ============ DELETE BOUTIQUE ============
-export const deleteBoutique = (id, auth) => async (dispatch) => {
-  try {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: true });
-    
-    const res = await deleteDataAPI(`boutique/${id}`, auth.token);
-    
-    dispatch({
-      type: BOUTIQUE_TYPES.DELETE_BOUTIQUE,
-      payload: id
-    });
-    
-    dispatch({ 
-      type: GLOBALTYPES.ALERT, 
-      payload: { 
-        success: res.data.msg || 'Boutique supprimée avec succès'
-      } 
-    });
-    
-    return res.data;
-    
-  } catch (err) {
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: {
-        error: err.response?.data?.msg || err.message
-      }
-    });
-    throw err;
-  } finally {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: false });
-  }
-};
+ 
 
 // ============ UPDATE BOUTIQUE STATUS ============
-export const updateBoutiqueStatus = (id, statut, auth) => async (dispatch) => {
-  try {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: true });
-    
-    const res = await patchDataAPI(`boutique/${id}/status`, { statut }, auth.token);
-    
-    dispatch({
-      type: BOUTIQUE_TYPES.UPDATE_BOUTIQUE_STATUS,
-      payload: {
-        id,
-        statut: res.data.boutique?.statut || res.data.statut
-      }
-    });
-    
-    dispatch({ 
-      type: GLOBALTYPES.ALERT, 
-      payload: { 
-        success: res.data.msg || 'Statut mis à jour'
-      } 
-    });
-    
-    return res.data;
-    
-  } catch (err) {
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: {
-        error: err.response?.data?.msg || err.message
-      }
-    });
-    throw err;
-  } finally {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: false });
-  }
-};
-
+ 
 // ============ PRODUCTS MANAGEMENT ============
 export const getBoutiqueProducts = (boutiqueId, query = '', auth = null) => async (dispatch) => {
   try {
@@ -582,5 +477,148 @@ export const getBoutiqueStats = (boutiqueId, auth) => async (dispatch) => {
     throw err;
   } finally {
     dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: false });
+  }
+};
+
+
+// ============ UPDATE BOUTIQUE (CORREGIDA) ============
+export const updateBoutique = ({ 
+  boutiqueId, 
+  boutiqueData, 
+  images, 
+  auth 
+}) => async (dispatch) => {
+  console.time('⏱️ updateBoutique action time');
+  
+  try {
+    console.log('🟡 updateBoutique action iniciada', { boutiqueId });
+    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: true} });
+    
+    let finalImages = [];
+    
+    // Procesar imágenes nuevas si hay
+    if (images && images.length > 0) {
+      const newImages = images.filter(img => !img.isExisting && img.url?.startsWith('blob:'));
+      const existingImages = images.filter(img => img.isExisting);
+      
+      if (newImages.length > 0) {
+        console.log(`📤 Subiendo ${newImages.length} imagen(es) nuevas a Cloudinary...`);
+        const uploaded = await imageUpload(newImages);
+        finalImages = [...existingImages, ...uploaded];
+      } else {
+        finalImages = existingImages;
+      }
+    }
+    
+    // Preparar datos finales
+    const boutiqueToSend = {
+      ...boutiqueData,
+      images: finalImages.length > 0 ? finalImages : boutiqueData.images || []
+    };
+
+    console.log('📦 Enviando actualización al API:', {
+      boutiqueId,
+      nom_boutique: boutiqueToSend.nom_boutique,
+      imagesCount: boutiqueToSend.images.length
+    });
+
+    const res = await patchDataAPI(`boutique/${boutiqueId}`, boutiqueToSend, auth.token);
+    
+    dispatch({ 
+      type: BOUTIQUE_TYPES.UPDATE_BOUTIQUE, 
+      payload: res.data.boutique || res.data
+    });
+
+    dispatch({ 
+      type: GLOBALTYPES.ALERT, 
+      payload: { success: res.data.message || 'Boutique mise à jour avec succès!' }
+    });
+
+    return res.data;
+
+  } catch (err) {
+    console.error('❌ Error en updateBoutique:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: {error: err.response?.data?.message || err.message}
+    });
+    throw err;
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: false} });
+    console.timeEnd('⏱️ updateBoutique action time');
+  }
+};
+
+// ============ DELETE BOUTIQUE (CORREGIDA) ============
+export const deleteBoutique = ({ 
+  boutiqueId, 
+  auth 
+}) => async (dispatch) => {
+  try {
+    console.log('🗑️ deleteBoutique action iniciada', { boutiqueId });
+    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: true} });
+    
+    const res = await deleteDataAPI(`boutique/${boutiqueId}`, auth.token);
+    
+    dispatch({
+      type: BOUTIQUE_TYPES.DELETE_BOUTIQUE,
+      payload: boutiqueId
+    });
+    
+    dispatch({ 
+      type: GLOBALTYPES.ALERT, 
+      payload: { success: res.data.message || 'Boutique supprimée avec succès' }
+    });
+    
+    return res.data;
+    
+  } catch (err) {
+    console.error('❌ Error en deleteBoutique:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || err.message }
+    });
+    throw err;
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: false} });
+  }
+};
+
+// ============ UPDATE BOUTIQUE STATUS (CORREGIDA) ============
+export const updateBoutiqueStatus = ({ 
+  boutiqueId, 
+  statusData, 
+  auth 
+}) => async (dispatch) => {
+  try {
+    console.log('🔄 updateBoutiqueStatus action iniciada', { boutiqueId, statusData });
+    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: true} });
+    
+    const res = await patchDataAPI(`boutique/${boutiqueId}/status`, statusData, auth.token);
+    
+    dispatch({
+      type: BOUTIQUE_TYPES.UPDATE_BOUTIQUE_STATUS,
+      payload: {
+        id: boutiqueId,
+        ...res.data.boutique
+      }
+    });
+    
+    dispatch({ 
+      type: GLOBALTYPES.ALERT, 
+      payload: { success: res.data.message || 'Statut mis à jour avec succès' }
+    });
+    
+    return res.data;
+    
+  } catch (err) {
+    console.error('❌ Error en updateBoutiqueStatus:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || err.message }
+    });
+    throw err;
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: false} });
   }
 };

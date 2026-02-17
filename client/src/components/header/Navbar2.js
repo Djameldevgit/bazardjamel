@@ -583,7 +583,7 @@ const Navbar2 = () => {
                           </MenuItem>
                           
                           {/* Ver todas las tiendas */}
-                          <MenuItem icon={FaUserCircle} iconColor="#667eea" to={`/store/${auth.user._id}`}>
+                          <MenuItem icon={FaUserCircle} iconColor="#667eea" to={`/boutique/${auth.user._id}`}>
                             <div className="d-flex align-items-center justify-content-between"></div>
                           </MenuItem>
                         </div>
