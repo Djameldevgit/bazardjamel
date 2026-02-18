@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { 
+
   FaHome, FaUser, FaList, FaPlus, FaShoppingCart, 
   FaTicketAlt, FaPlane, FaStore, FaBullhorn, 
   FaCreditCard, FaCog, FaChartLine, FaBell,
@@ -11,19 +13,19 @@ const DashboardNavbar = () => {
   const location = useLocation();
   const history = useHistory();
   const [activeDropdown, setActiveDropdown] = useState(null);
-
-  // Opciones principales del navbar
+  const { auth } = useSelector(state => state);
+ 
   const mainItems = [
     { 
       icon: FaHome, 
       label: 'Tableau de bord', 
-      path: '/users/dashboardpage',
+      path: '/users/dashboard',
       color: '#667eea'
     },
     { 
       icon: FaUser, 
       label: 'Mon Profil', 
-      path: '/profile',
+      path: `/profile/${auth.user._id}`,
       color: '#f093fb'
     },
     { 

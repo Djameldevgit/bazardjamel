@@ -29,6 +29,8 @@ import roles from './pages/users/roles';
  
 import BoutiqueDetailPage from './pages/boutique/BoutiqueDetailPage';
 import UserBoutiquesPage from './pages/boutique/UserBoutiquesPage';
+import MesAnnoces from './pages/users/MesAnnoces';
+import ProfileSettings from './pages/users/ProfileSettings';
 
 function App() {
   const { auth } = useSelector(state => state)
@@ -105,13 +107,16 @@ function App() {
         <Route exact path="/mes-boutiques" component={UserBoutiquesPage} />
         <Route exact path="/boutique/:id" component={BoutiqueDetailPage} />
         
+ {/* ============ USER DASHBORAD ============ */}
+ <Route exact path="/mes-annonces" component={MesAnnoces} />
+ <Route exact path="/profile/settings" component={ProfileSettings} />
         {/* ============ RUTAS DE ANUNCIOS ============ */}
         <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
         <Route exact path="/edit-post/:id" component={CreateAnnoncePage} />
         <Route exact path="/post/:id" component={PostId} />
   
         {/* ============ DASHBOARD Y PERFILES ============ */}
-        <Route exact path="/dashboard" component={DashboardPage} />
+        <Route exact path="/users/dashboard" component={DashboardPage} />
         <Route exact path="/profile/:id" component={profile} />
         <Route exact path="/users/roles" component={roles} />
   

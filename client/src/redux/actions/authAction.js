@@ -252,3 +252,8 @@ export const logout = () => async (dispatch) => {
         })
     }
 }
+
+export const changePassword = ( ) => ({
+  
+ 
+});

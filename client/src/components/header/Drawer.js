@@ -30,7 +30,7 @@ const Drawer = ({
   });
 
   // Detectar si está en dashboard/profile
-  const isDashboardPage = location.pathname.includes('/dashboard') || 
+  const isDashboardPage = location.pathname.includes('/users/dashboard') || 
                          location.pathname.includes('/profile') ||
                          location.pathname.startsWith('/mes-');
 
@@ -76,7 +76,7 @@ const Drawer = ({
     }
     
     // Para otras categorías principales
-    return `/category/${categorySlug}`;
+    return `/${categorySlug}`;
   };
 
   // Manejar clic en categoría
@@ -267,7 +267,7 @@ const Drawer = ({
       <LinkItem 
         emoji={emojis.dashboard} 
         name="Mon Tableau de bord" 
-        path="/dashboard" 
+        path="/users/dashboard" 
         color="#8b5cf6" 
         isDashboardLink={true}
       />
@@ -294,7 +294,7 @@ const Drawer = ({
       <div style={{ margin: '15px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
         {emojis.user} Mon compte
       </div>
-      <LinkItem emoji={emojis.dashboard} name="Tableau de bord" path="/dashboard" color="#8b5cf6" />
+      <LinkItem emoji={emojis.dashboard} name="Tableau de bord" path="/users/dashboard" color="#8b5cf6" />
       <LinkItem emoji="⚙️" name="Paramètres du profil" path="/profile/settings" color="#6b7280" />
       <LinkItem emoji={emojis.logout} name="Se déconnecter" onClick={handleLogout} color="#ef4444" />
 
