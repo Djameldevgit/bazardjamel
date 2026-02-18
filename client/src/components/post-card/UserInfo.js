@@ -3,8 +3,8 @@ import React from 'react';
 import { Card, Button, Badge } from 'react-bootstrap';
 import { useSelector, useDispatch } from 'react-redux';
 import { useHistory } from 'react-router-dom';
-import { MESS_TYPES } from '../../../redux/actions/messageAction';
-import { GLOBALTYPES } from '../../../redux/actions/globalTypes';
+import { MESS_TYPES } from '../../redux/actions/messageAction';
+import { GLOBALTYPES } from '../../redux/actions/globalTypes';
 
 const UserInfo = ({ post }) => {
   const { auth } = useSelector(state => state);

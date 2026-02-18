@@ -15,10 +15,11 @@ import {
 import InfiniteScroll from 'react-infinite-scroll-component';
 import MainCategorySlider from '../components/SlidersCategories/CategorySlider';
 import Header from '../components/SlidersCategories/HeaderCarousel';
-import PostCard from '../components/PostCard';
+import PostCard from '../components/post-card/PostCard';
 import BoutiqueCard from '../components/BoutiqueCard';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'react-bootstrap-icons';
-
+ 
+ 
 const Home = () => {
   const dispatch = useDispatch();
   const history = useHistory();

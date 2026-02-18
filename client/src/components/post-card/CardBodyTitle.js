@@ -4,9 +4,10 @@ import { useTranslation } from "react-i18next";
 import { useSelector, useDispatch } from "react-redux";
 import { CardBody } from "react-bootstrap";
 import { FaEllipsisH } from "react-icons/fa"
-import { deletePost } from '../../../redux/actions/postAction';
-import { MESS_TYPES } from '../../../redux/actions/messageAction';
-import { GLOBALTYPES } from '../../../redux/actions/globalTypes';
+import { deletePost } from "../../redux/actions/postAction";
+  
+import { MESS_TYPES } from '../../redux/actions/messageAction';
+import { GLOBALTYPES } from '../../redux/actions/globalTypes';
 
 const CardBodyTitle = ({ post }) => {
     const location = useLocation();

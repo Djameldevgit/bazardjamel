@@ -1,171 +1,496 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useParams, useHistory } from 'react-router-dom';
-import { 
-  getCategoryPosts, 
-  resetCategoryState 
-} from '../../redux/actions/categoryAction';
-import { Container, Row, Col, Spinner, Badge } from 'react-bootstrap';
-import InfiniteScroll from 'react-infinite-scroll-component';
-import Header from '../../components/SlidersCategories/HeaderCarousel';
-import BreadcrumbNav from '../../components/BreadcrumbNav';
-import SubCategorySlider from '../../components/SlidersCategories/SubCategoriesSlider';
-import ArticleSlider from '../../components/SlidersCategories/SliderArticle';
-import PostCard from '../../components/PostCard';
+// 📂 pages/CategoryPage.js
+import React, { useState, useEffect, useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useParams, useHistory, useLocation } from "react-router-dom";
+import { Container, Spinner, Row, Col } from "react-bootstrap";
+import InfiniteScroll from "react-infinite-scroll-component";
+import PostCard from "../../components/post-card/PostCard";
+ 
+import { getCategoryPosts, resetCategoryPosts } from "../../redux/actions/categoryAction";
+import { getBoutiquesByCategory, resetAllBoutiques } from "../../redux/actions/boutiqueAction";
+import BreadcrumbNav from "../../components/BreadcrumbNav";
+import SliderUnificado from "../../components/SlidersCategories/SliderUnificado";
+ 
+import BoutiqueCard from "../../components/BoutiqueCard";
+import PaginationComponent from "../../components/PaginationComponent";
+import CategoryCarousel from "../../components/SlidersCategories/CategoryCarousel";
+
+const POSTS_SCROLL_LIMIT = 50;
 
 const CategoryPage = () => {
   const dispatch = useDispatch();
   const history = useHistory();
-  const { slug, subSlug, articleSlug } = useParams();
+  const location = useLocation();
+  const { slug, subSlug, articleSlug, page } = useParams();
 
+  // Detectar si es boutique
+  const isBoutique = slug === 'boutiques';
+  const { category } = useParams();
+  const categoryData = useSelector(state => state.category.currentCategory);
+  
+  // ============ ESTADOS DE REDUX ============
+  const {
+    categoryInfo = {},
+    posts = [],
+    postsLoading = false,
+    hasMorePosts = true,
+    pagination: rawPagination = {}
+  } = useSelector((state) => state.category || {});
+
+  const categoryChildren = categoryInfo?.children || [];
+
+  // Estado para boutiques
+  const categoryPath = isBoutique && subSlug 
+    ? `boutiques/${subSlug}` 
+    : isBoutique 
+      ? 'boutiques' 
+      : null;
+
+  const boutiqueCategoryData = useSelector((state) => 
+    categoryPath ? state.boutique?.boutiquesByCategory[categoryPath] : null
+  );
+
+  const boutiques = boutiqueCategoryData?.boutiques || [];
+  const boutiquesLoading = useSelector((state) => 
+    categoryPath ? state.boutique?.loadingByCategory[categoryPath] : false
+  );
+  const hasMoreBoutiques = boutiqueCategoryData?.hasMore || false;
+  const boutiquePagination = {
+    currentPage: boutiqueCategoryData?.page || 1,
+    totalPages: boutiqueCategoryData?.totalPages || 1,
+    totalPosts: boutiqueCategoryData?.total || 0,
+    limit: 12,
+    hasMore: boutiqueCategoryData?.hasMore || false
+  };
+
+  // ============ ESTADO LOCAL ============
+  const [allChildren, setAllChildren] = useState([]);
+  const [currentSub, setCurrentSub] = useState(null);
   const [currentArticle, setCurrentArticle] = useState(null);
-  const [childrenToShow, setChildrenToShow] = useState([]);
+  const [error, setError] = useState(null);
+  
+  // Estado para filtros - INICIALIZAR desde URL
+  const [filters, setFilters] = useState({
+    sub: subSlug || null,
+    article: articleSlug || null,
+    page: parseInt(page) || 1
+  });
 
-  const initialLoadRef = useRef(false);
-  const isFetchingRef = useRef(false);
-  const prevParamsRef = useRef({ slug: null, subSlug: null, articleSlug: null });
-
-  const { categoryInfo, children, posts, postsLoading, postsError, hasMorePosts } = useSelector(state => state.category || {});
-
-  const currentLevel = articleSlug ? 3 : subSlug ? 2 : 1;
-
-  // 🌟 Manejar children para sliders
+  // ============ SINCRONIZAR ESTADO CON URL ============
   useEffect(() => {
-    if (!children || children.length === 0) {
-      setChildrenToShow([]);
-      setCurrentArticle(null);
-      return;
+    console.log('🔄 Sincronizando con URL:', { subSlug, articleSlug, page });
+    setFilters({
+      sub: subSlug || null,
+      article: articleSlug || null,
+      page: parseInt(page) || 1
+    });
+  }, [subSlug, articleSlug, page]);
+
+  // ============ ACTUALIZAR URL (CON REEMPLAZO) ============
+  const updateUrl = useCallback((newFilters) => {
+    // Construir nueva URL
+    let basePath = `/${slug}`;
+    
+    if (newFilters.sub) {
+      basePath += `/${newFilters.sub}`;
+      if (newFilters.article) {
+        basePath += `/${newFilters.article}`;
+      }
     }
+    
+    basePath += `/${newFilters.page}`;
+    
+    console.log('📍 Actualizando URL:', basePath);
+    
+    // Usar push para que el botón "atrás" del navegador funcione
+    history.push(basePath);
+  }, [slug, history]);
 
-    // Nivel 1: mostrar children directamente (subcategorías)
-    // Nivel 2: mostrar children directamente (artículos)
-    // Nivel 3: children ya son artículos, slider estático
-    setChildrenToShow(children);
+  // ============ LOGS ============
+  useEffect(() => {
+    console.log('🔍 CategoryPage - Estado:', {
+      slug,
+      isBoutique,
+      filters,
+      postsCount: posts.length,
+      currentSub: currentSub?.name,
+      currentArticle: currentArticle?.name,
+      url: location.pathname
+    });
+  }, [slug, isBoutique, filters, posts.length, currentSub, currentArticle, location.pathname]);
 
-    if (currentLevel === 3) {
-      const foundArticle = children.find(a => a.slug === articleSlug);
-      setCurrentArticle(foundArticle || null);
-    } else {
-      setCurrentArticle(null);
-    }
-  }, [children, currentLevel, articleSlug]);
-
-  // 🌟 Cargar posts al cambiar de URL evitando bucle
+  // ============ CARGA INICIAL ============
   useEffect(() => {
     if (!slug) return;
 
-    const currentParams = { slug, subSlug, articleSlug };
-    const prevParams = prevParamsRef.current;
-    const paramsChanged = slug !== prevParams.slug || subSlug !== prevParams.subSlug || articleSlug !== prevParams.articleSlug;
+    const loadData = async () => {
+      try {
+        if (isBoutique) {
+          console.log('🔄 Cargando boutiques...', { slug, sub: filters.sub, page: filters.page });
+          const res = await dispatch(getBoutiquesByCategory(slug, filters.sub, filters.page, 12));
+          if (res?.children) {
+            setAllChildren(res.children);
+            
+            if (filters.sub) {
+              const foundSub = res.children.find((c) => c.slug === filters.sub);
+              setCurrentSub(foundSub || null);
+            }
+          }
+        } else {
+          console.log('🔄 Cargando posts...', { slug, sub: filters.sub, article: filters.article, page: filters.page });
+          const res = await dispatch(getCategoryPosts(slug, filters.sub, filters.article, filters.page, 12));
+          if (res?.children) {
+            setAllChildren(res.children);
+            
+            if (filters.sub) {
+              const foundSub = res.children.find((c) => c.slug === filters.sub);
+              setCurrentSub(foundSub || null);
+              
+              if (filters.article && foundSub?.articles) {
+                const foundArticle = foundSub.articles.find((a) => a.slug === filters.article);
+                setCurrentArticle(foundArticle || null);
+              } else {
+                setCurrentArticle(null);
+              }
+            } else {
+              setCurrentSub(null);
+              setCurrentArticle(null);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('❌ Error cargando datos:', err);
+        setError(err.message);
+      }
+    };
 
-    if (paramsChanged) {
-      dispatch(resetCategoryState());
-      initialLoadRef.current = false;
-      isFetchingRef.current = false;
-    }
+    loadData();
+  }, [slug, filters.sub, filters.article, filters.page, dispatch, isBoutique]);
 
-    if ((!initialLoadRef.current || paramsChanged) && !postsLoading && !isFetchingRef.current) {
-      initialLoadRef.current = true;
-      isFetchingRef.current = true;
-
-      dispatch(getCategoryPosts(slug, subSlug || null, articleSlug || null, 1, 12))
-        .finally(() => { isFetchingRef.current = false; });
-
-      prevParamsRef.current = currentParams;
-    }
-  }, [slug, subSlug, articleSlug, postsLoading, dispatch]);
-
-  // 🌟 Handlers de click
-  const handleSubcategoryClick = subcategory => {
-    history.push(`/category/${slug}/${subcategory.slug}`);
-  };
-
-  const handleArticleClick = article => {
-    history.push(`/category/${slug}/${subSlug}/${article.slug}`);
-  };
-
-  // 🌟 Sliders
-  const shouldShowSubcategorySlider = currentLevel === 1 && childrenToShow.length > 0;
-  const shouldShowArticleSlider = (currentLevel === 2 || currentLevel === 3) && childrenToShow.length > 0;
-
-  // 🌟 Breadcrumb y título
-  const getPageTitle = () => {
-    if (currentLevel === 1) return categoryInfo?.name || slug;
-    if (currentLevel === 2) return children?.find(c => c.slug === subSlug)?.name || subSlug;
-    if (currentLevel === 3) return currentArticle?.name || articleSlug;
-    return '';
-  };
-
+  // ============ BREADCRUMB ============
   const buildBreadcrumbItems = () => {
-    const items = [{ label: 'Inicio', path: '/' }];
-    if (slug) items.push({ label: categoryInfo?.name || slug, path: `/category/${slug}` });
-    if (subSlug && currentLevel >= 2) items.push({ label: children?.find(c => c.slug === subSlug)?.name || subSlug, path: `/category/${slug}/${subSlug}` });
-    if (articleSlug && currentLevel === 3) items.push({ label: currentArticle?.name || articleSlug, path: `/category/${slug}/${subSlug}/${articleSlug}` });
+    const items = [{ label: "Inicio", path: "/" }];
+    
+    if (slug) {
+      let nombreCategoria = slug;
+      if (isBoutique) {
+        nombreCategoria = "Boutiques";
+      } else if (categoryInfo?.name) {
+        nombreCategoria = categoryInfo.name;
+      }
+      items.push({ 
+        label: nombreCategoria, 
+        path: `/${slug}/1`  // ← IMPORTANTE: incluir /1
+      });
+    }
+    
+    if (currentSub) {
+      items.push({ 
+        label: currentSub.name, 
+        path: `/${slug}/${currentSub.slug}/1`  // ← IMPORTANTE: incluir /1
+      });
+    }
+    
+    if (!isBoutique && currentArticle) {
+      items.push({
+        label: currentArticle.name,
+        path: `/${slug}/${currentSub?.slug}/${currentArticle.slug}/1`,
+      });
+    }
+    
     return items;
   };
 
-  // 🌟 Loading
-  if (postsLoading && (!posts || posts.length === 0) && !postsError) {
-    return (
-      <div className="min-vh-100 d-flex flex-column">
-        <Header />
-        <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
+  // ============ MANEJAR CLICK EN BREADCRUMB ============
+  const handleBreadcrumbClick = (path) => {
+    console.log('🍞 Breadcrumb click:', path);
+    history.push(path);
+  };
+
+  // ============ CARGAR MÁS ============
+  const loadMore = useCallback(() => {
+    if (isBoutique) {
+      if (!hasMoreBoutiques || boutiquesLoading) return;
+      
+      const nextPage = filters.page + 1;
+      const newFilters = { ...filters, page: nextPage };
+      
+      setFilters(newFilters);
+      updateUrl(newFilters);
+      dispatch(getBoutiquesByCategory(slug, filters.sub, nextPage, 12));
+      
+    } else {
+      if (!hasMorePosts || postsLoading || posts.length >= POSTS_SCROLL_LIMIT) return;
+      
+      const nextPage = filters.page + 1;
+      const newFilters = { ...filters, page: nextPage };
+      
+      setFilters(newFilters);
+      updateUrl(newFilters);
+      dispatch(getCategoryPosts(slug, filters.sub, filters.article, nextPage, 12));
+    }
+  }, [isBoutique, hasMoreBoutiques, boutiquesLoading, hasMorePosts, postsLoading, posts.length, 
+      filters, dispatch, slug, updateUrl]);
+
+  // ============ CLICK EN SLIDER ============
+  const handleSliderClick = useCallback((item) => {
+    console.log('🖱️ Click en slider:', item);
+    
+    let newFilters;
+    
+    if (isBoutique) {
+      newFilters = {
+        sub: item.slug,
+        article: null,
+        page: 1
+      };
+      
+      setCurrentSub(item);
+      setCurrentArticle(null);
+      
+    } else {
+      // Determinar si es subcategoría (nivel 2) o artículo (nivel 3)
+      const isSubCategory = item.level === 2;
+      
+      newFilters = {
+        sub: item.slug,
+        article: null,
+        page: 1
+      };
+      
+      if (isSubCategory) {
+        setCurrentSub(item);
+        setCurrentArticle(null);
+      } else {
+        setCurrentArticle(item);
+        setCurrentSub(null);
+      }
+    }
+    
+    console.log('🎯 Nuevos filtros:', newFilters);
+    
+    setFilters(newFilters);
+    updateUrl(newFilters);  // ← AHORA USA UPDATEURL CON PUSH
+    
+    if (isBoutique) {
+      dispatch(getBoutiquesByCategory(slug, newFilters.sub, 1, 12));
+    } else {
+      dispatch(getCategoryPosts(slug, newFilters.sub, null, 1, 12));
+    }
+  }, [slug, dispatch, isBoutique, updateUrl]);
+
+  // ============ CLICK EN ARTÍCULO ============
+  const handleArticleClick = useCallback((article) => {
+    console.log('🖱️ Click en artículo:', article);
+    
+    let subCategorySlug = currentSub?.slug;
+    
+    if (!subCategorySlug) {
+      subCategorySlug = article.slug;
+    }
+    
+    const newFilters = {
+      sub: subCategorySlug,
+      article: article.slug,
+      page: 1
+    };
+    
+    console.log('🎯 Nuevos filtros (artículo):', newFilters);
+    
+    setFilters(newFilters);
+    updateUrl(newFilters);  // ← AHORA USA UPDATEURL CON PUSH
+    
+    dispatch(getCategoryPosts(slug, subCategorySlug, article.slug, 1, 12));
+    
+    setCurrentArticle(article);
+    if (!currentSub) {
+      setCurrentSub(article);
+    }
+  }, [slug, currentSub, dispatch, updateUrl]);
+
+  // ============ DETERMINAR ITEMS DEL SLIDER ============
+  const getSliderItems = () => {
+    if (isBoutique) {
+      if (allChildren.length > 0) return allChildren;
+      if (categoryChildren.length > 0) return categoryChildren;
+      return [];
+    }
+
+    if (currentSub && currentSub.articles?.length > 0) {
+      return currentSub.articles;
+    }
+    
+    if (allChildren.length > 0) return allChildren;
+    if (categoryChildren.length > 0) return categoryChildren;
+    
+    return [];
+  };
+
+  // ============ DETERMINAR ITEM ACTIVO ============
+  const getActiveItem = () => {
+    if (isBoutique) return currentSub;
+    if (currentArticle) return currentArticle;
+    if (currentSub) return currentSub;
+    return null;
+  };
+
+  // ============ MANEJAR CAMBIO DE PÁGINA ============
+  const handlePageChange = (newPage) => {
+    const newFilters = { ...filters, page: newPage };
+    
+    setFilters(newFilters);
+    updateUrl(newFilters);
+    
+    if (isBoutique) {
+      dispatch(getBoutiquesByCategory(slug, filters.sub, newPage, 12));
+    } else {
+      dispatch(getCategoryPosts(slug, filters.sub, filters.article, newPage, 12));
+    }
+  };
+
+  // ============ RENDER ============
+  const isLoading = isBoutique ? boutiquesLoading : postsLoading;
+  const items = isBoutique ? boutiques : posts;
+  const hasMore = isBoutique ? hasMoreBoutiques : hasMorePosts;
+  const paginationData = isBoutique ? boutiquePagination : rawPagination;
+
+  const renderContent = () => {
+    if (error) {
+      return (
+        <div className="text-center py-5">
+          <i className="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+          <h5 className="text-danger">Error</h5>
+          <p className="text-muted">{error}</p>
+        </div>
+      );
+    }
+
+    if (isLoading && items.length === 0) {
+      return (
+        <div className="text-center py-5">
           <Spinner animation="border" variant="primary" />
-        </Container>
+          <p className="mt-3 text-muted">
+            {isBoutique ? 'Chargement des boutiques...' : 'Chargement des annonces...'}
+          </p>
+        </div>
+      );
+    }
+
+    if (items.length > 0) {
+      return (
+        <>
+          <InfiniteScroll
+            key={filters.page}
+            dataLength={items.length}
+            hasMore={hasMore && (!isBoutique ? items.length < POSTS_SCROLL_LIMIT : true)}
+            loader={
+              <div className="text-center py-4">
+                <Spinner animation="border" size="sm" variant="primary" />
+                <p className="text-muted small mt-2">Chargement supplémentaire...</p>
+              </div>
+            }
+            next={loadMore}
+            scrollThreshold={0.9}
+          >
+            <Row xs={1} sm={2} md={3} lg={4} className="g-4">
+              {items.map((item) => (
+                <Col key={item._id}>
+                  {isBoutique ? (
+                    <BoutiqueCard boutique={item} />
+                  ) : (
+                    <PostCard post={item} />
+                  )}
+                </Col>
+              ))}
+            </Row>
+          </InfiniteScroll>
+
+          {paginationData.totalPages > 1 && (
+            <div className="mt-4">
+              <PaginationComponent
+                currentPage={paginationData.currentPage}
+                totalPages={paginationData.totalPages}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          )}
+        </>
+      );
+    }
+
+    return (
+      <div className="text-center py-5">
+        <div className="mb-4">
+          <i className={`fas fa-${isBoutique ? 'store' : 'box-open'} fa-4x text-secondary`}></i>
+        </div>
+        <h4 className="text-secondary mb-3">
+          {isBoutique ? 'Aucune boutique trouvée' : 'Aucune annonce trouvée'}
+        </h4>
+        <p className="text-muted">
+          {currentArticle
+            ? `Aucun résultat pour "${currentArticle.name}"`
+            : currentSub
+              ? `Aucune ${isBoutique ? 'boutique' : 'annonce'} dans cette catégorie`
+              : "Essayez une autre catégorie"}
+        </p>
       </div>
     );
-  }
+  };
 
   return (
-    <div className="min-vh-100 d-flex flex-column">
-      <Header />
-      <main className="flex-grow-1">
-        <Container className="py-4">
-          <BreadcrumbNav items={buildBreadcrumbItems()} />
-          <h1 className="h2 mb-4">
-            {getPageTitle()}
-            <Badge bg={currentLevel === 1 ? 'primary' : currentLevel === 2 ? 'success' : 'info'} className="ms-2">
-              Nivel {currentLevel}
-            </Badge>
-            {currentArticle && <Badge bg="warning" className="ms-2">Filtrado por: {currentArticle.name}</Badge>}
-          </h1>
+    <div className="category-page">
+      <CategoryCarousel
+        categorySlug={category} 
+        categoryName={categoryData?.name} 
+      />
 
-          {/* 🔹 SubCategory Slider */}
-          {shouldShowSubcategorySlider && (
-            <SubCategorySlider 
-              subcategories={childrenToShow}
-              currentCategory={categoryInfo}
-              onSubcategoryClick={handleSubcategoryClick}
-            />
+      <main className="category-content">
+        <Container className=" ">
+          {/* Slider de categorías */}
+          {getSliderItems().length > 0 && (
+            <div className="mb-4">
+              <SliderUnificado
+                items={getSliderItems()}
+                activeItem={getActiveItem()}
+                variant="categoryPage"
+                showCount={true}
+                maxRows={2}
+                onItemClick={(item) => {
+                  if (isBoutique) {
+                    handleSliderClick(item);
+                  } else if (item.level === 3) {
+                    handleArticleClick(item);
+                  } else {
+                    handleSliderClick(item);
+                  }
+                }}
+              />
+            </div>
           )}
-
-          {/* 🔹 Article Slider */}
-          {shouldShowArticleSlider && (
-            <ArticleSlider
-              articles={childrenToShow}
-              currentSubcategory={{ slug: subSlug, name: children?.find(c => c.slug === subSlug)?.name }}
-              currentArticle={currentArticle}
-              onArticleClick={handleArticleClick}
+          
+          {/* Breadcrumb con manejador de clicks */}
+          <div className="mb-3">
+            <BreadcrumbNav 
+              items={buildBreadcrumbItems()} 
+              onItemClick={handleBreadcrumbClick}
             />
-          )}
+          </div>
+          
+          {/* Título de la sección */}
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h4 className="mb-0">
+              {isBoutique ? 'Boutiques' : 'Annonces'}
+              {currentSub && <span className="text-muted ms-2">- {currentSub.name}</span>}
+              {currentArticle && <span className="text-muted ms-2">- {currentArticle.name}</span>}
+            </h4>
+            <span className="text-muted">
+              {items.length} résultat{items.length > 1 ? 's' : ''}
+            </span>
+          </div>
 
-          {/* 🔹 Posts */}
-          <section className="mt-4">
-            {posts && posts.length > 0 ? (
-              <InfiniteScroll
-                dataLength={posts.length}
-                hasMore={hasMorePosts}
-                loader={<Spinner animation="border" size="sm" className="d-block mx-auto my-3"/>}
-              >
-                <Row xs={1} md={2} lg={3} xl={4} className="g-4">
-                  {posts.map(post => (
-                    <Col key={post._id}><PostCard post={post} onClick={() => history.push(`/post/${post._id}`)} /></Col>
-                  ))}
-                </Row>
-              </InfiniteScroll>
-            ) : (
-              <div className="text-center py-5">No hay productos disponibles</div>
-            )}
+          {/* Contenido principal */}
+          <section className="content-section">
+            {renderContent()}
           </section>
         </Container>
       </main>

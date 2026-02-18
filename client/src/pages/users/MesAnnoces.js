@@ -7,7 +7,8 @@ import { useHistory } from 'react-router-dom';
  import { getProfileUsers } from '../../redux/actions/profileAction';
 
 import { deletePost } from '../../redux/actions/postAction';
-import PostCard from '../../components/PostCard';
+ import PostCard from '../../components/post-card/PostCard';
+ 
 import { Pencil, Trash, Plus, Eye, Filter } from 'react-bootstrap-icons';
 import InfiniteScroll from 'react-infinite-scroll-component';
 

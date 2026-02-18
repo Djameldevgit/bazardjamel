@@ -1,18 +1,19 @@
-// 📂 pages/CategoryPage.js
+// 📂 pages/CategoryPage.js - VERSIÓN COMPLETA CON FILTRO
 import React, { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useHistory, useLocation } from "react-router-dom";
-import { Container, Spinner, Row, Col } from "react-bootstrap";
+import { Container, Spinner, Row, Col, Button } from "react-bootstrap";
 import InfiniteScroll from "react-infinite-scroll-component";
-
+import { Funnel } from 'react-bootstrap-icons';
+import PostCard from "../../components/post-card/PostCard";
 import { getCategoryPosts, resetCategoryPosts } from "../../redux/actions/categoryAction";
 import { getBoutiquesByCategory, resetAllBoutiques } from "../../redux/actions/boutiqueAction";
 import BreadcrumbNav from "../../components/BreadcrumbNav";
 import SliderUnificado from "../../components/SlidersCategories/SliderUnificado";
-import PostCard from "../../components/PostCard";
 import BoutiqueCard from "../../components/BoutiqueCard";
 import PaginationComponent from "../../components/PaginationComponent";
 import CategoryCarousel from "../../components/SlidersCategories/CategoryCarousel";
+import FilterDrawer from "./FilterDrawer";
 
 const POSTS_SCROLL_LIMIT = 50;
 
@@ -74,6 +75,10 @@ const CategoryPage = () => {
     article: articleSlug || null,
     page: parseInt(page) || 1
   });
+
+  // ============ ESTADO PARA FILTRO DRAWER ============
+  const [showFilterDrawer, setShowFilterDrawer] = useState(false);
+  const [activeFilters, setActiveFilters] = useState(null);
 
   // ============ SINCRONIZAR ESTADO CON URL ============
   useEffect(() => {
@@ -347,11 +352,31 @@ const CategoryPage = () => {
     }
   };
 
+  // ============ MANEJAR APLICACIÓN DE FILTROS ============
+  const handleApplyFilters = (filters) => {
+    console.log('🎯 Aplicando filtros:', filters);
+    setActiveFilters(filters);
+    
+    // Aquí puedes despachar una acción para cargar posts con filtros
+    // Por ahora, solo guardamos los filtros
+  };
+
+  // ============ CONTAR FILTROS ACTIVOS ============
+  const countActiveFilters = () => {
+    if (!activeFilters) return 0;
+    return Object.keys(activeFilters).filter(key => 
+      activeFilters[key] && 
+      activeFilters[key] !== '' && 
+      activeFilters[key] !== 'recent'
+    ).length;
+  };
+
   // ============ RENDER ============
   const isLoading = isBoutique ? boutiquesLoading : postsLoading;
   const items = isBoutique ? boutiques : posts;
   const hasMore = isBoutique ? hasMoreBoutiques : hasMorePosts;
   const paginationData = isBoutique ? boutiquePagination : rawPagination;
+  const activeFilterCount = countActiveFilters();
 
   const renderContent = () => {
     if (error) {
@@ -475,16 +500,59 @@ const CategoryPage = () => {
             />
           </div>
           
-          {/* Título de la sección */}
+          {/* Título de la sección con botón de filtro */}
           <div className="d-flex justify-content-between align-items-center mb-3">
-            <h4 className="mb-0">
-              {isBoutique ? 'Boutiques' : 'Annonces'}
-              {currentSub && <span className="text-muted ms-2">- {currentSub.name}</span>}
-              {currentArticle && <span className="text-muted ms-2">- {currentArticle.name}</span>}
-            </h4>
-            <span className="text-muted">
-              {items.length} résultat{items.length > 1 ? 's' : ''}
-            </span>
+            <div>
+              <h4 className="mb-0">
+                {isBoutique ? 'Boutiques' : 'Annonces'}
+                {currentSub && <span className="text-muted ms-2">- {currentSub.name}</span>}
+                {currentArticle && <span className="text-muted ms-2">- {currentArticle.name}</span>}
+              </h4>
+              {activeFilterCount > 0 && (
+                <small className="text-muted">
+                  {activeFilterCount} filtre{activeFilterCount > 1 ? 's' : ''} actif
+                  {activeFilterCount > 1 ? 's' : ''}
+                </small>
+              )}
+            </div>
+            
+            <div className="d-flex align-items-center gap-3">
+              <span className="text-muted">
+                {items.length} résultat{items.length > 1 ? 's' : ''}
+              </span>
+              
+              {/* Botón de filtro */}
+              <Button
+                variant={activeFilterCount > 0 ? "primary" : "outline-primary"}
+                size="sm"
+                onClick={() => setShowFilterDrawer(true)}
+                className="d-flex align-items-center gap-2 rounded-pill"
+                style={{
+                  borderColor: '#667eea',
+                  ...(activeFilterCount === 0 && { color: '#667eea' })
+                }}
+              >
+                <Funnel size={16} />
+                Filtres
+                {activeFilterCount > 0 && (
+                  <span style={{
+                    backgroundColor: 'white',
+                    color: '#667eea',
+                    borderRadius: '50%',
+                    width: '20px',
+                    height: '20px',
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginLeft: '4px'
+                  }}>
+                    {activeFilterCount}
+                  </span>
+                )}
+              </Button>
+            </div>
           </div>
 
           {/* Contenido principal */}
@@ -493,6 +561,45 @@ const CategoryPage = () => {
           </section>
         </Container>
       </main>
+
+      {/* Drawer de filtros */}
+      <FilterDrawer
+        show={showFilterDrawer}
+        onHide={() => setShowFilterDrawer(false)}
+        category={slug}
+        currentSub={currentSub}
+        currentArticle={currentArticle}
+        onApplyFilters={handleApplyFilters}
+      />
+
+      {/* Estilos adicionales */}
+      <style>{`
+        .btn-outline-primary {
+          border-color: #667eea;
+          color: #667eea;
+        }
+        
+        .btn-outline-primary:hover {
+          background-color: #667eea;
+          border-color: #667eea;
+          color: white;
+        }
+        
+        .btn-outline-primary:active {
+          background-color: #5a67d8 !important;
+          border-color: #5a67d8 !important;
+        }
+        
+        .btn-primary {
+          background-color: #667eea;
+          border-color: #667eea;
+        }
+        
+        .btn-primary:hover {
+          background-color: #5a67d8;
+          border-color: #5a67d8;
+        }
+      `}</style>
     </div>
   );
 };

@@ -4,7 +4,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Container, Row, Col, Spinner, Alert, Card, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { getSimilarPosts, clearSimilarPosts } from '../redux/actions/postAction';
-import PostCard from '../components/PostCard';
+ import PostCard from '../components/post-card/PostCard';
+ 
 import PostThumb from '../components/PostThumb';
 import UserPosts from '../components/UserPosts';
 import { getDataAPI } from '../utils/fetchData';
