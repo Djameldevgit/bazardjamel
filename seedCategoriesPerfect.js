@@ -43,20 +43,20 @@ const categoriesData = [
     name: 'Vehicules',
     slug: 'vehicules',
     level: 1,
-    emoji: '🚗',
+    icon: '/icons/vehicules.png',
     order: 3,
     children: [
-      { name: 'Voitures', slug: 'voitures', level: 2, emoji: '🚘', order: 1, children: [] },
-      { name: 'Utilitaire', slug: 'utilitaire', level: 2, emoji: '🚐', order: 2, children: [] },
-      { name: 'Motos & Scooters', slug: 'motos-scooters', level: 2, emoji: '🏍️', order: 3, children: [] },
-      { name: 'Quads', slug: 'quads', level: 2, emoji: '🛺', order: 4, children: [] },
-      { name: 'Fourgon', slug: 'fourgon', level: 2, emoji: '🚚', order: 5, children: [] },
-      { name: 'Camion', slug: 'camion', level: 2, emoji: '🚛', order: 6, children: [] },
-      { name: 'Bus', slug: 'bus', level: 2, emoji: '🚌', order: 7, children: [] },
-      { name: 'Engin', slug: 'engin', level: 2, emoji: '🚜', order: 8, children: [] },
-      { name: 'Tracteurs', slug: 'tracteurs', level: 2, emoji: '🚜', order: 9, children: [] },
-      { name: 'Remorques', slug: 'remorques', level: 2, emoji: '🛞', order: 10, children: [] },
-      { name: 'Bateaux & Barques', slug: 'bateaux-barques', level: 2, emoji: '⛵', order: 11, children: [] }
+      { name: 'Voitures', slug: 'voitures', level: 2, icon: '/icons/voitures.png', order: 1, children: [] },
+      { name: 'Utilitaire', slug: 'utilitaire', level: 2, icon: '/icons/utilitaire.png', order: 2, children: [] },
+      { name: 'Motos & Scooters', slug: 'motos-scooters', level: 2, icon: '/icons/motos-scooters.png', order: 3, children: [] },
+      { name: 'Quads', slug: 'quads', level: 2, icon: '/icons/quads.png', order: 4, children: [] },
+      { name: 'Fourgon', slug: 'fourgon', level: 2, icon: '/icons/fourgon.png', order: 5, children: [] },
+      { name: 'Camion', slug: 'camion', level: 2, icon: '/icons/camion.png', order: 6, children: [] },
+      { name: 'Bus', slug: 'bus', level: 2, icon: '/icons/bus.png', order: 7, children: [] },
+      { name: 'Engin', slug: 'engin', level: 2, icon: '/icons/engin.png', order: 8, children: [] },
+      { name: 'Tracteurs', slug: 'tracteurs', level: 2, icon: '/icons/tracteurs.png', order: 9, children: [] },
+      { name: 'Remorques', slug: 'remorques', level: 2, icon: '/icons/remorques.png', order: 10, children: [] },
+      { name: 'Bateaux & Barques', slug: 'bateaux-barques', level: 2, icon: '/icons/bateaux-barques.png', order: 11, children: [] }
     ]
   },
 
@@ -65,14 +65,14 @@ const categoriesData = [
     name: 'Vetements',
     slug: 'vetements',
     level: 1,
-    emoji: '👕',
+    icon: '/icons/vetements.png',
     order: 8,
     children: [
       {
         name: 'Vêtements Homme',
         slug: 'vetements-homme',
         level: 2,
-        emoji: '👨',
+        icon: '/icons/vetements-homme.png',
         order: 1,
         children: [
           { name: 'Hauts & Chemises', slug: 'hauts-chemises', level: 3, emoji: '👔', children: [] },
@@ -97,7 +97,7 @@ const categoriesData = [
         name: 'Vêtements Femme',
         slug: 'vetements-femme',
         level: 2,
-        emoji: '👩',
+        icon: '/icons/vetements-femme.png',
         order: 2,
         children: [
           { name: 'Hauts & Chemises', slug: 'hauts-chemises-femme', level: 3, emoji: '👚', children: [] },
@@ -128,7 +128,7 @@ const categoriesData = [
         name: 'Chaussures Homme',
         slug: 'chaussures-homme',
         level: 2,
-        emoji: '👞',
+        icon: '/icons/chaussures-homme.png',
         order: 3,
         children: [
           { name: 'Basquettes', slug: 'basquettes', level: 3, emoji: '👟', children: [] },
@@ -144,7 +144,7 @@ const categoriesData = [
         name: 'Chaussures Femme',
         slug: 'chaussures-femme',
         level: 2,
-        emoji: '👠',
+        icon: '/icons/chaussures-femme.png',
         order: 4,
         children: [
           { name: 'Basquettes', slug: 'basquettes-femme', level: 3, emoji: '👟', children: [] },
@@ -160,7 +160,7 @@ const categoriesData = [
         name: 'Garçons',
         slug: 'garcons',
         level: 2,
-        emoji: '👦',
+        icon: '/icons/garcons.png',
         order: 5,
         children: [
           { name: 'Chaussures', slug: 'chaussures-garcons', level: 3, emoji: '👟', children: [] },
@@ -181,7 +181,7 @@ const categoriesData = [
         name: 'Filles',
         slug: 'filles',
         level: 2,
-        emoji: '👧',
+        icon: '/icons/filles.png',
         order: 6,
         children: [
           { name: 'Chaussures', slug: 'chaussures-filles', level: 3, emoji: '👟', children: [] },
@@ -204,7 +204,7 @@ const categoriesData = [
         name: 'Bébé',
         slug: 'bebe',
         level: 2,
-        emoji: '👶',
+        icon: '/icons/bebe.png',
         order: 7,
         children: [
           { name: 'Vêtements', slug: 'vetements-bebe', level: 3, emoji: '👕', children: [] },
@@ -216,7 +216,7 @@ const categoriesData = [
         name: 'Sacs & Valises',
         slug: 'sacs-valises',
         level: 2,
-        emoji: '👜',
+        icon: '/icons/sacs-valises.png',
         order: 8,
         children: [
           { name: 'Pochettes & Portefeuilles', slug: 'pochettes-portefeuilles', level: 3, emoji: '👛', children: [] },
@@ -232,7 +232,7 @@ const categoriesData = [
         name: 'Montres',
         slug: 'montres',
         level: 2,
-        emoji: '⌚',
+        icon: '/icons/montres.png',
         order: 9,
         children: [
           { name: 'Hommes', slug: 'montres-hommes', level: 3, emoji: '⌚', children: [] },
@@ -243,7 +243,7 @@ const categoriesData = [
         name: 'Lunettes',
         slug: 'lunettes',
         level: 2,
-        emoji: '👓',
+        icon: '/icons/lunettes.png',
         order: 10,
         children: [
           { name: 'Lunettes de vue hommes', slug: 'lunettes-vue-hommes', level: 3, emoji: '👓', children: [] },
@@ -259,7 +259,7 @@ const categoriesData = [
         name: 'Bijoux',
         slug: 'bijoux',
         level: 2,
-        emoji: '💍',
+        icon: '/icons/bijoux.png',
         order: 11,
         children: [
           { name: 'Parures', slug: 'parures', level: 3, emoji: '👑', children: [] },
@@ -278,7 +278,7 @@ const categoriesData = [
         name: 'Tenues professionnelles',
         slug: 'tenues-professionnelles',
         level: 2,
-        emoji: '👔',
+        icon: '/icons/tenues-professionnelles.png',
         order: 12,
         children: []
       }
@@ -290,29 +290,29 @@ const categoriesData = [
     name: 'Electromenager',
     slug: 'electromenager',
     level: 1,
-    emoji: '🔌',
+    icon: '/icons/electromenager.png',
     order: 7,
     children: [
-      { name: 'Téléviseurs', slug: 'televiseurs', level: 2, emoji: '📺', order: 1, children: [] },
-      { name: 'Démodulateurs & Box TV', slug: 'demodulateurs-box-tv', level: 2, emoji: '📦', order: 2, children: [] },
-      { name: 'Paraboles & Switch TV', slug: 'paraboles-switch-tv', level: 2, emoji: '🛰️', order: 3, children: [] },
-      { name: 'Abonnements IPTV', slug: 'abonnements-iptv', level: 2, emoji: '📡', order: 4, children: [] },
-      { name: 'Caméras & Accessories', slug: 'cameras-accessories', level: 2, emoji: '📹', order: 5, children: [] },
-      { name: 'Audio', slug: 'audio', level: 2, emoji: '🔊', order: 6, children: [] },
-      { name: 'Aspirateurs & Nettoyeurs', slug: 'aspirateurs-nettoyeurs', level: 2, emoji: '🧹', order: 7, children: [] },
-      { name: 'Repassage', slug: 'repassage', level: 2, emoji: '👕', order: 8, children: [] },
-      { name: 'Beauté & Hygiène', slug: 'beaute-hygiene', level: 2, emoji: '💄', order: 9, children: [] },
-      { name: 'Machines à coudre', slug: 'machines-coudre', level: 2, emoji: '🧵', order: 10, children: [] },
-      { name: 'Télécommandes', slug: 'telecommandes', level: 2, emoji: '🎮', order: 11, children: [] },
-      { name: 'Sécurité & GPS', slug: 'securite-gps', level: 2, emoji: '🚨', order: 12, children: [] },
-      { name: 'Composants électroniques', slug: 'composants-electroniques', level: 2, emoji: '⚙️', order: 13, children: [] },
-      { name: 'Pièces de rechange', slug: 'pieces-rechange', level: 2, emoji: '🔧', order: 14, children: [] },
-      { name: 'Autre Électroménager', slug: 'autre-electromenager', level: 2, emoji: '🔌', order: 15, children: [] },
+      { name: 'Téléviseurs', slug: 'televiseurs', level: 2, icon: '/icons/televiseurs.png', order: 1, children: [] },
+      { name: 'Démodulateurs & Box TV', slug: 'demodulateurs-box-tv', level: 2, icon: '/icons/demodulateurs-box-tv.png', order: 2, children: [] },
+      { name: 'Paraboles & Switch TV', slug: 'paraboles-switch-tv', level: 2, icon: '/icons/paraboles-switch-tv.png', order: 3, children: [] },
+      { name: 'Abonnements IPTV', slug: 'abonnements-iptv', level: 2, icon: '/icons/abonnements-iptv.png', order: 4, children: [] },
+      { name: 'Caméras & Accessories', slug: 'cameras-accessories', level: 2, icon: '/icons/cameras-accessories.png', order: 5, children: [] },
+      { name: 'Audio', slug: 'audio', level: 2, icon: '/icons/audio.png', order: 6, children: [] },
+      { name: 'Aspirateurs & Nettoyeurs', slug: 'aspirateurs-nettoyeurs', level: 2, icon: '/icons/aspirateurs-nettoyeurs.png', order: 7, children: [] },
+      { name: 'Repassage', slug: 'repassage', level: 2, icon: '/icons/repassage.png', order: 8, children: [] },
+      { name: 'Beauté & Hygiène', slug: 'beaute-hygiene', level: 2, icon: '/icons/beaute-hygiene.png', order: 9, children: [] },
+      { name: 'Machines à coudre', slug: 'machines-coudre', level: 2, icon: '/icons/machines-coudre.png', order: 10, children: [] },
+      { name: 'Télécommandes', slug: 'telecommandes', level: 2, icon: '/icons/telecommandes.png', order: 11, children: [] },
+      { name: 'Sécurité & GPS', slug: 'securite-gps', level: 2, icon: '/icons/securite-gps.png', order: 12, children: [] },
+      { name: 'Composants électroniques', slug: 'composants-electroniques', level: 2, icon: '/icons/composants-electroniques.png', order: 13, children: [] },
+      { name: 'Pièces de rechange', slug: 'pieces-rechange', level: 2, icon: '/icons/pieces-rechange.png', order: 14, children: [] },
+      { name: 'Autre Électroménager', slug: 'autre-electromenager', level: 2, icon: '/icons/autre-electromenager.png', order: 15, children: [] },
       {
         name: 'Réfrigérateurs & Congélateurs',
         slug: 'refrigerateurs-congelateurs',
         level: 2,
-        emoji: '❄️',
+        icon: '/icons/refrigerateurs-congelateurs.png',
         order: 16,
         children: [
           { name: 'Réfrigérateur', slug: 'refrigerateur', level: 3, emoji: '🧊', children: [] },
@@ -325,7 +325,7 @@ const categoriesData = [
         name: 'Machines à laver',
         slug: 'machines-laver',
         level: 2,
-        emoji: '🧺',
+        icon: '/icons/machines-laver.png',
         order: 17,
         children: [
           { name: 'Lave-linge', slug: 'lave-linge', level: 3, emoji: '👚', children: [] },
@@ -338,7 +338,7 @@ const categoriesData = [
         name: 'Lave-vaisselles',
         slug: 'lave-vaisselles',
         level: 2,
-        emoji: '🍽️',
+        icon: '/icons/lave-vaisselles.png',
         order: 18,
         children: [
           { name: 'Lave-vaisselle encastrable', slug: 'lave-vaisselle-encastrable', level: 3, emoji: '📦', children: [] },
@@ -350,7 +350,7 @@ const categoriesData = [
         name: 'Fours & Cuisson',
         slug: 'fours-cuisson',
         level: 2,
-        emoji: '🔥',
+        icon: '/icons/fours-cuisson.png',
         order: 19,
         children: [
           { name: 'Four électrique', slug: 'four-electrique', level: 3, emoji: '⚡', children: [] },
@@ -364,7 +364,7 @@ const categoriesData = [
         name: 'Chauffage & Climatisation',
         slug: 'chauffage-climatisation',
         level: 2,
-        emoji: '🌡️',
+        icon: '/icons/chauffage-climatisation.png',
         order: 20,
         children: [
           { name: 'Climatiseur', slug: 'climatiseur', level: 3, emoji: '❄️', children: [] },
@@ -378,7 +378,7 @@ const categoriesData = [
         name: 'Appareils de cuisine',
         slug: 'appareils-cuisine',
         level: 2,
-        emoji: '🍳',
+        icon: '/icons/appareils-cuisine.png',
         order: 21,
         children: [
           { name: 'Robot de cuisine', slug: 'robot-cuisine', level: 3, emoji: '🍲', children: [] },
@@ -396,14 +396,14 @@ const categoriesData = [
     name: 'Immobilier',
     slug: 'immobilier',
     level: 1,
-    emoji: '🏠',
+    icon: '/icons/immobilier.png',
     order: 2,
     children: [
       {
         name: 'Vente',
         slug: 'vente',
         level: 2,
-        emoji: '💰',
+        icon: '/icons/vente.png',
         order: 1,
         children: [
           { name: 'Appartement', slug: 'appartement', level: 3, emoji: '🏢', children: [] },
@@ -421,7 +421,7 @@ const categoriesData = [
         name: 'Location',
         slug: 'location',
         level: 2,
-        emoji: '🔑',
+        icon: '/icons/location.png',
         order: 2,
         children: [
           { name: 'Appartement', slug: 'appartement-location', level: 3, emoji: '🏢', children: [] },
@@ -436,7 +436,7 @@ const categoriesData = [
         name: 'Location vacances',
         slug: 'location-vacances',
         level: 2,
-        emoji: '🏖️',
+        icon: '/icons/location-vacances.png',
         order: 3,
         children: [
           { name: 'Appartement', slug: 'appartement-vacances', level: 3, emoji: '🏢', children: [] },
@@ -449,7 +449,7 @@ const categoriesData = [
         name: 'Cherche location',
         slug: 'cherche-location',
         level: 2,
-        emoji: '🔍',
+        icon: '/icons/cherche-location.png',
         order: 4,
         children: [
           { name: 'Appartement', slug: 'appartement-cherche-location', level: 3, emoji: '🏢', children: [] },
@@ -464,7 +464,7 @@ const categoriesData = [
         name: 'Cherche achat',
         slug: 'cherche-achat',
         level: 2,
-        emoji: '🔍💰',
+        icon: '/icons/cherche-achat.png',
         order: 5,
         children: [
           { name: 'Appartement', slug: 'appartement-cherche-achat', level: 3, emoji: '🏢', children: [] },
@@ -486,34 +486,34 @@ const categoriesData = [
     name: 'Alimentaires',
     slug: 'alimentaires',
     level: 1,
-    emoji: '🍎',
+    icon: '/icons/alimentaires.png',
     order: 15,
     children: [
-      { name: 'Produits laitiers', slug: 'produits-laitiers', level: 2, emoji: '🥛', order: 1, children: [] },
-      { name: 'Fruits secs', slug: 'fruits-secs', level: 2, emoji: '🍇', order: 2, children: [] },
-      { name: 'Graines - Riz - Céréales', slug: 'graines-riz-cereales', level: 2, emoji: '🌾', order: 3, children: [] },
-      { name: 'Sucres & Produits sucrés', slug: 'sucres-produits-sucres', level: 2, emoji: '🍬', order: 4, children: [] },
-      { name: 'Boissons', slug: 'boissons', level: 2, emoji: '🥤', order: 5, children: [] },
-      { name: 'Viandes & Poissons', slug: 'viandes-poissons', level: 2, emoji: '🍖', order: 6, children: [] },
-      { name: 'Café - Thé - Infusion', slug: 'cafe-the-infusion', level: 2, emoji: '☕', order: 7, children: [] },
-      { name: 'Compléments alimentaires', slug: 'complements-alimentaires', level: 2, emoji: '💊', order: 8, children: [] },
-      { name: 'Miel & Dérivés', slug: 'miel-derives', level: 2, emoji: '🍯', order: 9, children: [] },
-      { name: 'Fruits & Légumes', slug: 'fruits-legumes', level: 2, emoji: '🥦', order: 10, children: [] },
-      { name: 'Blé & Farine', slug: 'ble-farine', level: 2, emoji: '🌾', order: 11, children: [] },
-      { name: 'Bonbons & Chocolat', slug: 'bonbons-chocolat', level: 2, emoji: '🍫', order: 12, children: [] },
-      { name: 'Boulangerie & Viennoiserie', slug: 'boulangerie-viennoiserie', level: 2, emoji: '🥐', order: 13, children: [] },
-      { name: 'Ingrédients cuisine et pâtisserie', slug: 'ingredients-cuisine-patisserie', level: 2, emoji: '🧂', order: 14, children: [] },
-      { name: 'Noix & Graines', slug: 'noix-graines', level: 2, emoji: '🥜', order: 15, children: [] },
-      { name: 'Plats cuisinés', slug: 'plats-cuisines', level: 2, emoji: '🍲', order: 16, children: [] },
-      { name: 'Sauces - Epices - Condiments', slug: 'sauces-epices-condiments', level: 2, emoji: '🌶️', order: 17, children: [] },
-      { name: 'Œufs', slug: 'oeufs', level: 2, emoji: '🥚', order: 18, children: [] },
-      { name: 'Huiles', slug: 'huiles', level: 2, emoji: '🫒', order: 19, children: [] },
-      { name: 'Pâtes', slug: 'pates', level: 2, emoji: '🍝', order: 20, children: [] },
-      { name: 'Gateaux', slug: 'gateaux', level: 2, emoji: '🎂', order: 21, children: [] },
-      { name: 'Emballage', slug: 'emballage', level: 2, emoji: '📦', order: 22, children: [] },
-      { name: 'Aliments pour bébé', slug: 'aliments-bebe', level: 2, emoji: '👶', order: 23, children: [] },
-      { name: 'Aliments diététiques', slug: 'aliments-dietetiques', level: 2, emoji: '🥗', order: 24, children: [] },
-      { name: 'Autre Alimentaires', slug: 'autre-alimentaires', level: 2, emoji: '🍎', order: 25, children: [] }
+      { name: 'Produits laitiers', slug: 'produits-laitiers', level: 2, icon: '/icons/produits-laitiers.png', order: 1, children: [] },
+      { name: 'Fruits secs', slug: 'fruits-secs', level: 2, icon: '/icons/fruits-secs.png', order: 2, children: [] },
+      { name: 'Graines - Riz - Céréales', slug: 'graines-riz-cereales', level: 2, icon: '/icons/graines-riz-cereales.png', order: 3, children: [] },
+      { name: 'Sucres & Produits sucrés', slug: 'sucres-produits-sucres', level: 2, icon: '/icons/sucres-produits-sucres.png', order: 4, children: [] },
+      { name: 'Boissons', slug: 'boissons', level: 2, icon: '/icons/boissons.png', order: 5, children: [] },
+      { name: 'Viandes & Poissons', slug: 'viandes-poissons', level: 2, icon: '/icons/viandes-poissons.png', order: 6, children: [] },
+      { name: 'Café - Thé - Infusion', slug: 'cafe-the-infusion', level: 2, icon: '/icons/cafe-the-infusion.png', order: 7, children: [] },
+      { name: 'Compléments alimentaires', slug: 'complements-alimentaires', level: 2, icon: '/icons/complements-alimentaires.png', order: 8, children: [] },
+      { name: 'Miel & Dérivés', slug: 'miel-derives', level: 2, icon: '/icons/miel-derives.png', order: 9, children: [] },
+      { name: 'Fruits & Légumes', slug: 'fruits-legumes', level: 2, icon: '/icons/fruits-legumes.png', order: 10, children: [] },
+      { name: 'Blé & Farine', slug: 'ble-farine', level: 2, icon: '/icons/ble-farine.png', order: 11, children: [] },
+      { name: 'Bonbons & Chocolat', slug: 'bonbons-chocolat', level: 2, icon: '/icons/bonbons-chocolat.png', order: 12, children: [] },
+      { name: 'Boulangerie & Viennoiserie', slug: 'boulangerie-viennoiserie', level: 2, icon: '/icons/boulangerie-viennoiserie.png', order: 13, children: [] },
+      { name: 'Ingrédients cuisine et pâtisserie', slug: 'ingredients-cuisine-patisserie', level: 2, icon: '/icons/ingredients-cuisine-patisserie.png', order: 14, children: [] },
+      { name: 'Noix & Graines', slug: 'noix-graines', level: 2, icon: '/icons/noix-graines.png', order: 15, children: [] },
+      { name: 'Plats cuisinés', slug: 'plats-cuisines', level: 2, icon: '/icons/plats-cuisines.png', order: 16, children: [] },
+      { name: 'Sauces - Epices - Condiments', slug: 'sauces-epices-condiments', level: 2, icon: '/icons/sauces-epices-condiments.png', order: 17, children: [] },
+      { name: 'Œufs', slug: 'oeufs', level: 2, icon: '/icons/oeufs.png', order: 18, children: [] },
+      { name: 'Huiles', slug: 'huiles', level: 2, icon: '/icons/huiles.png', order: 19, children: [] },
+      { name: 'Pâtes', slug: 'pates', level: 2, icon: '/icons/pates.png', order: 20, children: [] },
+      { name: 'Gateaux', slug: 'gateaux', level: 2, icon: '/icons/gateaux.png', order: 21, children: [] },
+      { name: 'Emballage', slug: 'emballage', level: 2, icon: '/icons/emballage.png', order: 22, children: [] },
+      { name: 'Aliments pour bébé', slug: 'aliments-bebe', level: 2, icon: '/icons/aliments-bebe.png', order: 23, children: [] },
+      { name: 'Aliments diététiques', slug: 'aliments-dietetiques', level: 2, icon: '/icons/aliments-dietetiques.png', order: 24, children: [] },
+      { name: 'Autre Alimentaires', slug: 'autre-alimentaires', level: 2, icon: '/icons/autre-alimentaires.png', order: 25, children: [] }
     ]
   },
 
@@ -522,12 +522,12 @@ const categoriesData = [
     name: 'Emploi',
     slug: 'emploi',
     level: 1,
-    emoji: '💼',
+    icon: '/icons/emploi.png',
     order: 13,
     children: [
-      { name: 'Offres d\'emploi', slug: 'offres-emploi', level: 2, emoji: '📋', order: 1, children: [] },
-      { name: 'Demandes d\'emploi', slug: 'demandes-emploi', level: 2, emoji: '✍️', order: 2, children: [] },
-      { name: 'Autres services emploi', slug: 'autres-services-emploi', level: 2, emoji: '🤝', order: 3, children: [] }
+      { name: 'Offres d\'emploi', slug: 'offres-emploi', level: 2, icon: '/icons/offres-emploi.png', order: 1, children: [] },
+      { name: 'Demandes d\'emploi', slug: 'demandes-emploi', level: 2, icon: '/icons/demandes-emploi.png', order: 2, children: [] },
+      { name: 'Autres services emploi', slug: 'autres-services-emploi', level: 2, icon: '/icons/autres-services-emploi.png', order: 3, children: [] }
     ]
   },
 
@@ -536,14 +536,14 @@ const categoriesData = [
     name: 'Informatique',
     slug: 'informatique',
     level: 1,
-    emoji: '💻',
+    icon: '/icons/informatique.png',
     order: 5,
     children: [
       {
         name: 'Ordinateurs portables',
         slug: 'ordinateurs-portables',
         level: 2,
-        emoji: '💻',
+        icon: '/icons/ordinateurs-portables.png',
         order: 1,
         children: [
           { name: 'Pc Portable', slug: 'pc-portable', level: 3, emoji: '💻', children: [] },
@@ -554,7 +554,7 @@ const categoriesData = [
         name: 'Ordinateurs de bureau',
         slug: 'ordinateurs-bureau',
         level: 2,
-        emoji: '🖥️',
+        icon: '/icons/ordinateurs-bureau.png',
         order: 2,
         children: [
           { name: 'Pc de bureau', slug: 'pc-bureau', level: 3, emoji: '🖥️', children: [] },
@@ -566,7 +566,7 @@ const categoriesData = [
         name: 'Composants PC fixe',
         slug: 'composants-pc-fixe',
         level: 2,
-        emoji: '⚙️',
+        icon: '/icons/composants-pc-fixe.png',
         order: 3,
         children: [
           { name: 'Cartes mère', slug: 'cartes-mere', level: 3, emoji: '🔌', children: [] },
@@ -584,7 +584,7 @@ const categoriesData = [
         name: 'Composants PC portable',
         slug: 'composants-pc-portable',
         level: 2,
-        emoji: '🔧',
+        icon: '/icons/composants-pc-portable.png',
         order: 4,
         children: [
           { name: 'Chargeurs', slug: 'chargeurs', level: 3, emoji: '🔌', children: [] },
@@ -606,7 +606,7 @@ const categoriesData = [
         name: 'Composants serveur',
         slug: 'composants-serveur',
         level: 2,
-        emoji: '🖧',
+        icon: '/icons/composants-serveur.png',
         order: 5,
         children: [
           { name: 'Cartes mère', slug: 'cartes-mere-serveur', level: 3, emoji: '🔌', children: [] },
@@ -624,7 +624,7 @@ const categoriesData = [
         name: 'Imprimantes & Cartouches',
         slug: 'imprimantes-cartouches',
         level: 2,
-        emoji: '🖨️',
+        icon: '/icons/imprimantes-cartouches.png',
         order: 6,
         children: [
           { name: 'Imprimantes jet d\'encre', slug: 'imprimantes-jet-encre', level: 3, emoji: '🖨️', children: [] },
@@ -642,7 +642,7 @@ const categoriesData = [
         name: 'Réseau & Connexion',
         slug: 'reseau-connexion',
         level: 2,
-        emoji: '📶',
+        icon: '/icons/reseau-connexion.png',
         order: 7,
         children: [
           { name: 'Modems & Routeurs', slug: 'modems-routeurs', level: 3, emoji: '📡', children: [] },
@@ -657,7 +657,7 @@ const categoriesData = [
         name: 'Stockage externe & Racks',
         slug: 'stockage-externe-racks',
         level: 2,
-        emoji: '💾',
+        icon: '/icons/stockage-externe-racks.png',
         order: 8,
         children: [
           { name: 'Disques durs', slug: 'disques-durs', level: 3, emoji: '💿', children: [] },
@@ -666,22 +666,22 @@ const categoriesData = [
           { name: 'Rack', slug: 'rack', level: 3, emoji: '🗄️', children: [] }
         ]
       },
-      { name: 'Serveurs', slug: 'serveurs', level: 2, emoji: '🖧', order: 9, children: [] },
-      { name: 'Ecrans', slug: 'ecrans', level: 2, emoji: '🖥️', order: 10, children: [] },
-      { name: 'Onduleurs & Stabilisateurs', slug: 'onduleurs-stabilisateurs', level: 2, emoji: '⚡', order: 11, children: [] },
-      { name: 'Compteuses de billets', slug: 'compteuses-billets', level: 2, emoji: '💰', order: 12, children: [] },
-      { name: 'Claviers & Souris', slug: 'claviers-souris', level: 2, emoji: '⌨️', order: 13, children: [] },
-      { name: 'Casques & Son', slug: 'casques-son', level: 2, emoji: '🎧', order: 14, children: [] },
-      { name: 'Webcam & Vidéoconférence', slug: 'webcam-videoconference', level: 2, emoji: '📹', order: 15, children: [] },
-      { name: 'Data shows', slug: 'data-shows', level: 2, emoji: '📽️', order: 16, children: [] },
-      { name: 'Câbles & Adaptateurs', slug: 'cables-adaptateurs', level: 2, emoji: '🔌', order: 17, children: [] },
-      { name: 'Stylets & Tablettes', slug: 'stylers-tablettes', level: 2, emoji: '✏️', order: 18, children: [] },
-      { name: 'Cartables & Sacoches', slug: 'cartables-sacoches', level: 2, emoji: '🎒', order: 19, children: [] },
-      { name: 'Manettes & Simulateurs', slug: 'manettes-simulateurs', level: 2, emoji: '🎮', order: 20, children: [] },
-      { name: 'VR', slug: 'vr', level: 2, emoji: '🥽', order: 21, children: [] },
-      { name: 'Logiciels & Abonnements', slug: 'logiciels-abonnements', level: 2, emoji: '📀', order: 22, children: [] },
-      { name: 'Bureautique', slug: 'bureautique', level: 2, emoji: '📎', order: 23, children: [] },
-      { name: 'Autre Informatique', slug: 'autre-informatique', level: 2, emoji: '💡', order: 24, children: [] }
+      { name: 'Serveurs', slug: 'serveurs', level: 2, icon: '/icons/serveurs.png', order: 9, children: [] },
+      { name: 'Ecrans', slug: 'ecrans', level: 2, icon: '/icons/ecrans.png', order: 10, children: [] },
+      { name: 'Onduleurs & Stabilisateurs', slug: 'onduleurs-stabilisateurs', level: 2, icon: '/icons/onduleurs-stabilisateurs.png', order: 11, children: [] },
+      { name: 'Compteuses de billets', slug: 'compteuses-billets', level: 2, icon: '/icons/compteuses-billets.png', order: 12, children: [] },
+      { name: 'Claviers & Souris', slug: 'claviers-souris', level: 2, icon: '/icons/claviers-souris.png', order: 13, children: [] },
+      { name: 'Casques & Son', slug: 'casques-son', level: 2, icon: '/icons/casques-son.png', order: 14, children: [] },
+      { name: 'Webcam & Vidéoconférence', slug: 'webcam-videoconference', level: 2, icon: '/icons/webcam-videoconference.png', order: 15, children: [] },
+      { name: 'Data shows', slug: 'data-shows', level: 2, icon: '/icons/data-shows.png', order: 16, children: [] },
+      { name: 'Câbles & Adaptateurs', slug: 'cables-adaptateurs', level: 2, icon: '/icons/cables-adaptateurs.png', order: 17, children: [] },
+      { name: 'Stylets & Tablettes', slug: 'stylers-tablettes', level: 2, icon: '/icons/stylers-tablettes.png', order: 18, children: [] },
+      { name: 'Cartables & Sacoches', slug: 'cartables-sacoches', level: 2, icon: '/icons/cartables-sacoches.png', order: 19, children: [] },
+      { name: 'Manettes & Simulateurs', slug: 'manettes-simulateurs', level: 2, icon: '/icons/manettes-simulateurs.png', order: 20, children: [] },
+      { name: 'VR', slug: 'vr', level: 2, icon: '/icons/vr.png', order: 21, children: [] },
+      { name: 'Logiciels & Abonnements', slug: 'logiciels-abonnements', level: 2, icon: '/icons/logiciels-abonnements.png', order: 22, children: [] },
+      { name: 'Bureautique', slug: 'bureautique', level: 2, icon: '/icons/bureautique.png', order: 23, children: [] },
+      { name: 'Autre Informatique', slug: 'autre-informatique', level: 2, icon: '/icons/autre-informatique.png', order: 24, children: [] }
     ]
   },
 
@@ -690,14 +690,14 @@ const categoriesData = [
     name: 'Loisirs & Divertissements',
     slug: 'loisirs',
     level: 1,
-    emoji: '🎪',
+    icon: '/icons/loisirs.png',
     order: 11,
     children: [
       {
         name: 'Animalerie',
         slug: 'animalerie',
         level: 2,
-        emoji: '🐾',
+        icon: '/icons/animalerie.png',
         order: 1,
         children: [
           { name: 'Produits de soin animal', slug: 'produits-soin-animal', level: 3, emoji: '💊', children: [] },
@@ -716,7 +716,7 @@ const categoriesData = [
         name: 'Consoles et Jeux Vidéos',
         slug: 'consoles-jeux-videos',
         level: 2,
-        emoji: '🎮',
+        icon: '/icons/consoles-jeux-videos.png',
         order: 2,
         children: [
           { name: 'Consoles', slug: 'consoles', level: 3, emoji: '🕹️', children: [] },
@@ -728,7 +728,7 @@ const categoriesData = [
         name: 'Livres & Magazines',
         slug: 'livres-magazines',
         level: 2,
-        emoji: '📚',
+        icon: '/icons/livres-magazines.png',
         order: 3,
         children: [
           { name: 'Littérature et philosophie', slug: 'litterature-philosophie', level: 3, emoji: '📖', children: [] },
@@ -749,7 +749,7 @@ const categoriesData = [
         name: 'Instruments de Musique',
         slug: 'instruments-musique',
         level: 2,
-        emoji: '🎵',
+        icon: '/icons/instruments-musique.png',
         order: 4,
         children: [
           { name: 'Instruments électriques', slug: 'instruments-electriques', level: 3, emoji: '🎸', children: [] },
@@ -763,7 +763,7 @@ const categoriesData = [
         name: 'Jouets',
         slug: 'jouets',
         level: 2,
-        emoji: '🧸',
+        icon: '/icons/jouets.png',
         order: 5,
         children: [
           { name: 'Jeux d\'éveil', slug: 'jeux-eveil', level: 3, emoji: '🧠', children: [] },
@@ -781,7 +781,7 @@ const categoriesData = [
         name: 'Chasse & Pêche',
         slug: 'chasse-peche',
         level: 2,
-        emoji: '🎣',
+        icon: '/icons/chasse-peche.png',
         order: 6,
         children: [
           { name: 'Canne à pêche', slug: 'canne-peche', level: 3, emoji: '🎣', children: [] },
@@ -797,7 +797,7 @@ const categoriesData = [
         name: 'Jardinage',
         slug: 'jardinage',
         level: 2,
-        emoji: '🌱',
+        icon: '/icons/jardinage.png',
         order: 7,
         children: [
           { name: 'Mobilier de jardin', slug: 'mobilier-jardin', level: 3, emoji: '🪑', children: [] },
@@ -814,7 +814,7 @@ const categoriesData = [
         name: 'Les Jeux de loisirs',
         slug: 'jeux-loisirs',
         level: 2,
-        emoji: '♟️',
+        icon: '/icons/jeux-loisirs.png',
         order: 8,
         children: [
           { name: 'Babyfoot', slug: 'babyfoot', level: 3, emoji: '⚽', children: [] },
@@ -829,7 +829,7 @@ const categoriesData = [
         name: 'Barbecue & Grillades',
         slug: 'barbecue-grillades',
         level: 2,
-        emoji: '🍖',
+        icon: '/icons/barbecue-grillades.png',
         order: 9,
         children: [
           { name: 'Barbecue', slug: 'barbecue', level: 3, emoji: '🔥', children: [] },
@@ -841,7 +841,7 @@ const categoriesData = [
         name: 'Vapes & Chichas',
         slug: 'vapes-chichas',
         level: 2,
-        emoji: '💨',
+        icon: '/icons/vapes-chichas.png',
         order: 10,
         children: [
           { name: 'Vapes & Cigarettes électroniques', slug: 'vapes-cigarettes-electroniques', level: 3, emoji: '🚬', children: [] },
@@ -854,7 +854,7 @@ const categoriesData = [
         name: 'Produits & Accessoires d\'été',
         slug: 'produits-accessoires-ete',
         level: 2,
-        emoji: '🏖️',
+        icon: '/icons/produits-accessoires-ete.png',
         order: 11,
         children: [
           { name: 'Piscines', slug: 'piscines', level: 3, emoji: '🏊', children: [] },
@@ -865,8 +865,8 @@ const categoriesData = [
           { name: 'Autres', slug: 'autres-ete', level: 3, emoji: '☀️', children: [] }
         ]
       },
-      { name: 'Antiquités & Collections', slug: 'antiquites-collections', level: 2, emoji: '🏺', order: 12, children: [] },
-      { name: 'Autre', slug: 'autre-loisirs', level: 2, emoji: '🎪', order: 13, children: [] }
+      { name: 'Antiquités & Collections', slug: 'antiquites-collections', level: 2, icon: '/icons/antiquites-collections.png', order: 12, children: [] },
+      { name: 'Autre', slug: 'autre-loisirs', level: 2, icon: '/icons/autre-loisirs.png', order: 13, children: [] }
     ]
   },
 
@@ -875,14 +875,14 @@ const categoriesData = [
     name: 'Matériaux & Équipement',
     slug: 'materiaux',
     level: 1,
-    emoji: '🧱',
+    icon: '/icons/materiaux.png',
     order: 14,
     children: [
       {
         name: 'Matériel professionnel',
         slug: 'materiel-professionnel',
         level: 2,
-        emoji: '🏭',
+        icon: '/icons/materiel-professionnel.png',
         order: 1,
         children: [
           { name: 'Industrie & Fabrication', slug: 'industrie-fabrication', level: 3, emoji: '🏭', children: [] },
@@ -904,7 +904,7 @@ const categoriesData = [
         name: 'Outillage professionnel',
         slug: 'outillage-professionnel',
         level: 2,
-        emoji: '🛠️',
+        icon: '/icons/outillage-professionnel.png',
         order: 2,
         children: [
           { name: 'Perceuse', slug: 'perceuse', level: 3, emoji: '🔩', children: [] },
@@ -918,7 +918,7 @@ const categoriesData = [
         name: 'Matériel Agricole',
         slug: 'materiel-agricole',
         level: 2,
-        emoji: '🚜',
+        icon: '/icons/materiel-agricole.png',
         order: 3,
         children: [
           { name: 'Equipement agricole', slug: 'equipement-agricole', level: 3, emoji: '🚜', children: [] },
@@ -927,10 +927,10 @@ const categoriesData = [
           { name: 'Autre', slug: 'autre-agricole', level: 3, emoji: '🌱', children: [] }
         ]
       },
-      { name: 'Materiaux de construction', slug: 'materiaux-construction', level: 2, emoji: '🧱', order: 4, children: [] },
-      { name: 'Matières premières', slug: 'matieres-premieres', level: 2, emoji: '⚗️', order: 5, children: [] },
-      { name: 'Produits d\'hygiène', slug: 'produits-hygiene', level: 2, emoji: '🧼', order: 6, children: [] },
-      { name: 'Autre', slug: 'autre-materiaux', level: 2, emoji: '📦', order: 7, children: [] }
+      { name: 'Materiaux de construction', slug: 'materiaux-construction', level: 2, icon: '/icons/materiaux-construction.png', order: 4, children: [] },
+      { name: 'Matières premières', slug: 'matieres-premieres', level: 2, icon: '/icons/matieres-premieres.png', order: 5, children: [] },
+      { name: 'Produits d\'hygiène', slug: 'produits-hygiene', level: 2, icon: '/icons/produits-hygiene.png', order: 6, children: [] },
+      { name: 'Autre', slug: 'autre-materiaux', level: 2, icon: '/icons/autre-materiaux.png', order: 7, children: [] }
     ]
   },
 
@@ -939,34 +939,34 @@ const categoriesData = [
     name: 'Meubles & Maison',
     slug: 'meubles',
     level: 1,
-    emoji: '🛋️',
+    icon: '/icons/meubles.png',
     order: 10,
     children: [
-      { name: 'Salon', slug: 'salon', level: 2, emoji: '🛋️', order: 1, children: [] },
-      { name: 'Chambres à coucher', slug: 'chambres-coucher', level: 2, emoji: '🛏️', order: 2, children: [] },
-      { name: 'Tables', slug: 'tables', level: 2, emoji: '🪑', order: 3, children: [] },
-      { name: 'Armoires & Commodes', slug: 'armoires-commodes', level: 2, emoji: '🗄️', order: 4, children: [] },
-      { name: 'Lits', slug: 'lits', level: 2, emoji: '🛌', order: 5, children: [] },
-      { name: 'Meubles de Cuisine', slug: 'meubles-cuisine', level: 2, emoji: '🍳', order: 6, children: [] },
-      { name: 'Bibliothèques & Etagères', slug: 'bibliotheques-etageres', level: 2, emoji: '📚', order: 7, children: [] },
-      { name: 'Chaises & Fauteuils', slug: 'chaises-fauteuils', level: 2, emoji: '🪑', order: 8, children: [] },
-      { name: 'Dressings', slug: 'dressings', level: 2, emoji: '👔', order: 9, children: [] },
-      { name: 'Meubles salle de bain', slug: 'meubles-salle-bain', level: 2, emoji: '🚿', order: 10, children: [] },
-      { name: 'Buffet', slug: 'buffet', level: 2, emoji: '🍽️', order: 11, children: [] },
-      { name: 'Tables TV', slug: 'tables-tv', level: 2, emoji: '📺', order: 12, children: [] },
-      { name: 'Table pliante', slug: 'table-pliante', level: 2, emoji: '🪑', order: 13, children: [] },
-      { name: 'Tables à manger', slug: 'tables-manger', level: 2, emoji: '🍽️', order: 14, children: [] },
-      { name: 'Tables PC & Bureaux', slug: 'tables-pc-bureaux', level: 2, emoji: '💻', order: 15, children: [] },
-      { name: 'Canapé', slug: 'canape', level: 2, emoji: '🛋️', order: 16, children: [] },
-      { name: 'Table basse', slug: 'table-basse', level: 2, emoji: '🪑', order: 17, children: [] },
-      { name: 'Rangement et Organisation', slug: 'rangement-organisation', level: 2, emoji: '📦', order: 18, children: [] },
-      { name: 'Accessoires de cuisine', slug: 'accessoires-cuisine', level: 2, emoji: '🔪', order: 19, children: [] },
-      { name: 'Meuble d\'entrée', slug: 'meuble-entree', level: 2, emoji: '🚪', order: 20, children: [] },
+      { name: 'Salon', slug: 'salon', level: 2, icon: '/icons/salon.png', order: 1, children: [] },
+      { name: 'Chambres à coucher', slug: 'chambres-coucher', level: 2, icon: '/icons/chambres-coucher.png', order: 2, children: [] },
+      { name: 'Tables', slug: 'tables', level: 2, icon: '/icons/tables.png', order: 3, children: [] },
+      { name: 'Armoires & Commodes', slug: 'armoires-commodes', level: 2, icon: '/icons/armoires-commodes.png', order: 4, children: [] },
+      { name: 'Lits', slug: 'lits', level: 2, icon: '/icons/lits.png', order: 5, children: [] },
+      { name: 'Meubles de Cuisine', slug: 'meubles-cuisine', level: 2, icon: '/icons/meubles-cuisine.png', order: 6, children: [] },
+      { name: 'Bibliothèques & Etagères', slug: 'bibliotheques-etageres', level: 2, icon: '/icons/bibliotheques-etageres.png', order: 7, children: [] },
+      { name: 'Chaises & Fauteuils', slug: 'chaises-fauteuils', level: 2, icon: '/icons/chaises-fauteuils.png', order: 8, children: [] },
+      { name: 'Dressings', slug: 'dressings', level: 2, icon: '/icons/dressings.png', order: 9, children: [] },
+      { name: 'Meubles salle de bain', slug: 'meubles-salle-bain', level: 2, icon: '/icons/meubles-salle-bain.png', order: 10, children: [] },
+      { name: 'Buffet', slug: 'buffet', level: 2, icon: '/icons/buffet.png', order: 11, children: [] },
+      { name: 'Tables TV', slug: 'tables-tv', level: 2, icon: '/icons/tables-tv.png', order: 12, children: [] },
+      { name: 'Table pliante', slug: 'table-pliante', level: 2, icon: '/icons/table-pliante.png', order: 13, children: [] },
+      { name: 'Tables à manger', slug: 'tables-manger', level: 2, icon: '/icons/tables-manger.png', order: 14, children: [] },
+      { name: 'Tables PC & Bureaux', slug: 'tables-pc-bureaux', level: 2, icon: '/icons/tables-pc-bureaux.png', order: 15, children: [] },
+      { name: 'Canapé', slug: 'canape', level: 2, icon: '/icons/canape.png', order: 16, children: [] },
+      { name: 'Table basse', slug: 'table-basse', level: 2, icon: '/icons/table-basse.png', order: 17, children: [] },
+      { name: 'Rangement et Organisation', slug: 'rangement-organisation', level: 2, icon: '/icons/rangement-organisation.png', order: 18, children: [] },
+      { name: 'Accessoires de cuisine', slug: 'accessoires-cuisine', level: 2, icon: '/icons/accessoires-cuisine.png', order: 19, children: [] },
+      { name: 'Meuble d\'entrée', slug: 'meuble-entree', level: 2, icon: '/icons/meuble-entree.png', order: 20, children: [] },
       {
         name: 'Décoration',
         slug: 'decoration',
         level: 2,
-        emoji: '🎨',
+        icon: '/icons/decoration.png',
         order: 21,
         children: [
           { name: 'Peinture et calligraphie', slug: 'peinture-calligraphie', level: 3, emoji: '🖼️', children: [] },
@@ -984,7 +984,7 @@ const categoriesData = [
         name: 'Vaisselle',
         slug: 'vaisselle',
         level: 2,
-        emoji: '🍽️',
+        icon: '/icons/vaisselle.png',
         order: 22,
         children: [
           { name: 'Pôeles, Casseroles et Marmites', slug: 'poeles-casseroles-marmites', level: 3, emoji: '🍳', children: [] },
@@ -1004,7 +1004,7 @@ const categoriesData = [
         name: 'Meubles de bureau',
         slug: 'meubles-bureau',
         level: 2,
-        emoji: '💼',
+        icon: '/icons/meubles-bureau.png',
         order: 23,
         children: [
           { name: 'Bureaux & Caissons', slug: 'bureaux-caissons', level: 3, emoji: '💼', children: [] },
@@ -1018,7 +1018,7 @@ const categoriesData = [
         name: 'Puériculture',
         slug: 'puericulture',
         level: 2,
-        emoji: '👶',
+        icon: '/icons/puericulture.png',
         order: 24,
         children: [
           { name: 'Poussette', slug: 'poussette', level: 3, emoji: '👶', children: [] },
@@ -1033,7 +1033,7 @@ const categoriesData = [
         name: 'Luminaire',
         slug: 'luminaire',
         level: 2,
-        emoji: '💡',
+        icon: '/icons/luminaire.png',
         order: 25,
         children: [
           { name: 'Lustre', slug: 'lustre', level: 3, emoji: '💎', children: [] },
@@ -1042,12 +1042,12 @@ const categoriesData = [
           { name: 'Autres', slug: 'autres-luminaire', level: 3, emoji: '💡', children: [] }
         ]
       },
-      { name: 'Rideaux', slug: 'rideaux', level: 2, emoji: '🪟', order: 26, children: [] },
-      { name: 'Literie & Linge', slug: 'literie-linge', level: 2, emoji: '🛌', order: 27, children: [] },
-      { name: 'Tapis & Moquettes', slug: 'tapis-moquettes', level: 2, emoji: '🧶', order: 28, children: [] },
-      { name: 'Meubles d\'extérieur', slug: 'meubles-exterieur', level: 2, emoji: '🌳', order: 29, children: [] },
-      { name: 'Fournitures et articles scolaires', slug: 'fournitures-scolaires', level: 2, emoji: '📚', order: 30, children: [] },
-      { name: 'Autre', slug: 'autre-meubles', level: 2, emoji: '🛋️', order: 31, children: [] }
+      { name: 'Rideaux', slug: 'rideaux', level: 2, icon: '/icons/rideaux.png', order: 26, children: [] },
+      { name: 'Literie & Linge', slug: 'literie-linge', level: 2, icon: '/icons/literie-linge.png', order: 27, children: [] },
+      { name: 'Tapis & Moquettes', slug: 'tapis-moquettes', level: 2, icon: '/icons/tapis-moquettes.png', order: 28, children: [] },
+      { name: 'Meubles d\'extérieur', slug: 'meubles-exterieur', level: 2, icon: '/icons/meubles-exterieur.png', order: 29, children: [] },
+      { name: 'Fournitures et articles scolaires', slug: 'fournitures-scolaires', level: 2, icon: '/icons/fournitures-scolaires.png', order: 30, children: [] },
+      { name: 'Autre', slug: 'autre-meubles', level: 2, icon: '/icons/autre-meubles.png', order: 31, children: [] }
     ]
   },
 
@@ -1056,14 +1056,14 @@ const categoriesData = [
     name: 'Pieces Detachees',
     slug: 'pieces-detachees',
     level: 1,
-    emoji: '🔩',
+    icon: '/icons/pieces-detachees.png',
     order: 6,
     children: [
       {
         name: 'Pièces automobiles',
         slug: 'pieces-automobiles',
         level: 2,
-        emoji: '🚗',
+        icon: '/icons/pieces-automobiles.png',
         order: 1,
         children: [
           { name: 'Moteur & Transmission', slug: 'moteur-transmission', level: 3, emoji: '⚙️', children: [] },
@@ -1084,7 +1084,7 @@ const categoriesData = [
         name: 'Pièces moto',
         slug: 'pieces-moto',
         level: 2,
-        emoji: '🏍️',
+        icon: '/icons/pieces-moto.png',
         order: 2,
         children: [
           { name: 'Casques & Protections', slug: 'casques-protections', level: 3, emoji: '🪖', children: [] },
@@ -1098,7 +1098,7 @@ const categoriesData = [
         name: 'Pièces bateaux',
         slug: 'pieces-bateaux',
         level: 2,
-        emoji: '⛵',
+        icon: '/icons/pieces-bateaux.png',
         order: 3,
         children: [
           { name: 'Moteurs', slug: 'moteurs-bateau', level: 3, emoji: '⚙️', children: [] },
@@ -1107,12 +1107,12 @@ const categoriesData = [
           { name: 'Autres pièces bateaux', slug: 'autres-pieces-bateaux', level: 3, emoji: '⛵', children: [] }
         ]
       },
-      { name: 'Alarme & Sécurité', slug: 'alarme-securite', level: 2, emoji: '🔐', order: 4, children: [] },
-      { name: 'Nettoyage & Entretien', slug: 'nettoyage-entretien', level: 2, emoji: '🧹', order: 5, children: [] },
-      { name: 'Outils de diagnostics', slug: 'outils-diagnostics', level: 2, emoji: '🔧', order: 6, children: [] },
-      { name: 'Lubrifiants', slug: 'lubrifiants', level: 2, emoji: '⚗️', order: 7, children: [] },
-      { name: 'Pièces véhicules', slug: 'pieces-vehicules', level: 2, emoji: '🔌', order: 8, children: [] },
-      { name: 'Autres pièces', slug: 'autres-pieces', level: 2, emoji: '🛠️', order: 9, children: [] }
+      { name: 'Alarme & Sécurité', slug: 'alarme-securite', level: 2, icon: '/icons/alarme-securite.png', order: 4, children: [] },
+      { name: 'Nettoyage & Entretien', slug: 'nettoyage-entretien', level: 2, icon: '/icons/nettoyage-entretien.png', order: 5, children: [] },
+      { name: 'Outils de diagnostics', slug: 'outils-diagnostics', level: 2, icon: '/icons/outils-diagnostics.png', order: 6, children: [] },
+      { name: 'Lubrifiants', slug: 'lubrifiants', level: 2, icon: '/icons/lubrifiants.png', order: 7, children: [] },
+      { name: 'Pièces véhicules', slug: 'pieces-vehicules', level: 2, icon: '/icons/pieces-vehicules.png', order: 8, children: [] },
+      { name: 'Autres pièces', slug: 'autres-pieces', level: 2, icon: '/icons/autres-pieces.png', order: 9, children: [] }
     ]
   },
 
@@ -1121,14 +1121,14 @@ const categoriesData = [
     name: 'Santé & Beauté',
     slug: 'sante-beaute',
     level: 1,
-    emoji: '💄',
+    icon: '/icons/sante-beaute.png',
     order: 9,
     children: [
       {
         name: 'Cosmétiques & Beauté',
         slug: 'cosmetiques-beaute',
         level: 2,
-        emoji: '💄',
+        icon: '/icons/cosmetiques-beaute.png',
         order: 1,
         children: [
           { name: 'Soins du corps', slug: 'soins-corps', level: 3, emoji: '🧴', children: [] },
@@ -1149,7 +1149,7 @@ const categoriesData = [
         name: 'Parapharmacie & Santé',
         slug: 'parapharmacie-sante',
         level: 2,
-        emoji: '💊',
+        icon: '/icons/parapharmacie-sante.png',
         order: 2,
         children: [
           { name: 'Dispositifs médicaux', slug: 'dispositifs-medicaux', level: 3, emoji: '🩺', children: [] },
@@ -1158,11 +1158,11 @@ const categoriesData = [
           { name: 'Aliments Diététiques', slug: 'aliments-dietetiques-sante', level: 3, emoji: '🥦', children: [] }
         ]
       },
-      { name: 'Parfums et déodorants femme', slug: 'parfums-deodorants-femme', level: 2, emoji: '🌸', order: 3, children: [] },
-      { name: 'Parfums et déodorants homme', slug: 'parfums-deodorants-homme', level: 2, emoji: '🌲', order: 4, children: [] },
-      { name: 'Accessoires beauté', slug: 'accessoires-beaute', level: 2, emoji: '🪞', order: 5, children: [] },
-      { name: 'Soins cheveux', slug: 'soins-cheveux', level: 2, emoji: '💇', order: 6, children: [] },
-      { name: 'Autre Santé & Beauté', slug: 'autre-sante-beaute', level: 2, emoji: '💡', order: 7, children: [] }
+      { name: 'Parfums et déodorants femme', slug: 'parfums-deodorants-femme', level: 2, icon: '/icons/parfums-deodorants-femme.png', order: 3, children: [] },
+      { name: 'Parfums et déodorants homme', slug: 'parfums-deodorants-homme', level: 2, icon: '/icons/parfums-deodorants-homme.png', order: 4, children: [] },
+      { name: 'Accessoires beauté', slug: 'accessoires-beaute', level: 2, icon: '/icons/accessoires-beaute.png', order: 5, children: [] },
+      { name: 'Soins cheveux', slug: 'soins-cheveux', level: 2, icon: '/icons/soins-cheveux.png', order: 6, children: [] },
+      { name: 'Autre Santé & Beauté', slug: 'autre-sante-beaute', level: 2, icon: '/icons/autre-sante-beaute.png', order: 7, children: [] }
     ]
   },
 
@@ -1171,41 +1171,41 @@ const categoriesData = [
     name: 'Services',
     slug: 'services',
     level: 1,
-    emoji: '🛠️',
+    icon: '/icons/services.png',
     order: 16,
     children: [
-      { name: 'Construction & Travaux', slug: 'construction-travaux', level: 2, emoji: '🏗️', order: 1, children: [] },
-      { name: 'Ecoles & Formations', slug: 'ecoles-formations', level: 2, emoji: '🎓', order: 2, children: [] },
-      { name: 'Industrie & Fabrication', slug: 'industrie-fabrication-services', level: 2, emoji: '🏭', order: 3, children: [] },
-      { name: 'Transport et déménagement', slug: 'transport-demenagement', level: 2, emoji: '🚚', order: 4, children: [] },
-      { name: 'Décoration & Aménagement', slug: 'decoration-amenagement', level: 2, emoji: '🎨', order: 5, children: [] },
-      { name: 'Publicite & Communication', slug: 'publicite-communication', level: 2, emoji: '📢', order: 6, children: [] },
-      { name: 'Nettoyage & Jardinage', slug: 'nettoyage-jardinage', level: 2, emoji: '🧹', order: 7, children: [] },
-      { name: 'Froid & Climatisation', slug: 'froid-climatisation', level: 2, emoji: '❄️', order: 8, children: [] },
-      { name: 'Traiteurs & Gateaux', slug: 'traiteurs-gateaux', level: 2, emoji: '🍰', order: 9, children: [] },
-      { name: 'Médecine & Santé', slug: 'medecine-sante', level: 2, emoji: '🏥', order: 10, children: [] },
-      { name: 'Réparation auto & Diagnostic', slug: 'reparation-auto-diagnostic', level: 2, emoji: '🔧', order: 11, children: [] },
-      { name: 'Sécurité & Alarme', slug: 'securite-alarme', level: 2, emoji: '🚨', order: 12, children: [] },
-      { name: 'Projets & Études', slug: 'projets-etudes', level: 2, emoji: '📊', order: 13, children: [] },
-      { name: 'Bureautique & Internet', slug: 'bureautique-internet', level: 2, emoji: '💻', order: 14, children: [] },
-      { name: 'Location de véhicules', slug: 'location-vehicules', level: 2, emoji: '🚗', order: 15, children: [] },
-      { name: 'Menuiserie & Meubles', slug: 'menuiserie-meubles', level: 2, emoji: '🪚', order: 16, children: [] },
-      { name: 'Impression & Edition', slug: 'impression-edition', level: 2, emoji: '🖨️', order: 17, children: [] },
-      { name: 'Hôtellerie & Restauration & Salles', slug: 'hotellerie-restauration-salles', level: 2, emoji: '🍽️', order: 18, children: [] },
-      { name: 'Esthétique & Beauté', slug: 'esthetique-beaute', level: 2, emoji: '💄', order: 19, children: [] },
-      { name: 'Image & Son', slug: 'image-son', level: 2, emoji: '🎬', order: 20, children: [] },
-      { name: 'Comptabilité & Economie', slug: 'comptabilite-economie', level: 2, emoji: '💰', order: 21, children: [] },
-      { name: 'Couture & Confection', slug: 'couture-confection', level: 2, emoji: '🧵', order: 22, children: [] },
-      { name: 'Maintenance informatique', slug: 'maintenance-informatique', level: 2, emoji: '💻', order: 23, children: [] },
-      { name: 'Réparation Electromenager', slug: 'reparation-electromenager', level: 2, emoji: '🔌', order: 24, children: [] },
-      { name: 'Evènements & Divertissement', slug: 'evenements-divertissement', level: 2, emoji: '🎪', order: 25, children: [] },
-      { name: 'Paraboles & Démos', slug: 'paraboles-demos', level: 2, emoji: '📡', order: 26, children: [] },
-      { name: 'Réparation Électronique', slug: 'reparation-electronique', level: 2, emoji: '🔌', order: 27, children: [] },
-      { name: 'Services à l\'étranger', slug: 'services-etranger', level: 2, emoji: '🌍', order: 28, children: [] },
-      { name: 'Flashage & Réparation des téléphones', slug: 'flashage-reparation-telephones', level: 2, emoji: '📱', order: 29, children: [] },
-      { name: 'Flashage & Installation des jeux', slug: 'flashage-installation-jeux', level: 2, emoji: '🎮', order: 30, children: [] },
-      { name: 'Juridique', slug: 'juridique', level: 2, emoji: '⚖️', order: 31, children: [] },
-      { name: 'Autres Services', slug: 'autres-services', level: 2, emoji: '🛠️', order: 32, children: [] }
+      { name: 'Construction & Travaux', slug: 'construction-travaux', level: 2, icon: '/icons/construction-travaux.png', order: 1, children: [] },
+      { name: 'Ecoles & Formations', slug: 'ecoles-formations', level: 2, icon: '/icons/ecoles-formations.png', order: 2, children: [] },
+      { name: 'Industrie & Fabrication', slug: 'industrie-fabrication-services', level: 2, icon: '/icons/industrie-fabrication-services.png', order: 3, children: [] },
+      { name: 'Transport et déménagement', slug: 'transport-demenagement', level: 2, icon: '/icons/transport-demenagement.png', order: 4, children: [] },
+      { name: 'Décoration & Aménagement', slug: 'decoration-amenagement', level: 2, icon: '/icons/decoration-amenagement.png', order: 5, children: [] },
+      { name: 'Publicite & Communication', slug: 'publicite-communication', level: 2, icon: '/icons/publicite-communication.png', order: 6, children: [] },
+      { name: 'Nettoyage & Jardinage', slug: 'nettoyage-jardinage', level: 2, icon: '/icons/nettoyage-jardinage.png', order: 7, children: [] },
+      { name: 'Froid & Climatisation', slug: 'froid-climatisation', level: 2, icon: '/icons/froid-climatisation.png', order: 8, children: [] },
+      { name: 'Traiteurs & Gateaux', slug: 'traiteurs-gateaux', level: 2, icon: '/icons/traiteurs-gateaux.png', order: 9, children: [] },
+      { name: 'Médecine & Santé', slug: 'medecine-sante', level: 2, icon: '/icons/medecine-sante.png', order: 10, children: [] },
+      { name: 'Réparation auto & Diagnostic', slug: 'reparation-auto-diagnostic', level: 2, icon: '/icons/reparation-auto-diagnostic.png', order: 11, children: [] },
+      { name: 'Sécurité & Alarme', slug: 'securite-alarme', level: 2, icon: '/icons/securite-alarme.png', order: 12, children: [] },
+      { name: 'Projets & Études', slug: 'projets-etudes', level: 2, icon: '/icons/projets-etudes.png', order: 13, children: [] },
+      { name: 'Bureautique & Internet', slug: 'bureautique-internet', level: 2, icon: '/icons/bureautique-internet.png', order: 14, children: [] },
+      { name: 'Location de véhicules', slug: 'location-vehicules', level: 2, icon: '/icons/location-vehicules.png', order: 15, children: [] },
+      { name: 'Menuiserie & Meubles', slug: 'menuiserie-meubles', level: 2, icon: '/icons/menuiserie-meubles.png', order: 16, children: [] },
+      { name: 'Impression & Edition', slug: 'impression-edition', level: 2, icon: '/icons/impression-edition.png', order: 17, children: [] },
+      { name: 'Hôtellerie & Restauration & Salles', slug: 'hotellerie-restauration-salles', level: 2, icon: '/icons/hotellerie-restauration-salles.png', order: 18, children: [] },
+      { name: 'Esthétique & Beauté', slug: 'esthetique-beaute', level: 2, icon: '/icons/esthetique-beaute.png', order: 19, children: [] },
+      { name: 'Image & Son', slug: 'image-son', level: 2, icon: '/icons/image-son.png', order: 20, children: [] },
+      { name: 'Comptabilité & Economie', slug: 'comptabilite-economie', level: 2, icon: '/icons/comptabilite-economie.png', order: 21, children: [] },
+      { name: 'Couture & Confection', slug: 'couture-confection', level: 2, icon: '/icons/couture-confection.png', order: 22, children: [] },
+      { name: 'Maintenance informatique', slug: 'maintenance-informatique', level: 2, icon: '/icons/maintenance-informatique.png', order: 23, children: [] },
+      { name: 'Réparation Electromenager', slug: 'reparation-electromenager', level: 2, icon: '/icons/reparation-electromenager.png', order: 24, children: [] },
+      { name: 'Evènements & Divertissement', slug: 'evenements-divertissement', level: 2, icon: '/icons/evenements-divertissement.png', order: 25, children: [] },
+      { name: 'Paraboles & Démos', slug: 'paraboles-demos', level: 2, icon: '/icons/paraboles-demos.png', order: 26, children: [] },
+      { name: 'Réparation Électronique', slug: 'reparation-electronique', level: 2, icon: '/icons/reparation-electronique.png', order: 27, children: [] },
+      { name: 'Services à l\'étranger', slug: 'services-etranger', level: 2, icon: '/icons/services-etranger.png', order: 28, children: [] },
+      { name: 'Flashage & Réparation des téléphones', slug: 'flashage-reparation-telephones', level: 2, icon: '/icons/flashage-reparation-telephones.png', order: 29, children: [] },
+      { name: 'Flashage & Installation des jeux', slug: 'flashage-installation-jeux', level: 2, icon: '/icons/flashage-installation-jeux.png', order: 30, children: [] },
+      { name: 'Juridique', slug: 'juridique', level: 2, icon: '/icons/juridique.png', order: 31, children: [] },
+      { name: 'Autres Services', slug: 'autres-services', level: 2, icon: '/icons/autres-services.png', order: 32, children: [] }
     ]
   },
 
@@ -1214,14 +1214,14 @@ const categoriesData = [
     name: 'Sport',
     slug: 'sport',
     level: 1,
-    emoji: '⚽',
+    icon: '/icons/sport.png',
     order: 12,
     children: [
       {
         name: 'Football',
         slug: 'football',
         level: 2,
-        emoji: '⚽',
+        icon: '/icons/football.png',
         order: 1,
         children: [
           { name: 'Ballons et Buts', slug: 'ballons-buts', level: 3, emoji: '⚽', children: [] },
@@ -1234,7 +1234,7 @@ const categoriesData = [
         name: 'Hand/Voley/ Basket-Ball',
         slug: 'hand-voley-basket',
         level: 2,
-        emoji: '🏀',
+        icon: '/icons/hand-voley-basket.png',
         order: 2,
         children: [
           { name: 'Équipements et accessoires', slug: 'equipements-accessoires-basket', level: 3, emoji: '🏀', children: [] },
@@ -1247,7 +1247,7 @@ const categoriesData = [
         name: 'Sport de combat',
         slug: 'sport-combat',
         level: 2,
-        emoji: '🥊',
+        icon: '/icons/sport-combat.png',
         order: 3,
         children: [
           { name: 'Tenue', slug: 'tenue-combat', level: 3, emoji: '🥋', children: [] },
@@ -1259,7 +1259,7 @@ const categoriesData = [
         name: 'Fitness - Musculation',
         slug: 'fitness-musculation',
         level: 2,
-        emoji: '💪',
+        icon: '/icons/fitness-musculation.png',
         order: 4,
         children: [
           { name: 'Bancs et presses de musculation', slug: 'bancs-presses', level: 3, emoji: '🏋️', children: [] },
@@ -1273,7 +1273,7 @@ const categoriesData = [
         name: 'Natation',
         slug: 'natation',
         level: 2,
-        emoji: '🏊',
+        icon: '/icons/natation.png',
         order: 5,
         children: [
           { name: 'Lunettes', slug: 'lunettes-natation', level: 3, emoji: '🥽', children: [] },
@@ -1288,7 +1288,7 @@ const categoriesData = [
         name: 'Vélos et trotinettes',
         slug: 'velos-trotinettes',
         level: 2,
-        emoji: '🚲',
+        icon: '/icons/velos-trotinettes.png',
         order: 6,
         children: [
           { name: 'Vêtements et chaussures', slug: 'vetements-chaussures-velo', level: 3, emoji: '👕', children: [] },
@@ -1301,7 +1301,7 @@ const categoriesData = [
         name: 'Sports de raquette',
         slug: 'sports-raquette',
         level: 2,
-        emoji: '🎾',
+        icon: '/icons/sports-raquette.png',
         order: 7,
         children: [
           { name: 'Tennis', slug: 'tennis', level: 3, emoji: '🎾', children: [] },
@@ -1309,10 +1309,10 @@ const categoriesData = [
           { name: 'Autre', slug: 'autre-raquette', level: 3, emoji: '🎯', children: [] }
         ]
       },
-      { name: 'Sport aquatiques', slug: 'sport-aquatiques', level: 2, emoji: '🤿', order: 8, children: [] },
-      { name: 'Équitation', slug: 'equitation', level: 2, emoji: '🐎', order: 9, children: [] },
-      { name: 'Pétanque', slug: 'petanque', level: 2, emoji: '🎯', order: 10, children: [] },
-      { name: 'Autres', slug: 'autres-sports', level: 2, emoji: '🏅', order: 11, children: [] }
+      { name: 'Sport aquatiques', slug: 'sport-aquatiques', level: 2, icon: '/icons/sport-aquatiques.png', order: 8, children: [] },
+      { name: 'Équitation', slug: 'equitation', level: 2, icon: '/icons/equitation.png', order: 9, children: [] },
+      { name: 'Pétanque', slug: 'petanque', level: 2, icon: '/icons/petanque.png', order: 10, children: [] },
+      { name: 'Autres', slug: 'autres-sports', level: 2, icon: '/icons/autres-sports.png', order: 11, children: [] }
     ]
   },
 
@@ -1321,246 +1321,154 @@ const categoriesData = [
     name: 'Voyages',
     slug: 'voyages',
     level: 1,
-    emoji: '✈️',
+    icon: '/icons/voyages.png',
     order: 15,
     children: [
-      { name: 'Voyage organisé', slug: 'voyage-organise', level: 2, emoji: '✈️', order: 1, children: [] },
-      { name: 'Location vacances', slug: 'location-vacances-voyages', level: 2, emoji: '🏠', order: 2, children: [] },
-      { name: 'Hajj & Omra', slug: 'hajj-omra', level: 2, emoji: '🕋', order: 3, children: [] },
-      { name: 'Réservations & Visa', slug: 'reservations-visa', level: 2, emoji: '🛂', order: 4, children: [] },
-      { name: 'Séjour', slug: 'sejour', level: 2, emoji: '🏨', order: 5, children: [] },
-      { name: 'Croisière', slug: 'croisiere', level: 2, emoji: '🚢', order: 6, children: [] },
-      { name: 'Autre voyages', slug: 'autre-voyages', level: 2, emoji: '🧳', order: 7, children: [] }
+      { name: 'Voyage organisé', slug: 'voyage-organise', level: 2, icon: '/icons/voyage-organise.png', order: 1, children: [] },
+      { name: 'Location vacances', slug: 'location-vacances-voyages', level: 2, icon: '/icons/location-vacances-voyages.png', order: 2, children: [] },
+      { name: 'Hajj & Omra', slug: 'hajj-omra', level: 2, icon: '/icons/hajj-omra.png', order: 3, children: [] },
+      { name: 'Réservations & Visa', slug: 'reservations-visa', level: 2, icon: '/icons/reservations-visa.png', order: 4, children: [] },
+      { name: 'Séjour', slug: 'sejour', level: 2, icon: '/icons/sejour.png', order: 5, children: [] },
+      { name: 'Croisière', slug: 'croisiere', level: 2, icon: '/icons/croisiere.png', order: 6, children: [] },
+      { name: 'Autre voyages', slug: 'autre-voyages', level: 2, icon: '/icons/autre-voyages.png', order: 7, children: [] }
     ]
   },
 
   // ==================== 16. BOUTIQUES ====================
-  // ==================== 16. BOUTIQUES ====================
-// ==================== 16. BOUTIQUES ====================
-// En tu archivo seed, agrega boutiques como categoría nivel 1
-// SOLO agregar esto, sin modificar estilos existentes
-
- 
   {
     name: 'Boutiques',
     slug: 'boutiques',
     level: 1,
-    emoji: '🏪',
-    icon: '🏪',
-    iconType: 'emoji',
-    iconColor: '#8B5CF6',
-    bgColor: '#EDE9FE',
-    hasChildren: true,
-    isLeaf: false,
+    icon: '/icons/boutiques.png',
     order: 0, // O el orden que quieras (puede ser 0 para que aparezca primero)
     children: [
       { 
         name: 'Boutique de Véhicules', 
         slug: 'boutique-vehicules', 
         level: 2, 
-        emoji: '🚗',
-        icon: '🚗',
-        iconType: 'emoji',
-        iconColor: '#3B82F6',
-        bgColor: '#DBEAFE',
-        hasChildren: false,
-        isLeaf: true,
-        order: 1 
+        icon: '/icons/boutique-vehicules.png',
+        order: 1,
+        children: [] 
       },
       { 
         name: 'Boutique de Vêtements', 
         slug: 'boutique-vetements', 
         level: 2, 
-        emoji: '👕',
-        icon: '👕',
-        iconType: 'emoji',
-        iconColor: '#EC4899',
-        bgColor: '#FCE7F3',
-        hasChildren: false,
-        isLeaf: true,
-        order: 2 
+        icon: '/icons/boutique-vetements.png',
+        order: 2,
+        children: [] 
       },
       { 
         name: "Boutique d'Électroménager", 
         slug: 'boutique-electromenager', 
         level: 2, 
-        emoji: '🔌',
-        icon: '🔌',
-        iconType: 'emoji',
-        iconColor: '#F59E0B',
-        bgColor: '#FEF3C7',
-        hasChildren: false,
-        isLeaf: true,
-        order: 3 
+        icon: '/icons/boutique-electromenager.png',
+        order: 3,
+        children: [] 
       },
       { 
         name: "Boutique d'Immobilier", 
         slug: 'boutique-immobilier', 
         level: 2, 
-        emoji: '🏠',
-        icon: '🏠',
-        iconType: 'emoji',
-        iconColor: '#10B981',
-        bgColor: '#D1FAE5',
-        hasChildren: false,
-        isLeaf: true,
-        order: 4 
+        icon: '/icons/boutique-immobilier.png',
+        order: 4,
+        children: [] 
       },
       { 
         name: 'Boutique Alimentaire', 
         slug: 'boutique-alimentaire', 
         level: 2, 
-        emoji: '🍎',
-        icon: '🍎',
-        iconType: 'emoji',
-        iconColor: '#EF4444',
-        bgColor: '#FEE2E2',
-        hasChildren: false,
-        isLeaf: true,
-        order: 5 
+        icon: '/icons/boutique-alimentaire.png',
+        order: 5,
+        children: [] 
       },
       { 
         name: "Boutique d'Emploi", 
         slug: 'boutique-emploi', 
         level: 2, 
-        emoji: '💼',
-        icon: '💼',
-        iconType: 'emoji',
-        iconColor: '#6B7280',
-        bgColor: '#F3F4F6',
-        hasChildren: false,
-        isLeaf: true,
-        order: 6 
+        icon: '/icons/boutique-emploi.png',
+        order: 6,
+        children: [] 
       },
       { 
         name: "Boutique d'Informatique", 
         slug: 'boutique-informatique', 
         level: 2, 
-        emoji: '💻',
-        icon: '💻',
-        iconType: 'emoji',
-        iconColor: '#3B82F6',
-        bgColor: '#DBEAFE',
-        hasChildren: false,
-        isLeaf: true,
-        order: 7 
+        icon: '/icons/boutique-informatique.png',
+        order: 7,
+        children: [] 
       },
       { 
         name: 'Boutique de Loisirs', 
         slug: 'boutique-loisirs', 
         level: 2, 
-        emoji: '🎪',
-        icon: '🎪',
-        iconType: 'emoji',
-        iconColor: '#8B5CF6',
-        bgColor: '#EDE9FE',
-        hasChildren: false,
-        isLeaf: true,
-        order: 8 
+        icon: '/icons/boutique-loisirs.png',
+        order: 8,
+        children: [] 
       },
       { 
         name: 'Boutique de Matériaux', 
         slug: 'boutique-materiaux', 
         level: 2, 
-        emoji: '🧱',
-        icon: '🧱',
-        iconType: 'emoji',
-        iconColor: '#92400E',
-        bgColor: '#FEF3C7',
-        hasChildren: false,
-        isLeaf: true,
-        order: 9 
+        icon: '/icons/boutique-materiaux.png',
+        order: 9,
+        children: [] 
       },
       { 
         name: 'Boutique de Meubles', 
         slug: 'boutique-meubles', 
         level: 2, 
-        emoji: '🛋️',
-        icon: '🛋️',
-        iconType: 'emoji',
-        iconColor: '#D97706',
-        bgColor: '#FEF3C7',
-        hasChildren: false,
-        isLeaf: true,
-        order: 10 
+        icon: '/icons/boutique-meubles.png',
+        order: 10,
+        children: [] 
       },
       { 
         name: 'Boutique de Pièces Détachées', 
         slug: 'boutique-pieces-detachees', 
         level: 2, 
-        emoji: '🔩',
-        icon: '🔩',
-        iconType: 'emoji',
-        iconColor: '#6B7280',
-        bgColor: '#F3F4F6',
-        hasChildren: false,
-        isLeaf: true,
-        order: 11 
+        icon: '/icons/boutique-pieces-detachees.png',
+        order: 11,
+        children: [] 
       },
       { 
         name: 'Boutique de Santé & Beauté', 
         slug: 'boutique-sante-beaute', 
         level: 2, 
-        emoji: '💄',
-        icon: '💄',
-        iconType: 'emoji',
-        iconColor: '#EC4899',
-        bgColor: '#FCE7F3',
-        hasChildren: false,
-        isLeaf: true,
-        order: 12 
+        icon: '/icons/boutique-sante-beaute.png',
+        order: 12,
+        children: [] 
       },
       { 
         name: 'Boutique de Services', 
         slug: 'boutique-services', 
         level: 2, 
-        emoji: '🛠️',
-        icon: '🛠️',
-        iconType: 'emoji',
-        iconColor: '#F59E0B',
-        bgColor: '#FEF3C7',
-        hasChildren: false,
-        isLeaf: true,
-        order: 13 
+        icon: '/icons/boutique-services.png',
+        order: 13,
+        children: [] 
       },
       { 
         name: 'Boutique de Sport', 
         slug: 'boutique-sport', 
         level: 2, 
-        emoji: '⚽',
-        icon: '⚽',
-        iconType: 'emoji',
-        iconColor: '#10B981',
-        bgColor: '#D1FAE5',
-        hasChildren: false,
-        isLeaf: true,
-        order: 14 
+        icon: '/icons/boutique-sport.png',
+        order: 14,
+        children: [] 
       },
       { 
         name: 'Boutique de Voyages', 
         slug: 'boutique-voyages', 
         level: 2, 
-        emoji: '✈️',
-        icon: '✈️',
-        iconType: 'emoji',
-        iconColor: '#3B82F6',
-        bgColor: '#DBEAFE',
-        hasChildren: false,
-        isLeaf: true,
-        order: 15 
+        icon: '/icons/boutique-voyages.png',
+        order: 15,
+        children: [] 
       },
       { 
         name: 'Boutique de Téléphone', 
         slug: 'boutique-telephone', 
         level: 2, 
-        emoji: '📱',
-        icon: '📱',
-        iconType: 'emoji',
-        iconColor: '#10B981',
-        bgColor: '#D1FAE5',
-        hasChildren: false,
-        isLeaf: true,
-        order: 16 
+        icon: '/icons/boutique-telephone.png',
+        order: 16,
+        children: [] 
       }
     ]
   },
@@ -1570,24 +1478,24 @@ const categoriesData = [
     name: 'Téléphone',
     slug: 'telephone',
     level: 1,
-    emoji: '📱',
+    icon: '/icons/telephone.png',
     order: 4,
     children: [
       // NIVEAU 2 - SANS SOUS-CATÉGORIES
-      { name: 'Smartphones', slug: 'smartphones', level: 2, emoji: '📱', order: 1, children: [] },
-      { name: 'Téléphones cellulaires', slug: 'telephones-cellulaires', level: 2, emoji: '📞', order: 2, children: [] },
-      { name: 'Tablettes', slug: 'tablettes', level: 2, emoji: '💻', order: 3, children: [] },
-      { name: 'Fixes & Fax', slug: 'fixes-fax', level: 2, emoji: '☎️', order: 4, children: [] },
-      { name: 'Smartwatchs', slug: 'smartwatchs', level: 2, emoji: '⌚', order: 5, children: [] },
-      { name: 'Pièces de rechange', slug: 'pieces-rechange-telephone', level: 2, emoji: '🔧', order: 7, children: [] },
-      { name: 'Offres & Abonnements', slug: 'offres-abonnements', level: 2, emoji: '📶', order: 8, children: [] },
+      { name: 'Smartphones', slug: 'smartphones', level: 2, icon: '/icons/smartphones.png', order: 1, children: [] },
+      { name: 'Téléphones cellulaires', slug: 'telephones-cellulaires', level: 2, icon: '/icons/telephones-cellulaires.png', order: 2, children: [] },
+      { name: 'Tablettes', slug: 'tablettes', level: 2, icon: '/icons/tablettes.png', order: 3, children: [] },
+      { name: 'Fixes & Fax', slug: 'fixes-fax', level: 2, icon: '/icons/fixes-fax.png', order: 4, children: [] },
+      { name: 'Smartwatchs', slug: 'smartwatchs', level: 2, icon: '/icons/smartwatchs.png', order: 5, children: [] },
+      { name: 'Pièces de rechange', slug: 'pieces-rechange-telephone', level: 2, icon: '/icons/pieces-rechange-telephone.png', order: 7, children: [] },
+      { name: 'Offres & Abonnements', slug: 'offres-abonnements', level: 2, icon: '/icons/offres-abonnements.png', order: 8, children: [] },
       
       // NIVEAU 2 - AVEC SOUS-CATÉGORIES
       {
         name: 'Accessoires',
         slug: 'accessoires-telephone',
         level: 2,
-        emoji: '🎧',
+        icon: '/icons/accessoires-telephone.png',
         order: 6,
         children: [
           { name: 'Étuis', slug: 'etuis', level: 3, emoji: '🎁', children: [] },
@@ -1601,7 +1509,7 @@ const categoriesData = [
         name: 'Protection & Antichoc',
         slug: 'protection-antichoc',
         level: 2,
-        emoji: '🛡️',
+        icon: '/icons/protection-antichoc.png',
         order: 9,
         children: [
           { name: 'Protections d\'écran renforcées', slug: 'protections-ecran-renforcees', level: 3, emoji: '🖥️', children: [] },
@@ -1615,7 +1523,7 @@ const categoriesData = [
         name: 'Ecouteurs & Son',
         slug: 'ecouteurs-son',
         level: 2,
-        emoji: '🎵',
+        icon: '/icons/ecouteurs-son.png',
         order: 10,
         children: [
           { name: 'Écouteurs filaires', slug: 'ecouteurs-filaires', level: 3, emoji: '🎧', children: [] },
@@ -1629,7 +1537,7 @@ const categoriesData = [
         name: 'Chargeurs & Câbles',
         slug: 'chargeurs-cables',
         level: 2,
-        emoji: '🔌',
+        icon: '/icons/chargeurs-cables.png',
         order: 11,
         children: [
           { name: 'Chargeurs mural', slug: 'chargeurs-mural', level: 3, emoji: '🔌', children: [] },
@@ -1645,7 +1553,7 @@ const categoriesData = [
         name: 'Supports & Stabilisateurs',
         slug: 'supports-stabilisateurs',
         level: 2,
-        emoji: '📐',
+        icon: '/icons/supports-stabilisateurs.png',
         order: 12,
         children: [
           { name: 'Supports téléphone', slug: 'supports-telephone', level: 3, emoji: '📱', children: [] },
@@ -1659,7 +1567,7 @@ const categoriesData = [
         name: 'Manettes',
         slug: 'manettes-telephone',
         level: 2,
-        emoji: '🎮',
+        icon: '/icons/manettes-telephone.png',
         order: 13,
         children: [
           { name: 'Manettes Bluetooth', slug: 'manettes-bluetooth', level: 3, emoji: '🎮', children: [] },
@@ -1673,7 +1581,7 @@ const categoriesData = [
         name: 'VR',
         slug: 'vr-telephone',
         level: 2,
-        emoji: '👓',
+        icon: '/icons/vr-telephone.png',
         order: 14,
         children: [
           { name: 'Casques VR', slug: 'casques-vr', level: 3, emoji: '👓', children: [] },
@@ -1687,7 +1595,7 @@ const categoriesData = [
         name: 'Power banks',
         slug: 'power-banks',
         level: 2,
-        emoji: '🔋',
+        icon: '/icons/power-banks.png',
         order: 15,
         children: [
           { name: 'Power bank 10,000mAh', slug: 'power-bank-10000mah', level: 3, emoji: '🔋', children: [] },
@@ -1701,7 +1609,7 @@ const categoriesData = [
         name: 'Stylets',
         slug: 'stylets',
         level: 2,
-        emoji: '✏️',
+        icon: '/icons/stylets.png',
         order: 16,
         children: [
           { name: 'Stylets actifs', slug: 'stylets-actifs', level: 3, emoji: '✏️', children: [] },
@@ -1715,7 +1623,7 @@ const categoriesData = [
         name: 'Cartes Mémoire',
         slug: 'cartes-memoire',
         level: 2,
-        emoji: '💾',
+        icon: '/icons/cartes-memoire.png',
         order: 17,
         children: [
           { name: 'Cartes SD', slug: 'cartes-sd', level: 3, emoji: '💾', children: [] },
@@ -1739,15 +1647,21 @@ const seedCategories = async () => {
     // Función recursiva para crear categorías
     const createCategory = async (categoryData, parentId = null) => {
       const { children, ...categoryFields } = categoryData;
+      
+      // Determinar si es una categoría hoja (no tiene hijos)
+      const isLeaf = !children || children.length === 0;
+      
       const category = new Category({
         ...categoryFields,
         parent: parentId,
-        // Añadir campo isLeaf si no tiene hijos
-        isLeaf: !children || children.length === 0
+        isLeaf: isLeaf
       });
       
       await category.save();
-      console.log(`✅ ${'  '.repeat(categoryData.level - 1)}${categoryData.emoji} ${categoryData.name} (/${categoryData.slug})`);
+      
+      // Mostrar emoji o icon según el nivel
+      const displayIcon = categoryFields.icon || categoryFields.emoji || '📁';
+      console.log(`✅ ${'  '.repeat(categoryData.level - 1)}${displayIcon} ${categoryData.name} (/${categoryData.slug})`);
 
       if (children && children.length > 0) {
         for (const childData of children) {
@@ -1757,14 +1671,14 @@ const seedCategories = async () => {
     };
 
     // Crear categorías
-    console.log('🌱 Iniciando seed con TODOS los emojis en cada nivel...');
+    console.log('🌱 Iniciando seed con ICONOS PNG para niveles 1-2 y EMOGIS para nivel 3...');
     for (const categoryData of categoriesData) {
       await createCategory(categoryData);
     }
 
     console.log('\n🎉 SEED COMPLETADO CON ÉXITO');
     console.log('📊 Resumen:');
-    console.log(`   • ${categoriesData.length} categorías principales`);
+    console.log(`   • ${categoriesData.length} categorías principales (con iconos PNG)`);
     
     let totalLevel2 = 0;
     let totalLevel3 = 0;
@@ -1776,15 +1690,15 @@ const seedCategories = async () => {
       });
     });
     
-    console.log(`   • ${totalLevel2} subcategorías (nivel 2)`);
-    console.log(`   • ${totalLevel3} artículos/tipos (nivel 3)`);
+    console.log(`   • ${totalLevel2} subcategorías (nivel 2 con iconos PNG)`);
+    console.log(`   • ${totalLevel3} artículos/tipos (nivel 3 con emojis)`);
     console.log(`   • Total: ${categoriesData.length + totalLevel2 + totalLevel3} items`);
     console.log('\n🔗 URLs de ejemplo:');
     console.log('   • /category/immobilier/vente/appartement');
     console.log('   • /category/vehicules/motos-scooters');
     console.log('   • /category/telephone/smartphones');
     console.log('   • /category/telephone/chargeurs-cables/cables-type-c');
-    console.log('\n✨ TODAS las categorías tienen emojis únicos en nivel 1, 2 y 3');
+    console.log('\n✨ Niveles 1 y 2 usan iconos PNG, nivel 3 usa emojis');
 
     process.exit(0);
   } catch (error) {

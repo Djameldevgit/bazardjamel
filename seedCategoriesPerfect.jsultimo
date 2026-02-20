@@ -1337,32 +1337,234 @@ const categoriesData = [
   // ==================== 16. BOUTIQUES ====================
   // ==================== 16. BOUTIQUES ====================
 // ==================== 16. BOUTIQUES ====================
-{
-  name: 'Boutiques',
-  slug: 'boutiques',
-  level: 1,
-  emoji: '🏪',
-  order: 1,
-  children: [
-    { name: 'Boutique de Véhicules', slug: 'boutique-vehicules', level: 2, emoji: '🚗', order: 1, children: [] },
-    { name: 'Boutique de Vêtements', slug: 'boutique-vetements', level: 2, emoji: '👕', order: 2, children: [] },
-    { name: "Boutique d'Électroménager", slug: 'boutique-electromenager', level: 2, emoji: '🔌', order: 3, children: [] },
-    { name: "Boutique d'Immobilier", slug: 'boutique-immobilier', level: 2, emoji: '🏠', order: 4, children: [] },
-    { name: 'Boutique Alimentaire', slug: 'boutique-alimentaire', level: 2, emoji: '🍎', order: 5, children: [] },
-    { name: "Boutique d'Emploi", slug: 'boutique-emploi', level: 2, emoji: '💼', order: 6, children: [] },
-    { name: "Boutique d'Informatique", slug: 'boutique-informatique', level: 2, emoji: '💻', order: 7, children: [] },
-    { name: 'Boutique de Loisirs', slug: 'boutique-loisirs', level: 2, emoji: '🎪', order: 8, children: [] },
-    { name: 'Boutique de Matériaux', slug: 'boutique-materiaux', level: 2, emoji: '🧱', order: 9, children: [] },
-    { name: 'Boutique de Meubles', slug: 'boutique-meubles', level: 2, emoji: '🛋️', order: 10, children: [] },
-    { name: 'Boutique de Pièces Détachées', slug: 'boutique-pieces-detachees', level: 2, emoji: '🔩', order: 11, children: [] },
-    { name: 'Boutique de Santé & Beauté', slug: 'boutique-sante-beaute', level: 2, emoji: '💄', order: 12, children: [] },
-    { name: 'Boutique de Services', slug: 'boutique-services', level: 2, emoji: '🛠️', order: 13, children: [] },
-    { name: 'Boutique de Sport', slug: 'boutique-sport', level: 2, emoji: '⚽', order: 14, children: [] },
-    { name: 'Boutique de Voyages', slug: 'boutique-voyages', level: 2, emoji: '✈️', order: 15, children: [] },
-    { name: 'Boutique de Téléphone', slug: 'boutique-telephone', level: 2, emoji: '📱', order: 17, children: [] }
-  ]
-},
+// En tu archivo seed, agrega boutiques como categoría nivel 1
+// SOLO agregar esto, sin modificar estilos existentes
 
+ 
+  {
+    name: 'Boutiques',
+    slug: 'boutiques',
+    level: 1,
+    emoji: '🏪',
+    icon: '🏪',
+    iconType: 'emoji',
+    iconColor: '#8B5CF6',
+    bgColor: '#EDE9FE',
+    hasChildren: true,
+    isLeaf: false,
+    order: 0, // O el orden que quieras (puede ser 0 para que aparezca primero)
+    children: [
+      { 
+        name: 'Boutique de Véhicules', 
+        slug: 'boutique-vehicules', 
+        level: 2, 
+        emoji: '🚗',
+        icon: '🚗',
+        iconType: 'emoji',
+        iconColor: '#3B82F6',
+        bgColor: '#DBEAFE',
+        hasChildren: false,
+        isLeaf: true,
+        order: 1 
+      },
+      { 
+        name: 'Boutique de Vêtements', 
+        slug: 'boutique-vetements', 
+        level: 2, 
+        emoji: '👕',
+        icon: '👕',
+        iconType: 'emoji',
+        iconColor: '#EC4899',
+        bgColor: '#FCE7F3',
+        hasChildren: false,
+        isLeaf: true,
+        order: 2 
+      },
+      { 
+        name: "Boutique d'Électroménager", 
+        slug: 'boutique-electromenager', 
+        level: 2, 
+        emoji: '🔌',
+        icon: '🔌',
+        iconType: 'emoji',
+        iconColor: '#F59E0B',
+        bgColor: '#FEF3C7',
+        hasChildren: false,
+        isLeaf: true,
+        order: 3 
+      },
+      { 
+        name: "Boutique d'Immobilier", 
+        slug: 'boutique-immobilier', 
+        level: 2, 
+        emoji: '🏠',
+        icon: '🏠',
+        iconType: 'emoji',
+        iconColor: '#10B981',
+        bgColor: '#D1FAE5',
+        hasChildren: false,
+        isLeaf: true,
+        order: 4 
+      },
+      { 
+        name: 'Boutique Alimentaire', 
+        slug: 'boutique-alimentaire', 
+        level: 2, 
+        emoji: '🍎',
+        icon: '🍎',
+        iconType: 'emoji',
+        iconColor: '#EF4444',
+        bgColor: '#FEE2E2',
+        hasChildren: false,
+        isLeaf: true,
+        order: 5 
+      },
+      { 
+        name: "Boutique d'Emploi", 
+        slug: 'boutique-emploi', 
+        level: 2, 
+        emoji: '💼',
+        icon: '💼',
+        iconType: 'emoji',
+        iconColor: '#6B7280',
+        bgColor: '#F3F4F6',
+        hasChildren: false,
+        isLeaf: true,
+        order: 6 
+      },
+      { 
+        name: "Boutique d'Informatique", 
+        slug: 'boutique-informatique', 
+        level: 2, 
+        emoji: '💻',
+        icon: '💻',
+        iconType: 'emoji',
+        iconColor: '#3B82F6',
+        bgColor: '#DBEAFE',
+        hasChildren: false,
+        isLeaf: true,
+        order: 7 
+      },
+      { 
+        name: 'Boutique de Loisirs', 
+        slug: 'boutique-loisirs', 
+        level: 2, 
+        emoji: '🎪',
+        icon: '🎪',
+        iconType: 'emoji',
+        iconColor: '#8B5CF6',
+        bgColor: '#EDE9FE',
+        hasChildren: false,
+        isLeaf: true,
+        order: 8 
+      },
+      { 
+        name: 'Boutique de Matériaux', 
+        slug: 'boutique-materiaux', 
+        level: 2, 
+        emoji: '🧱',
+        icon: '🧱',
+        iconType: 'emoji',
+        iconColor: '#92400E',
+        bgColor: '#FEF3C7',
+        hasChildren: false,
+        isLeaf: true,
+        order: 9 
+      },
+      { 
+        name: 'Boutique de Meubles', 
+        slug: 'boutique-meubles', 
+        level: 2, 
+        emoji: '🛋️',
+        icon: '🛋️',
+        iconType: 'emoji',
+        iconColor: '#D97706',
+        bgColor: '#FEF3C7',
+        hasChildren: false,
+        isLeaf: true,
+        order: 10 
+      },
+      { 
+        name: 'Boutique de Pièces Détachées', 
+        slug: 'boutique-pieces-detachees', 
+        level: 2, 
+        emoji: '🔩',
+        icon: '🔩',
+        iconType: 'emoji',
+        iconColor: '#6B7280',
+        bgColor: '#F3F4F6',
+        hasChildren: false,
+        isLeaf: true,
+        order: 11 
+      },
+      { 
+        name: 'Boutique de Santé & Beauté', 
+        slug: 'boutique-sante-beaute', 
+        level: 2, 
+        emoji: '💄',
+        icon: '💄',
+        iconType: 'emoji',
+        iconColor: '#EC4899',
+        bgColor: '#FCE7F3',
+        hasChildren: false,
+        isLeaf: true,
+        order: 12 
+      },
+      { 
+        name: 'Boutique de Services', 
+        slug: 'boutique-services', 
+        level: 2, 
+        emoji: '🛠️',
+        icon: '🛠️',
+        iconType: 'emoji',
+        iconColor: '#F59E0B',
+        bgColor: '#FEF3C7',
+        hasChildren: false,
+        isLeaf: true,
+        order: 13 
+      },
+      { 
+        name: 'Boutique de Sport', 
+        slug: 'boutique-sport', 
+        level: 2, 
+        emoji: '⚽',
+        icon: '⚽',
+        iconType: 'emoji',
+        iconColor: '#10B981',
+        bgColor: '#D1FAE5',
+        hasChildren: false,
+        isLeaf: true,
+        order: 14 
+      },
+      { 
+        name: 'Boutique de Voyages', 
+        slug: 'boutique-voyages', 
+        level: 2, 
+        emoji: '✈️',
+        icon: '✈️',
+        iconType: 'emoji',
+        iconColor: '#3B82F6',
+        bgColor: '#DBEAFE',
+        hasChildren: false,
+        isLeaf: true,
+        order: 15 
+      },
+      { 
+        name: 'Boutique de Téléphone', 
+        slug: 'boutique-telephone', 
+        level: 2, 
+        emoji: '📱',
+        icon: '📱',
+        iconType: 'emoji',
+        iconColor: '#10B981',
+        bgColor: '#D1FAE5',
+        hasChildren: false,
+        isLeaf: true,
+        order: 16 
+      }
+    ]
+  },
+ 
   // ==================== 17. TÉLÉPHONE ====================
   {
     name: 'Téléphone',

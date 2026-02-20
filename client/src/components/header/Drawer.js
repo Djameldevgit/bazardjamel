@@ -1,4 +1,4 @@
-// 📂 components/common/Drawer.js - VERSIÓN COMPLETA CORREGIDA
+// 📂 components/common/Drawer.js - VERSIÓN COMPLETA CON IMÁGENES PNG
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useLocation, useHistory } from 'react-router-dom';
@@ -19,6 +19,7 @@ const Drawer = ({
   const { auth } = useSelector(state => state);
   const { t, i18n } = useTranslation('global');
   const [darkMode, setDarkMode] = useState(false);
+  const [imageErrors, setImageErrors] = useState({});
   
   // 🔥 SIMPLIFICADO: Solo 3 idiomas - AR, FR, EN
   const [currentLang, setCurrentLang] = useState(() => {
@@ -34,28 +35,29 @@ const Drawer = ({
                          location.pathname.includes('/profile') ||
                          location.pathname.startsWith('/mes-');
 
-  // ✅ CATEGORÍAS ACTUALIZADAS - Coinciden con el seed (SIN subcategorías de boutique)
-  const categories = [
-    { name: 'Boutiques', emoji: '🏪', slug: 'boutiques', color: '#667eea', isStore: true },
-    { name: 'Immobilier', emoji: '🏠', slug: 'immobilier', color: '#f093fb' },
-    { name: 'Automobiles & Véhicules', emoji: '🚗', slug: 'vehicules', color: '#f5576c' },
-    { name: 'Pièces détachées', emoji: '🔧', slug: 'pieces-detachees', color: '#48c6ef' },
-    { name: 'Téléphonie & Accessoires', emoji: '📱', slug: 'telephones', color: '#6a11cb' },
-    { name: 'Informatique', emoji: '💻', slug: 'informatique', color: '#37ecba' },
-    { name: 'Électroménager & Électronique', emoji: '📺', slug: 'electromenager', color: '#ff9a9e' },
-    { name: 'Vêtements & Mode', emoji: '👕', slug: 'vetements', color: '#a18cd1' },
-    { name: 'Santé & Beauté', emoji: '💄', slug: 'sante-beaute', color: '#fbc2eb' },
-    { name: 'Meubles & Maison', emoji: '🛋️', slug: 'meubles', color: '#667eea' },
-    { name: 'Loisirs & Divertissements', emoji: '🎮', slug: 'loisirs', color: '#f093fb' },
-    { name: 'Sport', emoji: '⚽', slug: 'sport', color: '#f5576c' },
-    { name: 'Offres & Demandes d\'emploi', emoji: '💼', slug: 'emploi', color: '#48c6ef' },
-    { name: 'Matériaux & Équipement', emoji: '🔨', slug: 'materiaux', color: '#6a11cb' },
-    { name: 'Alimentaires', emoji: '🍎', slug: 'alimentaires', color: '#37ecba' },
-    { name: 'Services', emoji: '👷', slug: 'services', color: '#ff9a9e' },
-    { name: 'Voyages', emoji: '✈️', slug: 'voyages', color: '#a18cd1' }
-  ];
+  // ✅ CATEGORÍAS ACTUALIZADAS - Con rutas de imágenes PNG (coinciden con el seed)
+ // ✅ CATEGORÍAS ACTUALIZADAS - Con rutas de imágenes PNG corregidas
+const categories = [
+  { name: 'Boutiques', icon: '/uploads/categories/boutiques/level1/boutiques.png', slug: 'boutiques', color: '#667eea', isStore: true },
+  { name: 'Immobilier', icon: '/uploads/categories/immobilier/level1/immobilier.png', slug: 'immobilier', color: '#f093fb' },
+  { name: 'Automobiles & Véhicules', icon: '/uploads/categories/vehicules/level1/vehicules.png', slug: 'vehicules', color: '#f5576c' },
+  { name: 'Pièces détachées', icon: '/uploads/categories/pieces-detachees/level1/pieces-detachees.png', slug: 'pieces-detachees', color: '#48c6ef' },
+  { name: 'Téléphonie & Accessoires', icon: '/uploads/categories/telephone/level1/telephone.png', slug: 'telephones', color: '#6a11cb' },
+  { name: 'Informatique', icon: '/uploads/categories/informatique/level1/informatique.png', slug: 'informatique', color: '#37ecba' },
+  { name: 'Électroménager & Électronique', icon: '/uploads/categories/electromenager/level1/electromenager.png', slug: 'electromenager', color: '#ff9a9e' },
+  { name: 'Vêtements & Mode', icon: '/uploads/categories/vetements/level1/vetements.png', slug: 'vetements', color: '#a18cd1' },
+  { name: 'Santé & Beauté', icon: '/uploads/categories/sante-beaute/level1/sante-beaute.png', slug: 'sante-beaute', color: '#fbc2eb' },
+  { name: 'Meubles & Maison', icon: '/uploads/categories/meubles/level1/meubles.png', slug: 'meubles', color: '#667eea' },
+  { name: 'Loisirs & Divertissements', icon: '/uploads/categories/loisirs/level1/loisirs.png', slug: 'loisirs', color: '#f093fb' },
+  { name: 'Sport', icon: '/uploads/categories/sport/level1/sport.png', slug: 'sport', color: '#f5576c' },
+  { name: "Offres & Demandes d'emploi", icon: '/uploads/categories/emploi/level1/emploi.png', slug: 'emploi', color: '#48c6ef' },
+  { name: 'Matériaux & Équipement', icon: '/uploads/categories/materiaux/level1/materiaux.png', slug: 'materiaux', color: '#6a11cb' },
+  { name: 'Alimentaires', icon: '/uploads/categories/alimentaires/level1/alimentaires.png', slug: 'alimentaires', color: '#37ecba' },
+  { name: 'Services', icon: '/uploads/categories/services/level1/services.png', slug: 'services', color: '#ff9a9e' },
+  { name: 'Voyages', icon: '/uploads/categories/voyages/level1/voyages.png', slug: 'voyages', color: '#a18cd1' }
+];
 
-  // Emojis
+  // Emojis (mantenemos para iconos que no son categorías)
   const emojis = {
     home: '🏠', user: '👤', logout: '🚪', bell: '🔔', list: '📋',
     plus: '➕', dashboard: '📊', store: '🏪', categories: '📂',
@@ -66,6 +68,11 @@ const Drawer = ({
     verified: '✅', warning: '⚠️', star: '⭐', heart: '❤️',
     annonce: '📢', commande: '📦', voyage: '✈️', pub: '🎯',
     transaction: '💰', credit: '💳'
+  };
+
+  // Manejar error de imagen
+  const handleImageError = (categoryId) => {
+    setImageErrors(prev => ({ ...prev, [categoryId]: true }));
   };
 
   // 📍 FUNCIÓN PARA GENERAR RUTAS
@@ -130,9 +137,10 @@ const Drawer = ({
     document.body.classList.toggle('dark-mode', newDarkMode);
   };
 
-  // Componente LinkItem
+  // Componente LinkItem actualizado para soportar imágenes PNG
   const LinkItem = ({ 
     emoji, 
+    icon, // Nueva prop para imagen PNG
     name, 
     path, 
     onClick, 
@@ -142,6 +150,7 @@ const Drawer = ({
     isBackButton = false
   }) => {
     const isActive = location.pathname === path || (isDashboardLink && location.pathname.startsWith('/dashboard'));
+    const hasImageError = icon && imageErrors[name];
     
     const handleClick = (e) => {
       if (onClick) onClick(e);
@@ -160,7 +169,8 @@ const Drawer = ({
           justifyContent: 'space-between',
           cursor: 'pointer',
           backgroundColor: isActive ? `${color}15` : 'transparent',
-          borderLeft: isActive ? `3px solid ${color}` : 'none'
+          borderLeft: isActive ? `3px solid ${color}` : 'none',
+          transition: 'all 0.2s ease'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
@@ -179,7 +189,30 @@ const Drawer = ({
             }}>
               ←
             </div>
-          ) : emoji && (
+          ) : icon && !hasImageError ? (
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              backgroundColor: isActive ? color : `${color}20`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: '12px',
+              overflow: 'hidden'
+            }}>
+              <img 
+                src={icon}
+                alt={name}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+                onError={() => handleImageError(name)}
+              />
+            </div>
+          ) : (
             <div style={{
               width: '32px',
               height: '32px',
@@ -191,13 +224,15 @@ const Drawer = ({
               marginRight: '12px',
               fontSize: '1.2rem'
             }}>
-              {emoji}
+              {emoji || (icon && hasImageError ? name.charAt(0).toUpperCase() : '📁')}
             </div>
           )}
           <span style={{
             fontSize: '0.95rem',
             fontWeight: isActive ? '600' : '500',
-            color: isActive ? color : '#333'
+            color: isActive ? color : '#333',
+            lineHeight: '1.4',
+            wordBreak: 'break-word'
           }}>
             {name}
           </span>
@@ -347,15 +382,16 @@ const Drawer = ({
         <>
           {renderGuestContent()}
           
-          {/* Categorías principales (para invitados) */}
+          {/* Categorías principales (para invitados) - AHORA CON IMÁGENES PNG */}
           <div style={{ margin: '20px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
-            📂 Catégories
+            {emojis.categories} Catégories
           </div>
           
           {categories.map((category, index) => (
             <LinkItem 
               key={index} 
-              emoji={category.emoji} 
+              icon={category.icon}
+              emoji={category.emoji} // Fallback
               name={category.name} 
               onClick={() => handleCategoryClick(category)} 
               color={category.color} 
@@ -370,15 +406,16 @@ const Drawer = ({
       <>
         {renderLoggedInContent()}
         
-        {/* Categorías principales (para usuarios autenticados) */}
+        {/* Categorías principales (para usuarios autenticados) - AHORA CON IMÁGENES PNG */}
         <div style={{ margin: '20px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
-          📂 Catégories
+          {emojis.categories} Catégories
         </div>
         
         {categories.map((category, index) => (
           <LinkItem 
             key={index} 
-            emoji={category.emoji} 
+            icon={category.icon}
+            emoji={category.emoji} // Fallback
             name={category.name} 
             onClick={() => handleCategoryClick(category)} 
             color={category.color} 
@@ -418,7 +455,7 @@ const Drawer = ({
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent'
           }}>
-            Menu
+            
           </div>
           {auth.user && (
             <span style={{

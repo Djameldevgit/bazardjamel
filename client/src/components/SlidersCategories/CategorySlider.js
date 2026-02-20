@@ -3,8 +3,8 @@ import React, { useRef, useState, useEffect, useMemo, useCallback } from "react"
 import { useHistory } from "react-router-dom";
  
 /**
- * CategorySlider - Slider horizontal de categorías con emojis y colores dinámicos
- * @param {Array} categories - Array de categorías [{ name, slug, emoji, level, ... }]
+ * CategorySlider - Slider horizontal de categorías con imágenes PNG
+ * @param {Array} categories - Array de categorías [{ name, slug, icon, level, ... }]
  * @param {Function} onCategoryClick - Callback cuando se hace clic en una categoría
  * @param {string} variant - 'home' | 'category' | 'subcategory'
  */
@@ -18,37 +18,11 @@ const CategorySlider = ({
   const sliderRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
-  const [hoveredIndex, setHoveredIndex] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeftStart, setScrollLeftStart] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
-
-  // 🎨 Paleta de colores vibrantes
-  const colorPalette = useMemo(() => [
-    '#4361ee', '#3a0ca3', '#4cc9f0', '#f72585', '#b5179e',
-    '#7209b7', '#560bad', '#480ca8', '#3f37c9', '#4895ef',
-    '#e63946', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51',
-    '#6d597a', '#b56576', '#e56b6f', '#9c89b8', '#ef476f',
-    '#ffd166', '#06d6a0', '#118ab2', '#073b4c', '#fb8b24',
-  ], []);
-
-  // 🎨 Generar color único basado en el nombre
-  const generateColorFromName = useCallback((name) => {
-    if (!name) return colorPalette[0];
-    
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const index = Math.abs(hash) % colorPalette.length;
-    return colorPalette[index];
-  }, [colorPalette]);
-
-  // 🎨 Generar degradado suave
-  const generateGradient = useCallback((color) => {
-    return `linear-gradient(145deg, ${color}dd, ${color}aa)`;
-  }, []);
+  const [imageErrors, setImageErrors] = useState({});
 
   // 📏 Verificar capacidad de scroll
   useEffect(() => {
@@ -136,6 +110,28 @@ const CategorySlider = ({
     }
   }, [currentPage]);
 
+  // Manejar error de imagen
+  const handleImageError = (categoryId) => {
+    setImageErrors(prev => ({ ...prev, [categoryId]: true }));
+  };
+
+  // Obtener ruta de la imagen según el nivel de la categoría
+  const getImagePath = useCallback((category) => {
+    if (!category || !category.slug) return null;
+    
+    // Si la categoría ya tiene un icon definido en el seed, úsalo directamente
+    if (category.icon) {
+      return category.icon;
+    }
+    
+    // Fallback: construir ruta basada en el slug y nivel
+    const level = category.level || 1;
+    const basePath = '/uploads/categories';
+    const categoryFolder = category.parentSlug || category.slug;
+    
+    return `${basePath}/${categoryFolder}/level${level}/${category.slug}.png`;
+  }, []);
+
   // 🧮 Agrupar en pares SOLO para variante 'home'
   const displayItems = useMemo(() => {
     if (variant === 'home') {
@@ -187,6 +183,50 @@ const CategorySlider = ({
     );
   }
 
+  // Renderizar un item de categoría (reutilizable)
+  const renderCategoryItem = (category, index, position = '') => {
+    if (!category) return null;
+    
+    const imagePath = getImagePath(category);
+    const hasError = imageErrors[category._id || category.slug];
+    const key = `${category.slug}-${position}-${index}`;
+    
+    return (
+      <div className="category-item">
+        <div 
+          className="category-icon-wrapper"
+          onClick={() => onCategoryClick ? onCategoryClick(category) : history.push(`/category/${category.slug}`)}
+        >
+          {!hasError && imagePath ? (
+            <img 
+              src={imagePath} 
+              alt={category.name}
+              className="category-image"
+              onError={() => handleImageError(category._id || category.slug)}
+            />
+          ) : (
+            // Fallback: mostrar primera letra si la imagen falla
+            <span className="category-fallback">
+              {category.name?.charAt(0).toUpperCase() || '📁'}
+            </span>
+          )}
+          
+          {showCount && (category.posts?.length || category.postCount || 0) > 0 && (
+            <span className="category-badge">
+              {category.posts?.length || category.postCount || 0}
+            </span>
+          )}
+        </div>
+        <div 
+          className="category-name"
+          onClick={() => onCategoryClick ? onCategoryClick(category) : history.push(`/category/${category.slug}`)}
+        >
+          {formatName(category.name)}
+        </div>
+      </div>
+    );
+  };
+
   // ========== RENDER PARA VARIANTE 'HOME' (PARES) ==========
   if (variant === 'home') {
     return (
@@ -217,7 +257,7 @@ const CategorySlider = ({
           </>
         )}
 
-        {/* Slider principal - AHORA PERFECTAMENTE CENTRADO EN MÓVIL */}
+        {/* Slider principal */}
         <div 
           ref={sliderRef}
           className="category-slider"
@@ -232,78 +272,17 @@ const CategorySlider = ({
             <div
               key={`group-${group.top?.slug || index}`}
               className="category-slider-item-group"
-              style={{ animationDelay: `${index * 0.05}s` }}
             >
               {/* Categoría superior */}
-              <div className="category-item">
-                <div 
-                  className="category-icon-wrapper"
-                  style={{ 
-                    background: generateGradient(generateColorFromName(group.top.name)),
-                    boxShadow: `0 8px 16px ${generateColorFromName(group.top.name)}30`
-                  }}
-                  onClick={() => onCategoryClick ? onCategoryClick(group.top) : history.push(`/category/${group.top.slug}`)}
-                  onMouseEnter={() => setHoveredIndex(`top-${index}`)}
-                  onMouseLeave={() => setHoveredIndex(null)}
-                >
-                  <span className="category-emoji">
-                    {group.top.emoji || '📁'}
-                  </span>
-                  {showCount && (group.top.posts?.length || group.top.postCount || 0) > 0 && (
-                    <span className="category-badge">
-                      {group.top.posts?.length || group.top.postCount || 0}
-                    </span>
-                  )}
-                  {hoveredIndex === `top-${index}` && (
-                    <span className="category-hover-effect"></span>
-                  )}
-                </div>
-                <div 
-                  className="category-name"
-                  onClick={() => onCategoryClick ? onCategoryClick(group.top) : history.push(`/category/${group.top.slug}`)}
-                >
-                  {formatName(group.top.name)}
-                </div>
-              </div>
+              {renderCategoryItem(group.top, index, 'top')}
 
               {/* Categoría inferior (si existe) */}
-              {group.bottom && (
-                <div className="category-item">
-                  <div 
-                    className="category-icon-wrapper"
-                    style={{ 
-                      background: generateGradient(generateColorFromName(group.bottom.name)),
-                      boxShadow: `0 8px 16px ${generateColorFromName(group.bottom.name)}30`
-                    }}
-                    onClick={() => onCategoryClick ? onCategoryClick(group.bottom) : history.push(`/category/${group.bottom.slug}`)}
-                    onMouseEnter={() => setHoveredIndex(`bottom-${index}`)}
-                    onMouseLeave={() => setHoveredIndex(null)}
-                  >
-                    <span className="category-emoji">
-                      {group.bottom.emoji || '📁'}
-                    </span>
-                    {showCount && (group.bottom.posts?.length || group.bottom.postCount || 0) > 0 && (
-                      <span className="category-badge">
-                        {group.bottom.posts?.length || group.bottom.postCount || 0}
-                      </span>
-                    )}
-                    {hoveredIndex === `bottom-${index}` && (
-                      <span className="category-hover-effect"></span>
-                    )}
-                  </div>
-                  <div 
-                    className="category-name"
-                    onClick={() => onCategoryClick ? onCategoryClick(group.bottom) : history.push(`/category/${group.bottom.slug}`)}
-                  >
-                    {formatName(group.bottom.name)}
-                  </div>
-                </div>
-              )}
+              {group.bottom && renderCategoryItem(group.bottom, index, 'bottom')}
             </div>
           ))}
         </div>
 
-        {/* PAGINACIÓN - IGUAL QUE SLIDERUNIFICADO */}
+        {/* PAGINACIÓN */}
         {needsScroll && totalPages > 1 && (
           <div className="category-pagination">
             {Array.from({ length: totalPages }).map((_, idx) => (
@@ -325,7 +304,7 @@ const CategorySlider = ({
           </div>
         )}
 
-        {/* INDICADOR DE SCROLL MÓVIL - IGUAL QUE SLIDERUNIFICADO */}
+        {/* INDICADOR DE SCROLL MÓVIL */}
         {needsScroll && window.innerWidth <= 768 && (
           <div className="category-scroll-hint">
             <span>← Glisser pour voir plus →</span>
@@ -362,7 +341,7 @@ const CategorySlider = ({
         </>
       )}
 
-      {/* Slider principal - AHORA PERFECTAMENTE CENTRADO EN MÓVIL */}
+      {/* Slider principal */}
       <div 
         ref={sliderRef}
         className="category-slider"
@@ -376,41 +355,13 @@ const CategorySlider = ({
           <div
             key={category.slug || `cat-${index}`}
             className="category-slider-item"
-            style={{ animationDelay: `${index * 0.03}s` }}
           >
-            <div 
-              className="category-icon-wrapper"
-              style={{ 
-                background: generateGradient(generateColorFromName(category.name)),
-                boxShadow: `0 8px 16px ${generateColorFromName(category.name)}30`
-              }}
-              onClick={() => onCategoryClick ? onCategoryClick(category) : history.push(`/category/${category.slug}`)}
-              onMouseEnter={() => setHoveredIndex(index)}
-              onMouseLeave={() => setHoveredIndex(null)}
-            >
-              <span className="category-emoji">
-                {category.emoji || '📁'}
-              </span>
-              {showCount && (category.posts?.length || category.postCount || 0) > 0 && (
-                <span className="category-badge">
-                  {category.posts?.length || category.postCount || 0}
-                </span>
-              )}
-              {hoveredIndex === index && (
-                <span className="category-hover-effect"></span>
-              )}
-            </div>
-            <div 
-              className="category-name"
-              onClick={() => onCategoryClick ? onCategoryClick(category) : history.push(`/category/${category.slug}`)}
-            >
-              {formatName(category.name)}
-            </div>
+            {renderCategoryItem(category, index)}
           </div>
         ))}
       </div>
 
-      {/* PAGINACIÓN - IGUAL QUE SLIDERUNIFICADO */}
+      {/* PAGINACIÓN */}
       {needsScroll && totalPages > 1 && (
         <div className="category-pagination">
           {Array.from({ length: totalPages }).map((_, idx) => (
@@ -432,7 +383,7 @@ const CategorySlider = ({
         </div>
       )}
 
-      {/* INDICADOR DE SCROLL MÓVIL - IGUAL QUE SLIDERUNIFICADO */}
+      {/* INDICADOR DE SCROLL MÓVIL */}
       {needsScroll && window.innerWidth <= 768 && (
         <div className="category-scroll-hint">
           <span>← Glisser pour voir plus →</span>
