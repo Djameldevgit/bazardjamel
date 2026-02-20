@@ -10,6 +10,7 @@ router.get('/featured', postCtrl.getFeaturedPosts);
 router.get('/recent', postCtrl.getRecentPosts);
 
 // ============ 2. RUTAS CON QUERY PARAMS ============
+ 
 router.get('/posts/filter', postCtrl.filterPosts);
 router.get('/posts/similar', postCtrl.getSimilarPosts);
 
@@ -28,13 +29,12 @@ router.get('/posts/:id', postCtrl.getPostById);
 // ============ 5. RUTAS PROTEGIDAS POST ============
 router.post('/posts', auth, postCtrl.createPost);
 
-// ============ 6. RUTAS COMENTADAS (INTERACCIONES) ============
-/* 
+ 
 router.patch('/post/:id/like', auth, postCtrl.likePost);
 router.patch('/post/:id/unlike', auth, postCtrl.unLikePost);
 router.patch('/savePost/:id', auth, postCtrl.savePost);
 router.patch('/unSavePost/:id', auth, postCtrl.unSavePost);
 router.get('/getSavePosts', auth, postCtrl.getSavePosts);
-*/
+ 
 
 module.exports = router;

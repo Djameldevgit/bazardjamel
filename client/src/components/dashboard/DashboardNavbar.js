@@ -46,7 +46,7 @@ const DashboardNavbar = () => {
       items: [
         { label: 'Mes Annonces', path: '/mes-annonces', icon: FaList },
         { label: 'Ajouter Annonce', path: '/creer-annonce', icon: FaPlus, color: '#28a745' },
-        { label: 'Annonces Favorites', path: '/favoris', icon: FaBell },
+        { label: 'Annonces Favorites', path: auth?.user?._id ? `/profile/${auth.user._id}/saved` : '/favoris', icon: FaBell },
       ]
     },
     {

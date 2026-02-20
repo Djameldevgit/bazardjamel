@@ -156,51 +156,77 @@ export const getRecentPosts = (page = 1, limit = 12) => async (dispatch) => {
 // ✅ 2. ACCIÓN PARA CATEGORÍA ESPECÍFICA CON POSTS - CORREGIDA COMPLETAMENTE
 // ✅ ACCIÓN COMPLETA Y CORREGIDA PARA CATEGORYPAGE
 // src/redux/actions/categoryAction.js - VERSIÓN ACTUALIZADA
-export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = null, page = 1, limit = 12) => async (dispatch) => {
+// 📂 frontend/src/redux/actions/categoryAction.js - VERSIÓN COMPLETA CON FILTROS
+export const getCategoryPosts = (
+  categorySlug, 
+  subSlug = null, 
+  articleSlug = null, 
+  page = 1, 
+  limit = 12,
+  // ============ NUEVOS PARÁMETROS DE FILTRO ============
+  wilaya = null,
+  commune = null,
+  minPrice = null,
+  maxPrice = null,
+  sortBy = 'recent'
+) => async (dispatch) => {
   try {
     dispatch({ type: types.GET_CATEGORY_POSTS });
 
-   
-    // ⭐ DECISIÓN CRÍTICA: ¿Qué necesitamos obtener?
-    let endpoint = '';
-    let params = {};
-    
-    // ⭐⭐ CAMBIO IMPORTANTE: USAR SIEMPRE EL ENDPOINT filterPosts
-    // Este endpoint ahora devuelve todo: categoría, hijos (children) y posts
-    endpoint = `${BASE_URL}/api/posts/filter`;
-    params = { 
+    console.log('🎯 getCategoryPosts - Llamada con parámetros:', {
+      categorySlug,
+      subSlug,
+      articleSlug,
+      page,
+      limit,
+      wilaya,
+      commune,
+      minPrice,
+      maxPrice,
+      sortBy
+    });
+
+    const endpoint = `${BASE_URL}/api/posts/filter`;
+    const params = { 
       category: categorySlug,
-      page: page,
-      limit: limit
+      page,
+      limit
     };
     
     // Añadir sub y article si existen
     if (subSlug) params.sub = subSlug;
     if (articleSlug) params.article = articleSlug;
     
+    // ============ AÑADIR NUEVOS PARÁMETROS DE FILTRO ============
+    if (wilaya) params.wilaya = wilaya;
+    if (commune) params.commune = commune;
+    if (minPrice) params.minPrice = minPrice;
+    if (maxPrice) params.maxPrice = maxPrice;
+    if (sortBy) params.sortBy = sortBy;
+    
+    console.log('📡 Enviando petición a:', endpoint, 'con params:', params);
+    
     const { data } = await axios.get(endpoint, { params });
- 
+
+    console.log('✅ Respuesta recibida:', {
+      postsCount: data.posts?.length,
+      total: data.total,
+      hasMore: data.hasMore,
+      filterMetadata: data.filterMetadata
+    });
 
     // ⭐ SI HAY HIJOS, MOSTRAR TODOS CON SUS ICONOS
     const childrenList = data.children || [];
     if (childrenList.length > 0) {
-     
       childrenList.forEach((child, i) => {
         console.log(`${i}. ${child.name || 'Sin nombre'} (Nivel ${child.level}):`, {
           icon: child.icon || '❌ NO TIENE',
           iconType: child.iconType || 'NO',
           iconColor: child.iconColor || 'NO',
           bgColor: child.bgColor || 'NO',
-          slug: child.slug,
-          hasChildren: child.hasChildren,
-          isLeaf: child.isLeaf
+          slug: child.slug
         });
       });
-      
-      // Contar cuántos tienen icono
-      const conIcono = childrenList.filter(c => c.icon).length;
-      const sinIcono = childrenList.filter(c => !c.icon).length;
-      console.log(`📊 ESTADÍSTICAS ICONOS: ${conIcono} con icono | ${sinIcono} sin icono`);
     }
 
     // ⭐ DETERMINAR HAS_MORE CORRECTAMENTE
@@ -208,16 +234,13 @@ export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = nul
     let totalPagesValue = 1;
     let totalPostsValue = 0;
 
-    // El controlador filterPosts devuelve hasMore directamente
     if (data.hasMore !== undefined) {
       hasMoreValue = data.hasMore;
     } else if (data.totalPages !== undefined) {
-      // Si tiene totalPages, calcular hasMore
       hasMoreValue = page < data.totalPages;
       totalPagesValue = data.totalPages;
     }
 
-    // Total de posts
     if (data.total !== undefined) {
       totalPostsValue = data.total;
     }
@@ -229,7 +252,7 @@ export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = nul
       totalPostsValue
     });
 
-    // ⭐ ACTUALIZAR ESTADO ACTIVO (siempre se ejecuta)
+    // ⭐ ACTUALIZAR ESTADO ACTIVO
     if (categorySlug) {
       dispatch({ type: types.SET_ACTIVE_CATEGORY, payload: categorySlug });
     }
@@ -242,39 +265,34 @@ export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = nul
 
     // ⭐ PREPARAR PAYLOAD - UNIFICAR ESTRUCTURA
     const payload = {
-      // La categoría viene en categoryInfo
       categoryInfo: data.categoryInfo || {},
-      
-      // Los hijos vienen en children
       children: data.children || [],
-      
-      // Posts
       posts: data.posts || [],
-      
-      // Paginación
       currentPage: page,
       hasMore: hasMoreValue,
       totalPages: data.totalPages || totalPagesValue,
       totalPosts: totalPostsValue,
-      
-      // Para compatibilidad
-      total: totalPostsValue
+      total: totalPostsValue,
+      // ============ NUEVO: Guardar metadata de filtros ============
+      filterMetadata: data.filterMetadata || {
+        appliedFilters: {
+          wilaya,
+          commune,
+          minPrice,
+          maxPrice,
+          sortBy
+        }
+      }
     };
 
-    console.log('📤 Action getCategoryPosts - PAYLOAD FINAL:', {
+    console.log('📤 PAYLOAD FINAL:', {
       categoryName: payload.categoryInfo.name,
-      categoryLevel: payload.categoryInfo.level,
       childrenCount: payload.children.length,
-      childrenLevels: payload.children.map(c => c.level),
       postsCount: payload.posts.length,
       hasMore: payload.hasMore,
-      currentPage: payload.currentPage,
-      totalPosts: payload.totalPosts
+      filterMetadata: payload.filterMetadata
     });
 
-    // ⭐ DESPACHAR AL REDUCER
-    // Para la primera página, reemplazamos todo
-    // Para páginas siguientes, el reducer debe concatenar posts (ver reducer)
     dispatch({
       type: types.GET_CATEGORY_POSTS_SUCCESS,
       payload: payload
@@ -283,7 +301,6 @@ export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = nul
     return {
       success: true,
       ...payload,
-      // Mantener compatibilidad
       category: payload.categoryInfo,
       pagination: {
         hasMore: payload.hasMore,
@@ -294,18 +311,13 @@ export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = nul
     };
 
   } catch (error) {
-    console.error('❌ Action getCategoryPosts - ERROR COMPLETO:', {
+    console.error('❌ ERROR en getCategoryPosts:', {
       message: error.message,
       response: error.response ? {
         status: error.response.status,
         data: error.response.data,
         url: error.response.config?.url,
         params: error.response.config?.params
-      } : null,
-      config: error.config ? {
-        url: error.config.url,
-        params: error.config.params,
-        method: error.config.method
       } : null
     });
     
@@ -318,14 +330,18 @@ export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = nul
       payload: errorMessage
     });
 
-    // Retornar estructura vacía pero consistente
     return {
       success: false,
       categoryInfo: {},
       children: [],
       posts: [],
       hasMore: false,
-      total: 0
+      total: 0,
+      filterMetadata: {
+        appliedFilters: {},
+        wilayas: [],
+        priceRange: { min: 0, max: 1000000 }
+      }
     };
   }
 };

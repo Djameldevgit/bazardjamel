@@ -339,7 +339,7 @@ const CardBodyCarousel = ({ post }) => {
         }
         
         .carousel-indicators {
-          margin-bottom: 5px;
+          margin-bottom: 2px;
         }
         
         .carousel-indicators button {

@@ -44,38 +44,7 @@ const initialState = {
 const postReducer = (state = initialState, action) => {
   switch (action.type) {
     // ========== CATEGORY POSTS PAGINADOS ==========
-    case POST_TYPES.GET_CATEGORY_POSTS:
-      return {
-        ...state,
-        postsLoading: true,
-        loadingMorePosts: false,
-        postsError: null
-      };
-
-    case POST_TYPES.GET_CATEGORY_POSTS_SUCCESS: {
-      const payloadPagination = action.payload.pagination || {};
-      const currentPage = payloadPagination.currentPage || 1;
-      const newPosts = action.payload.posts || [];
-      const postsActualizados = currentPage === 1 ? newPosts : [...state.posts, ...newPosts];
-
-      return {
-        ...state,
-        postsLoading: false,
-        loadingMorePosts: false,
-        posts: postsActualizados,
-        hasMorePosts: payloadPagination.hasMore ?? false,
-        postsError: null,
-        pagination: {
-          currentPage,
-          totalPages: payloadPagination.totalPages || 1,
-          totalPosts: payloadPagination.totalPosts || 0,
-          limit: payloadPagination.limit || 12
-        }
-      };
-    }
-
-    case POST_TYPES.GET_CATEGORY_POSTS_FAIL:
-      return { ...state, postsLoading: false, loadingMorePosts: false, postsError: action.payload };
+    
 
     case POST_TYPES.LOADING_MORE_POSTS:
       return { ...state, loadingMorePosts: true, postsError: null };

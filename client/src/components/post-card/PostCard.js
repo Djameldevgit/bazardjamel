@@ -114,10 +114,7 @@ const PostCard = ({ post }) => {
           height: 100%;
         }
         
-        .grid-view:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 12px 28px rgba(0,0,0,0.15) !important;
-        }
+       
         
         @media (max-width: 768px) {
           .card {
@@ -125,13 +122,8 @@ const PostCard = ({ post }) => {
             border-radius: 8px !important;
           }
           
-          .grid-view:active {
-            transform: scale(0.98);
-          }
+         
           
-          .grid-view:hover {
-            transform: none;
-          }
         }
         
         /* Dark mode */

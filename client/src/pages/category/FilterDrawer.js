@@ -1,56 +1,157 @@
-// 📂 frontend/src/components/FilterDrawer.jsx - VERSIÓN CORREGIDA (IZQUIERDA)
-import React, { useState, useEffect } from 'react';
+// 📂 pages/FilterDrawer.js - VERSIÓN COMPLETA CORREGIDA
+import React, { useState, useEffect, useCallback } from 'react';
 import { Offcanvas, Form, Button, Accordion, Spinner } from 'react-bootstrap';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
+import { useParams } from 'react-router-dom';
 import { 
   Funnel, 
   XLg, 
   ArrowCounterclockwise,
-  Check2
+  Check2,
+  GeoAlt,
+  CurrencyEuro,
+  SortDown
 } from 'react-bootstrap-icons';
 import Select from 'react-select';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
+import { getCategoryPosts } from '../../redux/actions/categoryAction';
 
 const FilterDrawer = ({ 
   show, 
   onHide, 
-  category,
-  currentSub,
-  currentArticle,
   onApplyFilters 
 }) => {
   const { t } = useTranslation();
+  const dispatch = useDispatch();
+  const { slug, subSlug, articleSlug } = useParams();
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   
-  // Obtener datos de la categoría desde Redux
-  const { categoryInfo = {} } = useSelector((state) => state.category || {});
+  // Estados con valores por defecto seguros
+  const [categoryChildren, setCategoryChildren] = useState([]);
+  const [loadingChildren, setLoadingChildren] = useState(false);
   
-  // Estados del filtro
-  const [filters, setFilters] = useState({
-    subCategory: currentSub?._id || '',
-    article: currentArticle?._id || '',
-    wilaya: '',
-    commune: '',
-    priceMin: '',
-    priceMax: '',
-    sortBy: 'recent'
+  // Inicializar con estructura completa
+  const [filterMetadata, setFilterMetadata] = useState({
+    wilayas: [],
+    priceRange: { min: 0, max: 1000000 },
+    appliedFilters: {}
   });
+  
+  // Obtener datos de Redux
+  const categoryState = useSelector((state) => state.category || {});
+  const { children = [] } = categoryState;
 
-  const [tempFilters, setTempFilters] = useState(filters);
-  const [priceRange, setPriceRange] = useState([0, 1000000]);
-  const [wilayas, setWilayas] = useState([]);
-  const [loadingWilayas, setLoadingWilayas] = useState(false);
-
-  // Actualizar tempFilters cuando cambien currentSub o currentArticle
+  // ============ CARGAR HIJOS ============
   useEffect(() => {
-    setTempFilters(prev => ({
-      ...prev,
-      subCategory: currentSub?._id || '',
-      article: currentArticle?._id || ''
-    }));
-  }, [currentSub, currentArticle]);
+    if (!show || !slug) return;
+    
+    const loadData = async () => {
+      setLoadingChildren(true);
+      try {
+        console.log('🔄 Cargando datos para drawer:', slug);
+        
+        const result = await dispatch(getCategoryPosts(slug, subSlug, articleSlug, 1, 1));
+        
+        if (result && result.children) {
+          setCategoryChildren(result.children);
+        }
+        
+        // Asegurar que filterMetadata tenga la estructura correcta
+        if (result && result.filterMetadata) {
+          setFilterMetadata({
+            wilayas: result.filterMetadata.wilayas || [],
+            priceRange: {
+              min: result.filterMetadata.priceRange?.min || 0,
+              max: result.filterMetadata.priceRange?.max || 1000000
+            },
+            appliedFilters: result.filterMetadata.appliedFilters || {}
+          });
+        }
+        
+      } catch (error) {
+        console.error('❌ Error cargando datos:', error);
+      } finally {
+        setLoadingChildren(false);
+      }
+    };
+    
+    loadData();
+  }, [show, slug, subSlug, articleSlug, dispatch]);
+
+  // Usar hijos de Redux si ya existen
+  useEffect(() => {
+    if (children && children.length > 0 && categoryChildren.length === 0) {
+      setCategoryChildren(children);
+    }
+  }, [children]);
+
+  // ============ ENCONTRAR IDs DESDE SLUGS ============
+  const findIdsFromSlugs = useCallback(() => {
+    let subId = '';
+    let articleId = '';
+    
+    if (!categoryChildren || categoryChildren.length === 0) {
+      return { subId, articleId };
+    }
+    
+    if (subSlug) {
+      const subCategory = categoryChildren.find(sub => sub.slug === subSlug);
+      
+      if (subCategory) {
+        subId = subCategory._id;
+        
+        if (articleSlug && subCategory.articles) {
+          const article = subCategory.articles.find(art => art.slug === articleSlug);
+          if (article) {
+            articleId = article._id;
+          }
+        }
+      }
+    }
+    
+    return { subId, articleId };
+  }, [categoryChildren, subSlug, articleSlug]);
+
+  // ============ INICIALIZAR FILTROS ============
+  const getInitialFilters = () => {
+    const { subId, articleId } = findIdsFromSlugs();
+    
+    // Acceso seguro a priceRange
+    const min = filterMetadata?.priceRange?.min ?? 0;
+    const max = filterMetadata?.priceRange?.max ?? 1000000;
+    
+    return {
+      subCategory: subId || '',
+      article: articleId || '',
+      wilaya: '',
+      commune: '',
+      priceMin: min,
+      priceMax: max,
+      sortBy: 'recent'
+    };
+  };
+
+  const [tempFilters, setTempFilters] = useState(getInitialFilters());
+  
+  // Inicializar priceRange de forma segura
+  const [priceRange, setPriceRange] = useState([
+    filterMetadata?.priceRange?.min ?? 0,
+    filterMetadata?.priceRange?.max ?? 1000000
+  ]);
+
+  // Actualizar cuando cambia URL o metadata
+  useEffect(() => {
+    const newFilters = getInitialFilters();
+    setTempFilters(newFilters);
+    
+    // Actualizar priceRange de forma segura
+    setPriceRange([
+      filterMetadata?.priceRange?.min ?? 0,
+      filterMetadata?.priceRange?.max ?? 1000000
+    ]);
+  }, [subSlug, articleSlug, categoryChildren, filterMetadata]);
 
   // Detectar tamaño de pantalla
   useEffect(() => {
@@ -59,102 +160,19 @@ const FilterDrawer = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // ============ CARGAR WILAYAS ============
-  useEffect(() => {
-    const loadWilayas = async () => {
-      setLoadingWilayas(true);
-      try {
-        // Intentar cargar desde API si existe
-        // const response = await fetch('/api/wilayas');
-        // const data = await response.json();
-        
-        // Datos de wilayas de Argelia
-        const wilayasList = [
-          { value: 'Adrar', label: 'Adrar' },
-          { value: 'Chlef', label: 'Chlef' },
-          { value: 'Laghouat', label: 'Laghouat' },
-          { value: 'Oum El Bouaghi', label: 'Oum El Bouaghi' },
-          { value: 'Batna', label: 'Batna' },
-          { value: 'Béjaïa', label: 'Béjaïa' },
-          { value: 'Biskra', label: 'Biskra' },
-          { value: 'Béchar', label: 'Béchar' },
-          { value: 'Blida', label: 'Blida' },
-          { value: 'Bouira', label: 'Bouira' },
-          { value: 'Tamanrasset', label: 'Tamanrasset' },
-          { value: 'Tébessa', label: 'Tébessa' },
-          { value: 'Tlemcen', label: 'Tlemcen' },
-          { value: 'Tiaret', label: 'Tiaret' },
-          { value: 'Tizi Ouzou', label: 'Tizi Ouzou' },
-          { value: 'Alger', label: 'Alger' },
-          { value: 'Djelfa', label: 'Djelfa' },
-          { value: 'Jijel', label: 'Jijel' },
-          { value: 'Sétif', label: 'Sétif' },
-          { value: 'Saïda', label: 'Saïda' },
-          { value: 'Skikda', label: 'Skikda' },
-          { value: 'Sidi Bel Abbès', label: 'Sidi Bel Abbès' },
-          { value: 'Annaba', label: 'Annaba' },
-          { value: 'Guelma', label: 'Guelma' },
-          { value: 'Constantine', label: 'Constantine' },
-          { value: 'Médéa', label: 'Médéa' },
-          { value: 'Mostaganem', label: 'Mostaganem' },
-          { value: 'M\'Sila', label: 'M\'Sila' },
-          { value: 'Mascara', label: 'Mascara' },
-          { value: 'Ouargla', label: 'Ouargla' },
-          { value: 'Oran', label: 'Oran' },
-          { value: 'El Bayadh', label: 'El Bayadh' },
-          { value: 'Illizi', label: 'Illizi' },
-          { value: 'Bordj Bou Arréridj', label: 'Bordj Bou Arréridj' },
-          { value: 'Boumerdès', label: 'Boumerdès' },
-          { value: 'El Tarf', label: 'El Tarf' },
-          { value: 'Tindouf', label: 'Tindouf' },
-          { value: 'Tissemsilt', label: 'Tissemsilt' },
-          { value: 'El Oued', label: 'El Oued' },
-          { value: 'Khenchela', label: 'Khenchela' },
-          { value: 'Souk Ahras', label: 'Souk Ahras' },
-          { value: 'Tipaza', label: 'Tipaza' },
-          { value: 'Mila', label: 'Mila' },
-          { value: 'Aïn Defla', label: 'Aïn Defla' },
-          { value: 'Naâma', label: 'Naâma' },
-          { value: 'Aïn Témouchent', label: 'Aïn Témouchent' },
-          { value: 'Ghardaïa', label: 'Ghardaïa' },
-          { value: 'Relizane', label: 'Relizane' }
-        ];
-        setWilayas(wilayasList);
-      } catch (error) {
-        console.error('Error loading wilayas:', error);
-      } finally {
-        setLoadingWilayas(false);
-      }
-    };
-
-    loadWilayas();
-  }, []);
-
-  const isMobile = windowWidth <= 768;
-
-  // Opciones de ordenamiento
-  const sortOptions = [
-    { value: 'recent', label: 'Plus récents' },
-    { value: 'price_asc', label: 'Prix croissant' },
-    { value: 'price_desc', label: 'Prix décroissant' }
-  ];
-
-  // Manejar cambios en filtros
+  // ============ HANDLERS ============
   const handleFilterChange = (key, value) => {
     setTempFilters(prev => ({ ...prev, [key]: value }));
     
-    // Si cambia subCategory, resetear article
     if (key === 'subCategory') {
       setTempFilters(prev => ({ ...prev, article: '' }));
     }
     
-    // Si cambia wilaya, resetear commune
     if (key === 'wilaya') {
       setTempFilters(prev => ({ ...prev, commune: '' }));
     }
   };
 
-  // Manejar cambio de rango de precio
   const handlePriceRangeChange = (values) => {
     setPriceRange(values);
     setTempFilters(prev => ({
@@ -164,77 +182,149 @@ const FilterDrawer = ({
     }));
   };
 
-  // Aplicar filtros
   const applyFilters = () => {
     console.log('🎯 Aplicando filtros:', tempFilters);
-    onApplyFilters(tempFilters);
-    onHide();
+    
+    // ✅ Verificar que onApplyFilters existe
+    if (onApplyFilters && typeof onApplyFilters === 'function') {
+      onApplyFilters(tempFilters);
+    } else {
+      console.error('❌ onApplyFilters no está definida');
+    }
+    
+    onHide(); // Cerrar el drawer
   };
 
-  // Resetear filtros
   const resetFilters = () => {
+    const { subId, articleId } = findIdsFromSlugs();
+    
+    // Valores seguros
+    const min = filterMetadata?.priceRange?.min ?? 0;
+    const max = filterMetadata?.priceRange?.max ?? 1000000;
+    
     setTempFilters({
-      subCategory: '',
-      article: '',
+      subCategory: subId || '',
+      article: articleId || '',
       wilaya: '',
       commune: '',
-      priceMin: '',
-      priceMax: '',
+      priceMin: min,
+      priceMax: max,
       sortBy: 'recent'
     });
-    setPriceRange([0, 1000000]);
+    setPriceRange([min, max]);
   };
 
-  // Contar filtros activos
   const countActiveFilters = () => {
+    const { subId, articleId } = findIdsFromSlugs();
     let count = 0;
-    if (tempFilters.subCategory) count++;
-    if (tempFilters.article) count++;
+    
+    // Valores seguros para comparación
+    const min = filterMetadata?.priceRange?.min ?? 0;
+    const max = filterMetadata?.priceRange?.max ?? 1000000;
+    
+    if (tempFilters.subCategory && tempFilters.subCategory !== subId) count++;
+    if (tempFilters.article && tempFilters.article !== articleId) count++;
     if (tempFilters.wilaya) count++;
     if (tempFilters.commune) count++;
-    if (tempFilters.priceMin || tempFilters.priceMax) count++;
+    if (tempFilters.priceMin && Number(tempFilters.priceMin) !== min) count++;
+    if (tempFilters.priceMax && Number(tempFilters.priceMax) !== max) count++;
     if (tempFilters.sortBy !== 'recent') count++;
+    
     return count;
   };
 
-  // Obtener subcategorías (children)
-  const getSubCategories = () => {
-    if (!categoryInfo || !categoryInfo.children) {
-      console.log('❌ No hay children en categoryInfo');
-      return [];
-    }
-    console.log('✅ Subcategorías encontradas:', categoryInfo.children.length);
-    return categoryInfo.children;
-  };
-
-  // Obtener artículos de la subcategoría seleccionada
-  const getArticles = () => {
+  // Obtener artículos para el select de nivel 3
+  const getArticlesForSelect = () => {
     if (!tempFilters.subCategory) return [];
     
-    const selectedSub = categoryInfo.children?.find(
+    const selectedSub = categoryChildren.find(
       sub => String(sub._id) === String(tempFilters.subCategory)
     );
     
-    console.log('📚 Artículos para subcategoría:', selectedSub?.articles?.length || 0);
     return selectedSub?.articles || [];
   };
 
-  const subCategories = getSubCategories();
+  const isMobile = windowWidth <= 768;
+
+  // Opciones de ordenamiento
+  const sortOptions = [
+    { value: 'recent', label: 'Plus récents', icon: '🕐' },
+    { value: 'price_asc', label: 'Prix croissant', icon: '💰' },
+    { value: 'price_desc', label: 'Prix décroissant', icon: '💎' }
+  ];
+
+  // Estilos para react-select
+  const selectStyles = {
+    control: (base) => ({
+      ...base,
+      borderColor: '#e9ecef',
+      borderRadius: '10px',
+      minHeight: '42px',
+      fontSize: '14px',
+      boxShadow: 'none',
+      '&:hover': {
+        borderColor: '#667eea'
+      }
+    }),
+    menu: (base) => ({
+      ...base,
+      zIndex: 1050,
+      borderRadius: '10px',
+      overflow: 'hidden'
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected ? '#667eea' : state.isFocused ? '#f0f3ff' : 'white',
+      color: state.isSelected ? 'white' : '#333',
+      fontSize: '14px',
+      cursor: 'pointer',
+      padding: '10px 12px'
+    }),
+    placeholder: (base) => ({
+      ...base,
+      color: '#adb5bd'
+    })
+  };
+
+  if (loadingChildren) {
+    return (
+      <Offcanvas 
+        show={show} 
+        onHide={onHide} 
+        placement="start" 
+        style={{ 
+          width: isMobile ? '100%' : '400px',
+          maxWidth: '100%'
+        }}
+      >
+        <div style={styles.loadingContainer}>
+          <Spinner animation="border" variant="primary" />
+          <p style={styles.loadingText}>Chargement des filtres...</p>
+        </div>
+      </Offcanvas>
+    );
+  }
+
+  // Valores seguros para el slider
+  const minPrice = filterMetadata?.priceRange?.min ?? 0;
+  const maxPrice = filterMetadata?.priceRange?.max ?? 1000000;
 
   return (
     <Offcanvas
       show={show}
       onHide={onHide}
-      placement="start" // 👈 CAMBIADO A IZQUIERDA
+      placement="start"
       style={{
         width: isMobile ? '100%' : '400px',
         maxWidth: '100%'
       }}
     >
-      {/* Header del drawer */}
+      {/* Header */}
       <div style={styles.header}>
         <div style={styles.headerLeft}>
-          <Funnel size={20} color="#667eea" />
+          <div style={styles.iconCircle}>
+            <Funnel size={18} color="#667eea" />
+          </div>
           <h6 style={styles.headerTitle}>Filtres</h6>
           {countActiveFilters() > 0 && (
             <span style={styles.badge}>
@@ -242,48 +332,67 @@ const FilterDrawer = ({
             </span>
           )}
         </div>
+        
         <div style={styles.headerRight}>
+          <div style={styles.urlIndicator}>
+            <span style={styles.urlText}>
+              {slug}
+              {subSlug && ` › ${subSlug}`}
+              {articleSlug && ` › ${articleSlug}`}
+            </span>
+          </div>
+          
           <button 
             onClick={resetFilters}
-            style={styles.resetButton}
+            style={styles.iconButton}
             title="Réinitialiser"
           >
-            <ArrowCounterclockwise size={16} />
+            <ArrowCounterclockwise size={16} color="#666" />
           </button>
+          
           <button 
             onClick={onHide}
-            style={styles.closeButton}
+            style={styles.iconButton}
+            title="Fermer"
           >
-            <XLg size={16} />
+            <XLg size={16} color="#666" />
           </button>
         </div>
       </div>
 
       <Offcanvas.Body style={styles.body}>
-        {/* ============ SUBCATEGORÍAS ============ */}
-        {subCategories.length > 0 && (
+        {/* SECCIÓN CATEGORÍAS */}
+        {categoryChildren.length > 0 && (
           <Accordion defaultActiveKey="0" style={styles.accordion}>
-            <Accordion.Item eventKey="0">
-              <Accordion.Header>Sous-catégories</Accordion.Header>
-              <Accordion.Body>
+            <Accordion.Item eventKey="0" style={styles.accordionItem}>
+              <Accordion.Header>
+                <div style={styles.accordionTitle}>
+                  <span>Catégories</span>
+                  <span style={styles.countBadge}>{categoryChildren.length}</span>
+                </div>
+              </Accordion.Header>
+              <Accordion.Body style={styles.accordionBody}>
+                <Form.Label style={styles.label}>
+                  Sous-catégorie
+                </Form.Label>
                 <Form.Select
                   value={tempFilters.subCategory}
                   onChange={(e) => handleFilterChange('subCategory', e.target.value)}
                   style={styles.select}
                 >
                   <option value="">Toutes les sous-catégories</option>
-                  {subCategories.map(sub => (
+                  {categoryChildren.map(sub => (
                     <option key={sub._id} value={sub._id}>
-                      {sub.name} {sub.postCount ? `(${sub.postCount})` : ''}
+                      {sub.icon || '📌'} {sub.name} {sub.postCount ? `(${sub.postCount})` : ''}
+                      {sub.slug === subSlug ? ' ✓' : ''}
                     </option>
                   ))}
                 </Form.Select>
 
-                {/* Artículos (si hay subcategoría seleccionada) */}
-                {tempFilters.subCategory && getArticles().length > 0 && (
+                {tempFilters.subCategory && getArticlesForSelect().length > 0 && (
                   <>
-                    <Form.Label style={{...styles.label, marginTop: '15px'}}>
-                      Articles
+                    <Form.Label style={{...styles.label, marginTop: '20px'}}>
+                      Article
                     </Form.Label>
                     <Form.Select
                       value={tempFilters.article}
@@ -291,9 +400,10 @@ const FilterDrawer = ({
                       style={styles.select}
                     >
                       <option value="">Tous les articles</option>
-                      {getArticles().map(article => (
+                      {getArticlesForSelect().map(article => (
                         <option key={article._id} value={article._id}>
-                          {article.name}
+                          {article.icon || '📄'} {article.name}
+                          {article.slug === articleSlug ? ' ✓' : ''}
                         </option>
                       ))}
                     </Form.Select>
@@ -304,32 +414,30 @@ const FilterDrawer = ({
           </Accordion>
         )}
 
-        {/* ============ LOCALISATION ============ */}
+        {/* SECCIÓN LOCALISATION */}
         <Accordion defaultActiveKey="1" style={styles.accordion}>
-          <Accordion.Item eventKey="1">
-            <Accordion.Header>Localisation</Accordion.Header>
-            <Accordion.Body>
+          <Accordion.Item eventKey="1" style={styles.accordionItem}>
+            <Accordion.Header>
+              <div style={styles.accordionTitle}>
+                <GeoAlt size={16} color="#667eea" style={{ marginRight: '8px' }} />
+                <span>Localisation</span>
+              </div>
+            </Accordion.Header>
+            <Accordion.Body style={styles.accordionBody}>
               <Form.Label style={styles.label}>Wilaya</Form.Label>
-              {loadingWilayas ? (
-                <div style={{ textAlign: 'center', padding: '10px' }}>
-                  <Spinner animation="border" size="sm" />
-                </div>
-              ) : (
-                <Select
-                  key={wilayas.length} // Forzar re-render cuando cambien las wilayas
-                  options={wilayas}
-                  value={wilayas.find(w => w.value === tempFilters.wilaya)}
-                  onChange={(option) => handleFilterChange('wilaya', option?.value || '')}
-                  isClearable
-                  placeholder="Sélectionner une wilaya"
-                  styles={selectStyles}
-                  isDisabled={wilayas.length === 0}
-                />
-              )}
+              <Select
+                options={filterMetadata.wilayas || []}
+                value={(filterMetadata.wilayas || []).find(w => w.value === tempFilters.wilaya)}
+                onChange={(option) => handleFilterChange('wilaya', option?.value || '')}
+                isClearable
+                placeholder="Sélectionner une wilaya"
+                styles={selectStyles}
+                isDisabled={!filterMetadata.wilayas || filterMetadata.wilayas.length === 0}
+              />
 
               {tempFilters.wilaya && (
                 <>
-                  <Form.Label style={{...styles.label, marginTop: '15px'}}>Commune</Form.Label>
+                  <Form.Label style={{...styles.label, marginTop: '16px'}}>Commune</Form.Label>
                   <Form.Control
                     type="text"
                     value={tempFilters.commune}
@@ -343,54 +451,87 @@ const FilterDrawer = ({
           </Accordion.Item>
         </Accordion>
 
-        {/* ============ PRIX ============ */}
+        {/* SECCIÓN PRIX */}
         <Accordion defaultActiveKey="2" style={styles.accordion}>
-          <Accordion.Item eventKey="2">
-            <Accordion.Header>Prix</Accordion.Header>
-            <Accordion.Body>
+          <Accordion.Item eventKey="2" style={styles.accordionItem}>
+            <Accordion.Header>
+              <div style={styles.accordionTitle}>
+                <CurrencyEuro size={16} color="#667eea" style={{ marginRight: '8px' }} />
+                <span>Prix</span>
+              </div>
+            </Accordion.Header>
+            <Accordion.Body style={styles.accordionBody}>
               <div style={styles.priceRangeContainer}>
                 <Slider
                   range
-                  min={0}
-                  max={1000000}
+                  min={minPrice}
+                  max={maxPrice}
                   step={1000}
                   value={priceRange}
                   onChange={handlePriceRangeChange}
-                  trackStyle={[{ backgroundColor: '#667eea' }]}
+                  trackStyle={[{ backgroundColor: '#667eea', height: '4px' }]}
                   handleStyle={[
-                    { borderColor: '#667eea', backgroundColor: '#667eea' },
-                    { borderColor: '#667eea', backgroundColor: '#667eea' }
+                    { 
+                      borderColor: '#667eea', 
+                      backgroundColor: '#667eea',
+                      width: '18px',
+                      height: '18px',
+                      marginTop: '-7px',
+                      opacity: 1,
+                      boxShadow: '0 2px 4px rgba(102,126,234,0.3)'
+                    },
+                    { 
+                      borderColor: '#667eea', 
+                      backgroundColor: '#667eea',
+                      width: '18px',
+                      height: '18px',
+                      marginTop: '-7px',
+                      opacity: 1,
+                      boxShadow: '0 2px 4px rgba(102,126,234,0.3)'
+                    }
                   ]}
+                  railStyle={{ backgroundColor: '#e9ecef', height: '4px' }}
                 />
+                
                 <div style={styles.priceInputs}>
                   <div style={styles.priceInputGroup}>
                     <span style={styles.priceLabel}>Min</span>
-                    <input
-                      type="number"
-                      value={tempFilters.priceMin}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        handleFilterChange('priceMin', val);
-                        setPriceRange([Number(val) || 0, priceRange[1]]);
-                      }}
-                      placeholder="0"
-                      style={styles.priceInput}
-                    />
+                    <div style={styles.priceInputWrapper}>
+                      <span style={styles.priceCurrency}>DA</span>
+                      <input
+                        type="number"
+                        value={tempFilters.priceMin}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          handleFilterChange('priceMin', val);
+                          setPriceRange([Number(val) || minPrice, priceRange[1]]);
+                        }}
+                        placeholder={minPrice.toString()}
+                        style={styles.priceInput}
+                      />
+                    </div>
                   </div>
-                  <span style={styles.priceSeparator}>-</span>
+                  
+                  <div style={styles.priceSeparator}>
+                    <span>−</span>
+                  </div>
+                  
                   <div style={styles.priceInputGroup}>
                     <span style={styles.priceLabel}>Max</span>
-                    <input
-                      type="number"
-                      value={tempFilters.priceMax}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        handleFilterChange('priceMax', val);
-                        setPriceRange([priceRange[0], Number(val) || 1000000]);
-                      }}
-                      placeholder="1 000 000"
-                      style={styles.priceInput}
-                    />
+                    <div style={styles.priceInputWrapper}>
+                      <span style={styles.priceCurrency}>DA</span>
+                      <input
+                        type="number"
+                        value={tempFilters.priceMax}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          handleFilterChange('priceMax', val);
+                          setPriceRange([priceRange[0], Number(val) || maxPrice]);
+                        }}
+                        placeholder={maxPrice.toString()}
+                        style={styles.priceInput}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -398,45 +539,55 @@ const FilterDrawer = ({
           </Accordion.Item>
         </Accordion>
 
-        {/* ============ TRI ============ */}
+        {/* SECCIÓN TRI */}
         <Accordion defaultActiveKey="3" style={styles.accordion}>
-          <Accordion.Item eventKey="3">
-            <Accordion.Header>Trier par</Accordion.Header>
-            <Accordion.Body>
-              {sortOptions.map(option => (
-                <div
-                  key={option.value}
-                  onClick={() => handleFilterChange('sortBy', option.value)}
-                  style={{
-                    ...styles.sortOption,
-                    backgroundColor: tempFilters.sortBy === option.value ? '#f0f3ff' : 'transparent',
-                    borderColor: tempFilters.sortBy === option.value ? '#667eea' : '#e9ecef'
-                  }}
-                >
-                  <span>{option.label}</span>
-                  {tempFilters.sortBy === option.value && (
-                    <Check2 size={16} color="#667eea" />
-                  )}
-                </div>
-              ))}
+          <Accordion.Item eventKey="3" style={styles.accordionItem}>
+            <Accordion.Header>
+              <div style={styles.accordionTitle}>
+                <SortDown size={16} color="#667eea" style={{ marginRight: '8px' }} />
+                <span>Trier par</span>
+              </div>
+            </Accordion.Header>
+            <Accordion.Body style={styles.accordionBody}>
+              <div style={styles.sortOptions}>
+                {sortOptions.map(option => (
+                  <div
+                    key={option.value}
+                    onClick={() => handleFilterChange('sortBy', option.value)}
+                    style={{
+                      ...styles.sortOption,
+                      backgroundColor: tempFilters.sortBy === option.value ? '#f0f3ff' : 'white',
+                      borderColor: tempFilters.sortBy === option.value ? '#667eea' : '#e9ecef'
+                    }}
+                  >
+                    <div style={styles.sortOptionLeft}>
+                      <span style={styles.sortIcon}>{option.icon}</span>
+                      <span style={styles.sortLabel}>{option.label}</span>
+                    </div>
+                    {tempFilters.sortBy === option.value && (
+                      <Check2 size={16} color="#667eea" />
+                    )}
+                  </div>
+                ))}
+              </div>
             </Accordion.Body>
           </Accordion.Item>
         </Accordion>
       </Offcanvas.Body>
 
-      {/* Footer con botones */}
+      {/* Footer */}
       <div style={styles.footer}>
-        <Button
-          variant="outline-secondary"
+        <Button 
+          variant="outline-secondary" 
           onClick={resetFilters}
-          style={styles.footerButton}
+          style={styles.resetButton}
         >
           Réinitialiser
         </Button>
-        <Button
-          variant="primary"
+        <Button 
+          variant="primary" 
           onClick={applyFilters}
-          style={{...styles.footerButton, ...styles.applyButton}}
+          style={styles.applyButton}
         >
           Appliquer les filtres
         </Button>
@@ -445,34 +596,23 @@ const FilterDrawer = ({
   );
 };
 
-// Styles para react-select
-const selectStyles = {
-  control: (base) => ({
-    ...base,
-    borderColor: '#e9ecef',
-    borderRadius: '8px',
-    minHeight: '38px',
-    fontSize: '14px',
-    '&:hover': {
-      borderColor: '#667eea'
-    }
-  }),
-  menu: (base) => ({
-    ...base,
-    zIndex: 1050
-  }),
-  option: (base, state) => ({
-    ...base,
-    backgroundColor: state.isSelected ? '#667eea' : state.isFocused ? '#f0f3ff' : 'white',
-    color: state.isSelected ? 'white' : '#333',
-    fontSize: '14px',
-    cursor: 'pointer'
-  })
-};
-
+// Estilos integrados
 const styles = {
+  loadingContainer: {
+    height: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '20px'
+  },
+  loadingText: {
+    marginTop: '16px',
+    color: '#666',
+    fontSize: '14px'
+  },
   header: {
-    padding: '16px',
+    padding: '16px 20px',
     borderBottom: '1px solid #e9ecef',
     display: 'flex',
     justifyContent: 'space-between',
@@ -482,47 +622,59 @@ const styles = {
   headerLeft: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px'
+    gap: '10px'
+  },
+  iconCircle: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '8px',
+    backgroundColor: '#f0f3ff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   headerTitle: {
     margin: 0,
     fontSize: '16px',
-    fontWeight: '600'
+    fontWeight: '600',
+    color: '#333'
   },
   badge: {
     backgroundColor: '#667eea',
     color: 'white',
-    fontSize: '12px',
+    fontSize: '11px',
     fontWeight: '600',
-    padding: '2px 8px',
+    padding: '2px 6px',
     borderRadius: '12px',
     marginLeft: '4px'
   },
   headerRight: {
     display: 'flex',
+    alignItems: 'center',
     gap: '8px'
   },
-  resetButton: {
-    background: 'none',
-    border: '1px solid #e9ecef',
-    borderRadius: '8px',
-    padding: '6px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: '#666'
+  urlIndicator: {
+    backgroundColor: '#f8f9fa',
+    padding: '6px 10px',
+    borderRadius: '20px',
+    border: '1px solid #e9ecef'
   },
-  closeButton: {
-    background: 'none',
-    border: '1px solid #e9ecef',
+  urlText: {
+    fontSize: '12px',
+    color: '#667eea',
+    fontWeight: '500'
+  },
+  iconButton: {
+    width: '32px',
+    height: '32px',
     borderRadius: '8px',
-    padding: '6px',
-    cursor: 'pointer',
+    border: '1px solid #e9ecef',
+    backgroundColor: 'white',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: '#666'
+    cursor: 'pointer',
+    transition: 'all 0.2s'
   },
   body: {
     padding: '16px',
@@ -531,89 +683,161 @@ const styles = {
     overflowY: 'auto'
   },
   accordion: {
-    marginBottom: '16px',
-    borderRadius: '10px',
+    marginBottom: '12px',
+    borderRadius: '12px',
     overflow: 'hidden',
-    border: '1px solid #e9ecef'
+    border: 'none',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
   },
-  select: {
-    width: '100%',
-    padding: '8px 12px',
-    borderRadius: '8px',
-    border: '1px solid #e9ecef',
-    fontSize: '14px'
+  accordionItem: {
+    border: 'none',
+    backgroundColor: 'white'
   },
-  input: {
-    width: '100%',
-    padding: '8px 12px',
-    borderRadius: '8px',
-    border: '1px solid #e9ecef',
-    fontSize: '14px'
+  accordionTitle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontWeight: '500',
+    color: '#333'
+  },
+  accordionBody: {
+    padding: '16px',
+    backgroundColor: 'white',
+    borderTop: '1px solid #e9ecef'
   },
   label: {
     fontSize: '13px',
     fontWeight: '500',
-    marginBottom: '5px',
-    color: '#555'
+    marginBottom: '6px',
+    color: '#495057',
+    display: 'block'
+  },
+  select: {
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: '10px',
+    border: '1px solid #e9ecef',
+    fontSize: '14px',
+    color: '#333',
+    backgroundColor: 'white',
+    cursor: 'pointer',
+    outline: 'none'
+  },
+  input: {
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: '10px',
+    border: '1px solid #e9ecef',
+    fontSize: '14px',
+    outline: 'none'
+  },
+  countBadge: {
+    backgroundColor: '#e9ecef',
+    color: '#666',
+    fontSize: '11px',
+    fontWeight: '600',
+    padding: '2px 6px',
+    borderRadius: '10px',
+    marginLeft: '8px'
   },
   priceRangeContainer: {
-    padding: '10px 0'
+    padding: '8px 0'
   },
   priceInputs: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
-    marginTop: '20px'
+    gap: '12px',
+    marginTop: '24px'
   },
   priceInputGroup: {
     flex: 1,
     display: 'flex',
-    alignItems: 'center',
-    gap: '5px'
+    flexDirection: 'column',
+    gap: '4px'
   },
   priceLabel: {
-    fontSize: '13px',
-    color: '#666'
+    fontSize: '12px',
+    color: '#666',
+    marginLeft: '4px'
+  },
+  priceInputWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center'
+  },
+  priceCurrency: {
+    position: 'absolute',
+    left: '10px',
+    fontSize: '12px',
+    color: '#999'
   },
   priceInput: {
-    flex: 1,
-    padding: '6px 8px',
-    borderRadius: '6px',
+    width: '100%',
+    padding: '10px 10px 10px 30px',
+    borderRadius: '8px',
     border: '1px solid #e9ecef',
-    fontSize: '13px'
+    fontSize: '13px',
+    outline: 'none'
   },
   priceSeparator: {
     color: '#666',
-    fontSize: '14px'
+    fontSize: '18px',
+    marginTop: '16px'
+  },
+  sortOptions: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px'
   },
   sortOption: {
-    padding: '10px 12px',
+    padding: '12px 16px',
     border: '1px solid #e9ecef',
-    borderRadius: '8px',
-    marginBottom: '8px',
+    borderRadius: '10px',
     cursor: 'pointer',
     display: 'flex',
     justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  sortOptionLeft: {
+    display: 'flex',
     alignItems: 'center',
-    fontSize: '14px'
+    gap: '10px'
+  },
+  sortIcon: {
+    fontSize: '16px'
+  },
+  sortLabel: {
+    fontSize: '14px',
+    color: '#333'
   },
   footer: {
-    padding: '16px',
+    padding: '16px 20px',
     borderTop: '1px solid #e9ecef',
     backgroundColor: 'white',
     display: 'flex',
     gap: '12px'
   },
-  footerButton: {
+  resetButton: {
     flex: 1,
-    padding: '10px',
-    borderRadius: '8px',
+    padding: '12px',
+    borderRadius: '10px',
     fontSize: '14px',
-    fontWeight: '500'
+    fontWeight: '500',
+    border: '1px solid #e9ecef',
+    backgroundColor: 'white',
+    color: '#666',
+    cursor: 'pointer'
   },
   applyButton: {
+    flex: 1,
+    padding: '12px',
+    borderRadius: '10px',
+    fontSize: '14px',
+    fontWeight: '500',
+    border: 'none',
     backgroundColor: '#667eea',
-    border: 'none'
+    color: 'white',
+    cursor: 'pointer'
   }
 };
 

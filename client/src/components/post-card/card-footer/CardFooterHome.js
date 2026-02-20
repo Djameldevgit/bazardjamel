@@ -1,14 +1,14 @@
-// 📂 frontend/src/components/card-footer/CardFooterHome.jsx - VERSIÓN OPTIMIZADA
-import React, { useState } from 'react';
+// 📂 frontend/src/components/card-footer/CardFooterHome.jsx - VERSIÓN CLÁSICA CON ICONOS DISTINTOS
+import React from 'react';
 import { Badge } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { 
-  Telephone, 
-  ChatDots,
-  Clock
-} from 'react-bootstrap-icons';
+  FaPhone, 
+  FaWeixin,
+  FaRegCommentDots
+} from 'react-icons/fa';
 
 const CardFooterHome = ({ post }) => {
   const { auth } = useSelector(state => state);
@@ -40,179 +40,143 @@ const CardFooterHome = ({ post }) => {
     }).format(price);
   };
 
-  // Calcular tiempo relativo
- 
-
   return (
     <div style={styles.container}>
-      {/* Fila 1: Título y precio en la misma línea */}
+      {/* FILA 1: Título */}
       <div style={styles.titleRow}>
-        <div style={styles.titleContainer}>
-          <span style={styles.title}>
-            {post.title}
-          </span>
-        </div>
-        <div style={styles.priceContainer}>
-          <span style={styles.price}>
-            {formatPrice(post.price)}
-          </span>
-          {post.negotiable && (
-            <Badge 
-              bg="info" 
-              style={styles.negotiableBadge}
-            >
-              {t('negotiable')}
-            </Badge>
-          )}
-        </div>
+        <span style={styles.title}>
+          {post.title}
+        </span>
       </div>
 
-      {/* Fila 2: Tiempo e iconos de acción */}
-      <div style={styles.actionRow}>
-        {/* Tiempo de publicación */}
-       
+      {/* FILA 2: Precio */}
+      <div style={styles.priceRow}>
+        <span style={styles.price}>
+          {formatPrice(post.price)}
+        </span>
+        {post.negotiable && (
+          <Badge style={styles.negotiableBadge}>
+            {t('negotiable')}
+          </Badge>
+        )}
+      </div>
 
-        {/* Iconos de acción */}
-        <div style={styles.iconsContainer}>
-          {/* Teléfono */}
-          <button
-            onClick={handleCall}
-            style={styles.iconButton}
-            title={t('call')}
-          >
-            <Telephone size={16} color="#28a745" />
-          </button>
+      {/* FILA 3: Iconos clásicos MUY separados */}
+      <div style={styles.iconsRow}>
+        {/* Téléphone */}
+        <button onClick={handleCall} style={styles.iconButton} title={t('call')}>
+          <FaPhone size={20} color="#333" />
+        </button>
 
-          {/* Chat */}
-          <button
-            onClick={handleChat}
-            style={styles.iconButton}
-            title={t('chat')}
-          >
-            <ChatDots size={16} color="#0dcaf0" />
-          </button>
+        {/* Chat - Icono diferente */}
+        <button onClick={handleChat} style={styles.iconButton} title={t('chat')}>
+          <FaWeixin size={22} color="#333" />
+        </button>
 
-          {/* Comentarios */}
-          <div style={styles.commentContainer}>
-            <i className="far fa-comment" style={{ color: '#666', fontSize: '15px' }}></i>
-            <span style={styles.commentCount}>
-              {post.comments?.length || 0}
-            </span>
-          </div>
+        {/* Commentaires - Icono diferente */}
+        <div style={styles.commentWrapper}>
+          <FaRegCommentDots size={20} color="#333" />
+          {post.comments?.length > 0 && (
+            <span style={styles.commentCount}>{post.comments.length}</span>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-// Estilos en objeto para evitar CSS-in-JS y mejorar rendimiento
+// Estilos con separación MÁXIMA
 const styles = {
   container: {
-    padding: '10px 12px 12px 12px',
-    borderTop: '1px solid #f0f0f0',
-    backgroundColor: 'white'
+    padding: '2px 0px',
+    borderTop: '1px solid #e5e7eb',
+    backgroundColor: '#ffffff'
   },
   titleRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '8px',
-    gap: '8px'
-  },
-  titleContainer: {
-    flex: '1',
-    minWidth: 0 // Para que el texto se truncate correctamente
+    marginBottom: '4px'
   },
   title: {
     fontSize: '14px',
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: '700',
+    color: '#1a1a1a',
     display: '-webkit-box',
     WebkitLineClamp: 2,
     WebkitBoxOrient: 'vertical',
     overflow: 'hidden',
     lineHeight: '1.4',
-    wordBreak: 'break-word'
+    fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
   },
-  priceContainer: {
+  priceRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
-    flexShrink: 0
+    
+    fontWeight: '400',
+   
   },
   price: {
-    fontSize: '16px',
-    fontWeight: '700',
-    color: '#dc3545', // Rojo
-    whiteSpace: 'nowrap'
+    fontSize: '13px',
+    fontWeight: '400',
+    color: '#dc2626',
+    fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
   },
   negotiableBadge: {
     fontSize: '10px',
     padding: '2px 6px',
-    borderRadius: '12px',
-    backgroundColor: '#17a2b8',
-    color: 'white',
-    fontWeight: 'normal'
+    borderRadius: '4px',
+    backgroundColor: '#f3f4f6',
+    color: '#4b5563',
+    fontWeight: '400',
+    border: '1px solid #e5e7eb'
   },
-  actionRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  timeContainer: {
+  iconsRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '4px'
-  },
-  timeText: {
-    fontSize: '11px',
-    color: '#666'
-  },
-  iconsContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px'
+    justifyContent: 'space-between', // ← SEPARACIÓN MÁXIMA
+    padding: '2px 0',
+    width: '100%'
   },
   iconButton: {
     background: 'none',
     border: 'none',
-    padding: '4px',
+    padding: '8px', // Más área de clic
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    color: '#4b5563',
+    flex: '0 0 auto' // No se estiran
   },
-  commentContainer: {
+  commentWrapper: {
     display: 'flex',
     alignItems: 'center',
-    gap: '4px'
+    gap: '6px',
+    padding: '8px',
+    position: 'relative'
   },
   commentCount: {
-    fontSize: '12px',
-    color: '#666',
-    fontWeight: '500'
+    fontSize: '13px',
+    fontWeight: '400',
+    color: '#6b7280',
+    fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
   }
 };
 
-// Versión móvil con media queries (se aplican automáticamente)
-const mobileStyles = `
-  @media (max-width: 768px) {
-    .card-footer-home-title {
-      font-size: 13px !important;
+// Media queries para móvil
+const globalStyles = `
+  @media (max-width: 480px) {
+    .icon-button {
+      padding: 3px !important;
     }
-    .card-footer-home-price {
-      font-size: 15px !important;
-    }
-    .card-footer-home-icon-button {
-      padding: 6px !important;
+    .icon-button svg {
+      width: 18px !important;
+      height: 18px !important;
     }
   }
 `;
 
-// Añadir estilos globales
 if (typeof document !== 'undefined') {
   const style = document.createElement('style');
-  style.textContent = mobileStyles;
+  style.textContent = globalStyles;
   document.head.appendChild(style);
 }
 

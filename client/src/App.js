@@ -18,7 +18,7 @@ import Navbar2 from './components/header/Navbar2';
 import CreateAnnoncePage from './pages/CreateAnnoncePage';
 import PostId from './pages/PostId';
 import DashboardPage from './pages/users/dashboardpage';
-import profile from './pages/profile';
+import profile from './pages/users/profile';
 import CreateBoutiquePage from './pages/boutique/createBoutiquePage';
  
  
@@ -31,6 +31,7 @@ import BoutiqueDetailPage from './pages/boutique/BoutiqueDetailPage';
 import UserBoutiquesPage from './pages/boutique/UserBoutiquesPage';
 import MesAnnoces from './pages/users/MesAnnoces';
 import ProfileSettings from './pages/users/ProfileSettings';
+import ProfileSaved from './pages/users/ProfileSaved';
 
 function App() {
   const { auth } = useSelector(state => state)
@@ -110,6 +111,7 @@ function App() {
  {/* ============ USER DASHBORAD ============ */}
  <Route exact path="/mes-annonces" component={MesAnnoces} />
  <Route exact path="/profile/settings" component={ProfileSettings} />
+ <Route exact path="/profile/:id/saved" component={ProfileSaved} />
         {/* ============ RUTAS DE ANUNCIOS ============ */}
         <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
         <Route exact path="/edit-post/:id" component={CreateAnnoncePage} />

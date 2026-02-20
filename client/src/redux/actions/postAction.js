@@ -19,8 +19,7 @@ export const POST_TYPES = {
   UPDATE_POST: 'UPDATE_POST',
   DELETE_POST: 'DELETE_POST',
   
-  // Posts por categoría
-  GET_CATEGORY_POSTS: 'GET_CATEGORY_POSTS',
+  
   GET_CATEGORY_POSTS_SUCCESS: 'GET_CATEGORY_POSTS_SUCCESS',
   GET_CATEGORY_POSTS_FAIL: 'GET_CATEGORY_POSTS_FAIL',
   
@@ -77,66 +76,7 @@ export const loadMorePostsFail = (error) => ({
   payload: error
 });
 
-// 📂 redux/actions/categoryAction.js - VERSIÓN CORREGIDA
-export const getCategoryPosts = (categorySlug, subSlug = null, articleSlug = null, page = 1, limit = 12) => async (dispatch) => {
-  try {
-    if (page === 1) {
-      dispatch({ type: POST_TYPES.GET_CATEGORY_POSTS });
-    } else {
-      dispatch({ type: POST_TYPES.LOADING_MORE_POSTS });
-    }
-
-    const { data } = await axios.get(`${API_URL}/api/posts/filter`, {
-      params: { category: categorySlug, sub: subSlug, article: articleSlug, page, limit }
-    });
-
-    const payload = {
-      posts: data.posts,
-      pagination: data.pagination,
-      categoryInfo: data.categoryInfo,
-      children: data.children
-    };
-
-    if (page === 1) {
-      dispatch({ type: POST_TYPES.GET_CATEGORY_POSTS_SUCCESS, payload });
-    } else {
-      dispatch({ type: POST_TYPES.LOAD_MORE_POSTS_SUCCESS, payload });
-    }
-
-  } catch (err) {
-    const error = err.response?.data?.message || err.message;
-    if (page === 1) {
-      dispatch({ type: POST_TYPES.GET_CATEGORY_POSTS_FAIL, payload: error });
-    } else {
-      dispatch({ type: POST_TYPES.LOAD_MORE_POSTS_FAIL, payload: error });
-    }
-  }
-};
-
-  // Helper para iconos por defecto
-  const getDefaultIcon = (categoryName) => {
-    const iconMap = {
-      'Voitures': '🚗',
-      'Motos': '🏍️',
-      'Vélos': '🚲',
-      'Camion': '🚚',
-      'Bus': '🚌',
-      'Engin': '🚜',
-      'Tracteurs': '🚜',
-      'Immobilier': '🏠',
-      'Electronique': '📱',
-      'Mode': '👗',
-      'Maison': '🏡',
-      'Services': '🛠️',
-      'Emploi': '💼',
-      'Autres': '📦'
-    };
-    
-    return iconMap[categoryName] || '📦';
-  };
-// 📂 redux/actions/postAction.js
-// 📂 redux/actions/postAction.js
-// 📂 redux/actions/postAction.js
+ 
 export const createPost = ({ 
   postData, 
   images, 
@@ -585,3 +525,5 @@ export const getSimilarPosts = (postId, options = {}) => async (dispatch, getSta
 export const clearSimilarPosts = () => (dispatch) => {
   dispatch({ type: POST_TYPES.CLEAR_SIMILAR_POSTS });
 };
+
+ 

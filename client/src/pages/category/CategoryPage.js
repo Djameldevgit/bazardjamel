@@ -1,4 +1,4 @@
-// 📂 pages/CategoryPage.js - VERSIÓN COMPLETA CON FILTRO
+// 📂 pages/CategoryPage.js - VERSIÓN COMPLETA CON FILTRO CORREGIDA
 import React, { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useHistory, useLocation } from "react-router-dom";
@@ -6,8 +6,8 @@ import { Container, Spinner, Row, Col, Button } from "react-bootstrap";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { Funnel } from 'react-bootstrap-icons';
 import PostCard from "../../components/post-card/PostCard";
-import { getCategoryPosts, resetCategoryPosts } from "../../redux/actions/categoryAction";
-import { getBoutiquesByCategory, resetAllBoutiques } from "../../redux/actions/boutiqueAction";
+import { getCategoryPosts  } from "../../redux/actions/categoryAction";
+import { getBoutiquesByCategory  } from "../../redux/actions/boutiqueAction";
 import BreadcrumbNav from "../../components/BreadcrumbNav";
 import SliderUnificado from "../../components/SlidersCategories/SliderUnificado";
 import BoutiqueCard from "../../components/BoutiqueCard";
@@ -34,7 +34,8 @@ const CategoryPage = () => {
     posts = [],
     postsLoading = false,
     hasMorePosts = true,
-    pagination: rawPagination = {}
+    pagination: rawPagination = {},
+    children: reduxChildren = [] // 👈 IMPORTANTE: Obtener children de Redux
   } = useSelector((state) => state.category || {});
 
   const categoryChildren = categoryInfo?.children || [];
@@ -142,7 +143,14 @@ const CategoryPage = () => {
           }
         } else {
           console.log('🔄 Cargando posts...', { slug, sub: filters.sub, article: filters.article, page: filters.page });
-          const res = await dispatch(getCategoryPosts(slug, filters.sub, filters.article, filters.page, 12));
+          const res = await dispatch(getCategoryPosts(
+            slug, 
+            filters.sub, 
+            filters.article, 
+            filters.page, 
+            12
+          ));
+          
           if (res?.children) {
             setAllChildren(res.children);
             
@@ -231,7 +239,13 @@ const CategoryPage = () => {
       
       setFilters(newFilters);
       updateUrl(newFilters);
-      dispatch(getCategoryPosts(slug, filters.sub, filters.article, nextPage, 12));
+      dispatch(getCategoryPosts(
+        slug, 
+        filters.sub, 
+        filters.article, 
+        nextPage, 
+        12
+      ));
     }
   }, [isBoutique, hasMoreBoutiques, boutiquesLoading, hasMorePosts, postsLoading, posts.length, 
       filters, dispatch, slug, updateUrl]);
@@ -352,14 +366,87 @@ const CategoryPage = () => {
     }
   };
 
-  // ============ MANEJAR APLICACIÓN DE FILTROS ============
-  const handleApplyFilters = (filters) => {
-    console.log('🎯 Aplicando filtros:', filters);
-    setActiveFilters(filters);
+  // ============ FUNCIONES PARA CONVERTIR IDs A SLUGS ============
+  const getSubSlugFromId = useCallback((subId) => {
+    if (!subId || !allChildren.length) return null;
+    const sub = allChildren.find(s => s._id === subId);
+    return sub?.slug || null;
+  }, [allChildren]);
+
+  const getArticleSlugFromId = useCallback((articleId) => {
+    if (!articleId || !allChildren.length) return null;
     
-    // Aquí puedes despachar una acción para cargar posts con filtros
-    // Por ahora, solo guardamos los filtros
-  };
+    for (const sub of allChildren) {
+      if (sub.articles) {
+        const article = sub.articles.find(a => a._id === articleId);
+        if (article) return article.slug;
+      }
+    }
+    return null;
+  }, [allChildren]);
+
+  // ============ MANEJAR APLICACIÓN DE FILTROS ============
+  const handleApplyFilters = useCallback((filtersFromDrawer) => {
+    console.log('🎯 Aplicando filtros desde drawer:', filtersFromDrawer);
+    
+    // Convertir IDs a slugs
+    const newSubSlug = filtersFromDrawer.subCategory 
+      ? getSubSlugFromId(filtersFromDrawer.subCategory) 
+      : subSlug;
+      
+    const newArticleSlug = filtersFromDrawer.article 
+      ? getArticleSlugFromId(filtersFromDrawer.article) 
+      : articleSlug;
+    
+    console.log('🔄 Convertido:', {
+      subId: filtersFromDrawer.subCategory,
+      subSlug: newSubSlug,
+      articleId: filtersFromDrawer.article,
+      articleSlug: newArticleSlug
+    });
+    
+    // Actualizar estado local de filtros
+    const newFilters = {
+      sub: newSubSlug,
+      article: newArticleSlug,
+      page: 1
+    };
+    
+    setFilters(newFilters);
+    updateUrl(newFilters);
+    
+    // Despachar acción con todos los parámetros
+    dispatch(getCategoryPosts(
+      slug,
+      newSubSlug,
+      newArticleSlug,
+      1, // reset a página 1
+      12,
+      filtersFromDrawer.wilaya,
+      filtersFromDrawer.commune,
+      filtersFromDrawer.priceMin,
+      filtersFromDrawer.priceMax,
+      filtersFromDrawer.sortBy
+    ));
+    
+    // Actualizar currentSub y currentArticle según los nuevos slugs
+    if (newSubSlug) {
+      const foundSub = allChildren.find(c => c.slug === newSubSlug);
+      setCurrentSub(foundSub || null);
+      
+      if (newArticleSlug && foundSub?.articles) {
+        const foundArticle = foundSub.articles.find(a => a.slug === newArticleSlug);
+        setCurrentArticle(foundArticle || null);
+      } else {
+        setCurrentArticle(null);
+      }
+    } else {
+      setCurrentSub(null);
+      setCurrentArticle(null);
+    }
+    
+    // Cerrar el drawer (se cierra solo en FilterDrawer)
+  }, [slug, subSlug, articleSlug, dispatch, updateUrl, allChildren, getSubSlugFromId, getArticleSlugFromId]);
 
   // ============ CONTAR FILTROS ACTIVOS ============
   const countActiveFilters = () => {
@@ -567,9 +654,7 @@ const CategoryPage = () => {
         show={showFilterDrawer}
         onHide={() => setShowFilterDrawer(false)}
         category={slug}
-        currentSub={currentSub}
-        currentArticle={currentArticle}
-        onApplyFilters={handleApplyFilters}
+        onApplyFilters={handleApplyFilters} // ✅ Solo pasamos onApplyFilters
       />
 
       {/* Estilos adicionales */}

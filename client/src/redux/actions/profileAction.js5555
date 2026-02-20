@@ -13,137 +13,80 @@ export const PROFILE_TYPES = {
     GET_POSTS: 'GET_PROFILE_POSTS',
     UPDATE_POST: 'UPDATE_PROFILE_POST'
 }
- 
+
+
 export const getProfileUsers = ({id, auth}) => async (dispatch) => {
     dispatch({type: PROFILE_TYPES.GET_ID, payload: id})
 
     try {
         dispatch({type: PROFILE_TYPES.LOADING, payload: true})
+        const res = getDataAPI(`/user/${id}`, auth.token)
+        const res1 = getDataAPI(`/user_posts/${id}`, auth.token)
         
-        const [usersRes, postsRes] = await Promise.all([
-            getDataAPI(`user/${id}`, auth.token),
-            getDataAPI(`user_posts/${id}`, auth.token)
-        ]);
-
-        if (!usersRes.data || !usersRes.data.user) {
-            throw new Error('Usuario no encontrado');
-        }
-
-        const userData = {
-            ...usersRes.data.user,
-            _id: id
-        };
-
-        const postsData = {
-            _id: id,
-            posts: postsRes.data.posts || [],
-            result: postsRes.data.pagination?.totalPosts || postsRes.data.result || 0,
-            page: 1
-        };
+        const users = await res;
+        const posts = await res1;
 
         dispatch({
             type: PROFILE_TYPES.GET_USER,
-            payload: userData
-        });
+            payload: users.data
+        })
 
         dispatch({
             type: PROFILE_TYPES.GET_POSTS,
-            payload: postsData
-        });
+            payload: {...posts.data, _id: id, page: 2}
+        })
 
-        dispatch({type: PROFILE_TYPES.LOADING, payload: false});
-        
+        dispatch({type: PROFILE_TYPES.LOADING, payload: false})
     } catch (err) {
-        console.error('❌ Error en getProfileUsers:', err);
         dispatch({
             type: GLOBALTYPES.ALERT, 
-            payload: {error: err.response?.data?.msg || 'Error al cargar perfil'}
-        });
-        dispatch({type: PROFILE_TYPES.LOADING, payload: false});
+            payload: {error: err.response.data.msg}
+        })
     }
+    
 }
 
-// 🟢 UPDATE PROFILE USER - VERSIÓN CORREGIDA
-// redux/actions/profileAction.js - PEQUEÑA MODIFICACIÓN
 
 export const updateProfileUser = ({userData, avatar, auth}) => async (dispatch) => {
-    console.log('🚀 updateProfileUser - userData:', userData);
-    console.log('🚀 updateProfileUser - avatar:', avatar ? 'presente' : 'null');
-    
-    // Validaciones
-    if(userData.fullname && userData.fullname.length > 25) {
-      return dispatch({
-        type: GLOBALTYPES.ALERT, 
-        payload: {error: "El nombre completo es demasiado largo (máx 25 caracteres)"}
-      });
-    }
-  
-    if(userData.story && userData.story.length > 200) {
-      return dispatch({
-        type: GLOBALTYPES.ALERT, 
-        payload: {error: "La historia es demasiado larga (máx 200 caracteres)"}
-      });
-    }
-  
+    if(!userData.fullname)
+    return dispatch({type: GLOBALTYPES.ALERT, payload: {error: "Please add your full name."}})
+
+    if(userData.fullname.length > 25)
+    return dispatch({type: GLOBALTYPES.ALERT, payload: {error: "Your full name too long."}})
+
+    if(userData.story.length > 200)
+    return dispatch({type: GLOBALTYPES.ALERT, payload: {error: "Your story too long."}})
+
     try {
-      dispatch({type: GLOBALTYPES.ALERT, payload: {loading: true}});
-  
-      // 🟢 IMPORTANTE: userData.avatar YA TIENE LA URL DE CLOUDINARY
-      // porque la subimos en el componente
-      const updatedData = {
-        fullname: userData.fullname || auth.user.fullname,
-        mobile: userData.mobile || auth.user.mobile || '',
-        address: userData.address || auth.user.address || '',
-        story: userData.story || auth.user.story || '',
-        website: userData.website || auth.user.website || '',
-        avatar: userData.avatar || auth.user.avatar // 🟢 Usar la URL que ya tenemos
-      };
-  
-      console.log('📦 Enviando al backend:', updatedData);
-  
-      // Enviar al backend
-      const res = await patchDataAPI("user", updatedData, auth.token);
-      
-      console.log('📥 Respuesta del backend:', res.data);
-  
-      if (res.data && (res.data.msg || res.data.success)) {
-        // Actualizar el estado de auth
+        let media;
+        dispatch({type: GLOBALTYPES.ALERT, payload: {loading: true}})
+
+        if(avatar) media = await imageUpload([avatar])
+
+        const res = await patchDataAPI("user", {
+            ...userData,
+            avatar: avatar ? media[0].url : auth.user.avatar
+        }, auth.token)
+
         dispatch({
-          type: GLOBALTYPES.AUTH,
-          payload: {
-            ...auth,
-            user: {
-              ...auth.user,
-              ...updatedData
+            type: GLOBALTYPES.AUTH,
+            payload: {
+                ...auth,
+                user: {
+                    ...auth.user, ...userData,
+                    avatar: avatar ? media[0].url : auth.user.avatar,
+                }
             }
-          }
-        });
-  
-        // Mostrar mensaje de éxito
-        dispatch({
-          type: GLOBALTYPES.ALERT, 
-          payload: {success: res.data.msg || res.data.success || 'Perfil actualizado correctamente'}
-        });
-  
-        console.log('✅ Perfil actualizado correctamente');
-      }
-      
+        })
+
+        dispatch({type: GLOBALTYPES.ALERT, payload: {success: res.data.msg}})
     } catch (err) {
-      console.error('❌ Error en updateProfileUser:', err);
-      
-      const errorMsg = err.response?.data?.msg || 
-                       err.response?.data?.error ||
-                       err.message || 
-                       'Error al actualizar el perfil';
-      
-      dispatch({
-        type: GLOBALTYPES.ALERT, 
-        payload: {error: errorMsg}
-      });
-    } finally {
-      dispatch({type: GLOBALTYPES.ALERT, payload: {loading: false}});
+        dispatch({
+            type: GLOBALTYPES.ALERT, 
+            payload: {error: err.response.data.msg}
+        })
     }
-  };
+}
 
 export const follow = ({users, user, auth, socket}) => async (dispatch) => {
     let newUser;
