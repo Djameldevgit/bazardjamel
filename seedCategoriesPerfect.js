@@ -1342,25 +1342,59 @@ const categoriesData = [
     icon: '/icons/boutiques/boutiques.png',
     order: 0,
     children: [
-      { name: 'Boutique de Véhicules', slug: 'boutique-vehicules', level: 2, icon: '/icons/boutiques/boutique-vehicules.png', order: 1, children: [] },
-      { name: 'Boutique de Vêtements', slug: 'boutique-vetements', level: 2, icon: '/icons/boutiques/boutique-vetements.png', order: 2, children: [] },
-      { name: "Boutique d'Électroménager", slug: 'boutique-electromenager', level: 2, icon: '/icons/boutiques/boutique-electromenager.png', order: 3, children: [] },
-      { name: "Boutique d'Immobilier", slug: 'boutique-immobilier', level: 2, icon: '/icons/boutiques/boutique-immobilier.png', order: 4, children: [] },
-      { name: 'Boutique Alimentaire', slug: 'boutique-alimentaire', level: 2, icon: '/icons/boutiques/boutique-alimentaire.png', order: 5, children: [] },
-      { name: "Boutique d'Emploi", slug: 'boutique-emploi', level: 2, icon: '/icons/boutiques/boutique-emploi.png', order: 6, children: [] },
-      { name: "Boutique d'Informatique", slug: 'boutique-informatique', level: 2, icon: '/icons/boutiques/boutique-informatique.png', order: 7, children: [] },
-      { name: 'Boutique de Loisirs', slug: 'boutique-loisirs', level: 2, icon: '/icons/boutiques/boutique-loisirs.png', order: 8, children: [] },
-      { name: 'Boutique de Matériaux', slug: 'boutique-materiaux', level: 2, icon: '/icons/boutiques/boutique-materiaux.png', order: 9, children: [] },
-      { name: 'Boutique de Meubles', slug: 'boutique-meubles', level: 2, icon: '/icons/boutiques/boutique-meubles.png', order: 10, children: [] },
-      { name: 'Boutique de Pièces Détachées', slug: 'boutique-pieces-detachees', level: 2, icon: '/icons/boutiques/boutique-pieces-detachees.png', order: 11, children: [] },
-      { name: 'Boutique de Santé & Beauté', slug: 'boutique-sante-beaute', level: 2, icon: '/icons/boutiques/boutique-sante-beaute.png', order: 12, children: [] },
-      { name: 'Boutique de Services', slug: 'boutique-services', level: 2, icon: '/icons/boutiques/boutique-services.png', order: 13, children: [] },
-      { name: 'Boutique de Sport', slug: 'boutique-sport', level: 2, icon: '/icons/boutiques/boutique-sport.png', order: 14, children: [] },
-      { name: 'Boutique de Voyages', slug: 'boutique-voyages', level: 2, icon: '/icons/boutiques/boutique-voyages.png', order: 15, children: [] },
-      { name: 'Boutique de Téléphone', slug: 'boutique-telephone', level: 2, icon: '/icons/boutiques/boutique-telephone.png', order: 16, children: [] }
+      { name: 'Agences immobilières', slug: 'agences-immobilieres', level: 2, icon: '/icons/boutiques/agences-immobilieres.png', order: 1, children: [] },
+      { name: 'Promotions immobilières', slug: 'promotions-immobilieres', level: 2, icon: '/icons/boutiques/promotions-immobilieres.png', order: 2, children: [] },
+      { name: 'Showroom automobiles', slug: 'showroom-automobiles', level: 2, icon: '/icons/boutiques/showroom-automobiles.png', order: 3, children: [] },
+      { name: 'Showroom moto', slug: 'showroom-moto', level: 2, icon: '/icons/boutiques/showroom-moto.png', order: 4, children: [] },
+      { name: 'Camions & Engins', slug: 'camions-engins', level: 2, icon: '/icons/boutiques/camions-engins.png', order: 5, children: [] },
+      { name: 'Pièces & Accessoires Véhicules', slug: 'pieces-accessoires-vehicules', level: 2, icon: '/icons/boutiques/pieces-accessoires-vehicules.png', order: 6, children: [] },
+      { name: 'Location de voitures', slug: 'location-voitures', level: 2, icon: '/icons/boutiques/location-voitures.png', order: 7, children: [] },
+      { name: 'Réparation & Services Véhicules', slug: 'reparation-services-vehicules', level: 2, icon: '/icons/boutiques/reparation-services-vehicules.png', order: 8, children: [] },
+      { name: 'Téléphones & Accessoires', slug: 'telephones-accessoires', level: 2, icon: '/icons/boutiques/telephones-accessoires.png', order: 9, children: [] },
+      { name: 'Magasin d\'informatique', slug: 'magasin-informatique', level: 2, icon: '/icons/boutiques/magasin-informatique.png', order: 10, children: [] },
+      { name: 'Magasin d\'électroménager', slug: 'magasin-electromenager', level: 2, icon: '/icons/boutiques/magasin-electromenager.png', order: 11, children: [] },
+      { name: 'Equipements de sécurité', slug: 'equipements-securite', level: 2, icon: '/icons/boutiques/equipements-securite.png', order: 12, children: [] },
+      { name: 'Audiovisuel', slug: 'audiovisuel', level: 2, icon: '/icons/boutiques/audiovisuel.png', order: 13, children: [] },
+      { name: 'Electronique', slug: 'electronique', level: 2, icon: '/icons/boutiques/electronique.png', order: 14, children: [] },
+      { name: 'Vêtements & Accessoires de mode', slug: 'vetements-accessoires-mode', level: 2, icon: '/icons/boutiques/vetements-accessoires-mode.png', order: 15, children: [] },
+      { name: 'Cosmétiques & Beauté', slug: 'cosmetiques-et-beaute', level: 2, icon: '/icons/boutiques/cosmetiques-et-beaute.png', order: 16, children: [] },
+      { name: 'Maison & Meubles', slug: 'maison-meubles', level: 2, icon: '/icons/boutiques/maison-meubles.png', order: 17, children: [] },
+      { name: 'Meubles de bureau', slug: 'meubles-et-bureau', level: 2, icon: '/icons/boutiques/meubles-et-bureau.png', order: 18, children: [] },
+      { name: 'Vaisselles', slug: 'vaisselles', level: 2, icon: '/icons/boutiques/vaisselles.png', order: 19, children: [] },
+      { name: 'Puéricultures & Jouets', slug: 'puericultures-jouets', level: 2, icon: '/icons/boutiques/puericultures-jouets.png', order: 20, children: [] },
+      { name: 'Jardinage', slug: 'jardinages', level: 2, icon: '/icons/boutiques/jardinage.png', order: 21, children: [] },
+      { name: 'Fournitures & Articles scolaires', slug: 'fournitures-articles-scolaires', level: 2, icon: '/icons/boutiques/fournitures-articles-scolaires.png', order: 22, children: [] },
+      { name: 'Articles de sport', slug: 'articles-sport', level: 2, icon: '/icons/boutiques/articles-sport.png', order: 23, children: [] },
+      { name: 'Consoles & Jeux vidéo', slug: 'consoles-jeux-video', level: 2, icon: '/icons/boutiques/consoles-jeux-video.png', order: 24, children: [] },
+      { name: 'Librairie & Papeterie', slug: 'librairie-papeterie', level: 2, icon: '/icons/boutiques/librairie-papeterie.png', order: 25, children: [] },
+      { name: 'Instruments de musique', slug: 'instruments-et-musique', level: 2, icon: '/icons/boutiques/instruments-et-musique.png', order: 26, children: [] },
+      { name: 'Chasse & Pêche', slug: 'chasse-et-peche', level: 2, icon: '/icons/boutiques/chasse-et-peche.png', order: 27, children: [] },
+      { name: 'Outillages & Quincaillerie', slug: 'outillages-quincaillerie', level: 2, icon: '/icons/boutiques/outillages-quincaillerie.png', order: 28, children: [] },
+      { name: 'Matériaux de construction', slug: 'materiaux-et-construction', level: 2, icon: '/icons/boutiques/materiaux-et-onstruction.png', order: 29, children: [] },
+      { name: 'Matériel professionnel', slug: 'materiel-et-professionnel', level: 2, icon: '/icons/boutiques/materiel-et-professionnel.png', order: 30, children: [] },
+      { name: 'Matières premières', slug: 'matieres-et-premieres', level: 2, icon: '/icons/boutiques/matieres-et-premieres.png', order: 31, children: [] },
+      { name: 'Agences de voyages', slug: 'agences-voyages', level: 2, icon: '/icons/boutiques/agences-voyages.png', order: 32, children: [] },
+      { name: 'Animalerie', slug: 'animaleries', level: 2, icon: '/icons/boutiques/animalerie.png', order: 33, children: [] },
+      { name: 'Alimentaire', slug: 'alimentaire', level: 2, icon: '/icons/boutiques/alimentaire.png', order: 34, children: [] },
+      { name: 'Transport & Déménagement', slug: 'transport-et-demenagement', level: 2, icon: '/icons/boutiques/transport-et-demenagement.png', order: 35, children: [] },
+      { name: 'Travaux de Construction & d\'Aménagement', slug: 'travaux-construction-amenagement', level: 2, icon: '/icons/boutiques/travaux-construction-amenagement.png', order: 36, children: [] },
+      { name: 'Ecoles & Formations', slug: 'ecoles-et-formations', level: 2, icon: '/icons/boutiques/ecoles-et-formations.png', order: 37, children: [] },
+      { name: 'Publicité & Communication', slug: 'publicite-et-communication', level: 2, icon: '/icons/boutiques/publicite-et-communication.png', order: 38, children: [] },
+      { name: 'Service de Nettoyage & Entretien', slug: 'service-nettoyage-entretien', level: 2, icon: '/icons/boutiques/service-nettoyage-entretien.png', order: 39, children: [] },
+      { name: 'Froid & Climatisation', slug: 'froid-et-climatisation', level: 2, icon: '/icons/boutiques/froid-et-climatisation.png', order: 40, children: [] },
+      { name: 'Traiteur & Gateaux', slug: 'traiteur-gateaux', level: 2, icon: '/icons/boutiques/traiteur-gateaux.png', order: 41, children: [] },
+      { name: 'Hôtels', slug: 'hotels', level: 2, icon: '/icons/boutiques/hotels.png', order: 42, children: [] },
+      { name: 'Restaurants & Salles des fêtes', slug: 'restaurants-salles-fetes', level: 2, icon: '/icons/boutiques/restaurants-salles-fetes.png', order: 43, children: [] },
+      { name: 'Services de santé', slug: 'services-sante', level: 2, icon: '/icons/boutiques/services-sante.png', order: 44, children: [] },
+      { name: 'Etudes & Consulting', slug: 'etudes-consulting', level: 2, icon: '/icons/boutiques/etudes-consulting.png', order: 45, children: [] },
+      { name: 'Logiciel & Web services', slug: 'logiciel-web-services', level: 2, icon: '/icons/boutiques/logiciel-web-services.png', order: 46, children: [] },
+      { name: 'Esthétique & Bien être', slug: 'esthetique-bien-etre', level: 2, icon: '/icons/boutiques/esthetique-bien-etre.png', order: 47, children: [] },
+      { name: 'Comptabilité & Finance', slug: 'comptabilite-finance', level: 2, icon: '/icons/boutiques/comptabilite-finance.png', order: 48, children: [] },
+      { name: 'Couture & Confection', slug: 'couture-et-confection', level: 2, icon: '/icons/boutiques/couture-et-confection.png', order: 49, children: [] },
+      { name: 'Réparation Electronique & Electroménager', slug: 'reparation-electronique-electromenager', level: 2, icon: '/icons/boutiques/reparation-electronique-electromenager.png', order: 50, children: [] }
     ]
   },
- 
+
   // ==================== 17. TÉLÉPHONE ====================
   {
     name: 'Téléphone',
@@ -1538,7 +1572,7 @@ const seedCategories = async () => {
         // Añadir campo isLeaf si no tiene hijos
         isLeaf: !children || children.length === 0
       });
-      
+
       await category.save();
       console.log(`✅ ${'  '.repeat(categoryData.level - 1)}${categoryData.name} (/${categoryData.slug}) - Icon: ${categoryData.icon}`);
 
@@ -1558,17 +1592,17 @@ const seedCategories = async () => {
     console.log('\n🎉 SEED COMPLETADO CON ÉXITO');
     console.log('📊 Resumen:');
     console.log(`   • ${categoriesData.length} categorías principales`);
-    
+
     let totalLevel2 = 0;
     let totalLevel3 = 0;
-    
+
     categoriesData.forEach(cat => {
       totalLevel2 += cat.children.length;
       cat.children.forEach(child => {
         totalLevel3 += child.children ? child.children.length : 0;
       });
     });
-    
+
     console.log(`   • ${totalLevel2} subcategorías (nivel 2)`);
     console.log(`   • ${totalLevel3} artículos/tipos (nivel 3)`);
     console.log(`   • Total: ${categoriesData.length + totalLevel2 + totalLevel3} items`);

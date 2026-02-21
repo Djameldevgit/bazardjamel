@@ -306,6 +306,15 @@ const categories = [
         color="#8b5cf6" 
         isDashboardLink={true}
       />
+      
+          <i className='fas fa-user'/> 
+        <LinkItem 
+
+        name="Mon profile" 
+        path={`/profile/${auth.user._id}`}
+        color="#8b5cf6" 
+        isDashboardLink={true}
+      />
     </>
   );
 
@@ -330,7 +339,7 @@ const categories = [
         {emojis.user} Mon compte
       </div>
       <LinkItem emoji={emojis.dashboard} name="Tableau de bord" path="/users/dashboard" color="#8b5cf6" />
-      <LinkItem emoji="⚙️" name="Paramètres du profil" path="/profile/settings" color="#6b7280" />
+      <LinkItem emoji="⚙️" name="Paramètres du profil" path='/profile/settings' color="#6b7280" />
       <LinkItem emoji={emojis.logout} name="Se déconnecter" onClick={handleLogout} color="#ef4444" />
 
       {/* Annonces */}
