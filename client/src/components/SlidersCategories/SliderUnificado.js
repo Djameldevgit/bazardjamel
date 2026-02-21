@@ -30,8 +30,9 @@ const SliderUnificado = ({
   const [startX, setStartX] = useState(0);
   const [scrollLeftStart, setScrollLeftStart] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
+  const [imageErrors, setImageErrors] = useState({});
 
-  // 🎨 Paleta de colores vibrantes para categorías
+  // 🎨 Paleta de colores vibrantes para categorías (solo para fallback)
   const colorPalette = useMemo(() => [
     '#4361ee', '#3a0ca3', '#4cc9f0', '#f72585', '#b5179e',
     '#7209b7', '#560bad', '#480ca8', '#3f37c9', '#4895ef',
@@ -53,7 +54,7 @@ const SliderUnificado = ({
     return colorPalette[index];
   }, [colorPalette]);
 
-  // 🎨 Generar degradado suave
+  // 🎨 Generar degradado suave (para fallback)
   const generateGradient = useCallback((color) => {
     return `linear-gradient(145deg, ${color}dd, ${color}aa)`;
   }, []);
@@ -143,6 +144,28 @@ const SliderUnificado = ({
       if (newPage !== currentPage) setCurrentPage(newPage);
     }
   }, [currentPage]);
+
+  // Manejar error de imagen
+  const handleImageError = (itemId) => {
+    setImageErrors(prev => ({ ...prev, [itemId]: true }));
+  };
+
+  // ========== FUNCIÓN SIMPLIFICADA COMO EN CATEGORYSLIDER ==========
+  const getImagePath = useCallback((item) => {
+    if (!item || !item.slug) return null;
+    
+    // Si el item ya tiene un icon definido, úsalo directamente
+    if (item.icon) {
+      return item.icon;
+    }
+    
+    // Construir ruta simple basada en el slug y nivel
+    const level = item.level || 1;
+    const basePath = '/uploads/categories';
+    const categoryFolder = item.parentSlug || item.slug;
+    
+    return `${basePath}/${categoryFolder}/level${level}/${item.slug}.png`;
+  }, []);
 
   // 🏷️ Formatear nombre según dispositivo y modo
   const formatName = useCallback((name) => {
@@ -266,6 +289,10 @@ const SliderUnificado = ({
           );
 
           const itemCount = showCount ? (item.posts?.length || item.postCount || 0) : 0;
+          const imagePath = getImagePath(item);
+          const hasError = imageErrors[item._id || item.slug];
+          
+          // Color para fallback
           const bgColor = generateColorFromName(item.name);
           const gradient = generateGradient(bgColor);
 
@@ -280,25 +307,28 @@ const SliderUnificado = ({
               onMouseEnter={() => setHoveredIndex(index)}
               onMouseLeave={() => setHoveredIndex(null)}
             >
-              {/* 🎨 ICONO CON FONDO DINÁMICO */}
+              {/* 🎨 ICONO CON IMAGEN PNG O FALLBACK - IGUAL QUE CATEGORYSLIDER */}
               <div 
                 className="item-icon-wrapper"
                 style={{ 
-                  background: gradient,
+                  background: (!imagePath || hasError) ? gradient : 'white',
                   boxShadow: isActive ? `0 8px 20px ${bgColor}40` : `0 6px 14px ${bgColor}30`
                 }}
               >
-                {item.emoji ? (
-                  <span className="item-emoji">{item.emoji}</span>
-                ) : item.image?.url || item.icon ? (
+                {!hasError && imagePath ? (
                   <img 
-                    src={item.image?.url || item.icon} 
+                    src={imagePath} 
                     alt={item.name} 
                     className="item-image"
                     loading="lazy"
+                    onError={() => handleImageError(item._id || item.slug)}
                   />
+                ) : item.emoji ? (
+                  <span className="item-emoji">{item.emoji}</span>
                 ) : (
-                  <span className="item-emoji">📁</span>
+                  <span className="item-fallback">
+                    {item.name?.charAt(0).toUpperCase() || '📁'}
+                  </span>
                 )}
 
                 {/* 🎯 BADGE DE CONTEO */}
@@ -360,12 +390,7 @@ const SliderUnificado = ({
         </div>
       )}
 
-      {/* 📱 INDICADOR SCROLL MÓVIL */}
-      {needsScroll && window.innerWidth <= 768 && (
-        <div className="slider-scroll-hint">
-          <span>← Glisser pour voir plus →</span>
-        </div>
-      )}
+     
     </div>
   );
 };

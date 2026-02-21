@@ -303,13 +303,7 @@ const CategorySlider = ({
             ))}
           </div>
         )}
-
-        {/* INDICADOR DE SCROLL MÓVIL */}
-        {needsScroll && window.innerWidth <= 768 && (
-          <div className="category-scroll-hint">
-            <span>← Glisser pour voir plus →</span>
-          </div>
-        )}
+ 
       </div>
     );
   }
@@ -383,12 +377,7 @@ const CategorySlider = ({
         </div>
       )}
 
-      {/* INDICADOR DE SCROLL MÓVIL */}
-      {needsScroll && window.innerWidth <= 768 && (
-        <div className="category-scroll-hint">
-          <span>← Glisser pour voir plus →</span>
-        </div>
-      )}
+   
     </div>
   );
 };
