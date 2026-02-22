@@ -134,7 +134,123 @@ createBoutique: async (req, res) => {
     });
   }
 },
-  // ==================== OTRAS FUNCIONES (sin cambios) ====================
+updateBoutique: async (req, res) => {
+  try {
+    const id = req.params.id;
+    const updateData = req.body;
+    const user = req.user;
+    
+    console.log('📝 Actualizando boutique:', {
+      id,
+      nom_boutique: updateData.nom_boutique,
+      user: user._id
+    });
+
+    // Buscar la boutique
+    const boutique = await Boutique.findById(id);
+    
+    if (!boutique) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Boutique non trouvée' 
+      });
+    }
+    
+    // Verificar que el usuario sea el propietario
+    if (boutique.user.toString() !== user._id.toString()) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Non autorisé à modifier cette boutique' 
+      });
+    }
+
+    // Verificar si el dominio ya existe (si está cambiando)
+    if (updateData.domaine_boutique && 
+        updateData.domaine_boutique !== boutique.domaine_boutique) {
+      const existing = await Boutique.findOne({ 
+        domaine_boutique: updateData.domaine_boutique,
+        _id: { $ne: id } // Excluir la boutique actual
+      });
+      
+      if (existing) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Ce domaine est déjà utilisé. Veuillez en choisir un autre.' 
+        });
+      }
+    }
+
+    // Actualizar subCategory si cambia la categoría
+    let subCategory = boutique.subCategory;
+    if (updateData.categorie && updateData.categorie !== boutique.categorie) {
+      subCategory = 'boutique-' + updateData.categorie
+        .toLowerCase()
+        .replace(/[&]/g, 'et')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+    }
+
+    // Campos que se pueden actualizar
+    const updatableFields = {
+      nom_boutique: updateData.nom_boutique,
+      domaine_boutique: updateData.domaine_boutique,
+      slogan_boutique: updateData.slogan_boutique,
+      description_boutique: updateData.description_boutique,
+      categorie: updateData.categorie,
+      subCategory: subCategory,
+      articleType: updateData.articleType,
+      images: updateData.images,
+      plan: updateData.plan,
+      duree_abonnement: updateData.duree_abonnement,
+      date_debut: updateData.date_debut,
+      proprietaire: updateData.proprietaire,
+      reseaux_sociaux: updateData.reseaux_sociaux,
+      couleur_theme: updateData.couleur_theme,
+      offre_choisie: updateData.offre_choisie,
+      duree_choisie: updateData.duree_choisie,
+      montant_initial: updateData.montant_initial,
+      mois_offerts: updateData.mois_offerts,
+      montant_ttc: updateData.montant_ttc,
+      methode_paiement: updateData.methode_paiement,
+      updatedAt: Date.now()
+    };
+
+    // Eliminar undefined values
+    Object.keys(updatableFields).forEach(key => 
+      updatableFields[key] === undefined && delete updatableFields[key]
+    );
+
+    // Actualizar boutique
+    const updatedBoutique = await Boutique.findByIdAndUpdate(
+      id,
+      updatableFields,
+      { new: true, runValidators: true }
+    ).populate('user', 'name username avatar email mobile');
+
+    console.log('✅ Boutique actualizada con éxito:', updatedBoutique._id);
+
+    res.json({
+      success: true,
+      message: 'Boutique mise à jour avec succès!',
+      boutique: updatedBoutique
+    });
+
+  } catch (error) {
+    console.error('❌ Error en updateBoutique:', error);
+    
+    if (error.code === 11000) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Ce domaine est déjà utilisé. Veuillez en choisir un autre.' 
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+},
   getBoutique: async (req, res) => {
     try {
       const id = req.params.id;
@@ -225,7 +341,7 @@ createBoutique: async (req, res) => {
       });
     }
   },
-
+ 
   verifyBoutique: async (req, res) => {
     try {
       const id = req.params.id;

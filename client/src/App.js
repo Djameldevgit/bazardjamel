@@ -22,7 +22,6 @@ import profile from './pages/users/profile';
 import CreateBoutiquePage from './pages/boutique/createBoutiquePage';
  
  
-import MyBoutiquesPage from './pages/boutique/MyBoutiquesPage';
  
 import roles from './pages/users/roles';
  
@@ -32,7 +31,7 @@ import UserBoutiquesPage from './pages/boutique/UserBoutiquesPage';
 import MesAnnoces from './pages/users/MesAnnoces';
 import ProfileSettings from './pages/users/ProfileSettings';
 import ProfileSaved from './pages/users/ProfileSaved';
-
+ 
 function App() {
   const { auth } = useSelector(state => state)
   const dispatch = useDispatch()
@@ -103,11 +102,10 @@ function App() {
   
         {/* ============ RUTAS DE BOUTIQUES (específicas primero) ============ */}
         <Route exact path="/create-boutique" component={CreateBoutiquePage} />
-        <Route exact path="/edit-boutique/:id" component={CreateBoutiquePage} />  {/* ← AÑADIR :id */}
-        <Route exact path="/boutique/creer" component={CreateBoutiquePage} />
-        <Route exact path="/mes-boutiques" component={UserBoutiquesPage} />
+        <Route exact path="/edit-boutique/:id" component={CreateBoutiquePage} />  
+          <Route exact path="/mes-boutiques" component={UserBoutiquesPage} />
         <Route exact path="/boutique/:id" component={BoutiqueDetailPage} />
-        
+         
  {/* ============ USER DASHBORAD ============ */}
  <Route exact path="/mes-annonces" component={MesAnnoces} />
  <Route exact path="/profile/settings" component={ProfileSettings} />

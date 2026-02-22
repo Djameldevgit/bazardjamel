@@ -1,0 +1,89 @@
+/client
+│
+├── /public
+│   ├── index.html
+│   └── favicon.ico
+│
+├── /src
+│   ├── /assets
+│   │   ├── /images
+│   │   └── /icons
+│   │
+│   ├── /components
+│   │   ├── /layout
+│   │   │   ├── Navbar.js
+│   │   │   ├── Footer.js
+│   │   │   ├── Sidebar.js
+│   │   │   └── ResponsiveMenu.js
+│   │   │
+│   │   ├── /home
+│   │   │   ├── HeroBanner.js
+│   │   │   ├── CategoryCarousel.js
+│   │   │   ├── FeaturedProducts.js
+│   │   │   ├── PromoBanner.js
+│   │   │   └── Testimonials.js
+│   │   │
+│   │   ├── /product
+│   │   │   ├── ProductCard.js
+│   │   │   ├── ProductDetails.js
+│   │   │   ├── ProductGallery.js
+│   │   │   ├── ProductFilter.js
+│   │   │   └── ProductReviews.js
+│   │   │
+│   │   ├── /cart
+│   │   │   ├── CartItem.js
+│   │   │   ├── CartSummary.js
+│   │   │   └── CheckoutSteps.js
+│   │   │
+│   │   ├── /auth
+│   │   │   ├── Login.js
+│   │   │   ├── Register.js
+│   │   │   └── ForgotPassword.js
+│   │   │
+│   │   ├── /user
+│   │   │   ├── UserProfile.js
+│   │   │   ├── EditProfile.js
+│   │   │   └── OrderHistory.js
+│   │   │
+│   │   ├── /admin
+│   │   │   ├── Dashboard.js
+│   │   │   ├── ProductManager.js
+│   │   │   ├── CategoryManager.js
+│   │   │   ├── OrderManager.js
+│   │   │   ├── CouponManager.js
+│   │   │   └── Statistics.js
+│   │
+│   │   ├── /ui
+│   │   │   ├── Button.js
+│   │   │   ├── Modal.js
+│   │   │   ├── Spinner.js
+│   │   │   └── Toast.js
+│   │
+│   ├── /pages
+│   │   ├── HomePage.js
+│   │   ├── ProductPage.js
+│   │   ├── CategoryPage.js
+│   │   ├── CartPage.js
+│   │   ├── CheckoutPage.js
+│   │   ├── ProfilePage.js
+│   │   ├── LoginPage.js
+│   │   ├── RegisterPage.js
+│   │   └── AdminPage.js
+│   │
+│   ├── /redux
+│   │   ├── store.js
+│   │   ├── actions/
+│   │   ├── reducers/
+│   │   └── types.js
+│   │
+│   ├── /utils
+│   │   ├── formatPrice.js
+│   │   ├── api.js
+│   │   ├── auth.js
+│   │   └── responsive.js
+│   │
+│   ├── App.js
+│   ├── index.js
+│   └── routes.js
+│
+└── package.json

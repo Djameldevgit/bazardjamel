@@ -10,8 +10,12 @@ router.get('/boutique/:id', boutiqueController.getBoutique);
 
 // Rutas protegidas
 router.post('/boutique', auth, boutiqueController.createBoutique);
-//router.put('/:id', auth, boutiqueController.updateBoutique);
-router.delete('/:id', auth, boutiqueController.deleteBoutique);
+ 
+// ✅ CORRECTO - con slash antes de :id
+router.patch('/boutique/:id', auth, boutiqueController.updateBoutique);
+//                          ↑
+
+router.delete('/boutique/:id', auth, boutiqueController.deleteBoutique);
 router.get('/user/me', auth, boutiqueController.getUserBoutiques);
 
 // Rutas de administrador

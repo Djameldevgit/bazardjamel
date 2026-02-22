@@ -41,11 +41,13 @@ const boutiqueReducer = (state = initialState, action) => {
         ...state,
         loading: action.payload
       };
-      case BOUTIQUE_TYPES.GET_BOUTIQUES_FOR_HOME:
-  return {
-    ...state,
-    homeBoutiques: action.payload
-  };
+      
+    case BOUTIQUE_TYPES.GET_BOUTIQUES_FOR_HOME:
+      return {
+        ...state,
+        homeBoutiques: action.payload
+      };
+      
     case BOUTIQUE_TYPES.LOADING_BOUTIQUE_PRODUCTS:
       return {
         ...state,
@@ -146,62 +148,71 @@ const boutiqueReducer = (state = initialState, action) => {
         error: null
       };
       
+    // ============ UPDATE BOUTIQUE - VERSIÓN CORREGIDA ============
     case BOUTIQUE_TYPES.UPDATE_BOUTIQUE:
       const updatedBoutique = action.payload;
       
-      // Update in boutiques list
-     
+      // ✅ DEFINIR updatedBoutiques ANTES de usarlo
+      const updatedBoutiquesList = state.boutiques.map(boutique =>
+        boutique._id === updatedBoutique._id ? updatedBoutique : boutique
+      );
       
       // Update in user boutiques list
-      const updatedUserBoutiques = state.userBoutiques.map(boutique =>
+      const updatedUserBoutiquesList = state.userBoutiques.map(boutique =>
         boutique._id === updatedBoutique._id ? updatedBoutique : boutique
       );
       
       // Update current boutique if it's the same
-      const currentBoutique = state.currentBoutique?._id === updatedBoutique._id 
+      const currentBoutiqueUpdated = state.currentBoutique?._id === updatedBoutique._id 
         ? updatedBoutique 
         : state.currentBoutique;
       
       // Update boutique by domain if it's the same
-      const boutiqueByDomain = state.boutiqueByDomain?._id === updatedBoutique._id 
+      const boutiqueByDomainUpdated = state.boutiqueByDomain?._id === updatedBoutique._id 
         ? updatedBoutique 
         : state.boutiqueByDomain;
       
       // 🔥 Actualizar también en boutiquesByCategory
       const updatedBoutiquesByCategory = {};
       Object.keys(state.boutiquesByCategory).forEach(key => {
-        updatedBoutiquesByCategory[key] = {
-          ...state.boutiquesByCategory[key],
-          boutiques: state.boutiquesByCategory[key].boutiques.map(b =>
-            b._id === updatedBoutique._id ? updatedBoutique : b
-          )
-        };
+        const categoryData = state.boutiquesByCategory[key];
+        if (categoryData) {
+          updatedBoutiquesByCategory[key] = {
+            ...categoryData,
+            boutiques: categoryData.boutiques.map(b =>
+              b._id === updatedBoutique._id ? updatedBoutique : b
+            )
+          };
+        }
       });
       
       return {
         ...state,
-        boutiques: updatedBoutiques,
-        userBoutiques: updatedUserBoutiques,
-        currentBoutique,
-        boutiqueByDomain,
+        boutiques: updatedBoutiquesList,
+        userBoutiques: updatedUserBoutiquesList,
+        currentBoutique: currentBoutiqueUpdated,
+        boutiqueByDomain: boutiqueByDomainUpdated,
         boutiquesByCategory: updatedBoutiquesByCategory,
         error: null
       };
       
+    // ============ DELETE BOUTIQUE - VERSIÓN CORREGIDA ============
     case BOUTIQUE_TYPES.DELETE_BOUTIQUE:
       const deletedId = action.payload;
       
-      // 🔥 Eliminar de boutiquesByCategory
+      // ✅ DEFINIR deletedFromCategory ANTES de usarlo
       const deletedFromCategory = {};
       Object.keys(state.boutiquesByCategory).forEach(key => {
         const categoryData = state.boutiquesByCategory[key];
-        const filteredBoutiques = categoryData.boutiques.filter(b => b._id !== deletedId);
-        
-        deletedFromCategory[key] = {
-          ...categoryData,
-          boutiques: filteredBoutiques,
-          total: Math.max(0, categoryData.total - (categoryData.boutiques.length - filteredBoutiques.length))
-        };
+        if (categoryData) {
+          const filteredBoutiques = categoryData.boutiques.filter(b => b._id !== deletedId);
+          
+          deletedFromCategory[key] = {
+            ...categoryData,
+            boutiques: filteredBoutiques,
+            total: Math.max(0, categoryData.total - (categoryData.boutiques.length - filteredBoutiques.length))
+          };
+        }
       });
       
       return {
@@ -228,12 +239,15 @@ const boutiqueReducer = (state = initialState, action) => {
       // 🔥 Actualizar en boutiquesByCategory
       const updateStatusInCategory = {};
       Object.keys(state.boutiquesByCategory).forEach(key => {
-        updateStatusInCategory[key] = {
-          ...state.boutiquesByCategory[key],
-          boutiques: state.boutiquesByCategory[key].boutiques.map(b =>
-            b._id === id ? { ...b, statut } : b
-          )
-        };
+        const categoryData = state.boutiquesByCategory[key];
+        if (categoryData) {
+          updateStatusInCategory[key] = {
+            ...categoryData,
+            boutiques: categoryData.boutiques.map(b =>
+              b._id === id ? { ...b, statut } : b
+            )
+          };
+        }
       });
       
       return {
@@ -303,14 +317,17 @@ const boutiqueReducer = (state = initialState, action) => {
           ),
           // 🔥 Actualizar en boutiquesByCategory
           boutiquesByCategory: Object.keys(state.boutiquesByCategory).reduce((acc, key) => {
-            acc[key] = {
-              ...state.boutiquesByCategory[key],
-              boutiques: state.boutiquesByCategory[key].boutiques.map(b =>
-                b._id === addBoutiqueId 
-                  ? { ...b, productCount: (b.productCount || 0) + 1 }
-                  : b
-              )
-            };
+            const categoryData = state.boutiquesByCategory[key];
+            if (categoryData) {
+              acc[key] = {
+                ...categoryData,
+                boutiques: categoryData.boutiques.map(b =>
+                  b._id === addBoutiqueId 
+                    ? { ...b, productCount: (b.productCount || 0) + 1 }
+                    : b
+                )
+              };
+            }
             return acc;
           }, {}),
           error: null
@@ -349,14 +366,17 @@ const boutiqueReducer = (state = initialState, action) => {
           ),
           // 🔥 Actualizar en boutiquesByCategory
           boutiquesByCategory: Object.keys(state.boutiquesByCategory).reduce((acc, key) => {
-            acc[key] = {
-              ...state.boutiquesByCategory[key],
-              boutiques: state.boutiquesByCategory[key].boutiques.map(b =>
-                b._id === removeBoutiqueId 
-                  ? { ...b, productCount: Math.max(0, (b.productCount || 0) - 1) }
-                  : b
-              )
-            };
+            const categoryData = state.boutiquesByCategory[key];
+            if (categoryData) {
+              acc[key] = {
+                ...categoryData,
+                boutiques: categoryData.boutiques.map(b =>
+                  b._id === removeBoutiqueId 
+                    ? { ...b, productCount: Math.max(0, (b.productCount || 0) - 1) }
+                    : b
+                )
+              };
+            }
             return acc;
           }, {}),
           error: null

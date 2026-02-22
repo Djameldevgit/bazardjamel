@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button, Alert, Spinner, Badge, ProgressBar, Form, Row, Col } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
+import ImageUploadBoutique from '../../components/boutique/ImageUploadBoutique';
 import { createBoutique, updateBoutique } from '../../redux/actions/boutiqueAction';
-import ImageUploadBoutique from './ImageUploadBoutique';
-
+ 
 const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }) => {
   const dispatch = useDispatch();
   const history = useHistory();
@@ -67,24 +67,7 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
   });
 
   // Données pour les sliders
-  const categories = [
-    { id: 'auto', name: 'Automobiles & Véhicules', icon: 'fa-car' },
-    { id: 'informatique', name: 'Informatique', icon: 'fa-laptop' },
-    { id: 'meubles', name: 'Meubles & Maison', icon: 'fa-couch' },
-    { id: 'materiaux', name: 'Matériaux & Equipement', icon: 'fa-tools' },
-    { id: 'telephonie', name: 'Téléphonie & Accessoires', icon: 'fa-mobile-alt' },
-    { id: 'pieces', name: 'Pièces détachées', icon: 'fa-car-battery' },
-    { id: 'electromenager', name: 'Electroménager & Electronique', icon: 'fa-tv' },
-    { id: 'vetements', name: 'Vêtements & Mode', icon: 'fa-tshirt' },
-    { id: 'sante', name: 'Santé & Beauté', icon: 'fa-heartbeat' },
-    { id: 'loisirs', name: 'Loisirs & Divertissement', icon: 'fa-gamepad' },
-    { id: 'emploi', name: 'Offres & Demandes d\'emploi', icon: 'fa-briefcase' },
-    { id: 'immobilier', name: 'Immobilier', icon: 'fa-building' },
-    { id: 'services', name: 'Services', icon: 'fa-concierge-bell' },
-    { id: 'voyages', name: 'Voyages', icon: 'fa-plane' },
-    { id: 'alimentaire', name: 'Alimentaire', icon: 'fa-utensils' },
-    { id: 'sport', name: 'Sport', icon: 'fa-futbol' }
-  ];
+   
 
   const durees = [
     { id: '1', name: '1 Mois' },
@@ -387,7 +370,7 @@ useEffect(() => {
 const prepareSubmitData = () => {
   const offreSelectionnee = offres.find(o => o.id === formData.offre);
   const dureeSelectionnee = durees.find(d => d.id === formData.duree);
-  
+  console.log('📝 prepareSubmitData - formData actual:', formData);
   const planMapping = {
     'Store Basic 50': 'gratuit',
     'Store Basic 100': 'gratuit',
@@ -478,109 +461,151 @@ const prepareSubmitData = () => {
 };
 
   // 🚀 Submit - VERSIÓN MEJORADA CON IMÁGENES
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+// 🚀 Submit - VERSIÓN CORREGIDA CON BOUTIQUEID
+// 🚀 Submit - VERSIÓN CORREGIDA CON DEBUG
+// 🚀 handleSubmit simplificado
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  console.log('🚀 handleSubmit iniciado');
+  console.log('📊 formData actual:', formData);
 
-    if (images.length === 0) {
-      setError('Au moins une image est requise');
-      return;
-    }
+  if (images.length === 0) {
+    setError('Au moins une image est requise');
+    return;
+  }
 
-    setIsSubmitting(true);
-    setError('');
+  setIsSubmitting(true);
+  setError('');
 
-    try {
-      // Preparar datos SIN imágenes (las imágenes van aparte)
-      const boutiqueData = prepareSubmitData();
+  try {
+    const submitData = prepareSubmitData();
+    console.log('📦 submitData preparado:', submitData);
 
-      console.log('📤 Enviando boutique:', {
-        nom: boutiqueData.nom_boutique,
-        imagesCount: images.length,
-        imagesType: images.map(img => img instanceof File ? 'File' : 'Existing')
+    if (isEdit) {
+      // Buscar ID en formData (que ya debería tenerlo)
+      const boutiqueId = formData._id || formData.id;
+      
+      console.log('🔍 Buscando ID para edición:', {
+        formData_id: formData._id,
+        formData_id_props: formData.id,
+        finalId: boutiqueId
       });
 
-      if (isEdit && boutiqueId) {
-        await dispatch(updateBoutique({
-          boutiqueId,
-          boutiqueData,
-          images,  // ← Las imágenes van aparte
-          auth
-        }));
-        setSuccess('Boutique mise à jour avec succès!');
-      } else {
-        const result = await dispatch(createBoutique({
-          boutiqueData,
-          images,  // ← Las imágenes van aparte
-          auth
-        }));
+      if (!boutiqueId) {
+        console.error('❌ No hay ID en formData:', formData);
+        throw new Error('ID de boutique non trouvé pour la modification');
+      }
 
-        if (result) {
-          setSuccess('Boutique créée avec succès!');
-          setTimeout(() => {
-            if (onSuccess) {
-              onSuccess(result.boutique || result);
-            } else {
-              const newId = result.boutique?._id || result._id;
-              if (newId) history.push(`/boutique/${newId}`);
-            }
-          }, 2000);
+      console.log('✅ Enviando update con ID:', boutiqueId);
+      
+      await dispatch(updateBoutique({
+        boutiqueId,
+        boutiqueData: submitData,
+        images,
+        auth
+      }));
+      
+      setSuccess('Boutique mise à jour avec succès!');
+      
+      setTimeout(() => {
+        if (onSuccess) {
+          onSuccess({ ...submitData, _id: boutiqueId });
+        } else {
+          history.push(`/boutique/${boutiqueId}`);
         }
-      }
-    } catch (err) {
-      console.error('❌ Erreur:', err);
-      setError(err.message || 'Erreur lors de la création');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+      }, 2000);
+      
+    } else {
+      // Creación
+      const result = await dispatch(createBoutique({
+        boutiqueData: submitData,
+        images,
+        auth
+      }));
 
+      if (result) {
+        setSuccess('Boutique créée avec succès!');
+        setTimeout(() => {
+          if (onSuccess) {
+            onSuccess(result.boutique || result);
+          } else {
+            const newId = result.boutique?._id || result._id;
+            if (newId) history.push(`/boutique/${newId}`);
+          }
+        }, 2000);
+      }
+    }
+  } catch (err) {
+    console.error('❌ Erreur:', err);
+    setError(err.message || 'Erreur lors de la création');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+// Chargement des données en mode édition - CORREGIDO CON DEBUG
+// ✅ SOLO UN useEffect - ELIMINA EL OTRO
+// ✅ VERSIÓN SIMPLIFICADA - SOLO UN useEffect
+useEffect(() => {
+  console.log('🎯 Wizard useEffect - isEdit:', isEdit, 'boutiqueData:', boutiqueData);
+  
+  if (isEdit && boutiqueData) {
+    console.log('📦 boutiqueData recibido:', boutiqueData);
+    console.log('🔑 ID encontrado:', boutiqueData._id || boutiqueData.id);
+    
+    // Crear nuevo formData con el ID
+    const newFormData = {
+      _id: boutiqueData._id || boutiqueData.id,
+      id: boutiqueData._id || boutiqueData.id,
+      nom_boutique: boutiqueData.nom_boutique || '',
+      domaine_boutique: boutiqueData.domaine_boutique || '',
+      slogan_boutique: boutiqueData.slogan_boutique || '',
+      description_boutique: boutiqueData.description_boutique || '',
+      date_debut: boutiqueData.date_debut?.split('T')[0] || new Date().toISOString().split('T')[0],
+      categorie: boutiqueData.categorie || '',
+      duree: boutiqueData.duree_choisie?.id || boutiqueData.duree || '1',
+      offre: boutiqueData.offre_choisie?.id || boutiqueData.offre || 'Store Basic 50',
+      proprietaire: {
+        nom: boutiqueData.proprietaire?.nom || auth?.user?.name || '',
+        email: boutiqueData.proprietaire?.email || auth?.user?.email || '',
+        telephone: boutiqueData.proprietaire?.telephone || auth?.user?.mobile || '',
+        wilaya: boutiqueData.proprietaire?.wilaya || '',
+        adresse: boutiqueData.proprietaire?.adresse || ''
+      },
+      reseaux_sociaux: {
+        facebook: boutiqueData.reseaux_sociaux?.facebook || '',
+        instagram: boutiqueData.reseaux_sociaux?.instagram || '',
+        tiktok: boutiqueData.reseaux_sociaux?.tiktok || '',
+        whatsapp: boutiqueData.reseaux_sociaux?.whatsapp || '',
+        website: boutiqueData.reseaux_sociaux?.website || ''
+      },
+      couleur_theme: boutiqueData.couleur_theme || '#2563eb',
+      montant_initial: boutiqueData.montant_initial || 0,
+      mois_offerts: boutiqueData.mois_offerts || 0,
+      montant_ttc: boutiqueData.montant_ttc || 0,
+      methode_paiement: boutiqueData.methode_paiement || '',
+      client_nom: boutiqueData.client_nom || auth?.user?.name || '',
+      client_telephone: boutiqueData.client_telephone || auth?.user?.mobile || '',
+      accepte_conditions: boutiqueData.accepte_conditions || false
+    };
+    
+    console.log('📝 Nuevo formData creado:', newFormData);
+    setFormData(newFormData);
+
+    // Cargar imágenes
+    if (boutiqueData.images?.length > 0) {
+      console.log('🖼️ Cargando', boutiqueData.images.length, 'imágenes');
+      setImages(boutiqueData.images.map((img, idx) => ({
+        url: img.url,
+        public_id: img.public_id || `existing_${idx}`,
+        isExisting: true
+      })));
+    }
+  }
+}, [isEdit, boutiqueData, auth]);
   // Chargement des données en mode édition
-  useEffect(() => {
-    if (isEdit && boutiqueData) {
-      setFormData({
-        nom_boutique: boutiqueData.nom_boutique || '',
-        domaine_boutique: boutiqueData.domaine_boutique || '',
-        slogan_boutique: boutiqueData.slogan_boutique || '',
-        description_boutique: boutiqueData.description_boutique || '',
-        date_debut: boutiqueData.date_debut?.split('T')[0] || new Date().toISOString().split('T')[0],
-        categorie: boutiqueData.categorie || '',
-        duree: boutiqueData.duree_choisie?.id || '1',
-        offre: boutiqueData.offre_choisie?.id || 'Store Basic 50',
-        proprietaire: {
-          nom: boutiqueData.proprietaire?.nom || auth?.user?.name || '',
-          email: boutiqueData.proprietaire?.email || auth?.user?.email || '',
-          telephone: boutiqueData.proprietaire?.telephone || auth?.user?.mobile || '',
-          wilaya: boutiqueData.proprietaire?.wilaya || '',
-          adresse: boutiqueData.proprietaire?.adresse || ''
-        },
-        reseaux_sociaux: {
-          facebook: boutiqueData.reseaux_sociaux?.facebook || '',
-          instagram: boutiqueData.reseaux_sociaux?.instagram || '',
-          tiktok: boutiqueData.reseaux_sociaux?.tiktok || '',
-          whatsapp: boutiqueData.reseaux_sociaux?.whatsapp || '',
-          website: boutiqueData.reseaux_sociaux?.website || ''
-        },
-        couleur_theme: boutiqueData.couleur_theme || '#2563eb',
-        montant_initial: boutiqueData.montant_initial || 0,
-        mois_offerts: boutiqueData.mois_offerts || 0,
-        montant_ttc: boutiqueData.montant_ttc || 0,
-        methode_paiement: boutiqueData.methode_paiement || '',
-        client_nom: boutiqueData.client_nom || auth?.user?.name || '',
-        client_telephone: boutiqueData.client_telephone || auth?.user?.mobile || '',
-        accepte_conditions: boutiqueData.accepte_conditions || false
-      });
-
-      // 🖼️ Charger les images existantes
-      if (boutiqueData.images?.length > 0) {
-        setImages(boutiqueData.images.map((img, idx) => ({
-          url: img.url,
-          public_id: img.public_id || `existing_${idx}`,
-          isExisting: true
-        })));
-      }
-    }
-  }, [isEdit, boutiqueData, auth]);
-
+  // Chargement des données en mode édition - CORREGIDO
+ 
   useEffect(() => {
     if (alert.error) setError(alert.error);
     if (alert.success) setSuccess(alert.success);
@@ -650,7 +675,7 @@ const prepareSubmitData = () => {
           {currentStep === 2 && (
             <Step2ChoixOffre
               formData={formData}
-              categories={categories}
+       
               durees={durees}
               offres={offres}
               handleSelectCategorie={handleSelectCategorie}
@@ -1014,9 +1039,9 @@ const Step1Informations = ({ formData, handleInputChange, images, handleChangeIm
 };
 
 // ============ STEP 2: CHOIX OFFRE ============
+// ============ STEP 2: CHOIX OFFRE - CARDS MÁS PEQUEÑAS ============
 const Step2ChoixOffre = ({
   formData,
-  categories,
   durees,
   offres,
   handleSelectCategorie,
@@ -1029,7 +1054,7 @@ const Step2ChoixOffre = ({
 
   const scroll = (ref, direction) => {
     if (ref.current) {
-      const scrollAmount = 300;
+      const scrollAmount = 400;
       ref.current.scrollBy({
         left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
@@ -1037,41 +1062,140 @@ const Step2ChoixOffre = ({
     }
   };
 
+  // 🎯 TODAS LAS CATEGORÍAS DE BOUTIQUES DEL SEED (50+)
+  const categories = [
+    { id: 'agences-immobilieres', name: 'Agences immobilières', icon: 'fa-building', level: 2 },
+    { id: 'promotions-immobilieres', name: 'Promotions immobilières', icon: 'fa-city', level: 2 },
+    { id: 'showroom-automobiles', name: 'Showroom automobiles', icon: 'fa-car', level: 2 },
+    { id: 'showroom-moto', name: 'Showroom moto', icon: 'fa-motorcycle', level: 2 },
+    { id: 'camions-engins', name: 'Camions & Engins', icon: 'fa-truck', level: 2 },
+    { id: 'pieces-accessoires-vehicules', name: 'Pièces & Accessoires Véhicules', icon: 'fa-car-battery', level: 2 },
+    { id: 'location-voitures', name: 'Location de voitures', icon: 'fa-car-side', level: 2 },
+    { id: 'reparation-services-vehicules', name: 'Réparation & Services Véhicules', icon: 'fa-wrench', level: 2 },
+    { id: 'telephones-accessoires', name: 'Téléphones & Accessoires', icon: 'fa-mobile-alt', level: 2 },
+    { id: 'magasin-informatique', name: "Magasin d'informatique", icon: 'fa-laptop', level: 2 },
+    { id: 'magasin-electromenager', name: "Magasin d'électroménager", icon: 'fa-tv', level: 2 },
+    { id: 'equipements-securite', name: 'Equipements de sécurité', icon: 'fa-shield-alt', level: 2 },
+    { id: 'audiovisuel', name: 'Audiovisuel', icon: 'fa-video', level: 2 },
+    { id: 'electronique', name: 'Electronique', icon: 'fa-microchip', level: 2 },
+    { id: 'consoles-jeux-video', name: 'Consoles & Jeux vidéo', icon: 'fa-gamepad', level: 2 },
+    { id: 'reparation-electronique-electromenager', name: 'Réparation Electronique & Electroménager', icon: 'fa-tools', level: 2 },
+    { id: 'vetements-accessoires-mode', name: 'Vêtements & Accessoires de mode', icon: 'fa-tshirt', level: 2 },
+    { id: 'cosmetiques-et-beaute', name: 'Cosmétiques & Beauté', icon: 'fa-spa', level: 2 },
+    { id: 'esthetique-bien-etre', name: 'Esthétique & Bien être', icon: 'fa-hand-sparkles', level: 2 },
+    { id: 'couture-et-confection', name: 'Couture & Confection', icon: 'fa-tshirt', level: 2 },
+    { id: 'maison-meubles', name: 'Maison & Meubles', icon: 'fa-couch', level: 2 },
+    { id: 'meubles-et-bureau', name: 'Meubles de bureau', icon: 'fa-chair-office', level: 2 },
+    { id: 'vaisselles', name: 'Vaisselles', icon: 'fa-utensils', level: 2 },
+    { id: 'jardinages', name: 'Jardinage', icon: 'fa-seedling', level: 2 },
+    { id: 'puericultures-jouets', name: 'Puéricultures & Jouets', icon: 'fa-baby', level: 2 },
+    { id: 'fournitures-articles-scolaires', name: 'Fournitures & Articles scolaires', icon: 'fa-pencil-alt', level: 2 },
+    { id: 'librairie-papeterie', name: 'Librairie & Papeterie', icon: 'fa-book', level: 2 },
+    { id: 'articles-sport', name: 'Articles de sport', icon: 'fa-futbol', level: 2 },
+    { id: 'instruments-et-musique', name: 'Instruments de musique', icon: 'fa-guitar', level: 2 },
+    { id: 'chasse-et-peche', name: 'Chasse & Pêche', icon: 'fa-fish', level: 2 },
+    { id: 'outillages-quincaillerie', name: 'Outillages & Quincaillerie', icon: 'fa-tools', level: 2 },
+    { id: 'materiaux-et-construction', name: 'Matériaux de construction', icon: 'fa-hard-hat', level: 2 },
+    { id: 'materiel-et-professionnel', name: 'Matériel professionnel', icon: 'fa-briefcase', level: 2 },
+    { id: 'travaux-construction-amenagement', name: "Travaux de Construction & d'Aménagement", icon: 'fa-hard-hat', level: 2 },
+    { id: 'matieres-et-premieres', name: 'Matières premières', icon: 'fa-industry', level: 2 },
+    { id: 'agences-voyages', name: 'Agences de voyages', icon: 'fa-plane', level: 2 },
+    { id: 'hotels', name: 'Hôtels', icon: 'fa-hotel', level: 2 },
+    { id: 'restaurants-salles-fetes', name: 'Restaurants & Salles des fêtes', icon: 'fa-utensils', level: 2 },
+    { id: 'traiteur-gateaux', name: 'Traiteur & Gateaux', icon: 'fa-birthday-cake', level: 2 },
+    { id: 'transport-et-demenagement', name: 'Transport & Déménagement', icon: 'fa-truck-moving', level: 2 },
+    { id: 'service-nettoyage-entretien', name: 'Service de Nettoyage & Entretien', icon: 'fa-broom', level: 2 },
+    { id: 'froid-et-climatisation', name: 'Froid & Climatisation', icon: 'fa-snowflake', level: 2 },
+    { id: 'services-sante', name: 'Services de santé', icon: 'fa-heartbeat', level: 2 },
+    { id: 'etudes-consulting', name: 'Etudes & Consulting', icon: 'fa-chart-line', level: 2 },
+    { id: 'logiciel-web-services', name: 'Logiciel & Web services', icon: 'fa-code', level: 2 },
+    { id: 'comptabilite-finance', name: 'Comptabilité & Finance', icon: 'fa-calculator', level: 2 },
+    { id: 'publicite-et-communication', name: 'Publicité & Communication', icon: 'fa-bullhorn', level: 2 },
+    { id: 'ecoles-et-formations', name: 'Ecoles & Formations', icon: 'fa-graduation-cap', level: 2 },
+    { id: 'animaleries', name: 'Animalerie', icon: 'fa-dog', level: 2 },
+    { id: 'alimentaire', name: 'Alimentaire', icon: 'fa-apple-alt', level: 2 }
+  ];
+
+  // Ordenar alfabéticamente
+  const sortedCategories = [...categories].sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+
+  // Dividir en dos filas
+  const middleIndex = Math.ceil(sortedCategories.length / 2);
+  const firstRowCategories = sortedCategories.slice(0, middleIndex);
+  const secondRowCategories = sortedCategories.slice(middleIndex);
+
   return (
     <div>
-      {/* Catégories */}
-      <div className="mb-5">
-        <h6 className="mb-3">
+      {/* Catégories - DOS FILAS CON CARDS PEQUEÑAS */}
+      <div className="mb-4">
+        <div className="d-flex align-items-center mb-2">
           <i className="fas fa-tag text-primary me-2"></i>
-          Catégorie <span className="text-danger">*</span>
-        </h6>
-        <div className="slider-container">
-          <button className="slider-btn slider-btn-left" onClick={() => scroll(categoriesRef, 'left')}>
+          <h6 className="mb-0" style={{ fontSize: '0.95rem' }}>
+            Activité de votre boutique <span className="text-danger">*</span>
+          </h6>
+          <Badge bg="primary" className="ms-2 rounded-pill" style={{ fontSize: '0.7rem' }}>
+            {sortedCategories.length}
+          </Badge>
+        </div>
+        
+        <div className="categories-dual-row-container position-relative">
+          <button 
+            className="slider-btn slider-btn-left" 
+            onClick={() => scroll(categoriesRef, 'left')}
+          >
             <i className="fas fa-chevron-left"></i>
           </button>
-          <div className="slider-scroll" ref={categoriesRef}>
-            {categories.map(cat => (
-              <div
-                key={cat.id}
-                className={`categorie-card text-center ${formData.categorie === cat.name ? 'selected' : ''}`}
-                onClick={() => handleSelectCategorie(cat.name)}
-              >
-                <i className={`fas ${cat.icon} mb-2`} style={{ fontSize: '2rem', color: '#0d6efd' }}></i>
-                <div className="small fw-bold">{cat.name}</div>
-              </div>
-            ))}
+          
+          <div className="categories-dual-row" ref={categoriesRef}>
+            {/* Primera fila */}
+            <div className="categories-row">
+              {firstRowCategories.map(cat => (
+                <div
+                  key={`row1-${cat.id}`}
+                  className={`categorie-card text-center ${formData.categorie === cat.name ? 'selected' : ''}`}
+                  onClick={() => handleSelectCategorie(cat.name)}
+                  title={cat.name}
+                >
+                  <div className="categorie-icon-wrapper">
+                    <i className={`fas ${cat.icon}`}></i>
+                  </div>
+                  <div className="categorie-name">{cat.name}</div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Segunda fila */}
+            <div className="categories-row">
+              {secondRowCategories.map(cat => (
+                <div
+                  key={`row2-${cat.id}`}
+                  className={`categorie-card text-center ${formData.categorie === cat.name ? 'selected' : ''}`}
+                  onClick={() => handleSelectCategorie(cat.name)}
+                  title={cat.name}
+                >
+                  <div className="categorie-icon-wrapper">
+                    <i className={`fas ${cat.icon}`}></i>
+                  </div>
+                  <div className="categorie-name">{cat.name}</div>
+                </div>
+              ))}
+            </div>
           </div>
-          <button className="slider-btn slider-btn-right" onClick={() => scroll(categoriesRef, 'right')}>
+          
+          <button 
+            className="slider-btn slider-btn-right" 
+            onClick={() => scroll(categoriesRef, 'right')}
+          >
             <i className="fas fa-chevron-right"></i>
           </button>
         </div>
       </div>
 
       {/* Durées */}
-      <div className="mb-5">
-        <h6 className="mb-3">
+      <div className="mb-4">
+        <h6 className="mb-2" style={{ fontSize: '0.95rem' }}>
           <i className="fas fa-calendar-alt text-primary me-2"></i>
-          Durée <span className="text-danger">*</span>
+          Durée d'abonnement <span className="text-danger">*</span>
         </h6>
         <div className="slider-container">
           <button className="slider-btn slider-btn-left" onClick={() => scroll(dureesRef, 'left')}>
@@ -1084,11 +1208,11 @@ const Step2ChoixOffre = ({
                 className={`duree-card text-center ${formData.duree === d.id ? 'selected' : ''}`}
                 onClick={() => handleSelectDuree(d.id)}
               >
-                <i className="fas fa-clock mb-2" style={{ fontSize: '2rem', color: '#10b981' }}></i>
-                <div className="fw-bold">{d.name}</div>
+                <i className="fas fa-clock mb-1" style={{ fontSize: '1.5rem', color: '#10b981' }}></i>
+                <div className="fw-bold small">{d.name}</div>
                 {parseInt(d.id) >= 6 && (
-                  <Badge bg="success" className="mt-2">
-                    {parseInt(d.id) >= 12 ? '3 mois offerts' : '1 mois offert'}
+                  <Badge bg="success" className="mt-1" style={{ fontSize: '0.6rem' }}>
+                    {parseInt(d.id) >= 12 ? '3 mois' : '1 mois'}
                   </Badge>
                 )}
               </div>
@@ -1101,10 +1225,10 @@ const Step2ChoixOffre = ({
       </div>
 
       {/* Offres */}
-      <div className="mb-4">
-        <h6 className="mb-3">
+      <div className="mb-3">
+        <h6 className="mb-2" style={{ fontSize: '0.95rem' }}>
           <i className="fas fa-gem text-primary me-2"></i>
-          Pack <span className="text-danger">*</span>
+          Pack d'hébergement <span className="text-danger">*</span>
         </h6>
         <div className="slider-container">
           <button className="slider-btn slider-btn-left" onClick={() => scroll(offresRef, 'left')}>
@@ -1120,27 +1244,27 @@ const Step2ChoixOffre = ({
                 {offre.badge && (
                   <span className="offre-badge">{offre.badge}</span>
                 )}
-                <div className="d-flex justify-content-between align-items-start mb-3">
-                  <h6 className="mb-0" style={{ color: offre.couleur }}>{offre.name}</h6>
-                  <Badge bg={offre.couleur === '#f59e0b' ? 'warning' : 'secondary'}>
-                    {offre.credits} crédits
+                <div className="d-flex justify-content-between align-items-start mb-2">
+                  <h6 className="mb-0" style={{ color: offre.couleur, fontSize: '0.9rem' }}>{offre.name}</h6>
+                  <Badge bg={offre.couleur === '#f59e0b' ? 'warning' : 'secondary'} style={{ fontSize: '0.6rem' }}>
+                    {offre.credits}
                   </Badge>
                 </div>
-                <div className="mb-3">
-                  <div className="text-muted small">Stockage</div>
-                  <div className="h5 mb-0">{offre.storage} MB</div>
+                <div className="mb-2">
+                  <div className="text-muted small" style={{ fontSize: '0.7rem' }}>Stockage</div>
+                  <div className="fw-bold" style={{ fontSize: '0.9rem' }}>{offre.storage} MB</div>
                 </div>
-                <div className="small">
-                  {offre.features.map((f, i) => (
+                <div className="small" style={{ fontSize: '0.7rem' }}>
+                  {offre.features.slice(0, 2).map((f, i) => (
                     <div key={i} className="d-flex align-items-center mb-1">
-                      <i className="fas fa-check text-success me-2" style={{ fontSize: '0.7rem' }}></i>
-                      <span>{f}</span>
+                      <i className="fas fa-check text-success me-1" style={{ fontSize: '0.6rem' }}></i>
+                      <span className="text-truncate" style={{ maxWidth: '140px' }}>{f}</span>
                     </div>
                   ))}
                 </div>
-                <div className="text-center mt-3 pt-2 border-top">
-                  <span className="fw-bold text-primary">{offre.prix_mois.toLocaleString()} DA</span>
-                  <small className="text-muted d-block">/mois</small>
+                <div className="text-center mt-2 pt-1 border-top">
+                  <span className="fw-bold text-primary" style={{ fontSize: '0.9rem' }}>{offre.prix_mois.toLocaleString()} DA</span>
+                  <small className="text-muted d-block" style={{ fontSize: '0.6rem' }}>/mois</small>
                 </div>
               </div>
             ))}
@@ -1151,36 +1275,115 @@ const Step2ChoixOffre = ({
         </div>
       </div>
 
+      {/* CSS actualizado con cards más pequeñas */}
       <style jsx="true">{`
-        .slider-container {
+        .categories-dual-row-container {
           position: relative;
-          padding: 0 40px;
+          padding: 0 35px;
+          margin: 10px 0 5px;
         }
         
-        .slider-scroll {
+        .categories-dual-row {
           display: flex;
+          flex-direction: column;
           overflow-x: auto;
           scroll-behavior: smooth;
-          gap: 15px;
-          padding: 10px 0;
+          padding: 5px 0;
           scrollbar-width: thin;
+          scrollbar-color: #0d6efd #e9ecef;
+          max-height: 170px;
+          border-radius: 6px;
         }
         
-        .slider-scroll::-webkit-scrollbar {
+        .categories-dual-row::-webkit-scrollbar {
           height: 6px;
         }
         
-        .slider-scroll::-webkit-scrollbar-thumb {
-          background: #ccc;
+        .categories-dual-row::-webkit-scrollbar-track {
+          background: #e9ecef;
           border-radius: 3px;
+        }
+        
+        .categories-dual-row::-webkit-scrollbar-thumb {
+          background: #0d6efd;
+          border-radius: 3px;
+          border: 1px solid #e9ecef;
+        }
+        
+        .categories-row {
+          display: flex;
+          gap: 8px;
+          padding: 5px 3px;
+          min-width: max-content;
+        }
+        
+        .categorie-card {
+          min-width: 130px;
+          padding: 8px 6px;
+          border: 1px solid #dee2e6;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          background: white;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+        }
+        
+        .categorie-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(13, 110, 253, 0.1);
+          border-color: #0d6efd;
+        }
+        
+        .categorie-card.selected {
+          border-color: #0d6efd;
+          background: #f0f7ff;
+        }
+        
+        .categorie-icon-wrapper {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: #f8f9fa;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .categorie-card.selected .categorie-icon-wrapper {
+          background: #0d6efd;
+        }
+        
+        .categorie-icon-wrapper i {
+          font-size: 1.2rem;
+          color: #0d6efd;
+        }
+        
+        .categorie-card.selected .categorie-icon-wrapper i {
+          color: white;
+        }
+        
+        .categorie-name {
+          font-size: 0.7rem;
+          font-weight: 600;
+          text-align: center;
+          line-height: 1.2;
+          max-width: 120px;
+          color: #2c3e50;
+        }
+        
+        .categorie-card.selected .categorie-name {
+          color: #0d6efd;
         }
         
         .slider-btn {
           position: absolute;
           top: 50%;
           transform: translateY(-50%);
-          width: 36px;
-          height: 36px;
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
           background: white;
           border: 1px solid #dee2e6;
@@ -1188,13 +1391,15 @@ const Step2ChoixOffre = ({
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          transition: all 0.3s ease;
+          transition: all 0.2s ease;
           z-index: 10;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+          font-size: 0.8rem;
         }
         
         .slider-btn:hover {
           background: #f8f9fa;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          box-shadow: 0 3px 8px rgba(0,0,0,0.15);
         }
         
         .slider-btn-left {
@@ -1205,25 +1410,43 @@ const Step2ChoixOffre = ({
           right: 0;
         }
         
-        .categorie-card, .duree-card, .offre-card {
-          min-width: 180px;
-          padding: 15px;
-          border: 2px solid #dee2e6;
-          border-radius: 10px;
+        .slider-container {
+          position: relative;
+          padding: 0 30px;
+        }
+        
+        .slider-scroll {
+          display: flex;
+          overflow-x: auto;
+          scroll-behavior: smooth;
+          gap: 8px;
+          padding: 5px 0;
+          scrollbar-width: thin;
+        }
+        
+        .slider-scroll::-webkit-scrollbar {
+          height: 4px;
+        }
+        
+        .slider-scroll::-webkit-scrollbar-thumb {
+          background: #ccc;
+          border-radius: 2px;
+        }
+        
+        .duree-card {
+          min-width: 90px;
+          padding: 8px 5px;
+          border: 1px solid #dee2e6;
+          border-radius: 6px;
           cursor: pointer;
-          transition: all 0.3s ease;
+          transition: all 0.2s ease;
           flex-shrink: 0;
           background: white;
         }
         
-        .categorie-card:hover, .duree-card:hover, .offre-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        
-        .categorie-card.selected {
-          border-color: #0d6efd;
-          background: rgba(13, 110, 253, 0.05);
+        .duree-card:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         }
         
         .duree-card.selected {
@@ -1231,45 +1454,66 @@ const Step2ChoixOffre = ({
           background: rgba(16, 185, 129, 0.05);
         }
         
+        .offre-card {
+          min-width: 160px;
+          padding: 8px;
+          border: 1px solid #dee2e6;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          flex-shrink: 0;
+          background: white;
+          position: relative;
+        }
+        
+        .offre-card:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
         .offre-card.selected {
           border-color: #f59e0b;
           background: rgba(245, 158, 11, 0.05);
         }
         
-        .offre-card {
-          min-width: 250px;
-        }
-        
         .offre-badge {
           position: absolute;
-          top: -10px;
-          right: 10px;
+          top: -6px;
+          right: 6px;
           background: #f59e0b;
           color: white;
-          padding: 4px 12px;
-          border-radius: 20px;
-          font-size: 0.75rem;
+          padding: 2px 6px;
+          border-radius: 10px;
+          font-size: 0.55rem;
           font-weight: bold;
         }
         
         @media (max-width: 768px) {
-          .categorie-card, .duree-card {
-            min-width: 140px;
+          .categories-dual-row-container {
+            padding: 0 28px;
+          }
+          
+          .categorie-card {
+            min-width: 100px;
+          }
+          
+          .categorie-name {
+            font-size: 0.65rem;
+            max-width: 90px;
+          }
+          
+          .duree-card {
+            min-width: 75px;
           }
           
           .offre-card {
-            min-width: 220px;
-          }
-          
-          .slider-container {
-            padding: 0 30px;
+            min-width: 140px;
           }
         }
       `}</style>
     </div>
   );
 };
-
 // ============ STEP 3: RÉSUMÉ ============
 const Step3Resume = ({ formData, offres, durees, transactionId }) => {
   const offreSelectionnee = offres.find(o => o.id === formData.offre);

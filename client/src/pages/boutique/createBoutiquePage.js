@@ -3,8 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { Container, Alert, Breadcrumb, Spinner } from 'react-bootstrap';
 import { useParams, useHistory, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import CreateBoutiqueWizard from '../../components/boutique/CreateBoutiqueWizard';
-import { getBoutique } from '../../redux/actions/boutiqueAction';
+import CreateBoutiqueWizard from './CreateBoutiqueWizard';
+ 
 import axios from 'axios';
 import { BASE_URL } from '../../utils/config';
 
@@ -116,87 +116,28 @@ const CreateBoutiquePage = () => {
       </div>
       
       {/* Información sobre créditos */}
-      {!isEdit && (
-        <Alert variant="info" className="mb-5">
-          <div className="d-flex align-items-center">
-            <div className="me-3">
-              <i className="fas fa-coins fa-2x"></i>
-            </div>
-            <div>
-              <h5 className="alert-heading mb-2">Crédits requis</h5>
-              <p className="mb-2">
-                La création d'une boutique nécessite des crédits. 
-                Vous pouvez choisir un plan gratuit ou des plans payants avec plus de fonctionnalités.
-              </p>
-              <p className="mb-0">
-                <strong>Votre solde actuel:</strong> {auth.user?.credits || 0} crédits
-                <a href="/profile/credits" className="ms-3">
-                  <i className="fas fa-plus-circle me-1"></i>
-                  Acheter des crédits
-                </a>
-              </p>
-            </div>
-          </div>
-        </Alert>
-      )}
-      
-      {/* Wizard de creación/edición */}
-      <CreateBoutiqueWizard 
-        onSuccess={handleSuccess}
-        isEdit={isEdit}
-        boutiqueData={boutiqueData}  // ← Pasar datos si es edición
-      />
-      
-      {/* Características */}
-      {!isEdit && (
-        <div className="mt-5 pt-5 border-top">
-          <h3 className="mb-4 text-center">Pourquoi créer une boutique ?</h3>
-          <div className="row g-4">
-            {[
-              {
-                icon: 'fa-globe',
-                title: 'Présence en ligne',
-                desc: 'Soyez visible 24h/24, 7j/7'
-              },
-              {
-                icon: 'fa-chart-line',
-                title: 'Croissance',
-                desc: 'Augmentez vos ventes avec notre marché'
-              },
-              {
-                icon: 'fa-tools',
-                title: 'Outils professionnels',
-                desc: 'Gestion complète des produits et commandes'
-              },
-              {
-                icon: 'fa-shield-alt',
-                title: 'Sécurité',
-                desc: 'Paiements sécurisés et données protégées'
-              },
-              {
-                icon: 'fa-users',
-                title: 'Clientèle',
-                desc: 'Accédez à des milliers d\'acheteurs'
-              },
-              {
-                icon: 'fa-mobile-alt',
-                title: 'Mobile-friendly',
-                desc: 'Boutique optimisée pour mobile'
-              }
-            ].map((feature, idx) => (
-              <div className="col-md-4" key={idx}>
-                <div className="text-center p-3">
-                  <div className="feature-icon mb-3">
-                    <i className={`fas ${feature.icon} fa-2x text-primary`}></i>
-                  </div>
-                  <h5>{feature.title}</h5>
-                  <p className="text-muted">{feature.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+      {isEdit ? (
+      // Modo edición: esperar a que los datos estén listos
+      boutiqueData ? (
+        <CreateBoutiqueWizard 
+          isEdit={true}
+          boutiqueData={boutiqueData}
+          onSuccess={handleSuccess}
+        />
+      ) : (
+        <div className="text-center py-5">
+          <Spinner animation="border" variant="primary" />
+          <p className="mt-3">Chargement des données de la boutique...</p>
         </div>
-      )}
+      )
+    ) : (
+      // Modo creación: renderizar inmediatamente
+      <CreateBoutiqueWizard 
+        isEdit={false}
+        boutiqueData={null}
+        onSuccess={handleSuccess}
+      />
+    )}
       
       {/* Estilos */}
       <style jsx>{`

@@ -20,7 +20,7 @@ import AlimentairesFields from './specificFields/AlimentairesFields';
 import ServicesField from './specificFields/ServicesFields';
 import VoyagesFields from './specificFields/VoyagesFields';
 import EmploiFields from './specificFields/EmploiFields';
-import BoutiqueSelector from '../boutique/BoutiqueSelectorField';
+//import BoutiqueSelector from '../boutique/BoutiqueSelectorField';
 import VehiculesFields from './specificFields/VehiculesFields';
 import BaseCategoryField from './specificFields/BaseCategoryField';
  
@@ -43,7 +43,7 @@ const CATEGORY_COMPONENTS = {
   'materiaux': MateriauxFields,
   'voyages': VoyagesFields,
   'emploi': EmploiFields,
-  'boutiques': BoutiqueSelector,
+  //'boutiques': BoutiqueSelector,
    
 
 };

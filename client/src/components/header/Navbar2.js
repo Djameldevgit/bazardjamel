@@ -586,6 +586,16 @@ const Navbar2 = () => {
                           <MenuItem icon={FaUserCircle} iconColor="#667eea" to={`/boutique/${auth.user._id}`}>
                             <div className="d-flex align-items-center justify-content-between"></div>
                           </MenuItem>
+                      
+                          <MenuItem icon={FaUserCircle} iconColor="#667eea" to='/boutiques'>
+                            <div className="d-flex align-items-center justify-content-between">Boutiques page</div>
+                          </MenuItem>
+                          <MenuItem icon={FaUserCircle} iconColor="#667eea" to='/mes-boutiques'>
+                            <div className="d-flex align-items-center justify-content-between">mes-boutiques</div>
+                          </MenuItem>
+
+                           
+
                         </div>
 
                         <MenuItem icon={FaUsers} iconColor="#28a745" to="/users">
