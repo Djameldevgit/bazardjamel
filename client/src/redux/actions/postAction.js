@@ -179,7 +179,7 @@ export const updatePost = ({
     });
 
     // Enviar al backend
-    const res = await patchDataAPI(`posts/${postId}`, postToSend, auth.token);
+    const res = await patchDataAPI(`post/${postId}`, postToSend, auth.token);
     
     console.log('✅ Respuesta:', res.data);
 

@@ -378,13 +378,121 @@ updateBoutique: async (req, res) => {
       });
     }
   },
-
-  // controllers/boutiqueController.js
-
- // controllers/boutiqueController.js
-
-// ==================== FILTER BOUTIQUES MEJORADO ====================
-filterBoutiques: async (req, res) => {
+  filterBoutiques: async (req, res) => {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 12;
+      const skip = (page - 1) * limit;
+  
+      const { category: categorySlug, sub: subSlug } = req.query;
+  
+      if (!categorySlug || categorySlug !== 'boutiques') {
+        return res.status(400).json({ success: false, message: 'Categoría no válida' });
+      }
+  
+      const categoryDoc = await Category.findOne({ 
+        slug: 'boutiques', level: 1, isActive: true 
+      }).lean();
+  
+      if (!categoryDoc) {
+        return res.status(404).json({ success: false, message: 'Categoría Boutiques no encontrada' });
+      }
+  
+      const filter = { category: categoryDoc._id, isActive: true };
+  
+      // Filtrado por subcategoría
+      if (subSlug && subSlug !== 'undefined' && subSlug !== 'null') {
+        const subCategoryDoc = await Category.findOne({
+          slug: subSlug, level: 2, parent: categoryDoc._id, isActive: true
+        }).lean();
+  
+        if (subCategoryDoc) {
+          const nombreOriginal = subCategoryDoc.name || '';
+          const soloSlug = subCategoryDoc.slug || '';
+  
+          const variantes = [
+            nombreOriginal,
+            nombreOriginal.replace('Boutique ', '').replace("d'", '').trim(),
+            nombreOriginal.toLowerCase(),
+            soloSlug,
+            soloSlug.replace(/-/g, ' ')
+          ]
+          .filter(v => typeof v === 'string' && v.trim() !== ''); // ✅ solo strings válidos
+  
+          const orConditions = variantes.flatMap(v => {
+            const escaped = v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return [
+              { categorie: { $regex: escaped, $options: 'i' } },
+              { subCategory: { $regex: escaped, $options: 'i' } }
+            ];
+          });
+  
+          filter.$or = Array.from(new Set(orConditions.map(JSON.stringify))).map(JSON.parse);
+        } else {
+          // Buscar por texto si subcategoría no existe en BD
+          const cleaned = subSlug.replace(/-/g, ' ');
+          filter.$or = [
+            { categorie: { $regex: cleaned, $options: 'i' } },
+            { subCategory: { $regex: cleaned, $options: 'i' } }
+          ];
+        }
+      }
+  
+      console.log('🎯 Filtro final:', JSON.stringify(filter, null, 2));
+  
+      const [boutiques, total] = await Promise.all([
+        Boutique.find(filter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .populate('user', 'name username avatar email mobile')
+          .lean(),
+        Boutique.countDocuments(filter)
+      ]);
+  
+      const children = await Category.find({
+        parent: categoryDoc._id, level: 2, isActive: true
+      })
+      .select('_id name slug level emoji icon iconType iconColor bgColor')
+      .sort({ order: 1 })
+      .lean();
+  
+      return res.json({
+        success: true,
+        boutiques,
+        total,
+        page,
+        limit,
+        hasMore: page * limit < total,
+        totalPages: Math.ceil(total / limit),
+        pagination: {
+          currentPage: page,
+          totalPages: Math.ceil(total / limit),
+          totalPosts: total,
+          limit,
+          hasMore: page * limit < total
+        },
+        categoryInfo: {
+          _id: categoryDoc._id,
+          name: categoryDoc.name,
+          slug: categoryDoc.slug,
+          level: categoryDoc.level,
+          emoji: categoryDoc.emoji || '',
+          icon: categoryDoc.icon || '',
+          iconType: categoryDoc.iconType || 'emoji',
+          iconColor: categoryDoc.iconColor || '#8B5CF6',
+          bgColor: categoryDoc.bgColor || '#EDE9FE'
+        },
+        children: children.map(c => ({ ...c, articles: [] }))
+      });
+  
+    } catch (error) {
+      console.error('❌ Error en filterBoutiques:', error);
+      res.status(500).json({ success: false, message: 'Error al filtrar boutiques', error: error.message });
+    }
+  },
+   
+/* filterBoutiques: async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 12;
@@ -610,7 +718,7 @@ filterBoutiques: async (req, res) => {
       error: error.message 
     });
   }
-},
+},*/
 };
 
 module.exports = boutiqueCtrl;

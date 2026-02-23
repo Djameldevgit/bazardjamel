@@ -38,8 +38,9 @@ const postSchema = new mongoose.Schema(
       required: true,
       index: true
     },
-
-    // 📝 CONTENIDO
+    boutique: { type: mongoose.Schema.Types.ObjectId, ref: 'Boutique', index: true },
+    likes: [{ type: mongoose.Types.ObjectId, ref: 'user' }],
+    comments: [{ type: mongoose.Types.ObjectId, ref: 'comment' }],
     title: {
       type: String,
       required: true,

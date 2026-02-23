@@ -1,28 +1,27 @@
+// components/boutique/BoutiqueCard.jsx
 import React, { useState } from 'react';
-import { Card,Form, Badge, Dropdown, Modal, Button } from 'react-bootstrap';
+import { Card, Form, Badge, Dropdown, Modal, Button } from 'react-bootstrap';
 import { useHistory } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
-  Star, 
-  CheckCircle, 
-  GeoAlt, 
-  Tag, 
-  Eye,
-  BoxSeam,
-  Clock,
-  Shop,
-  ThreeDotsVertical,
-  Pencil,
-  Trash,
-  Archive,
-  EyeFill,
-  Flag
-} from 'react-bootstrap-icons';
-//import { deleteBoutique } from '../../redux/actions/boutiqueAction';
-import { GLOBALTYPES } from '../redux/actions/globalTypes';
+  FaStore, 
+  FaCheckCircle, 
+  FaMapMarkerAlt, 
+  FaTag, 
+  FaEye,
+  FaBoxes,
+  FaClock,
+  FaCrown,
+  FaEllipsisV,
+  FaEdit,
+  FaTrash,
+  FaArchive,
+  FaFlag,
+  FaStar,
+  FaRegStar
+} from 'react-icons/fa';
 import { deleteBoutique, updateBoutiqueStatus } from '../redux/actions/boutiqueAction';
- 
- 
+import { GLOBALTYPES } from '../redux/actions/globalTypes';
 
 const BoutiqueCard = ({ boutique }) => {
   const history = useHistory();
@@ -37,16 +36,12 @@ const BoutiqueCard = ({ boutique }) => {
   const isAdmin = auth.user?.role === 'admin';
 
   const handleClick = (e) => {
-    // Evitar navegación si se hizo click en el dropdown
-    if (e.target.closest('.dropdown-toggle') || e.target.closest('.dropdown-menu')) {
+    if (e.target.closest('.dropdown-toggle') || e.target.closest('.dropdown-menu') || e.target.closest('.report-btn')) {
       return;
     }
     history.push(`/boutique/${boutique._id}`);
   };
 
- 
-   
-   
   const handleReport = (e) => {
     e.stopPropagation();
     setShowReportModal(true);
@@ -54,7 +49,6 @@ const BoutiqueCard = ({ boutique }) => {
 
   const submitReport = (e) => {
     e.stopPropagation();
-    // Logique de signalement à implémenter
     setShowReportModal(false);
     dispatch({ 
       type: GLOBALTYPES.ALERT, 
@@ -62,8 +56,8 @@ const BoutiqueCard = ({ boutique }) => {
     });
   };
 
-  // Obtener la primera imagen
-  const getMainImage = () => {
+  // Obtener la primera imagen para el logo
+  const getLogoImage = () => {
     if (boutique.images && boutique.images.length > 0) {
       const firstImage = boutique.images[0];
       return firstImage.url || firstImage;
@@ -99,166 +93,175 @@ const BoutiqueCard = ({ boutique }) => {
     }
   };
   
-  // En BoutiqueCard.jsx - handleEdit CORREGIDO
-const handleEdit = (e) => {
-  e.stopPropagation();
-  // ✅ Usar pathname correcto, no como slug de categoría
-  history.push(`/edit-boutique/${boutique._id}`, { 
-    boutiqueData: boutique,
-    isEdit: true 
-  });
-};
-
-  // Obtener emoji por categoría
-  const getCategoryEmoji = () => {
-    const category = boutique.categorie?.toLowerCase() || '';
-    const emojiMap = {
-      'automobiles': '🚗', 'véhicules': '🚗', 'informatique': '💻',
-      'meubles': '🪑', 'maison': '🏠', 'téléphonie': '📱',
-      'électronique': '📺', 'vêtements': '👕', 'mode': '👗',
-      'santé': '💊', 'beauté': '💄', 'sport': '⚽',
-      'loisirs': '🎮', 'alimentaire': '🍔', 'services': '🔧',
-      'immobilier': '🏢'
-    };
-    for (const [key, emoji] of Object.entries(emojiMap)) {
-      if (category.includes(key)) return emoji;
-    }
-    return '🏪';
+  const handleEdit = (e) => {
+    e.stopPropagation();
+    history.push(`/edit-boutique/${boutique._id}`, { 
+      boutiqueData: boutique,
+      isEdit: true 
+    });
   };
 
-  const mainImage = getMainImage();
-  const categoryEmoji = getCategoryEmoji();
+  // Obtener color de fondo basado en la categoría
+  const getCategoryColor = () => {
+    const category = boutique.categorie?.toLowerCase() || '';
+    const colorMap = {
+      'automobiles': '#FF6B6B', 'véhicules': '#FF6B6B',
+      'informatique': '#4ECDC4', 'téléphonie': '#4ECDC4',
+      'maison': '#FFB347', 'meubles': '#FFB347',
+      'mode': '#FF8C94', 'vêtements': '#FF8C94',
+      'santé': '#A8E6CF', 'beauté': '#A8E6CF',
+      'immobilier': '#6C5B7B', 'alimentaire': '#FFA07A',
+      'sport': '#45B7D1', 'services': '#95A5A6'
+    };
+    return colorMap[category] || boutique.couleur_theme || '#6366F1';
+  };
+
+  const logoImage = getLogoImage();
+  const categoryColor = getCategoryColor();
   const planName = boutique.plan === 'gratuit' ? 'Gratuit' : 
                    boutique.plan === 'basique' ? 'Basique' :
                    boutique.plan === 'premium' ? 'Premium' : 'Pro';
 
-  // Badge de statut (actif/inactif)
-  const StatusBadge = () => (
-    <Badge 
-      bg={boutique.isActive ? 'success' : 'secondary'}
-      className="position-absolute bottom-0 start-0 m-2"
-      style={{ 
-        padding: '0.25rem 0.5rem',
-        borderRadius: '20px',
-        fontSize: '0.7rem'
-      }}
-    >
-      {boutique.isActive ? '● Actif' : '○ Inactif'}
-    </Badge>
-  );
+  // Fonction pour afficher les étoiles
+  const renderStars = (rating) => {
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+      if (i <= Math.round(rating)) {
+        stars.push(<FaStar key={i} className="text-warning" size={12} />);
+      } else {
+        stars.push(<FaRegStar key={i} className="text-secondary" size={12} style={{ opacity: 0.5 }} />);
+      }
+    }
+    return stars;
+  };
 
   return (
     <>
       <Card 
-        className={`boutique-card h-100 border-0 shadow-sm ${!boutique.isActive ? 'opacity-50' : ''}`}
+        className={`boutique-card h-100 border-0 ${!boutique.isActive ? 'opacity-50' : ''}`}
         onClick={handleClick}
         style={{ 
           cursor: 'pointer', 
           transition: 'all 0.3s ease',
           borderRadius: '16px',
           overflow: 'hidden',
-          position: 'relative'
+          position: 'relative',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
         }}
       >
-        {/* Image Section */}
-        <div className="position-relative">
-          {mainImage ? (
-            <div 
-              className="image-container"
-              style={{
-                height: '180px',
-                backgroundColor: '#f8f9fa',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-            >
-              <img 
-                src={mainImage}
-                alt={boutique.nom_boutique}
-                style={{ 
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  transition: 'transform 0.3s ease'
-                }}
-                className="card-image"
-              />
-              
-              {/* Gradient Overlay */}
-              <div 
-                className="position-absolute bottom-0 start-0 w-100"
-                style={{
-                  height: '50%',
-                  background: 'linear-gradient(to top, rgba(0,0,0,0.5), transparent)'
-                }}
-              />
-            </div>
-          ) : (
-            <div 
-              className="d-flex align-items-center justify-content-center"
-              style={{
-                height: '180px',
-                background: `linear-gradient(135deg, ${boutique.couleur_theme || '#2563eb'}20, #f8f9fa)`,
-                position: 'relative'
-              }}
-            >
-              <span style={{ fontSize: '4rem' }}>
-                {categoryEmoji}
-              </span>
-            </div>
-          )}
-
-          {/* Badges */}
-          <div className="position-absolute top-0 start-0 m-2 d-flex gap-1">
+        {/* Background color (bientôt remplacé par image internet) */}
+        <div 
+          className="position-relative"
+          style={{
+            height: '120px',
+            background: `linear-gradient(135deg, ${categoryColor} 0%, ${categoryColor}dd 100%)`,
+            position: 'relative'
+          }}
+        >
+          {/* Badges supérieurs */}
+          <div className="position-absolute top-0 start-0 m-3 d-flex gap-1">
             {boutique.isVerified && (
               <Badge 
                 bg="success"
                 style={{ 
-                  padding: '0.5rem 0.75rem',
+                  padding: '0.3rem 0.6rem',
                   borderRadius: '20px',
-                  fontSize: '0.75rem',
-                  fontWeight: 'normal'
+                  fontSize: '0.7rem',
+                  fontWeight: 'normal',
+                  backgroundColor: 'rgba(40, 167, 69, 0.95)',
+                  border: '1px solid rgba(255,255,255,0.3)'
                 }}
               >
-                <CheckCircle size={12} className="me-1" />
+                <FaCheckCircle size={10} className="me-1" />
                 Vérifié
               </Badge>
             )}
           </div>
 
-          <div className="position-absolute top-0 end-0 m-2 d-flex gap-1">
+          <div className="position-absolute top-0 end-0 m-3">
             <Badge 
               bg={boutique.plan === 'premium' ? 'warning' : 'secondary'}
               style={{ 
-                padding: '0.5rem 0.75rem',
+                padding: '0.3rem 0.6rem',
                 borderRadius: '20px',
                 fontSize: '0.7rem',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
+                backgroundColor: boutique.plan === 'premium' ? 'rgba(255, 193, 7, 0.95)' : 'rgba(108, 117, 125, 0.95)',
+                border: '1px solid rgba(255,255,255,0.3)'
               }}
             >
-              <Shop size={12} className="me-1" />
+              <FaCrown size={10} className="me-1" />
               {planName}
             </Badge>
           </div>
-
-          <StatusBadge />
         </div>
 
-        <Card.Body className="d-flex flex-column p-3">
-          {/* En-tête avec nom et menu d'actions */}
+        {/* Logo circulaire - Élément distinctif */}
+        <div className="position-relative text-center" style={{ marginTop: '-50px', marginBottom: '10px' }}>
+          <div 
+            className="d-inline-flex align-items-center justify-content-center"
+            style={{
+              width: '100px',
+              height: '100px',
+              borderRadius: '50%',
+              backgroundColor: 'white',
+              border: `4px solid ${categoryColor}`,
+              boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
+              overflow: 'hidden',
+              position: 'relative',
+              zIndex: 2,
+              transition: 'transform 0.3s ease'
+            }}
+          >
+            {logoImage ? (
+              <img 
+                src={logoImage}
+                alt={boutique.nom_boutique}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+              />
+            ) : (
+              <FaStore size={50} color={categoryColor} />
+            )}
+          </div>
+
+          {/* Indicateur de statut */}
+          {!boutique.isActive && (
+            <div 
+              className="position-absolute"
+              style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                backgroundColor: '#6c757d',
+                border: '2px solid white',
+                bottom: '5px',
+                left: '55%',
+                transform: 'translateX(-50%)'
+              }}
+              title="Boutique inactive"
+            />
+          )}
+        </div>
+
+        <Card.Body className="d-flex flex-column pt-0 px-3 pb-3">
+          {/* En-tête avec nom et menu */}
           <div className="d-flex justify-content-between align-items-start mb-2">
-            <div className="flex-grow-1">
-              <h6 className="fw-bold mb-0" style={{ fontSize: '1rem' }}>
+            <div className="flex-grow-1 text-center">
+              <h6 className="fw-bold mb-1" style={{ fontSize: '1.1rem', color: categoryColor }}>
                 {boutique.nom_boutique}
               </h6>
               {boutique.slogan_boutique && (
-                <small className="text-muted d-block text-truncate" style={{ maxWidth: '200px' }}>
-                  {boutique.slogan_boutique}
+                <small className="text-muted d-block" style={{ fontStyle: 'italic', fontSize: '0.8rem' }}>
+                  "{boutique.slogan_boutique}"
                 </small>
               )}
             </div>
             
-            {/* Dropdown d'actions - visible uniquement pour propriétaire ou admin */}
+            {/* Dropdown d'actions */}
             {(isOwner || isAdmin) && (
               <Dropdown align="end" onClick={(e) => e.stopPropagation()}>
                 <Dropdown.Toggle 
@@ -266,18 +269,18 @@ const handleEdit = (e) => {
                   className="p-0 text-dark"
                   style={{ textDecoration: 'none', boxShadow: 'none' }}
                 >
-                  <ThreeDotsVertical size={18} />
+                  <FaEllipsisV size={16} />
                 </Dropdown.Toggle>
 
                 <Dropdown.Menu>
                   <Dropdown.Item onClick={handleEdit}>
-                    <Pencil size={14} className="me-2" />
+                    <FaEdit size={14} className="me-2" />
                     Modifier
                   </Dropdown.Item>
                   
                   {(isOwner || isAdmin) && (
                     <Dropdown.Item onClick={handleToggleActive}>
-                      <Archive size={14} className="me-2" />
+                      <FaArchive size={14} className="me-2" />
                       {boutique.isActive ? 'Désactiver' : 'Activer'}
                     </Dropdown.Item>
                   )}
@@ -287,7 +290,7 @@ const handleEdit = (e) => {
                       onClick={() => setShowDeleteModal(true)}
                       className="text-danger"
                     >
-                      <Trash size={14} className="me-2" />
+                      <FaTrash size={14} className="me-2" />
                       Supprimer
                     </Dropdown.Item>
                   )}
@@ -295,54 +298,101 @@ const handleEdit = (e) => {
               </Dropdown>
             )}
 
-            {/* Bouton de signalement pour les autres utilisateurs */}
+            {/* Bouton de signalement */}
             {!isOwner && !isAdmin && (
               <Button
                 variant="link"
-                className="p-0 text-muted"
+                className="p-0 text-muted report-btn"
                 onClick={handleReport}
                 style={{ textDecoration: 'none' }}
                 size="sm"
               >
-                <Flag size={16} />
+                <FaFlag size={16} />
               </Button>
             )}
           </div>
 
           {/* Catégorie */}
-          <div className="d-flex align-items-center text-muted small mb-2">
-            <Tag size={12} className="me-1 flex-shrink-0" />
-            <span className="text-truncate">{boutique.categorie || 'Boutique'}</span>
+          <div className="text-center mb-3">
+            <span 
+              style={{
+                backgroundColor: `${categoryColor}15`,
+                color: categoryColor,
+                padding: '0.25rem 1rem',
+                borderRadius: '30px',
+                fontSize: '0.8rem',
+                fontWeight: '500',
+                display: 'inline-block'
+              }}
+            >
+              <FaTag size={12} className="me-1" />
+              {boutique.categorie || 'Boutique'}
+            </span>
           </div>
 
-          {/* Localisation */}
-          {boutique.proprietaire?.wilaya && (
-            <div className="d-flex align-items-center text-muted small mb-2">
-              <GeoAlt size={12} className="me-1 flex-shrink-0" />
-              <span className="text-truncate">{boutique.proprietaire.wilaya}</span>
-            </div>
-          )}
+          {/* Informations en ligne */}
+          <div className="d-flex flex-wrap justify-content-between align-items-center mb-2">
+            {/* Localisation */}
+            {boutique.proprietaire?.wilaya && (
+              <div className="d-flex align-items-center text-muted small me-2">
+                <FaMapMarkerAlt size={12} className="text-danger me-1" />
+                <span>{boutique.proprietaire.wilaya}</span>
+              </div>
+            )}
 
-          {/* Stats */}
-          <div className="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+            {/* Produits */}
+            <div className="d-flex align-items-center text-muted small me-2">
+              <FaBoxes size={12} className="text-primary me-1" />
+              <span>{boutique.stats?.produits || 0}</span>
+            </div>
+
+            {/* Vues */}
             <div className="d-flex align-items-center text-muted small">
-              <Eye size={12} className="me-1" />
+              <FaEye size={12} className="text-info me-1" />
               <span>{boutique.stats?.vues || 0}</span>
             </div>
-            
+          </div>
+
+          {/* Date et note */}
+          <div className="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
             <div className="d-flex align-items-center text-muted small">
-              <BoxSeam size={12} className="me-1" />
-              <span>{boutique.stats?.produits || 0} produits</span>
-            </div>
-            
-            <div className="d-flex align-items-center text-muted small">
-              <Clock size={12} className="me-1" />
+              <FaClock size={12} className="me-1" />
               <span>
                 {new Date(boutique.createdAt).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })}
               </span>
             </div>
+            
+            {boutique.stats?.notes > 0 && (
+              <div className="d-flex align-items-center">
+                {renderStars(boutique.stats.notes)}
+                <small className="text-muted ms-1">
+                  ({boutique.stats.avis || 0})
+                </small>
+              </div>
+            )}
           </div>
         </Card.Body>
+
+        {/* Badge "Boutique" distinctif */}
+        <div 
+          className="position-absolute top-0 end-0 m-2"
+          style={{ zIndex: 3 }}
+        >
+          <Badge 
+            style={{
+              backgroundColor: categoryColor,
+              color: 'white',
+              padding: '0.2rem 0.6rem',
+              borderRadius: '12px',
+              fontSize: '0.65rem',
+              fontWeight: 'normal',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}
+          >
+            <FaStore size={8} className="me-1" />
+            Boutique
+          </Badge>
+        </div>
       </Card>
 
       {/* Modal de confirmation de suppression */}
@@ -397,33 +447,14 @@ const handleEdit = (e) => {
 
       <style jsx="true">{`
         .boutique-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 20px 30px rgba(0,0,0,0.15) !important;
+          transform: translateY(-5px);
+          box-shadow: 0 12px 24px rgba(0,0,0,0.12) !important;
         }
         
-        .boutique-card:hover .card-image {
-          transform: scale(1.1);
+        .boutique-card:hover .d-inline-flex {
+          transform: scale(1.05);
         }
         
-        .boutique-card {
-          transition: all 0.3s ease;
-        }
-        
-        .image-container {
-          position: relative;
-        }
-        
-        .image-container::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(45deg, rgba(0,0,0,0.1), transparent);
-          pointer-events: none;
-        }
-
         .dropdown-toggle::after {
           display: none;
         }
@@ -452,6 +483,10 @@ const handleEdit = (e) => {
         .dropdown-item.text-danger:hover {
           background-color: #dc3545;
           color: white !important;
+        }
+
+        .report-btn:hover {
+          color: #dc3545 !important;
         }
       `}</style>
     </>
