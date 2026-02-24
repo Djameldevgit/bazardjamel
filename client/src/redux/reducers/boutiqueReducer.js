@@ -63,7 +63,46 @@ const boutiqueReducer = (state = initialState, action) => {
           [action.payload.category]: action.payload.loading
         }
       };
-    
+    // Añadir al switch del reducer
+
+case BOUTIQUE_TYPES.UPDATE_BOUTIQUE_PRODUCT:
+  return {
+    ...state,
+    boutiqueProducts: {
+      ...state.boutiqueProducts,
+      [action.payload.boutiqueId]: {
+        ...state.boutiqueProducts[action.payload.boutiqueId],
+        products: state.boutiqueProducts[action.payload.boutiqueId]?.products.map(p =>
+          p._id === action.payload.post._id ? action.payload.post : p
+        )
+      }
+    }
+  };
+
+case BOUTIQUE_TYPES.DELETE_BOUTIQUE_PRODUCT:
+  return {
+    ...state,
+    boutiqueProducts: {
+      ...state.boutiqueProducts,
+      [action.payload.boutiqueId]: {
+        ...state.boutiqueProducts[action.payload.boutiqueId],
+        products: state.boutiqueProducts[action.payload.boutiqueId]?.products.filter(
+          p => p._id !== action.payload.postId
+        ),
+        total: (state.boutiqueProducts[action.payload.boutiqueId]?.total || 0) - 1
+      }
+    },
+    // Actualizar también stats de la boutique si está disponible
+    currentBoutique: state.currentBoutique?._id === action.payload.boutiqueId
+      ? {
+          ...state.currentBoutique,
+          stats: {
+            ...state.currentBoutique.stats,
+            produits: (state.currentBoutique.stats?.produits || 0) - 1
+          }
+        }
+      : state.currentBoutique
+  };
     // ============ 🔥 GET BOUTIQUES BY CATEGORY (NUEVO) ============
     case BOUTIQUE_TYPES.GET_BOUTIQUES_BY_CATEGORY:
       const { 

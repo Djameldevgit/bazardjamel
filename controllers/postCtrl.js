@@ -3,6 +3,7 @@ const Post = require('../models/postModel');
 const Category = require('../models/categoryModel');
 const Users = require('../models/userModel');
 const Boutique = require('../models/boutiqueModel');
+const Comments = require('../models/commentModel');
 const mongoose = require('mongoose');
 
 class APIfeatures {
@@ -376,18 +377,16 @@ filterPosts: async (req, res) => {
     const limit = parseInt(req.query.limit) || 12;
     const skip = (page - 1) * limit;
 
-    // ============ PARÁMETROS EXISTENTES ============
+    // ============ PARÁMETROS ============
     const { 
       category: categorySlug, 
       sub: subSlug, 
       article: articleSlug,
-      
-      // ============ NUEVOS PARÁMETROS DE FILTRO (opcionales) ============
       wilaya,
       commune,
       minPrice,
       maxPrice,
-      sortBy = 'recent' // recent, price_asc, price_desc
+      sortBy = 'recent'
     } = req.query;
 
     console.log('🔍 filterPosts - Parámetros:', {
@@ -441,16 +440,23 @@ filterPosts: async (req, res) => {
     // 3. FILTRO BASE - TODOS los posts de la categoría
     let filter = { 
       isActive: true,
-      $or: [
-        { category: categoryDoc._id },
-        { categorie: { $regex: new RegExp(categoryDoc.name, 'i') } }
+      // 🔥 EXCLUIR POSTS DE BOUTIQUE DE LAS CATEGORÍAS GENERALES
+      $and: [
+        { $or: [
+          { isFromBoutique: { $ne: true } }, // No es de boutique
+          { isFromBoutique: { $exists: false } } // O no tiene el campo (posts antiguos)
+        ]},
+        { $or: [
+          { category: categoryDoc._id },
+          { categorie: { $regex: new RegExp(categoryDoc.name, 'i') } }
+        ]}
       ]
     };
 
-    // Array para condiciones $and (para combinar múltiples filtros)
+    // Array para condiciones adicionales
     let andConditions = [];
 
-    // ============ FILTROS DE NAVEGACIÓN (slider) - EXISTENTES ============
+    // ============ FILTROS DE NAVEGACIÓN (slider) ============
     if (subSlug) {
       const subCategoryDoc = allSubCategories.find(
         sub => sub.slug === subSlug || sub.name.toLowerCase() === subSlug.toLowerCase()
@@ -496,7 +502,7 @@ filterPosts: async (req, res) => {
       }
     }
 
-    // ============ NUEVOS FILTROS DE UBICACIÓN ============
+    // ============ FILTROS DE UBICACIÓN ============
     if (wilaya) {
       andConditions.push({
         $or: [
@@ -504,7 +510,6 @@ filterPosts: async (req, res) => {
           { wilaya: wilaya }
         ]
       });
-      console.log('📍 Filtrando por wilaya:', wilaya);
     }
     
     if (commune) {
@@ -514,10 +519,9 @@ filterPosts: async (req, res) => {
           { commune: new RegExp(commune, 'i') }
         ]
       });
-      console.log('📍 Filtrando por commune:', commune);
     }
 
-    // ============ NUEVOS FILTROS DE PRECIO ============
+    // ============ FILTROS DE PRECIO ============
     if (minPrice !== undefined || maxPrice !== undefined) {
       let priceFilter = {};
       if (minPrice !== undefined && minPrice !== '') {
@@ -528,17 +532,16 @@ filterPosts: async (req, res) => {
       }
       
       andConditions.push({ price: priceFilter });
-      console.log('💰 Filtrando por precio:', priceFilter);
     }
 
-    // Aplicar todas las condiciones $and si existen
+    // Combinar condiciones
     if (andConditions.length > 0) {
-      filter.$and = andConditions;
+      filter.$and = [...filter.$and, ...andConditions];
     }
 
     console.log('🎯 FILTRO FINAL:', JSON.stringify(filter, null, 2));
 
-    // ============ ORDENAMIENTO (mejorado) ============
+    // ============ ORDENAMIENTO ============
     let sort = {};
     switch (sortBy) {
       case 'price_asc':
@@ -553,21 +556,22 @@ filterPosts: async (req, res) => {
         break;
     }
 
-    // 4. Ejecutar consulta con todos los filtros
+    // 4. Ejecutar consulta
     const [posts, total] = await Promise.all([
       Post.find(filter)
-        .sort(sort) // Usar ordenamiento seleccionado
+        .sort(sort)
         .skip(skip)
         .limit(limit)
         .select('_id title price images createdAt wilaya commune description etat views categorie subCategory articleType category location')
         .populate('user', 'username avatar')
+        .populate('boutique', 'nom_boutique images') // Poblar boutique si existe (para mostrar de dónde viene)
         .lean(),
       Post.countDocuments(filter)
     ]);
 
     console.log(`📊 Encontrados: ${posts.length} de ${total}`);
 
-    // 5. Preparar slider (exactamente igual que antes)
+    // 5. Preparar slider
     const childrenWithArticles = allSubCategories.map(child => ({
       _id: child._id,
       name: child.name,
@@ -595,7 +599,6 @@ filterPosts: async (req, res) => {
     }));
 
     // ============ RESPUESTA ============
-    // Mantenemos la misma estructura pero añadimos metadata de filtros
     res.json({
       success: true,
       posts,
@@ -612,7 +615,6 @@ filterPosts: async (req, res) => {
         emoji: categoryDoc.emoji || ''
       },
       children: childrenWithArticles,
-      // NUEVO: Metadata para filtros (opcional, no afecta al slider)
       filterMetadata: {
         appliedFilters: {
           wilaya: wilaya || null,
@@ -633,7 +635,6 @@ filterPosts: async (req, res) => {
     });
   }
 },
-
 
   getPosts: async (req, res) => {
     try {
@@ -676,7 +677,7 @@ filterPosts: async (req, res) => {
       });
     }
   },
- 
+  
  // controllers/postController.js - updatePost CORREGIDO
 updatePost: async (req, res) => {
   try {
@@ -750,39 +751,7 @@ updatePost: async (req, res) => {
     }
   },
   
-
-  
-  getPost: async (req, res) => {
-    try {
-        const post = await Post.findById(req.params.id)
-        .populate("user likes", "avatar username")
-        .populate({
-            path: "comments",
-            populate: {
-                path: "user likes",
-                select: "-password"
-            }
-        })
-
-        if(!post) return res.status(400).json({msg: 'This post does not exist.'})
-
-        res.json({
-            post
-        })
-
-    } catch (err) {
-        return res.status(500).json({msg: err.message})
-    }
-},
-
-  /**
-   * 🔎 OBTENER POST POR ID (Alternativa)
-   */
  
-
-  /**
-   * 👤 POSTS POR USUARIO
-   */
   getUserPosts: async (req, res) => {
     try {
       const { id } = req.params; // El ID del usuario
@@ -901,7 +870,7 @@ updatePost: async (req, res) => {
         const likesToCleanup = post.likes || [];
 
         // 4. ELIMINAR EL POST DE MONGODB
-        await Posts.findByIdAndDelete(postId);
+        await Post.findByIdAndDelete(postId);
 
         // 5. LIMPIAR DATOS RELACIONADOS
         if (commentsToDelete.length > 0) {
@@ -1264,45 +1233,8 @@ getPost: async (req, res) => {
         return res.status(500).json({msg: err.message})
     }
 },
-getPostsDicover: async (req, res) => {
-    try {
-
-        const newArr = [...req.user.following, req.user._id]
-
-        const num  = req.query.num || 9
-
-        const posts = await Post.aggregate([
-            { $match: { user : { $nin: newArr } } },
-            { $sample: { size: Number(num) } },
-        ])
-
-        return res.json({
-            msg: 'Success!',
-            result: posts.length,
-            posts
-        })
-
-    } catch (err) {
-        return res.status(500).json({msg: err.message})
-    }
-},
-deletePost: async (req, res) => {
-    try {
-        const post = await Post.findOneAndDelete({_id: req.params.id, user: req.user._id})
-        await Comments.deleteMany({_id: {$in: post.comments }})
-
-        res.json({
-            msg: 'Deleted Post!',
-            newPost: {
-                ...post,
-                user: req.user
-            }
-        })
-
-    } catch (err) {
-        return res.status(500).json({msg: err.message})
-    }
-},
+ 
+ 
 savePost: async (req, res) => {
     try {
         const user = await Users.find({_id: req.user._id, saved: req.params.id})

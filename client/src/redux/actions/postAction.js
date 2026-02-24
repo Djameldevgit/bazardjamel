@@ -292,9 +292,7 @@ export const likePost = ({ post, auth, socket }) => async (dispatch) => {
     }
 }
 
-/**
- * Unlike a un post
- */
+ 
 export const unLikePost = ({ post, auth, socket }) => async (dispatch) => {
     const newPost = {...post, likes: post.likes.filter(like => like._id !== auth.user._id)}
     dispatch({ type: POST_TYPES.UPDATE_POST, payload: newPost })

@@ -20,7 +20,7 @@ import PostId from './pages/PostId';
 import DashboardPage from './pages/users/dashboardpage';
 import profile from './pages/users/profile';
 import CreateBoutiquePage from './pages/boutique/createBoutiquePage';
-import CreateBoutiqueProductPage from './pages/boutique/CreateBoutiqueProductPage';
+ 
  
  
 import roles from './pages/users/roles';
@@ -95,45 +95,41 @@ function App() {
       <div id="google_translate_element" style={{ display: 'none' }}></div>
   
       <Switch>
-          {/* ============ RUTAS PÚBLICAS ============ */}
-          <Route exact path="/" component={Home} />
-          <Route exact path="/register" component={Register} />
-          <Route exact path="/login" component={Login} />
-
-          {/* ============ RUTAS DE BOUTIQUES ============ */}
-          <Route exact path="/create-boutique" component={CreateBoutiquePage} />
-          <Route exact path="/edit-boutique/:id" component={CreateBoutiquePage} />
+        {/* ============ RUTAS PÚBLICAS ============ */}
+        <Route exact path="/" component={Home} />
+        <Route exact path="/register" component={Register} />
+        <Route exact path="/login" component={Login} />
+  
+        {/* ============ RUTAS DE BOUTIQUES (específicas primero) ============ */}
+        <Route exact path="/create-boutique" component={CreateBoutiquePage} />
+        <Route exact path="/edit-boutique/:id" component={CreateBoutiquePage} />  
           <Route exact path="/mes-boutiques" component={UserBoutiquesPage} />
-          <Route exact path="/boutique/:id" component={BoutiqueDetailPage} />
-          
-          {/* ✅ NUEVA RUTA ESPECÍFICA PARA PRODUCTOS DE BOUTIQUE */}
-          <Route exact path="/boutique/:boutiqueId/products/new" component={CreateBoutiqueProductPage} />
-          <Route exact path="/boutique/:boutiqueId/products/edit/:postId" component={CreateBoutiqueProductPage} />
-          {/* ============ RUTAS DE ANUNCIOS NORMALES ============ */}
-          <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
-          <Route exact path="/edit-post/:id" component={CreateAnnoncePage} />
-          
-          {/* ❌ ELIMINAR ESTA RUTA AMBIGUA */}
-          {/* <Route exact path="/boutique/:boutiqueId/new-post" component={CreateAnnoncePage} /> */}
-
-          <Route exact path="/post/:id" component={PostId} />
-
-          {/* ============ USER DASHBOARD ============ */}
-          <Route exact path="/mes-annonces" component={MesAnnoces} />
-          <Route exact path="/profile/settings" component={ProfileSettings} />
-          <Route exact path="/profile/:id/saved" component={ProfileSaved} />
-          <Route exact path="/users/dashboard" component={DashboardPage} />
-          <Route exact path="/profile/:id" component={profile} />
-          <Route exact path="/users/roles" component={roles} />
-
-          {/* ============ RUTAS DE CATEGORÍAS ============ */}
-          <Route exact path="/:slug/:page?" component={CategoryPage} />
-          <Route exact path="/:slug/:subSlug/:page?" component={CategoryPage} />
-          <Route exact path="/:slug/:subSlug/:articleSlug/:page?" component={CategoryPage} />
-
-          {/* ============ RUTA 404 ============ */}
-          <Route component={NotFound} />
-        </Switch>
+        <Route exact path="/boutique/:id" component={BoutiqueDetailPage} />
+         
+ {/* ============ USER DASHBORAD ============ */}
+ <Route exact path="/mes-annonces" component={MesAnnoces} />
+ <Route exact path="/profile/settings" component={ProfileSettings} />
+ <Route exact path="/profile/:id/saved" component={ProfileSaved} />
+        {/* ============ RUTAS DE ANUNCIOS ============ */}
+        <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
+        <Route exact path="/edit-post/:id" component={CreateAnnoncePage} />
+        <Route exact path="/boutique/:boutiqueId/new-post" component={CreateAnnoncePage} />
+    
+        <Route exact path="/post/:id" component={PostId} />
+  
+        {/* ============ DASHBOARD Y PERFILES ============ */}
+        <Route exact path="/users/dashboard" component={DashboardPage} />
+        <Route exact path="/profile/:id" component={profile} />
+        <Route exact path="/users/roles" component={roles} />
+  
+        {/* ============ RUTAS DE CATEGORÍAS (genéricas al final) ============ */}
+        <Route exact path="/:slug/:page?" component={CategoryPage} />
+        <Route exact path="/:slug/:subSlug/:page?" component={CategoryPage} />
+        <Route exact path="/:slug/:subSlug/:articleSlug/:page?" component={CategoryPage} />
+  
+        {/* ============ RUTA 404 (siempre al final) ============ */}
+        <Route component={NotFound} />
+      </Switch>
     </div>
   </Router>
   );

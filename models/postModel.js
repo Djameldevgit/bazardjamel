@@ -10,7 +10,20 @@ const postSchema = new mongoose.Schema(
       index: true
     },
 
-    // 🗂️ CATEGORÍAS (strings del cliente)
+    // 🏬 Boutique (si el post pertenece a una)
+    boutique: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Boutique",
+      index: true
+    },
+
+    // 🔖 Identificador si viene de una boutique
+    isFromBoutique: {
+      type: Boolean,
+      default: false
+    },
+
+    // 🗂️ CATEGORÍAS (texto plano del cliente)
     categorie: {
       type: String,
       required: true,
@@ -31,16 +44,19 @@ const postSchema = new mongoose.Schema(
       index: true
     },
 
-    // 🔑 CATEGORÍA REAL (MongoDB)
+    // 🔑 CATEGORÍA REAL (referencia en MongoDB)
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
       required: true,
       index: true
     },
-    boutique: { type: mongoose.Schema.Types.ObjectId, ref: 'Boutique', index: true },
-    likes: [{ type: mongoose.Types.ObjectId, ref: 'user' }],
-    comments: [{ type: mongoose.Types.ObjectId, ref: 'comment' }],
+
+    // ❤️ Likes y comentarios
+    likes: [{ type: mongoose.Types.ObjectId, ref: "user" }],
+    comments: [{ type: mongoose.Types.ObjectId, ref: "comment" }],
+
+    // 🧾 Información del post
     title: {
       type: String,
       required: true,
@@ -62,20 +78,17 @@ const postSchema = new mongoose.Schema(
     },
 
     etat: {
-      type: String,
-       
+      type: String
     },
 
-    // 📍 LOCALIZACIÓN
+    // 📍 LOCALIZACIÓN (opcional si es boutique)
     wilaya: {
       type: String,
-      required: true,
       index: true
     },
 
     commune: {
-      type: String,
-      required: true
+      type: String
     },
 
     address: {
@@ -95,24 +108,25 @@ const postSchema = new mongoose.Schema(
       lowercase: true
     },
 
-    // 🧩 CAMPOS DINÁMICOS POR CATEGORÍA
+    // 🧩 Datos específicos según categoría
     categorySpecificData: {
       type: mongoose.Schema.Types.Mixed,
       default: {}
     },
 
-    // 🖼️ IMÁGENES
+    // 🖼️ Imágenes
     images: {
       type: Array,
       required: true
-  },
+    },
 
-    // 📊 ESTADÍSTICAS
+    // 📊 Estadísticas
     views: {
       type: Number,
       default: 0
     },
 
+    // 🔒 Estado
     isActive: {
       type: Boolean,
       default: true,
@@ -125,10 +139,11 @@ const postSchema = new mongoose.Schema(
 );
 
 //
-// 🔍 ÍNDICES IMPORTANTES (performance UI)
+// 🔍 ÍNDICES (rendimiento en UI y búsquedas)
 //
 postSchema.index({ category: 1, createdAt: -1 });
 postSchema.index({ wilaya: 1, category: 1 });
 postSchema.index({ categorie: 1, subCategory: 1 });
+postSchema.index({ boutique: 1, isFromBoutique: 1 }); // ✅ Nuevo índice útil
 
 module.exports = mongoose.model("Post", postSchema);

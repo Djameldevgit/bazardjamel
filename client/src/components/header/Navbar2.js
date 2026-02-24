@@ -586,7 +586,7 @@ const Navbar2 = () => {
                           <MenuItem icon={FaUserCircle} iconColor="#667eea" to={`/boutique/${auth.user._id}`}>
                             <div className="d-flex align-items-center justify-content-between"></div>
                           </MenuItem>
-                      
+   
                           <MenuItem icon={FaUserCircle} iconColor="#667eea" to='/boutiques'>
                             <div className="d-flex align-items-center justify-content-between">Boutiques page</div>
                           </MenuItem>

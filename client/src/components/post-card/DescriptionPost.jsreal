@@ -25,6 +25,8 @@ const DescriptionPost = ({ post }) => {
         return allData;
     }, [post]);
     
+    const user = post?.user || {};
+    
     // 🎨 MAPA DE EMOJIS POR CATEGORÍA Y CAMPO
     const fieldEmojiMap = {
         // Campos base
@@ -49,13 +51,10 @@ const DescriptionPost = ({ post }) => {
         'kilometrage': '🛣️',
         'carburant': '⛽',
         'boiteVitesse': '⚙️',
-        'couleurExterieur': '🎨',
-        'couleurInterieur': '🪑',
+        'couleur': '🎨',
         'puissance': '⚡',
         'places': '👥',
         'portes': '🚪',
-        'premiereMain': '👤',
-        'garantie': '🛡️',
         
         // Immobilier
         'surface': '📏',
@@ -67,8 +66,6 @@ const DescriptionPost = ({ post }) => {
         'parking': '🅿️',
         'climatisation': '❄️',
         'chauffage': '🔥',
-        'piscine': '🏊',
-        'ascenseur': '🛗',
         
         // Électronique
         'ram': '💾',
@@ -79,7 +76,7 @@ const DescriptionPost = ({ post }) => {
         'batterie': '🔋',
         'systeme': '💻',
         'connectivite': '📶',
-        'couleur': '🎨',
+        'garantie': '🛡️',
         
         // Mode
         'taille': '📏',
@@ -89,23 +86,17 @@ const DescriptionPost = ({ post }) => {
         'genre': '👤',
         'age': '🔞',
         
-        // Maison & Jardin
-        'type': '🏷️',
+        // Sport
+        'type': '⚽',
         'marque': '🏷️',
-        'matiere': '🧱',
-        'dimensions': '📐',
-        'poids': '⚖️',
+        'etat': '⭐',
+        'taille': '📏',
         
         // Services
         'duree': '⏱️',
         'disponibilite': '📅',
         'tarif': '💰',
         'zone': '📍',
-        
-        // Boutique
-        'boutique': '🏪',
-        'isFromBoutique': '🏬',
-        'stock': '📦',
         
         'default': '📋'
     };
@@ -188,13 +179,10 @@ const DescriptionPost = ({ post }) => {
             'kilometrage': 'Kilométrage',
             'carburant': 'Carburant',
             'boiteVitesse': 'Boîte de vitesse',
-            'couleurExterieur': 'Couleur ext.',
-            'couleurInterieur': 'Couleur int.',
+            'couleur': 'Couleur',
             'puissance': 'Puissance',
             'places': 'Places',
             'portes': 'Portes',
-            'premiereMain': 'Première main',
-            'garantie': 'Garantie',
             
             // Immobilier
             'surface': 'Surface',
@@ -206,8 +194,6 @@ const DescriptionPost = ({ post }) => {
             'parking': 'Parking',
             'climatisation': 'Climatisation',
             'chauffage': 'Chauffage',
-            'piscine': 'Piscine',
-            'ascenseur': 'Ascenseur',
             
             // Électronique
             'ram': 'RAM',
@@ -218,7 +204,7 @@ const DescriptionPost = ({ post }) => {
             'batterie': 'Batterie',
             'systeme': 'Système',
             'connectivite': 'Connectivité',
-            'couleur': 'Couleur',
+            'garantie': 'Garantie',
             
             // Mode
             'taille': 'Taille',
@@ -228,23 +214,16 @@ const DescriptionPost = ({ post }) => {
             'genre': 'Genre',
             'age': 'Âge',
             
-            // Maison & Jardin
+            // Sport
             'type': 'Type',
             'marque': 'Marque',
-            'matiere': 'Matière',
-            'dimensions': 'Dimensions',
-            'poids': 'Poids',
+            'taille': 'Taille',
             
             // Services
             'duree': 'Durée',
             'disponibilite': 'Disponibilité',
             'tarif': 'Tarif',
-            'zone': 'Zone',
-            
-            // Boutique
-            'boutique': 'Boutique',
-            'isFromBoutique': 'Type',
-            'stock': 'Stock'
+            'zone': 'Zone'
         };
         
         return translations[field] || field;
@@ -257,12 +236,11 @@ const DescriptionPost = ({ post }) => {
         // Campos a excluir
         const excludeFields = [
             '_id', '__v', 'user', 'categorySpecificData', 'images',
-            'createdAt', 'updatedAt', 'isActive', 'likes', 'comments',
-            'boutique', 'isFromBoutique', 'category'
+            'createdAt', 'updatedAt', 'isActive'
         ];
         
         // Campos que van en el header
-        const headerFields = ['title', 'description', 'price', 'categorie', 'subCategory', 'articleType'];
+        const headerFields = ['title', 'description', 'price', 'etat', 'categorie', 'subCategory', 'articleType'];
         
         // Obtener todos los campos disponibles
         const fields = Object.keys(postData).filter(field => {
@@ -286,19 +264,19 @@ const DescriptionPost = ({ post }) => {
         // Orden de prioridad por categoría
         const priorityOrder = [
             // Auto
-            'marque', 'modele', 'annee', 'kilometrage', 'carburant', 'boiteVitesse', 'couleurExterieur', 'couleurInterieur', 'places', 'portes', 'premiereMain', 'garantie',
+            'marque', 'modele', 'annee', 'kilometrage', 'carburant', 'boiteVitesse', 'couleur', 'places', 'portes',
             // Immobilier
-            'surface', 'chambres', 'sallesBain', 'etage', 'meuble', 'jardin', 'parking', 'climatisation', 'chauffage', 'piscine', 'ascenseur',
+            'surface', 'chambres', 'sallesBain', 'etage', 'meuble', 'jardin', 'parking', 'climatisation', 'chauffage',
             // Électronique
-            'ram', 'stockage', 'processeur', 'ecran', 'camera', 'batterie', 'systeme', 'connectivite', 'couleur',
+            'ram', 'stockage', 'processeur', 'ecran', 'camera', 'batterie', 'systeme', 'connectivite', 'garantie',
             // Mode
             'taille', 'matiere', 'couleur', 'marque', 'genre', 'age',
-            // Maison & Jardin
-            'type', 'marque', 'matiere', 'dimensions', 'poids',
+            // Sport
+            'type', 'marque', 'taille',
             // Services
             'duree', 'disponibilite', 'tarif', 'zone',
             // Contact
-            'wilaya', 'commune', 'address'
+            'phone', 'email', 'wilaya', 'commune', 'address'
         ];
         
         return fields.sort((a, b) => {
@@ -322,13 +300,12 @@ const DescriptionPost = ({ post }) => {
             return;
         }
         
-        const postUser = post?.user || {};
-        if (!postUser?._id || auth.user._id === postUser._id) return;
+        if (!user?._id || auth.user._id === user._id) return;
         
         dispatch({
             type: MESS_TYPES.ADD_USER,
             payload: { 
-                ...postUser, 
+                ...user, 
                 text: '', 
                 media: [],
                 postTitle: postData.title || 'Annonce',
@@ -338,7 +315,7 @@ const DescriptionPost = ({ post }) => {
             }
         });
         
-        history.push(`/message/${postUser._id}`);
+        history.push(`/message/${user._id}`);
     };
     
     // 🏷️ RENDER HEADER
@@ -348,28 +325,16 @@ const DescriptionPost = ({ post }) => {
         const categorie = postData.categorie;
         const subCategory = postData.subCategory;
         const articleType = postData.articleType;
-        const isFromBoutique = post.isFromBoutique;
-        const boutique = post.boutique;
+        const etat = postData.etat;
         
         return (
             <Card className="border-0 shadow-sm mb-4">
                 <Card.Body className="p-4">
-                    <div className="d-flex flex-column flex-md-row justify-content-between align-items-start gap-4">
+                    <div className="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
                         <div className="flex-grow-1">
-                            <div className="d-flex align-items-center gap-2 mb-2">
-                                <h1 className="fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                                    {title}
-                                </h1>
-                                {isFromBoutique && boutique && (
-                                    <Badge 
-                                        bg="primary" 
-                                        className="px-3 py-2"
-                                        style={{ fontSize: '0.9rem' }}
-                                    >
-                                        🏪 {boutique.nom_boutique}
-                                    </Badge>
-                                )}
-                            </div>
+                            <h1 className="fw-bold mb-2" style={{ fontSize: '1.8rem' }}>
+                                {title}
+                            </h1>
                             
                             <div className="d-flex flex-wrap gap-2 mb-3">
                                 {categorie && (
@@ -387,19 +352,24 @@ const DescriptionPost = ({ post }) => {
                                         {articleType}
                                     </Badge>
                                 )}
+                                {etat && (
+                                    <Badge bg="success" className="px-3 py-2">
+                                        {formatValue('etat', etat)}
+                                    </Badge>
+                                )}
                             </div>
                             
                             {postData.description && (
-                                <p className="text-muted mb-0" style={{ fontSize: '1.1rem', lineHeight: '1.6' }}>
+                                <p className="text-muted mb-0" style={{ fontSize: '1rem', lineHeight: '1.6' }}>
                                     {postData.description}
                                 </p>
                             )}
                         </div>
                         
                         {price > 0 && (
-                            <div className="text-start text-md-end price-card">
+                            <div className="text-start text-md-end">
                                 <div className="text-muted small mb-1">Prix</div>
-                                <div className="fw-bold text-success" style={{ fontSize: '2.2rem' }}>
+                                <div className="fw-bold text-success" style={{ fontSize: '2rem' }}>
                                     {formatValue('price', price)}
                                 </div>
                             </div>
@@ -421,17 +391,17 @@ const DescriptionPost = ({ post }) => {
         const label = translateField(field);
         
         return (
-            <div className="field-item d-flex align-items-center py-3 px-4 border-bottom">
-                <div className="d-flex align-items-center" style={{ minWidth: '180px' }}>
-                    <span className="field-emoji me-3" style={{ fontSize: '1.3rem' }}>
+            <div className="field-item d-flex align-items-center p-3 border-bottom">
+                <div className="d-flex align-items-center" style={{ minWidth: '150px' }}>
+                    <span className="field-emoji me-2" style={{ fontSize: '1.2rem' }}>
                         {emoji}
                     </span>
-                    <span className="fw-medium text-secondary" style={{ fontSize: '1rem' }}>
+                    <span className="fw-medium text-muted">
                         {label}:
                     </span>
                 </div>
-                <div className="field-value ms-4">
-                    <span className="fw-semibold" style={{ fontSize: '1.1rem' }}>
+                <div className="field-value ms-3">
+                    <span className="fw-bold">
                         {formattedValue}
                     </span>
                 </div>
@@ -461,11 +431,8 @@ const DescriptionPost = ({ post }) => {
             {/* DÉTAILS SPÉCIFIQUES */}
             {fieldsToDisplay.length > 0 && (
                 <Card className="border-0 shadow-sm mb-4">
-                    <Card.Header className="bg-white border-0 py-3 px-4">
-                        <h5 className="mb-0 fw-bold d-flex align-items-center gap-2">
-                            <span>📋</span>
-                            <span>Caractéristiques détaillées</span>
-                        </h5>
+                    <Card.Header className="bg-white border-0 py-3">
+                        <h5 className="mb-0 fw-bold">📋 Caractéristiques détaillées</h5>
                     </Card.Header>
                     <Card.Body className="p-0">
                         {fieldsToDisplay.map(field => (
@@ -475,28 +442,29 @@ const DescriptionPost = ({ post }) => {
                 </Card>
             )}
             
+           
             {/* BOUTONS D'ACTION */}
             <div className="d-flex flex-column flex-sm-row gap-3 mt-4">
                 {postData.phone && (
                     <Button 
                         variant="success" 
                         size="lg"
-                        className="flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-3"
+                        className="flex-grow-1 d-flex align-items-center justify-content-center gap-2"
                         onClick={() => window.location.href = `tel:${postData.phone}`}
                     >
-                        <span style={{ fontSize: '1.3rem' }}>📞</span>
+                        <span>📞</span>
                         <span>Appeler</span>
                     </Button>
                 )}
                 
-                {auth.user && post?.user?._id && auth.user._id !== post.user._id && (
+                {auth.user && user?._id && auth.user._id !== user._id && (
                     <Button 
                         variant="primary" 
                         size="lg"
-                        className="flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-3"
+                        className="flex-grow-1 d-flex align-items-center justify-content-center gap-2"
                         onClick={handleContact}
                     >
-                        <span style={{ fontSize: '1.3rem' }}>💬</span>
+                        <span>💬</span>
                         <span>Contacter le vendeur</span>
                     </Button>
                 )}
@@ -504,10 +472,10 @@ const DescriptionPost = ({ post }) => {
                 <Button 
                     variant="outline-secondary" 
                     size="lg"
-                    className="flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-3"
+                    className="flex-grow-1 d-flex align-items-center justify-content-center gap-2"
                     onClick={() => window.history.back()}
                 >
-                    <span style={{ fontSize: '1.3rem' }}>←</span>
+                    <span>←</span>
                     <span>Retour</span>
                 </Button>
             </div>
@@ -515,36 +483,28 @@ const DescriptionPost = ({ post }) => {
             {/* ESTILOS */}
             <style jsx="true">{`
                 .field-item {
-                    min-height: 70px;
+                    min-height: 60px;
                     transition: background-color 0.2s;
-                    border-color: #e9ecef !important;
                 }
                 
                 .field-item:hover {
                     background-color: #f8f9fa;
                 }
                 
-                .field-item:last-child {
-                    border-bottom: none !important;
+                .border-bottom {
+                    border-color: #e9ecef !important;
                 }
                 
                 .field-value {
                     flex: 1;
                 }
                 
-                .price-card {
-                    background-color: #f8f9fa;
-                    padding: 15px 25px;
-                    border-radius: 12px;
-                    min-width: 200px;
-                }
-                
-                @media (max-width: 768px) {
+                @media (max-width: 576px) {
                     .field-item {
                         flex-direction: column;
                         align-items: flex-start !important;
-                        gap: 10px;
-                        padding: 20px !important;
+                        gap: 8px;
+                        padding: 15px !important;
                     }
                     
                     .field-item > div:first-child {
@@ -554,11 +514,6 @@ const DescriptionPost = ({ post }) => {
                     .field-value {
                         margin-left: 0 !important;
                         width: 100%;
-                    }
-                    
-                    .price-card {
-                        width: 100%;
-                        text-align: center !important;
                     }
                 }
             `}</style>
