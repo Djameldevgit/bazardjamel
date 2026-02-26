@@ -4,10 +4,10 @@ import { useParams, useHistory, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Container, Row, Col, Card, Button, Alert, Spinner, Form } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaStore, FaArrowLeft, FaBoxOpen, FaImage, FaTag, FaMapMarkerAlt, FaPhone, FaEnvelope, FaInfoCircle, FaEdit } from 'react-icons/fa';
+import { FaStore, FaArrowLeft,  FaMapMarkerAlt, FaPhone, FaEnvelope, FaInfoCircle, FaEdit } from 'react-icons/fa';
 
 import { getBoutique } from '../../redux/actions/boutiqueAction';
-import { createBoutiquePost, updateBoutiquePost } from '../../redux/actions/boutiqueAction';
+import { createBoutiquePost, updateBoutiquePost } from '../../redux/actions/boutiquePostAction';
 import { getCategoryTree } from '../../redux/actions/categoryAction';
 
 // Componentes auxiliares

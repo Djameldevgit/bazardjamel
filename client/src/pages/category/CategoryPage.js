@@ -10,7 +10,7 @@ import { getCategoryPosts  } from "../../redux/actions/categoryAction";
 import { getBoutiquesByCategory  } from "../../redux/actions/boutiqueAction";
 import BreadcrumbNav from "../../components/BreadcrumbNav";
 import SliderUnificado from "../../components/SlidersCategories/SliderUnificado";
-import BoutiqueCard from "../../components/BoutiqueCard";
+import BoutiqueCard from "../../components/BoutiquePostCard";
 import PaginationComponent from "../../components/PaginationComponent";
 import CategoryCarousel from "../../components/SlidersCategories/CategoryCarousel";
 import FilterDrawer from "./FilterDrawer";

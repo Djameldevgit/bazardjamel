@@ -1,22 +1,67 @@
 // components/boutique/BoutiqueHeader.jsx
 import React from 'react';
-import { Container, Row, Col, Badge } from 'react-bootstrap';
-import { FaStore, FaEye, FaBoxOpen, FaStar, FaRegStar } from 'react-icons/fa';
+import { Container, Row, Col, Badge, Button } from 'react-bootstrap';
+import { useSelector } from 'react-redux';
+import { FaStore, FaEye, FaBoxOpen, FaStar, FaRegStar, FaBug } from 'react-icons/fa';
 
 const BoutiqueHeader = ({ boutique }) => {
+  // 👇 Obtener auth del store para depuración
+  const { auth } = useSelector(state => state);
+  
   const {
+    _id,
     nom_boutique,
     slogan_boutique,
     header_image,
     images = [], // Array de imágenes
     categorie,
     isVerified,
+    user, // ID del dueño
     stats = { vues: 0, produits: 0, notes: 0, avis: 0 },
     couleur_theme = '#2563eb'
   } = boutique;
 
   // La primera imagen del array es el logo
   const logoImage = images && images.length > 0 ? images[0] : null;
+  
+  // Calcular si es dueño
+  const isOwner = auth.user?._id === user;
+
+  // Función de depuración
+  const handleDebug = () => {
+    console.log('🐞 BOUTIQUE HEADER - DEBUG INFO:');
+    console.log('================================');
+    console.log('🏪 ID boutique:', _id);
+    console.log('🏪 Nom boutique:', nom_boutique);
+    console.log('================================');
+    console.log('👤 Auth User:', auth.user);
+    console.log('👤 Auth User ID:', auth.user?._id);
+    console.log('👤 Auth Token:', auth.token ? '✅ Présent' : '❌ Absent');
+    console.log('================================');
+    console.log('🏪 Dueño (user):', user);
+    console.log('================================');
+    console.log('🔐 isOwner calculado:', isOwner);
+    console.log('🔐 Comparación:', auth.user?._id, '===', user, '?', auth.user?._id === user);
+    console.log('================================');
+    console.log('📊 Stats boutique:', stats);
+    console.log('📸 Images:', images.length);
+    console.log('================================');
+    
+    // Mostrar alerta con información resumida
+    alert(`
+      🐞 DEBUG INFO
+      ================
+      Boutique: ${nom_boutique}
+      ID: ${_id}
+      Dueño ID: ${user}
+      
+      Usuario: ${auth.user?.name || 'No conectado'}
+      Usuario ID: ${auth.user?._id || 'N/A'}
+      
+      ¿Es dueño? ${isOwner ? '✅ SÍ' : '❌ NO'}
+      Token: ${auth.token ? '✅' : '❌'}
+    `);
+  };
 
   // Función para renderizar estrellas
   const renderStars = (rating = 0) => {
@@ -92,10 +137,52 @@ const BoutiqueHeader = ({ boutique }) => {
               </div>
             </Col>
           </Row>
+          
+          {/* 👇 BOTÓN DE DEPURACIÓN - siempre visible */}
+          <Row className="mt-3">
+            <Col className="text-end">
+              <Button
+                variant="light"
+                size="sm"
+                onClick={handleDebug}
+                style={{
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  borderColor: 'rgba(255,255,255,0.3)',
+                  color: 'white',
+                  backdropFilter: 'blur(5px)'
+                }}
+              >
+                <FaBug className="me-2" />
+                Debug Auth
+              </Button>
+              
+              {/* 👇 BOTÓN DE PRUEBA - siempre visible */}
+              <Button
+                variant="warning"
+                size="sm"
+                className="ms-2"
+                onClick={() => {
+                  console.log('🟡 BOTÓN DE PRUEBA - Navegación directa');
+                  console.log('ID:', _id);
+                  console.log('URL:', `/boutique/${_id}/products/new`);
+                  window.location.href = `/boutique/${_id}/products/new`;
+                }}
+                style={{
+                  backgroundColor: 'rgba(255, 193, 7, 0.9)',
+                  borderColor: '#ffc107',
+                  color: '#000',
+                  backdropFilter: 'blur(5px)'
+                }}
+              >
+                <FaBoxOpen className="me-2" />
+                TEST - Nouveau produit
+              </Button>
+            </Col>
+          </Row>
         </Container>
       </div>
 
-      {/* Avatar posicionado en el medio - usando la primera imagen */}
+      {/* Avatar posicionado en el medio */}
       {logoImage && (
         <Container>
           <div 

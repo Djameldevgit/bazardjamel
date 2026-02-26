@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Button, Alert, Spinner, Badge, ProgressBar, Form, Row, Col } from 'react-bootstrap';
+import { Card, Button, Alert, Spinner, Badge, ProgressBar, Form, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
+import { ChromePicker } from 'react-color'; // 👈 Instalar: npm install react-color
 import ImageUploadBoutique from '../../components/boutique/ImageUploadBoutique';
 import { createBoutique, updateBoutique } from '../../redux/actions/boutiqueAction';
- 
+
 const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }) => {
   const dispatch = useDispatch();
   const history = useHistory();
@@ -15,13 +16,29 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [transactionId] = useState('BTR-' + Date.now().toString().slice(-6));
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
-  // 🖼️ Estado para imágenes - IGUAL QUE EN CreateAnnoncePage
+  // 🎨 Paleta de colores predefinidos
+  const colorPalette = [
+    '#2563eb', // Azul
+    '#dc2626', // Rojo
+    '#16a34a', // Verde
+    '#9333ea', // Morado
+    '#f59e0b', // Naranja
+    '#ec4899', // Rosa
+    '#06b6d4', // Cian
+    '#6b7280', // Gris
+    '#8b5cf6', // Violeta
+    '#10b981', // Esmeralda
+  ];
+
+  // 🖼️ Estado para imágenes
   const [images, setImages] = useState([]);
 
   // Estado del formulario
   const [formData, setFormData] = useState({
     // Informations
+    _id: null, // Para edición
     nom_boutique: '',
     domaine_boutique: '',
     slogan_boutique: '',
@@ -33,7 +50,7 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
     duree: '1',
     offre: 'Store Basic 50',
 
-    // Propriétaire
+    // ✅ Propietario (objeto completo)
     proprietaire: {
       nom: auth?.user?.name || '',
       email: auth?.user?.email || '',
@@ -41,6 +58,9 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
       wilaya: '',
       adresse: ''
     },
+
+    // ✅ Usuario (referencia al ID del usuario autenticado)
+    user: auth?.user?._id || null,
 
     // Réseaux sociaux
     reseaux_sociaux: {
@@ -51,7 +71,7 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
       website: ''
     },
 
-    // Autres
+    // 🎨 Couleur du thème (con paleta)
     couleur_theme: '#2563eb',
 
     // Calculés
@@ -67,8 +87,6 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
   });
 
   // Données pour les sliders
-   
-
   const durees = [
     { id: '1', name: '1 Mois' },
     { id: '2', name: '2 Mois' },
@@ -185,59 +203,53 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
     { value: 'virement', label: 'Virement', icon: 'fa-exchange-alt', description: 'Virement bancaire' }
   ];
 
-  // ============ HANDLERS POUR IMAGES - MEJORADOS ============
-  // 🖼️ Handlers para imágenes - VERSIÓN CORREGIDA
-const handleChangeImages = (e) => {
-  const files = Array.from(e.target.files);
-  
-  // Filtrar archivos válidos
-  const validFiles = files.filter(file => {
-      const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB max
+  // ============ HANDLERS POUR IMAGES ============
+  const handleChangeImages = (e) => {
+    const files = Array.from(e.target.files);
+    
+    const validFiles = files.filter(file => {
+      const isValidSize = file.size <= 5 * 1024 * 1024;
       const isValidType = file.type.startsWith('image/');
       
       if (!isValidSize) setError('Image trop volumineuse (max 5MB)');
       if (!isValidType) setError('Format non supporté');
       
       return isValidSize && isValidType;
-  });
-  
-  if (validFiles.length > 0) {
-      // 🎯 Convertir File a objeto con blob URL
+    });
+    
+    if (validFiles.length > 0) {
       const newImages = validFiles.map(file => ({
-          url: URL.createObjectURL(file),
-          name: file.name,
-          file: file,
-          isExisting: false
+        url: URL.createObjectURL(file),
+        name: file.name,
+        file: file,
+        isExisting: false
       }));
       
       setImages(prev => [...prev, ...newImages]);
       setSuccess(`${validFiles.length} image(s) ajoutée(s)`);
       setTimeout(() => setSuccess(''), 2000);
-  }
-};
-
-const deleteImages = (index) => {
-  // Liberar memoria de blob URLs
-  if (images[index]?.url?.startsWith('blob:')) {
-      URL.revokeObjectURL(images[index].url);
-  }
-  setImages(prev => prev.filter((_, i) => i !== index));
-};
-
-// Cleanup al desmontar
-useEffect(() => {
-  return () => {
-      images.forEach(img => {
-          if (img.url?.startsWith('blob:')) {
-              URL.revokeObjectURL(img.url);
-          }
-      });
+    }
   };
-}, []);
 
-  
+  const deleteImages = (index) => {
+    if (images[index]?.url?.startsWith('blob:')) {
+      URL.revokeObjectURL(images[index].url);
+    }
+    setImages(prev => prev.filter((_, i) => i !== index));
+  };
 
-  // Handlers pour le formulaire
+  // Cleanup al desmontar
+  useEffect(() => {
+    return () => {
+      images.forEach(img => {
+        if (img.url?.startsWith('blob:')) {
+          URL.revokeObjectURL(img.url);
+        }
+      });
+    };
+  }, []);
+
+  // Handlers para el formulario
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
 
@@ -268,7 +280,11 @@ useEffect(() => {
     }
   };
 
-  // Handlers pour les sélections
+  // 🎨 Manejar cambio de color
+  const handleColorChange = (color) => {
+    setFormData(prev => ({ ...prev, couleur_theme: color.hex }));
+  };
+
   const handleSelectCategorie = (categorie) => {
     setFormData(prev => ({ ...prev, categorie }));
   };
@@ -363,249 +379,249 @@ useEffect(() => {
     setError('');
   };
 
-  // Préparer les données pour l'envoi
-  // Préparer les données pour l'envoi - VERSIÓN CORREGIDA
-// 📦 Préparer les données pour l'envoi - VERSIÓN CORREGIDA
-// En CreateBoutiqueWizard.js - FUNCIÓN CORREGIDA
-const prepareSubmitData = () => {
-  const offreSelectionnee = offres.find(o => o.id === formData.offre);
-  const dureeSelectionnee = durees.find(d => d.id === formData.duree);
-  console.log('📝 prepareSubmitData - formData actual:', formData);
-  const planMapping = {
-    'Store Basic 50': 'gratuit',
-    'Store Basic 100': 'gratuit',
-    'Store Basic 150': 'gratuit',
-    'Store Silver 200': 'basique',
-    'Store Silver 300': 'basique',
-    'Store Silver 500': 'basique',
-    'Store Gold 1000': 'premium',
-    'Store Gold 2000': 'entreprise',
-    'Store Gold 6000': 'entreprise'
-  };
-
-  const dureeMapping = {
-    '1': '1mois', '2': '1mois', '3': '3mois', '4': '3mois',
-    '5': '6mois', '6': '6mois', '7': '6mois', '8': '6mois',
-    '9': '1an', '10': '1an', '11': '1an', '12': '1an'
-  };
-
-  const generateSubCategory = (categorie) => {
-    if (!categorie) return '';
-    return 'boutique-' + categorie
-      .toLowerCase()
-      .replace(/[&]/g, 'et')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
-  };
-
-  // 🎯 Generar dominio ÚNICO
-  const generateUniqueDomain = () => {
-    const baseDomain = formData.nom_boutique
-      ? formData.nom_boutique.toLowerCase()
-          .replace(/[^a-z0-9]/g, '-')
-          .replace(/-+/g, '-')
-          .replace(/^-|-$/g, '')
-      : 'boutique';
+  // Preparar les données pour l'envoi - ✅ VERSIÓN CORREGIDA CON USER
+  const prepareSubmitData = () => {
+    const offreSelectionnee = offres.find(o => o.id === formData.offre);
+    const dureeSelectionnee = durees.find(d => d.id === formData.duree);
     
-    // Añadir timestamp para hacerlo único
-    const timestamp = Date.now().toString().slice(-4);
-    return `${baseDomain}-${timestamp}`;
-  };
+    const planMapping = {
+      'Store Basic 50': 'gratuit',
+      'Store Basic 100': 'gratuit',
+      'Store Basic 150': 'gratuit',
+      'Store Silver 200': 'basique',
+      'Store Silver 300': 'basique',
+      'Store Silver 500': 'basique',
+      'Store Gold 1000': 'premium',
+      'Store Gold 2000': 'entreprise',
+      'Store Gold 6000': 'entreprise'
+    };
 
-  const subCategory = generateSubCategory(formData.categorie);
-  
-  // Usar el dominio personalizado si existe, si no generar uno único
-  const domaine_boutique = formData.domaine_boutique?.trim() 
-    ? formData.domaine_boutique 
-    : generateUniqueDomain();
+    const dureeMapping = {
+      '1': '1mois', '2': '1mois', '3': '3mois', '4': '3mois',
+      '5': '6mois', '6': '6mois', '7': '6mois', '8': '6mois',
+      '9': '1an', '10': '1an', '11': '1an', '12': '1an'
+    };
 
-  return {
-    nom_boutique: formData.nom_boutique,
-    domaine_boutique: domaine_boutique,  // ← Ahora siempre único
-    slogan_boutique: formData.slogan_boutique || '',
-    description_boutique: formData.description_boutique,
-    date_debut: formData.date_debut,
-    
-    categorie: formData.categorie,
-    subCategory: subCategory,
-    
-    plan: planMapping[formData.offre] || 'gratuit',
-    duree_abonnement: dureeMapping[formData.duree] || '1mois',
-    
-    proprietaire: formData.proprietaire,
-    reseaux_sociaux: formData.reseaux_sociaux,
-    couleur_theme: formData.couleur_theme,
-    
-    offre_choisie: offreSelectionnee ? {
-      id: offreSelectionnee.id,
-      nom: offreSelectionnee.name,
-      credits: offreSelectionnee.credits,
-      storage: offreSelectionnee.storage,
-      prix_mois: offreSelectionnee.prix_mois
-    } : null,
-    
-    duree_choisie: dureeSelectionnee ? {
-      id: dureeSelectionnee.id,
-      nom: dureeSelectionnee.name
-    } : null,
-    
-    montant_initial: formData.montant_initial,
-    mois_offerts: formData.mois_offerts,
-    montant_ttc: formData.montant_ttc,
-    methode_paiement: formData.methode_paiement,
-    transaction_id: transactionId,
-    
-    client_nom: formData.client_nom,
-    client_telephone: formData.client_telephone
-  };
-};
+    const generateSubCategory = (categorie) => {
+      if (!categorie) return '';
+      return 'boutique-' + categorie
+        .toLowerCase()
+        .replace(/[&]/g, 'et')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+    };
 
-  // 🚀 Submit - VERSIÓN MEJORADA CON IMÁGENES
-// 🚀 Submit - VERSIÓN CORREGIDA CON BOUTIQUEID
-// 🚀 Submit - VERSIÓN CORREGIDA CON DEBUG
-// 🚀 handleSubmit simplificado
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  console.log('🚀 handleSubmit iniciado');
-  console.log('📊 formData actual:', formData);
-
-  if (images.length === 0) {
-    setError('Au moins une image est requise');
-    return;
-  }
-
-  setIsSubmitting(true);
-  setError('');
-
-  try {
-    const submitData = prepareSubmitData();
-    console.log('📦 submitData preparado:', submitData);
-
-    if (isEdit) {
-      // Buscar ID en formData (que ya debería tenerlo)
-      const boutiqueId = formData._id || formData.id;
+    const generateUniqueDomain = () => {
+      const baseDomain = formData.nom_boutique
+        ? formData.nom_boutique.toLowerCase()
+            .replace(/[^a-z0-9]/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '')
+        : 'boutique';
       
-      console.log('🔍 Buscando ID para edición:', {
-        formData_id: formData._id,
-        formData_id_props: formData.id,
-        finalId: boutiqueId
-      });
+      const timestamp = Date.now().toString().slice(-4);
+      return `${baseDomain}-${timestamp}`;
+    };
 
-      if (!boutiqueId) {
-        console.error('❌ No hay ID en formData:', formData);
-        throw new Error('ID de boutique non trouvé pour la modification');
-      }
+    const subCategory = generateSubCategory(formData.categorie);
+    const domaine_boutique = formData.domaine_boutique?.trim() 
+      ? formData.domaine_boutique 
+      : generateUniqueDomain();
 
-      console.log('✅ Enviando update con ID:', boutiqueId);
+    // ✅ Asegurar que user es solo el ID (string)
+    const userId = typeof formData.user === 'object' 
+      ? formData.user._id 
+      : formData.user || auth?.user?._id;
+
+    return {
+      // Campos principales
+      nom_boutique: formData.nom_boutique,
+      domaine_boutique: domaine_boutique,
+      slogan_boutique: formData.slogan_boutique || '',
+      description_boutique: formData.description_boutique,
+      date_debut: formData.date_debut,
       
-      await dispatch(updateBoutique({
-        boutiqueId,
-        boutiqueData: submitData,
-        images,
-        auth
-      }));
+      // ✅ USER - solo el ID
+      user: userId,
       
-      setSuccess('Boutique mise à jour avec succès!');
+      // Categorías
+      categorie: formData.categorie,
+      subCategory: subCategory,
       
-      setTimeout(() => {
-        if (onSuccess) {
-          onSuccess({ ...submitData, _id: boutiqueId });
-        } else {
-          history.push(`/boutique/${boutiqueId}`);
+      // Plan
+      plan: planMapping[formData.offre] || 'gratuit',
+      duree_abonnement: dureeMapping[formData.duree] || '1mois',
+      
+      // ✅ Propriétaire (objeto completo)
+      proprietaire: {
+        nom: formData.proprietaire.nom || auth?.user?.name || '',
+        email: formData.proprietaire.email || auth?.user?.email || '',
+        telephone: formData.proprietaire.telephone || auth?.user?.mobile || '',
+        wilaya: formData.proprietaire.wilaya || '',
+        adresse: formData.proprietaire.adresse || ''
+      },
+      
+      // Réseaux sociaux
+      reseaux_sociaux: formData.reseaux_sociaux,
+      
+      // 🎨 Couleur du thème
+      couleur_theme: formData.couleur_theme,
+      
+      // Offre choisie
+      offre_choisie: offreSelectionnee ? {
+        id: offreSelectionnee.id,
+        nom: offreSelectionnee.name,
+        credits: offreSelectionnee.credits,
+        storage: offreSelectionnee.storage,
+        prix_mois: offreSelectionnee.prix_mois
+      } : null,
+      
+      // Durée choisie
+      duree_choisie: dureeSelectionnee ? {
+        id: dureeSelectionnee.id,
+        nom: dureeSelectionnee.name
+      } : null,
+      
+      // Paiement
+      montant_initial: formData.montant_initial,
+      mois_offerts: formData.mois_offerts,
+      montant_ttc: formData.montant_ttc,
+      methode_paiement: formData.methode_paiement,
+      transaction_id: transactionId,
+      
+      client_nom: formData.client_nom,
+      client_telephone: formData.client_telephone
+    };
+  };
+
+  // 🚀 Submit
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    console.log('🚀 handleSubmit iniciado');
+
+    if (images.length === 0) {
+      setError('Au moins une image est requise');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const submitData = prepareSubmitData();
+      console.log('📦 submitData preparado:', submitData);
+
+      if (isEdit) {
+        const boutiqueId = formData._id || formData.id;
+        
+        if (!boutiqueId) {
+          throw new Error('ID de boutique non trouvé pour la modification');
         }
-      }, 2000);
-      
-    } else {
-      // Creación
-      const result = await dispatch(createBoutique({
-        boutiqueData: submitData,
-        images,
-        auth
-      }));
 
-      if (result) {
-        setSuccess('Boutique créée avec succès!');
+        await dispatch(updateBoutique({
+          boutiqueId,
+          boutiqueData: submitData,
+          images,
+          auth
+        }));
+        
+        setSuccess('Boutique mise à jour avec succès!');
+        
         setTimeout(() => {
           if (onSuccess) {
-            onSuccess(result.boutique || result);
+            onSuccess({ ...submitData, _id: boutiqueId });
           } else {
-            const newId = result.boutique?._id || result._id;
-            if (newId) history.push(`/boutique/${newId}`);
+            history.push(`/boutique/${boutiqueId}`);
           }
         }, 2000);
+        
+      } else {
+        const result = await dispatch(createBoutique({
+          boutiqueData: submitData,
+          images,
+          auth
+        }));
+
+        if (result) {
+          setSuccess('Boutique créée avec succès!');
+          setTimeout(() => {
+            if (onSuccess) {
+              onSuccess(result.boutique || result);
+            } else {
+              const newId = result.boutique?._id || result._id;
+              if (newId) history.push(`/boutique/${newId}`);
+            }
+          }, 2000);
+        }
+      }
+    } catch (err) {
+      console.error('❌ Erreur:', err);
+      setError(err.message || 'Erreur lors de la création');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Chargement des données en mode édition
+  useEffect(() => {
+    console.log('🎯 Wizard useEffect - isEdit:', isEdit, 'boutiqueData:', boutiqueData);
+    
+    if (isEdit && boutiqueData) {
+      const newFormData = {
+        _id: boutiqueData._id || boutiqueData.id,
+        id: boutiqueData._id || boutiqueData.id,
+        nom_boutique: boutiqueData.nom_boutique || '',
+        domaine_boutique: boutiqueData.domaine_boutique || '',
+        slogan_boutique: boutiqueData.slogan_boutique || '',
+        description_boutique: boutiqueData.description_boutique || '',
+        date_debut: boutiqueData.date_debut?.split('T')[0] || new Date().toISOString().split('T')[0],
+        categorie: boutiqueData.categorie || '',
+        duree: boutiqueData.duree_choisie?.id || boutiqueData.duree || '1',
+        offre: boutiqueData.offre_choisie?.id || boutiqueData.offre || 'Store Basic 50',
+        
+        // ✅ Propriétaire
+        proprietaire: {
+          nom: boutiqueData.proprietaire?.nom || auth?.user?.name || '',
+          email: boutiqueData.proprietaire?.email || auth?.user?.email || '',
+          telephone: boutiqueData.proprietaire?.telephone || auth?.user?.mobile || '',
+          wilaya: boutiqueData.proprietaire?.wilaya || '',
+          adresse: boutiqueData.proprietaire?.adresse || ''
+        },
+        
+        // ✅ User
+        user: boutiqueData.user?._id || boutiqueData.user || auth?.user?._id,
+        
+        reseaux_sociaux: {
+          facebook: boutiqueData.reseaux_sociaux?.facebook || '',
+          instagram: boutiqueData.reseaux_sociaux?.instagram || '',
+          tiktok: boutiqueData.reseaux_sociaux?.tiktok || '',
+          whatsapp: boutiqueData.reseaux_sociaux?.whatsapp || '',
+          website: boutiqueData.reseaux_sociaux?.website || ''
+        },
+        
+        couleur_theme: boutiqueData.couleur_theme || '#2563eb',
+        montant_initial: boutiqueData.montant_initial || 0,
+        mois_offerts: boutiqueData.mois_offerts || 0,
+        montant_ttc: boutiqueData.montant_ttc || 0,
+        methode_paiement: boutiqueData.methode_paiement || '',
+        client_nom: boutiqueData.client_nom || auth?.user?.name || '',
+        client_telephone: boutiqueData.client_telephone || auth?.user?.mobile || '',
+        accepte_conditions: boutiqueData.accepte_conditions || false
+      };
+      
+      console.log('📝 Nuevo formData creado:', newFormData);
+      setFormData(newFormData);
+
+      if (boutiqueData.images?.length > 0) {
+        setImages(boutiqueData.images.map((img, idx) => ({
+          url: img.url,
+          public_id: img.public_id || `existing_${idx}`,
+          isExisting: true
+        })));
       }
     }
-  } catch (err) {
-    console.error('❌ Erreur:', err);
-    setError(err.message || 'Erreur lors de la création');
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  }, [isEdit, boutiqueData, auth]);
 
-// Chargement des données en mode édition - CORREGIDO CON DEBUG
-// ✅ SOLO UN useEffect - ELIMINA EL OTRO
-// ✅ VERSIÓN SIMPLIFICADA - SOLO UN useEffect
-useEffect(() => {
-  console.log('🎯 Wizard useEffect - isEdit:', isEdit, 'boutiqueData:', boutiqueData);
-  
-  if (isEdit && boutiqueData) {
-    console.log('📦 boutiqueData recibido:', boutiqueData);
-    console.log('🔑 ID encontrado:', boutiqueData._id || boutiqueData.id);
-    
-    // Crear nuevo formData con el ID
-    const newFormData = {
-      _id: boutiqueData._id || boutiqueData.id,
-      id: boutiqueData._id || boutiqueData.id,
-      nom_boutique: boutiqueData.nom_boutique || '',
-      domaine_boutique: boutiqueData.domaine_boutique || '',
-      slogan_boutique: boutiqueData.slogan_boutique || '',
-      description_boutique: boutiqueData.description_boutique || '',
-      date_debut: boutiqueData.date_debut?.split('T')[0] || new Date().toISOString().split('T')[0],
-      categorie: boutiqueData.categorie || '',
-      duree: boutiqueData.duree_choisie?.id || boutiqueData.duree || '1',
-      offre: boutiqueData.offre_choisie?.id || boutiqueData.offre || 'Store Basic 50',
-      proprietaire: {
-        nom: boutiqueData.proprietaire?.nom || auth?.user?.name || '',
-        email: boutiqueData.proprietaire?.email || auth?.user?.email || '',
-        telephone: boutiqueData.proprietaire?.telephone || auth?.user?.mobile || '',
-        wilaya: boutiqueData.proprietaire?.wilaya || '',
-        adresse: boutiqueData.proprietaire?.adresse || ''
-      },
-      reseaux_sociaux: {
-        facebook: boutiqueData.reseaux_sociaux?.facebook || '',
-        instagram: boutiqueData.reseaux_sociaux?.instagram || '',
-        tiktok: boutiqueData.reseaux_sociaux?.tiktok || '',
-        whatsapp: boutiqueData.reseaux_sociaux?.whatsapp || '',
-        website: boutiqueData.reseaux_sociaux?.website || ''
-      },
-      couleur_theme: boutiqueData.couleur_theme || '#2563eb',
-      montant_initial: boutiqueData.montant_initial || 0,
-      mois_offerts: boutiqueData.mois_offerts || 0,
-      montant_ttc: boutiqueData.montant_ttc || 0,
-      methode_paiement: boutiqueData.methode_paiement || '',
-      client_nom: boutiqueData.client_nom || auth?.user?.name || '',
-      client_telephone: boutiqueData.client_telephone || auth?.user?.mobile || '',
-      accepte_conditions: boutiqueData.accepte_conditions || false
-    };
-    
-    console.log('📝 Nuevo formData creado:', newFormData);
-    setFormData(newFormData);
-
-    // Cargar imágenes
-    if (boutiqueData.images?.length > 0) {
-      console.log('🖼️ Cargando', boutiqueData.images.length, 'imágenes');
-      setImages(boutiqueData.images.map((img, idx) => ({
-        url: img.url,
-        public_id: img.public_id || `existing_${idx}`,
-        isExisting: true
-      })));
-    }
-  }
-}, [isEdit, boutiqueData, auth]);
-  // Chargement des données en mode édition
-  // Chargement des données en mode édition - CORREGIDO
- 
   useEffect(() => {
     if (alert.error) setError(alert.error);
     if (alert.success) setSuccess(alert.success);
@@ -669,13 +685,16 @@ useEffect(() => {
               images={images}
               handleChangeImages={handleChangeImages}
               deleteImages={deleteImages}
+              colorPalette={colorPalette}
+              handleColorChange={handleColorChange}
+              showColorPicker={showColorPicker}
+              setShowColorPicker={setShowColorPicker}
             />
           )}
 
           {currentStep === 2 && (
             <Step2ChoixOffre
               formData={formData}
-       
               durees={durees}
               offres={offres}
               handleSelectCategorie={handleSelectCategorie}
@@ -771,8 +790,18 @@ useEffect(() => {
   );
 };
 
-// ============ STEP 1: INFORMATIONS ============
-const Step1Informations = ({ formData, handleInputChange, images, handleChangeImages, deleteImages }) => {
+// ============ STEP 1: INFORMATIONS (CON COLOR PICKER) ============
+const Step1Informations = ({ 
+  formData, 
+  handleInputChange, 
+  images, 
+  handleChangeImages, 
+  deleteImages,
+  colorPalette,
+  handleColorChange,
+  showColorPicker,
+  setShowColorPicker 
+}) => {
   return (
     <div>
       <h5 className="mb-4">
@@ -876,6 +905,86 @@ const Step1Informations = ({ formData, handleInputChange, images, handleChangeIm
                 <i className="fas fa-exclamation-circle me-1"></i>
                 Le logo est obligatoire
               </Form.Text>
+            )}
+          </Form.Group>
+        </Col>
+
+        {/* 🎨 Sélecteur de couleur du thème */}
+        <Col xs={12}>
+          <Form.Group className="mb-3">
+            <Form.Label>
+              <i className="fas fa-palette me-2 text-primary"></i>
+              Couleur du thème
+            </Form.Label>
+            
+            {/* Palette de couleurs pré-définies */}
+            <div className="color-palette mb-2">
+              {colorPalette.map((color, index) => (
+                <OverlayTrigger
+                  key={index}
+                  placement="top"
+                  overlay={<Tooltip>Choisir cette couleur</Tooltip>}
+                >
+                  <div
+                    className="color-swatch"
+                    style={{
+                      backgroundColor: color,
+                      width: '35px',
+                      height: '35px',
+                      borderRadius: '50%',
+                      display: 'inline-block',
+                      margin: '0 5px 5px 0',
+                      cursor: 'pointer',
+                      border: formData.couleur_theme === color ? '3px solid #000' : '1px solid #ddd',
+                      boxShadow: formData.couleur_theme === color ? '0 0 0 2px white, 0 0 0 4px #0d6efd' : 'none'
+                    }}
+                    onClick={() => handleColorChange({ hex: color })}
+                  />
+                </OverlayTrigger>
+              ))}
+            </div>
+
+            {/* Selector de color personalizado */}
+            <div className="d-flex align-items-center">
+              <div
+                className="current-color-preview me-3"
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '8px',
+                  backgroundColor: formData.couleur_theme,
+                  border: '2px solid #ddd',
+                  cursor: 'pointer'
+                }}
+                onClick={() => setShowColorPicker(!showColorPicker)}
+              />
+              <Form.Control
+                type="text"
+                value={formData.couleur_theme}
+                onChange={(e) => handleColorChange({ hex: e.target.value })}
+                placeholder="#2563eb"
+                style={{ width: '120px' }}
+              />
+              <Button
+                variant="outline-primary"
+                size="sm"
+                className="ms-2"
+                onClick={() => setShowColorPicker(!showColorPicker)}
+              >
+                <i className="fas fa-paint-brush me-1"></i>
+                Personnaliser
+              </Button>
+            </div>
+
+            {/* Color Picker (ChromePicker) */}
+            {showColorPicker && (
+              <div className="color-picker-popover mt-2">
+                <div className="color-picker-cover" onClick={() => setShowColorPicker(false)} />
+                <ChromePicker
+                  color={formData.couleur_theme}
+                  onChange={handleColorChange}
+                />
+              </div>
             )}
           </Form.Group>
         </Col>
@@ -1034,12 +1143,48 @@ const Step1Informations = ({ formData, handleInputChange, images, handleChangeIm
           </Form.Group>
         </Col>
       </Row>
+
+      <style jsx="true">{`
+        .color-palette {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 5px;
+        }
+        
+        .color-swatch {
+          transition: transform 0.2s ease;
+        }
+        
+        .color-swatch:hover {
+          transform: scale(1.1);
+        }
+        
+        .color-picker-popover {
+          position: relative;
+          z-index: 100;
+        }
+        
+        .color-picker-cover {
+          position: fixed;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          left: 0;
+        }
+        
+        .current-color-preview {
+          transition: transform 0.2s ease;
+        }
+        
+        .current-color-preview:hover {
+          transform: scale(1.05);
+        }
+      `}</style>
     </div>
   );
 };
 
-// ============ STEP 2: CHOIX OFFRE ============
-// ============ STEP 2: CHOIX OFFRE - CARDS MÁS PEQUEÑAS ============
+// ============ STEP 2: CHOIX OFFRE (sin cambios) ============
 const Step2ChoixOffre = ({
   formData,
   durees,
@@ -1062,7 +1207,6 @@ const Step2ChoixOffre = ({
     }
   };
 
-  // 🎯 TODAS LAS CATEGORÍAS DE BOUTIQUES DEL SEED (50+)
   const categories = [
     { id: 'agences-immobilieres', name: 'Agences immobilières', icon: 'fa-building', level: 2 },
     { id: 'promotions-immobilieres', name: 'Promotions immobilières', icon: 'fa-city', level: 2 },
@@ -1116,17 +1260,14 @@ const Step2ChoixOffre = ({
     { id: 'alimentaire', name: 'Alimentaire', icon: 'fa-apple-alt', level: 2 }
   ];
 
-  // Ordenar alfabéticamente
   const sortedCategories = [...categories].sort((a, b) => a.name.localeCompare(b.name, 'fr'));
 
-  // Dividir en dos filas
   const middleIndex = Math.ceil(sortedCategories.length / 2);
   const firstRowCategories = sortedCategories.slice(0, middleIndex);
   const secondRowCategories = sortedCategories.slice(middleIndex);
 
   return (
     <div>
-      {/* Catégories - DOS FILAS CON CARDS PEQUEÑAS */}
       <div className="mb-4">
         <div className="d-flex align-items-center mb-2">
           <i className="fas fa-tag text-primary me-2"></i>
@@ -1147,7 +1288,6 @@ const Step2ChoixOffre = ({
           </button>
           
           <div className="categories-dual-row" ref={categoriesRef}>
-            {/* Primera fila */}
             <div className="categories-row">
               {firstRowCategories.map(cat => (
                 <div
@@ -1164,7 +1304,6 @@ const Step2ChoixOffre = ({
               ))}
             </div>
             
-            {/* Segunda fila */}
             <div className="categories-row">
               {secondRowCategories.map(cat => (
                 <div
@@ -1191,7 +1330,6 @@ const Step2ChoixOffre = ({
         </div>
       </div>
 
-      {/* Durées */}
       <div className="mb-4">
         <h6 className="mb-2" style={{ fontSize: '0.95rem' }}>
           <i className="fas fa-calendar-alt text-primary me-2"></i>
@@ -1224,7 +1362,6 @@ const Step2ChoixOffre = ({
         </div>
       </div>
 
-      {/* Offres */}
       <div className="mb-3">
         <h6 className="mb-2" style={{ fontSize: '0.95rem' }}>
           <i className="fas fa-gem text-primary me-2"></i>
@@ -1275,7 +1412,6 @@ const Step2ChoixOffre = ({
         </div>
       </div>
 
-      {/* CSS actualizado con cards más pequeñas */}
       <style jsx="true">{`
         .categories-dual-row-container {
           position: relative;
@@ -1514,7 +1650,8 @@ const Step2ChoixOffre = ({
     </div>
   );
 };
-// ============ STEP 3: RÉSUMÉ ============
+
+// ============ STEP 3: RÉSUMÉ (sin cambios) ============
 const Step3Resume = ({ formData, offres, durees, transactionId }) => {
   const offreSelectionnee = offres.find(o => o.id === formData.offre);
   const dureeSelectionnee = durees.find(d => d.id === formData.duree);
@@ -1595,6 +1732,26 @@ const Step3Resume = ({ formData, offres, durees, transactionId }) => {
                 <Col xs={5} className="text-muted">Contact</Col>
                 <Col xs={7}>{formData.proprietaire.telephone || 'Non renseigné'}</Col>
               </Row>
+
+              {/* 🎨 Afficher la couleur choisie */}
+              <Row className="mb-2">
+                <Col xs={5} className="text-muted">Couleur du thème</Col>
+                <Col xs={7}>
+                  <div className="d-flex align-items-center">
+                    <div
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        backgroundColor: formData.couleur_theme,
+                        borderRadius: '4px',
+                        marginRight: '8px',
+                        border: '1px solid #ddd'
+                      }}
+                    />
+                    {formData.couleur_theme}
+                  </div>
+                </Col>
+              </Row>
             </Card.Body>
           </Card>
         </Col>
@@ -1631,7 +1788,7 @@ const Step3Resume = ({ formData, offres, durees, transactionId }) => {
   );
 };
 
-// ============ STEP 4: PAIEMENT ============
+// ============ STEP 4: PAIEMENT (sin cambios) ============
 const Step4Paiement = ({ formData, methodesPaiement, handleInputChange, offres, durees, transactionId }) => {
   const offreSelectionnee = offres.find(o => o.id === formData.offre);
   const dureeSelectionnee = durees.find(d => d.id === formData.duree);
@@ -1643,7 +1800,6 @@ const Step4Paiement = ({ formData, methodesPaiement, handleInputChange, offres, 
         Détail de la transaction
       </h4>
 
-      {/* Transaction Info Card */}
       <Card className="mb-4 border-0 shadow-sm">
         <Card.Body>
           <div className="row mb-3">
@@ -1657,7 +1813,6 @@ const Step4Paiement = ({ formData, methodesPaiement, handleInputChange, offres, 
             </div>
           </div>
 
-          {/* Table responsive */}
           <div className="table-responsive">
             <table className="table table-bordered table-hover">
               <thead className="table-light">
@@ -1703,7 +1858,6 @@ const Step4Paiement = ({ formData, methodesPaiement, handleInputChange, offres, 
             </table>
           </div>
 
-          {/* Promotion badge */}
           {formData.mois_offerts > 0 && (
             <div className="mt-3">
               <Badge bg="success" className="p-2">
@@ -1715,7 +1869,6 @@ const Step4Paiement = ({ formData, methodesPaiement, handleInputChange, offres, 
         </Card.Body>
       </Card>
 
-      {/* Client Information */}
       <div className="row g-4">
         <div className="col-md-6">
           <Card className="h-100 border-0 shadow-sm">
@@ -1757,7 +1910,6 @@ const Step4Paiement = ({ formData, methodesPaiement, handleInputChange, offres, 
                 </Form.Text>
               </Form.Group>
 
-              {/* Résumé rapide */}
               <div className="bg-light p-3 rounded mt-4">
                 <h6 className="mb-3">Récapitulatif</h6>
                 <div className="d-flex justify-content-between mb-2">
@@ -1779,7 +1931,6 @@ const Step4Paiement = ({ formData, methodesPaiement, handleInputChange, offres, 
           </Card>
         </div>
 
-        {/* Payment Information */}
         <div className="col-md-6">
           <Card className="h-100 border-0 shadow-sm">
             <Card.Body>
@@ -1812,7 +1963,6 @@ const Step4Paiement = ({ formData, methodesPaiement, handleInputChange, offres, 
                 </Form.Text>
               </Form.Group>
 
-              {/* Méthodes de paiement visuelles */}
               <div className="payment-methods-grid mb-4">
                 <Row className="g-2">
                   {methodesPaiement.map((method) => (
@@ -1835,7 +1985,6 @@ const Step4Paiement = ({ formData, methodesPaiement, handleInputChange, offres, 
                 </Row>
               </div>
 
-              {/* Conditions */}
               <Form.Group className="mb-4">
                 <Form.Check
                   type="checkbox"
@@ -1857,7 +2006,6 @@ const Step4Paiement = ({ formData, methodesPaiement, handleInputChange, offres, 
                 </Form.Text>
               </Form.Group>
 
-              {/* Alert info */}
               <Alert variant="info" className="mt-3 mb-0">
                 <div className="d-flex">
                   <i className="fas fa-info-circle me-3 mt-1" style={{ fontSize: '1.2rem' }}></i>

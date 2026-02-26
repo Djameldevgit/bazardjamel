@@ -9,7 +9,7 @@ import BoutiqueHeader from '../../components/boutique/BoutiqueHeader';
 import BoutiqueSidebar from '../../components/boutique/BoutiqueSidebar';
 import BoutiqueFooter from '../../components/boutique/BoutiqueFooter';
 import BoutiquePostsGrid from '../../components/boutique/BoutiquePostsGrid';
-import { FaStore, FaBoxOpen, FaInfoCircle } from 'react-icons/fa';
+import {   FaBoxOpen, FaInfoCircle } from 'react-icons/fa';
  
 // Componentes existentes
 import DashboardTab from '../../components/boutique/tabs/DashboardTab';

@@ -26,11 +26,12 @@ import form from './formReducer'
 import { roleReducer } from './roleReducer'
 import settings from './settingsReducer'
 import privacy from './privacyReducer'
-import boutique from './boutiqueReducer'
+
 import posts from './postReducer'
 import category from './categoryReducer'
 import { accordionReducer } from './accordionReducer'
- 
+import boutiquePost  from './boutiquePostReducer'
+ import boutique from './boutiqueReducer'
  
  
 // Solo importar el reducer que usas
@@ -64,5 +65,5 @@ export default combineReducers({
     form,
     settings,
     privacy,
-boutique ,  posts, category,accordionReducer
+boutique ,boutiquePost,  posts, category,accordionReducer
 })

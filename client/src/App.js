@@ -20,7 +20,6 @@ import PostId from './pages/PostId';
 import DashboardPage from './pages/users/dashboardpage';
 import profile from './pages/users/profile';
 import CreateBoutiquePage from './pages/boutique/createBoutiquePage';
-import CreateBoutiqueProductPage from './pages/boutique/CreateBoutiqueProductPage';
  
  
 import roles from './pages/users/roles';
@@ -31,6 +30,7 @@ import UserBoutiquesPage from './pages/boutique/UserBoutiquesPage';
 import MesAnnoces from './pages/users/MesAnnoces';
 import ProfileSettings from './pages/users/ProfileSettings';
 import ProfileSaved from './pages/users/ProfileSaved';
+import CreateBoutiqueProductPage from './pages/boutiquePost/CreateBoutiqueProductPage';
  
 function App() {
   const { auth } = useSelector(state => state)

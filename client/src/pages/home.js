@@ -16,7 +16,7 @@ import InfiniteScroll from 'react-infinite-scroll-component';
 import MainCategorySlider from '../components/SlidersCategories/CategorySlider';
 import Header from '../components/SlidersCategories/HeaderCarousel';
 import PostCard from '../components/post-card/PostCard';
-import BoutiqueCard from '../components/BoutiqueCard';
+import BoutiqueCard from '../components/BoutiquePostCard';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'react-bootstrap-icons';
  
  

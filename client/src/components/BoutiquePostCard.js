@@ -23,7 +23,7 @@ import {
 import { deleteBoutique, updateBoutiqueStatus } from '../redux/actions/boutiqueAction';
 import { GLOBALTYPES } from '../redux/actions/globalTypes';
 
-const BoutiqueCard = ({ boutique }) => {
+const BoutiquePostCard = ({ boutique }) => {
   const history = useHistory();
   const dispatch = useDispatch();
   const { auth } = useSelector(state => state);
@@ -493,4 +493,4 @@ const BoutiqueCard = ({ boutique }) => {
   );
 };
 
-export default BoutiqueCard;
+export default BoutiquePostCard;

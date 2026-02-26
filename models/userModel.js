@@ -32,13 +32,12 @@ const userSchema = new mongoose.Schema({
         default: 'user'
       },
 
-
-
-    avatar:{
+      avatar: {
         type: String,
-        default: 'https://res.cloudinary.com/devatchannel/image/upload/v1602752402/avatar/avatar_cugq40.png'
-    },
+        default: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1739586000/avatar/default_user_avatar.jpg'
+      },
 
+      
     language: {
         type: String,
         enum: ['fr', 'ar', 'kab'],

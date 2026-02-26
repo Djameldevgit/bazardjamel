@@ -4,25 +4,31 @@ import { useHistory } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Table, Button, Badge, Form, InputGroup, Row, Col, Spinner } from 'react-bootstrap';
 import { FaSearch, FaPlus, FaEdit, FaTrash, FaEye, FaFilter, FaSync } from 'react-icons/fa';
-import { getBoutiquePosts } from '../../../redux/actions/boutiqueAction';
- 
-const ProductsListTab = ({ boutique }) => {
+import { getBoutiquePosts } from '../../../redux/actions/boutiquePostAction';
+
+const ProductsListTab = ({ boutique }) => { // 👈 No necesitamos isOwner como prop
   const history = useHistory();
   const dispatch = useDispatch();
   const { boutiqueProducts, loadingProducts } = useSelector(state => state.boutique);
+  const { auth } = useSelector(state => state);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [page, setPage] = useState(1);
 
-  // Cargar posts cuando se monta el componente o cambia la boutique
+  // Verificar si es dueño (podemos calcularlo aquí también)
+  const isOwner = auth.user?._id === boutique?.user;
+
+  console.log('🔍 ProductsListTab - isOwner:', isOwner);
+  console.log('👤 auth.user?._id:', auth.user?._id);
+  console.log('🏪 boutique.user:', boutique?.user);
+
   useEffect(() => {
     if (boutique?._id) {
-      dispatch(getBoutiquePosts(boutique._id, page));
+      dispatch(getBoutiquePosts(boutique._id, page, 12));
     }
   }, [dispatch, boutique?._id, page]);
 
-  // Obtener los posts específicos de esta boutique
   const products = boutiqueProducts?.[boutique?._id]?.products || [];
   const total = boutiqueProducts?.[boutique?._id]?.total || 0;
   const hasMore = boutiqueProducts?.[boutique?._id]?.hasMore || false;
@@ -39,9 +45,10 @@ const ProductsListTab = ({ boutique }) => {
 
   const handleNewProduct = () => {
     if (!boutique?._id) {
-      console.error('❌ ID de boutique no disponible');
+      console.error('❌ ID de boutique manquant');
       return;
     }
+    console.log('🔗 Navigation vers:', `/boutique/${boutique._id}/products/new`);
     history.push(`/boutique/${boutique._id}/products/new`);
   };
 
@@ -50,14 +57,10 @@ const ProductsListTab = ({ boutique }) => {
   };
 
   const handleEditProduct = (productId) => {
-    history.push(`/edit-post/${productId}`, { 
+    history.push(`/boutique/${boutique._id}/products/edit/${productId}`, {
       postData: products.find(p => p._id === productId),
-      isEdit: true 
+      isEdit: true
     });
-  };
-
-  const handleLoadMore = () => {
-    setPage(prev => prev + 1);
   };
 
   if (loadingProducts && products.length === 0) {
@@ -78,12 +81,20 @@ const ProductsListTab = ({ boutique }) => {
             Total: {total} produit{total > 1 ? 's' : ''}
           </small>
         </div>
-        <Button 
-          variant="primary" 
-          onClick={handleNewProduct}
-        >
-          <FaPlus className="me-2" /> Nouveau produit
-        </Button>
+        
+        {/* 👇 BOTÓN VISIBLE PARA EL DUEÑO */}
+        {isOwner && (
+          <Button 
+            variant="primary" 
+            onClick={handleNewProduct}
+            style={{
+              backgroundColor: boutique?.couleur_theme || '#6366F1',
+              borderColor: boutique?.couleur_theme || '#6366F1'
+            }}
+          >
+            <FaPlus className="me-2" /> Nouveau produit
+          </Button>
+        )}
       </div>
 
       {/* Filtros y búsqueda */}
@@ -171,20 +182,33 @@ const ProductsListTab = ({ boutique }) => {
                     size="sm" 
                     className="text-info p-0 me-2"
                     onClick={() => handleViewProduct(product._id)}
+                    title="Voir"
                   >
                     <FaEye />
                   </Button>
-                  <Button 
-                    variant="link" 
-                    size="sm" 
-                    className="text-primary p-0 me-2"
-                    onClick={() => handleEditProduct(product._id)}
-                  >
-                    <FaEdit />
-                  </Button>
-                  <Button variant="link" size="sm" className="text-danger p-0">
-                    <FaTrash />
-                  </Button>
+                  
+                  {/* 👇 Botones de edición SOLO para dueño */}
+                  {isOwner && (
+                    <>
+                      <Button 
+                        variant="link" 
+                        size="sm" 
+                        className="text-primary p-0 me-2"
+                        onClick={() => handleEditProduct(product._id)}
+                        title="Modifier"
+                      >
+                        <FaEdit />
+                      </Button>
+                      <Button 
+                        variant="link" 
+                        size="sm" 
+                        className="text-danger p-0"
+                        title="Supprimer"
+                      >
+                        <FaTrash />
+                      </Button>
+                    </>
+                  )}
                 </td>
               </tr>
             ))
@@ -200,11 +224,22 @@ const ProductsListTab = ({ boutique }) => {
                   </>
                 ) : (
                   <>
-                    <p size={48} className="text-muted mb-3" />
+                    <FaPlus size={48} className="text-muted mb-3" />
                     <p className="text-muted mb-2">Aucun produit dans cette boutique</p>
-                    <Button variant="primary" size="sm" onClick={handleNewProduct}>
-                      <FaPlus className="me-2" /> Ajouter votre premier produit
-                    </Button>
+                    {/* 👇 Botón SOLO para dueño cuando no hay productos */}
+                    {isOwner && (
+                      <Button 
+                        variant="primary" 
+                        size="lg"
+                        onClick={handleNewProduct}
+                        style={{
+                          backgroundColor: boutique?.couleur_theme || '#6366F1',
+                          borderColor: boutique?.couleur_theme || '#6366F1'
+                        }}
+                      >
+                        <FaPlus className="me-2" /> Ajouter votre premier produit
+                      </Button>
+                    )}
                   </>
                 )}
               </td>
@@ -213,12 +248,11 @@ const ProductsListTab = ({ boutique }) => {
         </tbody>
       </Table>
 
-      {/* Botón cargar más */}
       {hasMore && (
         <div className="text-center mt-3">
           <Button 
             variant="outline-primary" 
-            onClick={handleLoadMore}
+            onClick={() => setPage(prev => prev + 1)}
             disabled={loadingProducts}
           >
             {loadingProducts ? (
@@ -233,28 +267,6 @@ const ProductsListTab = ({ boutique }) => {
               </>
             )}
           </Button>
-        </div>
-      )}
-
-      {/* Resumen */}
-      {products.length > 0 && (
-        <div className="bg-light p-3 rounded mt-3">
-          <Row>
-            <Col md={4}>
-              <small className="text-muted d-block">Total produits</small>
-              <strong>{total}</strong>
-            </Col>
-            <Col md={4}>
-              <small className="text-muted d-block">Produits actifs</small>
-              <strong>{products.filter(p => p.isActive).length}</strong>
-            </Col>
-            <Col md={4}>
-              <small className="text-muted d-block">Prix moyen</small>
-              <strong>
-                {Math.round(products.reduce((acc, p) => acc + (p.price || 0), 0) / products.length || 0).toLocaleString()} DA
-              </strong>
-            </Col>
-          </Row>
         </div>
       )}
     </div>

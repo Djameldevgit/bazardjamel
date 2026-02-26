@@ -63,15 +63,17 @@ const boutiqueSchema = new mongoose.Schema({
     type: Array,
     required: true
   }, // Lista de imágenes o logo de la boutique.
- /* header_image: {
+ header_image: {
     type: String,
-    trim: true
-  }, // Imagen del banner o fondo de la boutique.
-  
-  avatar_image: {
-    type: String,
-    trim: true
-  }, */
+    default: 'https://res.cloudinary.com/dfjipgj2o/image/upload/0000_hbd2mt.jpg'
+  },
+
+
+   
+
+   
+
+
   plan: {
     type: String,
     enum: ['gratuit', 'basique', 'premium', 'entreprise'],

@@ -1,6 +1,6 @@
 {
   "name": "client",
-  "homeposts": "https://bazardjamel.onrender.com",
+  "homepage": "https://bazardjamel.onrender.com",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -29,6 +29,7 @@
     "react": "^17.0.1",
     "react-bootstrap": "^2.10.9",
     "react-bootstrap-icons": "^1.11.6",
+    "react-color": "^2.19.3",
     "react-cookie": "^5.0.0",
     "react-copy-to-clipboard": "^5.1.0",
     "react-dom": "^17.0.1",

@@ -2,7 +2,7 @@
 import { GLOBALTYPES } from './globalTypes';
 import { postDataAPI, getDataAPI, patchDataAPI, deleteDataAPI } from '../../utils/fetchData';
 import { imageUpload } from '../../utils/imageUpload';
-
+ 
 export const BOUTIQUE_TYPES = {
   // Basic CRUD
   CREATE_BOUTIQUE: 'CREATE_BOUTIQUE',
@@ -10,8 +10,7 @@ export const BOUTIQUE_TYPES = {
   GET_BOUTIQUE: 'GET_BOUTIQUE',
   UPDATE_BOUTIQUE: 'UPDATE_BOUTIQUE',
   DELETE_BOUTIQUE: 'DELETE_BOUTIQUE',
-  DELETE_BOUTIQUE_PRODUCT:'DELETE_BOUTIQUE_PRODUCT',
-  UPDATE_BOUTIQUE_PRODUCT:'UPDATE_BOUTIQUE_PRODUCT',
+ 
   GET_BOUTIQUES_BY_CATEGORY: 'GET_BOUTIQUES_BY_CATEGORY',
   GET_BOUTIQUES_FOR_HOME: 'GET_BOUTIQUES_FOR_HOME',
   // User specific
@@ -19,9 +18,7 @@ export const BOUTIQUE_TYPES = {
   GET_BOUTIQUE_BY_DOMAIN: 'GET_BOUTIQUE_BY_DOMAIN',
   
   // Products
-  GET_BOUTIQUE_PRODUCTS: 'GET_BOUTIQUE_PRODUCTS',
-  ADD_BOUTIQUE_PRODUCT: 'ADD_BOUTIQUE_PRODUCT',
-  REMOVE_BOUTIQUE_PRODUCT: 'REMOVE_BOUTIQUE_PRODUCT',
+  
   
   // Status
   UPDATE_BOUTIQUE_STATUS: 'UPDATE_BOUTIQUE_STATUS',
@@ -31,203 +28,10 @@ export const BOUTIQUE_TYPES = {
   
   // Loading states
   LOADING_BOUTIQUE: 'LOADING_BOUTIQUE',
-  LOADING_BOUTIQUE_PRODUCTS: 'LOADING_BOUTIQUE_PRODUCTS',
+ 
   LOADING_BOUTIQUES_BY_CATEGORY: 'LOADING_BOUTIQUES_BY_CATEGORY'
 };
-// redux/actions/boutiqueAction.js
-// ============ CREATE BOUTIQUE POST ============
-export const createBoutiquePost = ({ 
-  boutiqueId, 
-  postData, 
-  images, 
-  auth 
-}) => async (dispatch) => {
-  try {
-    console.log('📝 createBoutiquePost iniciado', { boutiqueId });
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
-
-    // Subir imágenes si hay nuevas
-    let finalImages = [];
-    const newImages = images.filter(img => !img.isExisting && img.url?.startsWith('blob:'));
-    const existingImages = images.filter(img => img.isExisting);
-
-    if (newImages.length > 0) {
-      console.log(`📤 Subiendo ${newImages.length} imagen(es)...`);
-      const uploaded = await imageUpload(newImages);
-      finalImages = [...existingImages, ...uploaded];
-    } else {
-      finalImages = existingImages;
-    }
-
-    // Preparar datos finales
-    const postToSend = {
-      ...postData,
-      images: finalImages,
-      categorySpecificData: postData.categorySpecificData || {}
-    };
-
-    const res = await postDataAPI(`boutique/${boutiqueId}/posts`, postToSend, auth.token);
-
-    dispatch({ 
-      type: GLOBALTYPES.ALERT, 
-      payload: { success: '✅ Produit ajouté à la boutique avec succès' }
-    });
-
-    return res.data;
-
-  } catch (err) {
-    console.error('❌ Error en createBoutiquePost:', err);
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { error: err.response?.data?.message || err.message }
-    });
-    throw err;
-  } finally {
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
-  }
-};
-
-// ============ GET BOUTIQUE POSTS ============
-export const getBoutiquePosts = (boutiqueId, page = 1, limit = 12) => async (dispatch) => {
-  try {
-    console.log('📦 Obteniendo posts de la boutique:', { boutiqueId, page, limit });
-    
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE_PRODUCTS, payload: true });
-    
-    const params = { page, limit };
-    const res = await getDataAPI(`boutique/${boutiqueId}/posts`, null, params);
-    
-    console.log('✅ Posts recibidos:', res.data);
-    
-    dispatch({
-      type: BOUTIQUE_TYPES.GET_BOUTIQUE_PRODUCTS,
-      payload: {
-        boutiqueId,
-        products: res.data.posts || [],
-        total: res.data.total || 0,
-        page: res.data.page || page,
-        totalPages: res.data.totalPages || 1,
-        hasMore: res.data.hasMore || false
-      }
-    });
-    
-    return res.data;
-    
-  } catch (err) {
-    console.error('❌ Error en getBoutiquePosts:', err);
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { error: err.response?.data?.message || err.message }
-    });
-    throw err;
-  } finally {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE_PRODUCTS, payload: false });
-  }
-};
-
-// ============ UPDATE BOUTIQUE POST ============
-export const updateBoutiquePost = ({ 
-  boutiqueId, 
-  postId, 
-  postData, 
-  images, 
-  auth 
-}) => async (dispatch) => {
-  try {
-    console.log('📝 updateBoutiquePost iniciado', { boutiqueId, postId });
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
-
-    // Subir imágenes nuevas si hay
-    let finalImages = [];
-    if (images && images.length > 0) {
-      const newImages = images.filter(img => !img.isExisting && img.url?.startsWith('blob:'));
-      const existingImages = images.filter(img => img.isExisting);
-
-      if (newImages.length > 0) {
-        console.log(`📤 Subiendo ${newImages.length} imagen(es)...`);
-        const uploaded = await imageUpload(newImages);
-        finalImages = [...existingImages, ...uploaded];
-      } else {
-        finalImages = existingImages;
-      }
-    }
-
-    // Preparar datos finales
-    const postToSend = {
-      ...postData,
-      images: finalImages.length > 0 ? finalImages : postData.images
-    };
-
-    const res = await patchDataAPI(`boutique/${boutiqueId}/posts/${postId}`, postToSend, auth.token);
-
-    dispatch({ 
-      type: GLOBALTYPES.ALERT, 
-      payload: { success: '✅ Produit mis à jour avec succès' }
-    });
-
-    // Actualizar en el estado de boutiqueProducts
-    dispatch({
-      type: BOUTIQUE_TYPES.UPDATE_BOUTIQUE_PRODUCT,
-      payload: {
-        boutiqueId,
-        post: res.data.post
-      }
-    });
-
-    return res.data;
-
-  } catch (err) {
-    console.error('❌ Error en updateBoutiquePost:', err);
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { error: err.response?.data?.message || err.message }
-    });
-    throw err;
-  } finally {
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
-  }
-};
-
-// ============ DELETE BOUTIQUE POST ============
-export const deleteBoutiquePost = ({ 
-  boutiqueId, 
-  postId, 
-  auth 
-}) => async (dispatch) => {
-  try {
-    console.log('🗑️ deleteBoutiquePost iniciado', { boutiqueId, postId });
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
-
-    const res = await deleteDataAPI(`boutique/${boutiqueId}/posts/${postId}`, auth.token);
-
-    dispatch({ 
-      type: GLOBALTYPES.ALERT, 
-      payload: { success: '✅ Produit supprimé avec succès' }
-    });
-
-    // Eliminar del estado
-    dispatch({
-      type: BOUTIQUE_TYPES.DELETE_BOUTIQUE_PRODUCT,
-      payload: {
-        boutiqueId,
-        postId
-      }
-    });
-
-    return res.data;
-
-  } catch (err) {
-    console.error('❌ Error en deleteBoutiquePost:', err);
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { error: err.response?.data?.message || err.message }
-    });
-    throw err;
-  } finally {
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
-  }
-};
-
+// ============ CREATE BOUTIQUE ============
 export const createBoutique = ({ 
   boutiqueData, 
   images, 
@@ -253,10 +57,10 @@ export const createBoutique = ({
       finalImages = existingImages;
     }
     
-    // Preparar datos finales (SIN DUPLICAR images)
+    // Preparar datos finales
     const boutiqueToSend = {
       ...boutiqueData,
-      images: finalImages  // ← SOLO UNA VEZ
+      images: finalImages
     };
 
     console.log('📦 Enviando al API:', {
@@ -290,6 +94,8 @@ export const createBoutique = ({
     console.timeEnd('⏱️ createBoutique action time');
   }
 };
+
+// ============ UPDATE BOUTIQUE ============
 export const updateBoutique = ({ 
   boutiqueId, 
   boutiqueData, 
@@ -356,159 +162,39 @@ export const updateBoutique = ({
     console.timeEnd('⏱️ updateBoutique action time');
   }
 };
-export const getBoutiquesByCategory = (categorySlug, subSlug = null, page = 1, limit = 12) => async (dispatch) => {
-  try {
-    // Crear clave única para esta categoría/subcategoría
-    const categoryPath = subSlug ? `${categorySlug}/${subSlug}` : categorySlug;
-    
-    console.log('🔍 Cargando boutiques por categoría:', {
-      category: categorySlug,
-      sub: subSlug,
-      page,
-      limit,
-      categoryPath
-    });
 
-    // Set loading state
+// ============ DELETE BOUTIQUE ============
+export const deleteBoutique = ({ 
+  boutiqueId, 
+  auth 
+}) => async (dispatch) => {
+  try {
+    console.log('🗑️ deleteBoutique action iniciada', { boutiqueId });
+    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: true} });
+    
+    const res = await deleteDataAPI(`boutique/${boutiqueId}`, auth.token);
+    
+    dispatch({
+      type: BOUTIQUE_TYPES.DELETE_BOUTIQUE,
+      payload: boutiqueId
+    });
+    
     dispatch({ 
-      type: BOUTIQUE_TYPES.LOADING_BOUTIQUES_BY_CATEGORY, 
-      payload: { category: categoryPath, loading: true }
-    });
-
-    // Construir parámetros
-    const params = { 
-      category: categorySlug, 
-      page, 
-      limit 
-    };
-    if (subSlug && subSlug !== 'undefined' && subSlug !== 'null') {
-      params.sub = subSlug;
-    }
-
-    // Llamar a la API
-    const res = await getDataAPI(`boutique/filter?${new URLSearchParams(params)}`);
-    
-    dispatch({
-      type: BOUTIQUE_TYPES.GET_BOUTIQUES_BY_CATEGORY,
-      payload: {
-        categoryPath: categoryPath,
-        boutiques: res.data.boutiques || [],
-        total: res.data.total || 0,
-        page: res.data.page || page,
-        totalPages: res.data.totalPages || 1,
-        hasMore: res.data.hasMore || false,
-        categoryInfo: res.data.categoryInfo || null,
-        children: res.data.children || []
-      }
-    });
-
-    return {
-      boutiques: res.data.boutiques || [],
-      total: res.data.total || 0,
-      hasMore: res.data.hasMore || false,
-      categoryInfo: res.data.categoryInfo || null,
-      children: res.data.children || []
-    };
-
-  } catch (err) {
-    console.error('❌ Error en getBoutiquesByCategory:', err);
-    
-    // Usar GLOBALTYPES para errores ya que no tenemos tipo específico
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { error: err.response?.data?.message || err.message }
-    });
-    
-    throw err;
-  } finally {
-    const categoryPath = subSlug ? `${categorySlug}/${subSlug}` : categorySlug;
-    dispatch({ 
-      type: BOUTIQUE_TYPES.LOADING_BOUTIQUES_BY_CATEGORY, 
-      payload: { category: categoryPath, loading: false }
-    });
-  }
-};
-// redux/actions/boutiqueAction.js
-
-// ============ GET BOUTIQUES FOR HOME (NUEVA) ============
-export const getBoutiquesForHome = (limit = 6) => async (dispatch) => {
-  try {
-    console.log('🏪 Cargando boutiques para el home con límite:', limit);
-    
-    // ✅ CORREGIDO: Usar category='boutiques' fijo
-    const params = { 
-      category: 'boutiques', 
-      page: 1, 
-      limit: limit 
-    };
-    
-    const res = await getDataAPI(`boutique/filter?${new URLSearchParams(params)}`);
-    
-    dispatch({
-      type: BOUTIQUE_TYPES.GET_BOUTIQUES_FOR_HOME,
-      payload: res.data.boutiques || []
-    });
-    
-    return res.data.boutiques;
-    
-  } catch (err) {
-    console.error('❌ Error cargando boutiques para home:', err);
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { error: err.response?.data?.message || err.message }
-    });
-    return [];
-  }
-};
-// ============ RESET BOUTIQUES BY CATEGORY ============
-export const resetBoutiquesByCategory = (categoryPath) => ({
-  type: 'CLEAR_BOUTIQUES_BY_CATEGORY',  // Usamos string directo para este caso
-  payload: { categoryPath }
-});
-
-// ============ RESET ALL BOUTIQUES ============
-export const resetAllBoutiques = () => ({
-  type: 'CLEAR_BOUTIQUES'  // Usamos string directo para este caso
-});
-
-// ============ CREATE BOUTIQUE ============
- 
-// ============ UPDATE BOUTIQUE ============
- 
- 
-
-// ============ GET BOUTIQUES (GENERAL) ============
-export const getBoutiques = (query = '', auth = null) => async (dispatch) => {
-  try {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: true });
-    
-    let endpoint = 'boutique';
-    if (query) endpoint += `?${query}`;
-    
-    const res = await getDataAPI(endpoint, auth?.token);
-    
-    dispatch({
-      type: BOUTIQUE_TYPES.GET_BOUTIQUES,
-      payload: {
-        boutiques: res.data.boutiques || res.data,
-        total: res.data.total || 0,
-        page: res.data.page || 1,
-        totalPages: res.data.totalPages || 1
-      }
+      type: GLOBALTYPES.ALERT, 
+      payload: { success: res.data.message || 'Boutique supprimée avec succès' }
     });
     
     return res.data;
     
   } catch (err) {
+    console.error('❌ Error en deleteBoutique:', err);
     dispatch({
       type: GLOBALTYPES.ALERT,
-      payload: {
-        error: err.response?.data?.msg || 'Erreur lors du chargement des boutiques'
-      }
+      payload: { error: err.response?.data?.message || err.message }
     });
     throw err;
   } finally {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: false });
+    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: false} });
   }
 };
 
@@ -521,33 +207,6 @@ export const getBoutique = (id, auth = null) => async (dispatch) => {
     
     dispatch({
       type: BOUTIQUE_TYPES.GET_BOUTIQUE,
-      payload: res.data.boutique || res.data
-    });
-    
-    return res.data;
-    
-  } catch (err) {
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: {
-        error: err.response?.data?.msg || 'Boutique non trouvée'
-      }
-    });
-    throw err;
-  } finally {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: false });
-  }
-};
-
-// ============ GET BOUTIQUE BY DOMAIN ============
-export const getBoutiqueByDomain = (domain) => async (dispatch) => {
-  try {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: true });
-    
-    const res = await getDataAPI(`boutique/domain/${domain}`);
-    
-    dispatch({
-      type: BOUTIQUE_TYPES.GET_BOUTIQUE_BY_DOMAIN,
       payload: res.data.boutique || res.data
     });
     
@@ -593,185 +252,104 @@ export const getUserBoutiques = (auth) => async (dispatch) => {
   }
 };
 
-// ============ DELETE BOUTIQUE ============
- 
-
-// ============ UPDATE BOUTIQUE STATUS ============
- 
-// ============ PRODUCTS MANAGEMENT ============
-export const getPostsByBoutique= (boutiqueId, query = '', auth = null) => async (dispatch) => {
+// ============ GET BOUTIQUES BY CATEGORY ============
+export const getBoutiquesByCategory = (categorySlug, subSlug = null, page = 1, limit = 12) => async (dispatch) => {
   try {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE_PRODUCTS, payload: true });
+    const categoryPath = subSlug ? `${categorySlug}/${subSlug}` : categorySlug;
     
-    let endpoint = `boutique/${boutiqueId}/products`;
-    if (query) endpoint += `?${query}`;
-    
-    const res = await getDataAPI(endpoint, auth?.token);
+    console.log('🔍 Cargando boutiques por categoría:', {
+      category: categorySlug,
+      sub: subSlug,
+      page,
+      limit,
+      categoryPath
+    });
+
+    dispatch({ 
+      type: BOUTIQUE_TYPES.LOADING_BOUTIQUES_BY_CATEGORY, 
+      payload: { category: categoryPath, loading: true }
+    });
+
+    const params = { 
+      category: categorySlug, 
+      page, 
+      limit 
+    };
+    if (subSlug && subSlug !== 'undefined' && subSlug !== 'null') {
+      params.sub = subSlug;
+    }
+
+    const res = await getDataAPI(`boutique/filter?${new URLSearchParams(params)}`);
     
     dispatch({
-      type: BOUTIQUE_TYPES.GET_BOUTIQUE_PRODUCTS,
+      type: BOUTIQUE_TYPES.GET_BOUTIQUES_BY_CATEGORY,
       payload: {
-        boutiqueId,
-        products: res.data.produits || res.data.products || [],
+        categoryPath: categoryPath,
+        boutiques: res.data.boutiques || [],
         total: res.data.total || 0,
-        page: res.data.page || 1,
-        totalPages: res.data.totalPages || 1
+        page: res.data.page || page,
+        totalPages: res.data.totalPages || 1,
+        hasMore: res.data.hasMore || false,
+        categoryInfo: res.data.categoryInfo || null,
+        children: res.data.children || []
       }
     });
-    
-    return res.data;
-    
-  } catch (err) {
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: {
-        error: err.response?.data?.msg || 'Erreur lors du chargement des produits'
-      }
-    });
-    throw err;
-  } finally {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE_PRODUCTS, payload: false });
-  }
-};
 
-export const addBoutiqueProduct = (boutiqueId, productId, auth) => async (dispatch) => {
-  try {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE_PRODUCTS, payload: true });
-    
-    const res = await postDataAPI(`boutique/${boutiqueId}/products`, { productId }, auth.token);
-    
-    dispatch({
-      type: BOUTIQUE_TYPES.ADD_BOUTIQUE_PRODUCT,
-      payload: {
-        boutiqueId,
-        product: res.data.product || res.data
-      }
-    });
-    
-    dispatch({ 
-      type: GLOBALTYPES.ALERT, 
-      payload: { 
-        success: res.data.msg || 'Produit ajouté avec succès'
-      } 
-    });
-    
-    return res.data;
-    
-  } catch (err) {
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: {
-        error: err.response?.data?.msg || err.message
-      }
-    });
-    throw err;
-  } finally {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE_PRODUCTS, payload: false });
-  }
-};
+    return {
+      boutiques: res.data.boutiques || [],
+      total: res.data.total || 0,
+      hasMore: res.data.hasMore || false,
+      categoryInfo: res.data.categoryInfo || null,
+      children: res.data.children || []
+    };
 
-export const removeBoutiqueProduct = (boutiqueId, productId, auth) => async (dispatch) => {
-  try {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE_PRODUCTS, payload: true });
-    
-    const res = await deleteDataAPI(`boutique/${boutiqueId}/products/${productId}`, auth.token);
-    
-    dispatch({
-      type: BOUTIQUE_TYPES.REMOVE_BOUTIQUE_PRODUCT,
-      payload: {
-        boutiqueId,
-        productId
-      }
-    });
-    
-    dispatch({ 
-      type: GLOBALTYPES.ALERT, 
-      payload: { 
-        success: res.data.msg || 'Produit retiré avec succès'
-      } 
-    });
-    
-    return res.data;
-    
   } catch (err) {
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: {
-        error: err.response?.data?.msg || err.message
-      }
-    });
-    throw err;
-  } finally {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE_PRODUCTS, payload: false });
-  }
-};
-
-// ============ STATISTICS ============
-export const getBoutiqueStats = (boutiqueId, auth) => async (dispatch) => {
-  try {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: true });
-    
-    const res = await getDataAPI(`boutique/${boutiqueId}/stats`, auth.token);
-    
-    dispatch({
-      type: BOUTIQUE_TYPES.GET_BOUTIQUE_STATS,
-      payload: {
-        boutiqueId,
-        stats: res.data.stats || res.data
-      }
-    });
-    
-    return res.data;
-    
-  } catch (err) {
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: {
-        error: err.response?.data?.msg || 'Erreur lors du chargement des statistiques'
-      }
-    });
-    throw err;
-  } finally {
-    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: false });
-  }
-};
-
- 
-export const deleteBoutique = ({ 
-  boutiqueId, 
-  auth 
-}) => async (dispatch) => {
-  try {
-    console.log('🗑️ deleteBoutique action iniciada', { boutiqueId });
-    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: true} });
-    
-    const res = await deleteDataAPI(`boutique/${boutiqueId}`, auth.token);
-    
-    dispatch({
-      type: BOUTIQUE_TYPES.DELETE_BOUTIQUE,
-      payload: boutiqueId
-    });
-    
-    dispatch({ 
-      type: GLOBALTYPES.ALERT, 
-      payload: { success: res.data.message || 'Boutique supprimée avec succès' }
-    });
-    
-    return res.data;
-    
-  } catch (err) {
-    console.error('❌ Error en deleteBoutique:', err);
+    console.error('❌ Error en getBoutiquesByCategory:', err);
     dispatch({
       type: GLOBALTYPES.ALERT,
       payload: { error: err.response?.data?.message || err.message }
     });
     throw err;
   } finally {
-    dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: false} });
+    const categoryPath = subSlug ? `${categorySlug}/${subSlug}` : categorySlug;
+    dispatch({ 
+      type: BOUTIQUE_TYPES.LOADING_BOUTIQUES_BY_CATEGORY, 
+      payload: { category: categoryPath, loading: false }
+    });
   }
 };
 
-// ============ UPDATE BOUTIQUE STATUS (CORREGIDA) ============
+// ============ GET BOUTIQUES FOR HOME ============
+export const getBoutiquesForHome = (limit = 6) => async (dispatch) => {
+  try {
+    console.log('🏪 Cargando boutiques para el home con límite:', limit);
+    
+    const params = { 
+      category: 'boutiques', 
+      page: 1, 
+      limit: limit 
+    };
+    
+    const res = await getDataAPI(`boutique/filter?${new URLSearchParams(params)}`);
+    
+    dispatch({
+      type: BOUTIQUE_TYPES.GET_BOUTIQUES_FOR_HOME,
+      payload: res.data.boutiques || []
+    });
+    
+    return res.data.boutiques;
+    
+  } catch (err) {
+    console.error('❌ Error cargando boutiques para home:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || err.message }
+    });
+    return [];
+  }
+};
+
+// ============ UPDATE BOUTIQUE STATUS ============
 export const updateBoutiqueStatus = ({ 
   boutiqueId, 
   statusData, 
@@ -809,3 +387,43 @@ export const updateBoutiqueStatus = ({
     dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: false} });
   }
 };
+
+// ============ GET BOUTIQUE STATS ============
+export const getBoutiqueStats = (boutiqueId, auth) => async (dispatch) => {
+  try {
+    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: true });
+    
+    const res = await getDataAPI(`boutique/${boutiqueId}/stats`, auth.token);
+    
+    dispatch({
+      type: BOUTIQUE_TYPES.GET_BOUTIQUE_STATS,
+      payload: {
+        boutiqueId,
+        stats: res.data.stats || res.data
+      }
+    });
+    
+    return res.data;
+    
+  } catch (err) {
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: {
+        error: err.response?.data?.msg || 'Erreur lors du chargement des statistiques'
+      }
+    });
+    throw err;
+  } finally {
+    dispatch({ type: BOUTIQUE_TYPES.LOADING_BOUTIQUE, payload: false });
+  }
+};
+
+// ============ RESET FUNCTIONS ============
+export const resetBoutiquesByCategory = (categoryPath) => ({
+  type: 'CLEAR_BOUTIQUES_BY_CATEGORY',
+  payload: { categoryPath }
+});
+
+export const resetAllBoutiques = () => ({
+  type: 'CLEAR_BOUTIQUES'
+});

@@ -1,20 +1,33 @@
 // components/boutique/sections/BoutiquePostsGrid.jsx
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Row, Col, Form, Button, Spinner, Alert } from 'react-bootstrap';
-import { FaFilter, FaSort, FaThLarge, FaList } from 'react-icons/fa';
-import BoutiquePostCard from './BoutiquePostCard';
-import { getBoutiquePosts } from '../../redux/actions/boutiqueAction';
+import { Row, Col, Form, Button, Spinner, Alert, Offcanvas } from 'react-bootstrap';
+import { 
+  FaFilter, 
+  FaThLarge, 
+  FaList,
+  FaTimes,
+  FaSlidersH,
+  
+  FaChevronDown,
+  FaChevronUp
+} from 'react-icons/fa';
+import BoutiquePostCard from './boutiquePost/BoutiquePostCard';
+  
+import { getBoutiquePosts } from '../../redux/actions/boutiquePostAction';
 
 const BoutiquePostsGrid = ({ boutique }) => {
   const dispatch = useDispatch();
-  const { boutiqueProducts, loadingProducts } = useSelector(state => state.boutique);
-  
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' o 'list'
+  const { products: boutiqueProducts, loadingProducts } = useSelector(state => state.boutiquePost || {});
+ 
+  const [viewMode, setViewMode] = useState('grid');
   const [sortBy, setSortBy] = useState('recent');
   const [filterPrice, setFilterPrice] = useState({ min: '', max: '' });
+  const [filterEtat, setFilterEtat] = useState([]);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
+  const [isFilterOpen, setIsFilterOpen] = useState(true); // Para desktop
 
   // Obtener posts de esta boutique
   const boutiqueData = boutiqueProducts?.[boutique._id] || {};
@@ -27,6 +40,14 @@ const BoutiquePostsGrid = ({ boutique }) => {
       dispatch(getBoutiquePosts(boutique._id, page, 12));
     }
   }, [dispatch, boutique._id, page]);
+
+  // Opciones de filtro
+  const etatOptions = [
+    { value: 'neuf', label: 'Neuf' },
+    { value: 'comme-neuf', label: 'Comme neuf' },
+    { value: 'bon-etat', label: 'Bon état' },
+    { value: 'correct', label: 'Correct' }
+  ];
 
   // Ordenar posts
   const getSortedPosts = () => {
@@ -51,10 +72,11 @@ const BoutiquePostsGrid = ({ boutique }) => {
     return sorted;
   };
 
-  // Filtrar posts por precio
+  // Filtrar posts
   const getFilteredPosts = () => {
     let filtered = getSortedPosts();
     
+    // Filtro por precio
     if (filterPrice.min) {
       filtered = filtered.filter(p => (p.price || 0) >= Number(filterPrice.min));
     }
@@ -62,14 +84,111 @@ const BoutiquePostsGrid = ({ boutique }) => {
       filtered = filtered.filter(p => (p.price || 0) <= Number(filterPrice.max));
     }
     
+    // Filtro por état
+    if (filterEtat.length > 0) {
+      filtered = filtered.filter(p => filterEtat.includes(p.etat));
+    }
+    
     return filtered;
   };
 
+  const handleEtatChange = (etat) => {
+    setFilterEtat(prev => 
+      prev.includes(etat) 
+        ? prev.filter(e => e !== etat)
+        : [...prev, etat]
+    );
+  };
+
+  const clearFilters = () => {
+    setFilterPrice({ min: '', max: '' });
+    setFilterEtat([]);
+    setSortBy('recent');
+  };
+
   const displayedPosts = getFilteredPosts();
+  const activeFiltersCount = [
+    filterPrice.min || filterPrice.max ? 1 : 0,
+    filterEtat.length > 0 ? 1 : 0
+  ].reduce((a, b) => a + b, 0);
 
   const handleLoadMore = () => {
     setPage(prev => prev + 1);
   };
+
+  // Componente de filtros (reutilizable)
+  const FiltersContent = () => (
+    <div className="filters-content">
+      {/* Filtro de precio */}
+      <div className="filter-section mb-4">
+        <h6 className="fw-bold mb-3">Prix</h6>
+        <div className="d-flex gap-2">
+          <Form.Control
+            type="number"
+            size="sm"
+            value={filterPrice.min}
+            onChange={(e) => setFilterPrice({...filterPrice, min: e.target.value})}
+            placeholder="Min (DA)"
+            className="filter-input"
+          />
+          <Form.Control
+            type="number"
+            size="sm"
+            value={filterPrice.max}
+            onChange={(e) => setFilterPrice({...filterPrice, max: e.target.value})}
+            placeholder="Max (DA)"
+            className="filter-input"
+          />
+        </div>
+      </div>
+
+      {/* Filtro de état */}
+      <div className="filter-section mb-4">
+        <h6 className="fw-bold mb-3">État</h6>
+        {etatOptions.map(option => (
+          <Form.Check
+            key={option.value}
+            type="checkbox"
+            id={`etat-${option.value}`}
+            label={option.label}
+            checked={filterEtat.includes(option.value)}
+            onChange={() => handleEtatChange(option.value)}
+            className="mb-2 filter-checkbox"
+          />
+        ))}
+      </div>
+
+      {/* Filtro de ordenamiento */}
+      <div className="filter-section mb-4">
+        <h6 className="fw-bold mb-3">Trier par</h6>
+        <Form.Select 
+          size="sm"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="filter-select"
+        >
+          <option value="recent">Plus récents</option>
+          <option value="price_asc">Prix croissant</option>
+          <option value="price_desc">Prix décroissant</option>
+          <option value="popular">Plus populaires</option>
+        </Form.Select>
+      </div>
+
+      {/* Botón limpiar filtros */}
+      {activeFiltersCount > 0 && (
+        <Button 
+          variant="link" 
+          size="sm" 
+          onClick={clearFilters}
+          className="p-0 text-decoration-none"
+          style={{ color: boutique?.couleur_theme || '#6366F1' }}
+        >
+          <FaTimes className="me-1" />
+          Effacer les filtres ({activeFiltersCount})
+        </Button>
+      )}
+    </div>
+  );
 
   if (loadingProducts && posts.length === 0) {
     return (
@@ -82,45 +201,51 @@ const BoutiquePostsGrid = ({ boutique }) => {
 
   return (
     <div className="boutique-posts-grid">
-      {/* Header con título y contador */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      {/* Header responsive */}
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
           <h4 className="mb-1">Nos produits</h4>
           <small className="text-muted">
-            {total} produit{total > 1 ? 's' : ''} disponible{total > 1 ? 's' : ''}
+            {displayedPosts.length} sur {total} produit{total > 1 ? 's' : ''}
           </small>
         </div>
         
-        <div className="d-flex gap-2">
-          {/* Botón de filtros */}
+        <div className="d-flex gap-2 flex-wrap">
+          {/* Botón de filtros para móvil */}
           <Button
             variant="outline-secondary"
             size="sm"
-            onClick={() => setShowFilters(!showFilters)}
+            className="d-md-none"
+            onClick={() => setShowMobileFilters(true)}
+          >
+            <FaSlidersH className="me-1" />
+            Filtres
+            {activeFiltersCount > 0 && (
+              <span className="ms-1 badge bg-primary rounded-pill">
+                {activeFiltersCount}
+              </span>
+            )}
+          </Button>
+
+          {/* Botón de filtros para desktop */}
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            className="d-none d-md-flex align-items-center"
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
           >
             <FaFilter className="me-1" />
             Filtres
+            {isFilterOpen ? <FaChevronUp className="ms-2" size={12} /> : <FaChevronDown className="ms-2" size={12} />}
           </Button>
           
-          {/* Selector de ordenamiento */}
-          <Form.Select 
-            size="sm"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            style={{ width: '150px' }}
-          >
-            <option value="recent">Plus récents</option>
-            <option value="price_asc">Prix croissant</option>
-            <option value="price_desc">Prix décroissant</option>
-            <option value="popular">Plus populaires</option>
-          </Form.Select>
-          
           {/* Toggle vista grid/lista */}
-          <div className="btn-group" size="sm">
+          <div className="btn-group">
             <Button
               variant={viewMode === 'grid' ? 'primary' : 'outline-secondary'}
               size="sm"
               onClick={() => setViewMode('grid')}
+              className="d-flex align-items-center"
             >
               <FaThLarge />
             </Button>
@@ -128,6 +253,7 @@ const BoutiquePostsGrid = ({ boutique }) => {
               variant={viewMode === 'list' ? 'primary' : 'outline-secondary'}
               size="sm"
               onClick={() => setViewMode('list')}
+              className="d-flex align-items-center"
             >
               <FaList />
             </Button>
@@ -135,98 +261,192 @@ const BoutiquePostsGrid = ({ boutique }) => {
         </div>
       </div>
 
-      {/* Panel de filtros */}
-      {showFilters && (
-        <div className="filters-panel bg-light p-3 rounded mb-4">
-          <Row>
-            <Col md={6}>
-              <label className="small text-muted">Prix minimum (DA)</label>
-              <Form.Control
-                type="number"
-                size="sm"
-                value={filterPrice.min}
-                onChange={(e) => setFilterPrice({...filterPrice, min: e.target.value})}
-                placeholder="0"
-              />
-            </Col>
-            <Col md={6}>
-              <label className="small text-muted">Prix maximum (DA)</label>
-              <Form.Control
-                type="number"
-                size="sm"
-                value={filterPrice.max}
-                onChange={(e) => setFilterPrice({...filterPrice, max: e.target.value})}
-                placeholder="100000"
-              />
-            </Col>
-          </Row>
-        </div>
-      )}
-
-      {/* Grid/Lista de productos */}
-      {displayedPosts.length > 0 ? (
-        <>
-          <Row className={viewMode === 'grid' ? 'g-4' : ''}>
-            {displayedPosts.map(post => (
-              <Col 
-                key={post._id} 
-                {...(viewMode === 'grid' ? { md: 4, sm: 6 } : { xs: 12 })}
-                className="mb-4"
-              >
-                {viewMode === 'grid' ? (
-                  <BoutiquePostCard post={post} boutique={boutique} />
-                ) : (
-                  // Vista de lista (podemos crear un componente aparte si es necesario)
-                  <div className="list-view-item border rounded p-3">
-                    <Row>
-                      <Col md={3}>
-                        <img
-                          src={post.images?.[0]?.url || post.images?.[0] || '/placeholder.jpg'}
-                          alt={post.title}
-                          style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '8px' }}
-                        />
-                      </Col>
-                      <Col md={9}>
-                        <h5>{post.title}</h5>
-                        <p className="text-muted small">{post.description?.substring(0, 100)}...</p>
-                        <div className="d-flex justify-content-between">
-                          <strong>{post.price?.toLocaleString()} DA</strong>
-                          <Button size="sm" variant="outline-primary">Voir</Button>
-                        </div>
-                      </Col>
-                    </Row>
-                  </div>
-                )}
-              </Col>
-            ))}
-          </Row>
-
-          {/* Botón cargar más */}
-          {hasMore && (
-            <div className="text-center mt-4">
-              <Button
-                variant="outline-primary"
-                onClick={handleLoadMore}
-                disabled={loadingProducts}
-              >
-                {loadingProducts ? (
-                  <>
-                    <Spinner size="sm" className="me-2" />
-                    Chargement...
-                  </>
-                ) : (
-                  'Charger plus de produits'
-                )}
-              </Button>
+      {/* Layout principal */}
+      <Row>
+        {/* Sidebar de filtros para desktop */}
+        {isFilterOpen && (
+          <Col lg={3} className="d-none d-lg-block">
+            <div className="filters-sidebar p-4 bg-light rounded-3 sticky-top" style={{ top: '90px' }}>
+              <h5 className="mb-4 d-flex align-items-center">
+                <FaFilter className="me-2" size={16} />
+                Filtres
+              </h5>
+              <FiltersContent />
             </div>
+          </Col>
+        )}
+
+        {/* Grid de productos */}
+        <Col lg={isFilterOpen ? 9 : 12}>
+          {displayedPosts.length > 0 ? (
+            <>
+              <Row className={viewMode === 'grid' ? 'g-4' : ''}>
+                {displayedPosts.map(post => (
+                  <Col 
+                    key={post._id} 
+                    {...(viewMode === 'grid' 
+                      ? { 
+                          xl: isFilterOpen ? 4 : 3,
+                          lg: isFilterOpen ? 6 : 4, 
+                          md: 6, 
+                          sm: 6 
+                        } 
+                      : { xs: 12 }
+                    )}
+                    className="mb-4"
+                  >
+                    {viewMode === 'grid' ? (
+                      <BoutiquePostCard post={post} boutique={boutique} />
+                    ) : (
+                      <div className="list-view-item border rounded-3 p-3 hover-shadow transition">
+                        <Row className="align-items-center">
+                          <Col md={3}>
+                            <img
+                              src={post.images?.[0]?.url || post.images?.[0] || '/placeholder.jpg'}
+                              alt={post.title}
+                              className="w-100 rounded-3"
+                              style={{ height: '120px', objectFit: 'cover' }}
+                            />
+                          </Col>
+                          <Col md={6}>
+                            <h5 className="mb-2">{post.title}</h5>
+                            <p className="text-muted small mb-2">
+                              {post.description?.substring(0, 150)}...
+                            </p>
+                            <div className="d-flex gap-3 text-muted small">
+                              <span>👁️ {post.views || 0}</span>
+                              <span>❤️ {post.likes?.length || 0}</span>
+                              <span>💬 {post.comments?.length || 0}</span>
+                            </div>
+                          </Col>
+                          <Col md={3} className="text-md-end">
+                            <h4 className="text-primary mb-3">
+                              {post.price?.toLocaleString()} DA
+                            </h4>
+                            <Button 
+                              variant="outline-primary" 
+                              size="sm"
+                              style={{
+                                borderColor: boutique?.couleur_theme || '#6366F1',
+                                color: boutique?.couleur_theme || '#6366F1'
+                              }}
+                            >
+                              Voir détails
+                            </Button>
+                          </Col>
+                        </Row>
+                      </div>
+                    )}
+                  </Col>
+                ))}
+              </Row>
+
+              {/* Botón cargar más */}
+              {hasMore && (
+                <div className="text-center mt-4">
+                  <Button
+                    variant="outline-primary"
+                    onClick={handleLoadMore}
+                    disabled={loadingProducts}
+                    style={{
+                      borderColor: boutique?.couleur_theme || '#6366F1',
+                      color: boutique?.couleur_theme || '#6366F1',
+                      padding: '0.6rem 2rem',
+                      borderRadius: '30px'
+                    }}
+                  >
+                    {loadingProducts ? (
+                      <>
+                        <Spinner size="sm" className="me-2" />
+                        Chargement...
+                      </>
+                    ) : (
+                      'Charger plus de produits'
+                    )}
+                  </Button>
+                </div>
+              )}
+            </>
+          ) : (
+            <Alert variant="info" className="text-center py-5 rounded-3">
+              <h5>Aucun produit disponible</h5>
+              <p className="mb-0">Cette boutique n'a pas encore de produits.</p>
+            </Alert>
           )}
-        </>
-      ) : (
-        <Alert variant="info" className="text-center py-5">
-          <h5>Aucun produit disponible</h5>
-          <p className="mb-0">Cette boutique n'a pas encore de produits.</p>
-        </Alert>
-      )}
+        </Col>
+      </Row>
+
+      {/* Offcanvas pour filtres mobiles */}
+      <Offcanvas 
+        show={showMobileFilters} 
+        onHide={() => setShowMobileFilters(false)}
+        placement="start"
+        className="mobile-filters"
+        style={{ width: '300px' }}
+      >
+        <Offcanvas.Header closeButton className="border-bottom">
+          <Offcanvas.Title>
+            <FaFilter className="me-2" />
+            Filtres
+          </Offcanvas.Title>
+        </Offcanvas.Header>
+        <Offcanvas.Body className="p-4">
+          <FiltersContent />
+        </Offcanvas.Body>
+      </Offcanvas>
+
+      <style jsx="true">{`
+        .filter-section h6 {
+          color: #2c3e50;
+          font-size: 0.95rem;
+        }
+
+        .filter-checkbox {
+          cursor: pointer;
+          font-size: 0.9rem;
+        }
+
+        .filter-checkbox .form-check-input:checked {
+          background-color: ${boutique?.couleur_theme || '#6366F1'};
+          border-color: ${boutique?.couleur_theme || '#6366F1'};
+        }
+
+        .filter-input, .filter-select {
+          border-radius: 8px;
+          border: 1px solid #e9ecef;
+          padding: 0.2rem;
+          font-size: 0.9rem;
+        }
+
+        .filter-input:focus, .filter-select:focus {
+          border-color: ${boutique?.couleur_theme || '#6366F1'};
+          box-shadow: 0 0 0 0.2rem ${boutique?.couleur_theme || '#6366F1'}20;
+        }
+
+        .filters-sidebar {
+          transition: all 0.3s ease;
+          border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .hover-shadow {
+          transition: all 0.3s ease;
+        }
+
+        .hover-shadow:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+        }
+
+        .transition {
+          transition: all 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+          .boutique-posts-grid {
+            padding: 0 0.2rem;
+          }
+        }
+      `}</style>
     </div>
   );
 };
