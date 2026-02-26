@@ -5,10 +5,12 @@ import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import { useHistory } from 'react-router-dom';
+ import { deleteDataAPI } from '../../utils/fetchData';
+
 import { 
  
   FaStore, FaPlus, FaEdit, FaTrash, FaEye, FaChartLine, 
-  FaCog, FaShoppingCart, FaCalendarAlt, FaExclamationTriangle,
+    FaCalendarAlt, FaExclamationTriangle,
   FaCheckCircle, FaTimesCircle, FaFilter, FaSearch
 } from 'react-icons/fa';
 
@@ -69,10 +71,8 @@ const UserBoutiquesPage = () => {
   // Handle delete boutique
   const handleDeleteBoutique = async () => {
     try {
-      await axios.delete(`/api/boutique/${boutiqueToDelete._id}`, {
-        headers: { Authorization: `Bearer ${auth.token}` }
-      });
-      
+      await deleteDataAPI(`boutique/${boutiqueToDelete._id}`, auth.token); // ✅ tu función personalizada
+      history.push('/');
       // Remove from state
       setBoutiques(prev => prev.filter(b => b._id !== boutiqueToDelete._id));
       
@@ -89,10 +89,7 @@ const UserBoutiquesPage = () => {
   // Handle change boutique status
   const handleChangeStatus = async (boutiqueId, newStatus) => {
     try {
-      await axios.put(`/api/boutique/${boutiqueId}/status`, 
-        { status: newStatus },
-        { headers: { Authorization: `Bearer ${auth.token}` } }
-      );
+      
       
       // Update local state
       setBoutiques(prev => prev.map(b => 

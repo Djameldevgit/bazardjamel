@@ -73,10 +73,7 @@ const BoutiquePostCardBody = ({ post, boutique, canModify, auth, onEdit, onDelet
     return null;
   };
 
-  const formatPrice = (price) => {
-    if (!price) return 'Prix sur demande';
-    return `${price.toLocaleString()} DA`;
-  };
+  
 
   const getTimeAgo = (date) => {
     const now = new Date();
@@ -203,21 +200,7 @@ const BoutiquePostCardBody = ({ post, boutique, canModify, auth, onEdit, onDelet
         </div>
 
         {/* Badge de prix */}
-        <Badge
-          className="position-absolute top-0 start-0 m-3 price-badge"
-          style={{
-            padding: '0.6rem 1.2rem',
-            borderRadius: '30px',
-            fontSize: '1rem',
-            fontWeight: 'bold',
-            backgroundColor: boutique?.couleur_theme || '#6366F1',
-            boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
-            zIndex: 2
-          }}
-        >
-          {formatPrice(post.price)}
-        </Badge>
-
+      
         {/* Badge de état */}
         {post.etat && (
           <Badge
@@ -345,7 +328,7 @@ const BoutiquePostCardBody = ({ post, boutique, canModify, auth, onEdit, onDelet
             </div>
             <div className="d-flex align-items-center text-muted small">
               <FaMapMarkerAlt className="text-danger me-1" size={8} />
-              <span>{boutique?.wilaya || 'Algérie'}</span>
+              <span>{boutique.wilaya}</span>    <span>{boutique.commune}</span>
             </div>
           </div>
         </div>
@@ -361,10 +344,7 @@ const BoutiquePostCardBody = ({ post, boutique, canModify, auth, onEdit, onDelet
             <FaEye className="me-1" size={12} />
             <small>{post.views || 0}</small>
           </div>
-          <div className="d-flex align-items-center text-muted">
-            <FaHeart className="me-1 text-danger" size={12} />
-            <small>{likesCount}</small>
-          </div>
+       
           <div className="d-flex align-items-center text-muted">
             <FaComment className="me-1" size={12} />
             <small>{commentsCount}</small>

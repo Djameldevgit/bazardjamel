@@ -8,7 +8,6 @@ let cacheCategoriasPrincipales = null;
 let cacheCategoriasPrincipalesEn = 0;
 let cacheEstadisticas = null;
 let cacheEstadisticasEn = 0;
-// controllers/categoryController.js
 const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
   const incluirPosts = req.query.posts === 'true';
   const ahora = Date.now();
@@ -89,30 +88,21 @@ const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
     cat.hasChildren = cat.children.length > 0;
   }
 
-  // 4️⃣ Posts con FILTRO DE BOUTIQUE
+  // 4️⃣ Posts (misma lógica)
   if (incluirPosts) {
     const todosIds = []
       .concat(nivel1.map(c => c._id))
       .concat(nivel2.map(c => c._id))
       .concat(nivel3.map(c => c._id));
 
-    // 🔥 FILTRO IMPORTANTE: Excluir posts de boutique
     const posts = await Post.find({
       category: { $in: todosIds },
       $or: [{ isActive: true }, { status: 'active' }],
-      $and: [
-        { $or: [
-          { isFromBoutique: { $ne: true } }, // No es de boutique
-          { isFromBoutique: { $exists: false } } // O no tiene el campo (posts antiguos)
-        ]}
-      ]
     })
       .sort({ createdAt: -1 })
       .limit(300)
       .select('_id title price images category createdAt')
       .lean();
-
-    console.log(`📊 Posts cargados para home: ${posts.length} (excluyendo posts de boutique)`);
 
     const postsMap = {};
 
@@ -173,21 +163,10 @@ const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
   return res.json(respuesta);
 });
  
-const obtenerCategoriaPorId= async (categoryIds, limitPerCategory = 8, page = 1) => {
+const getPostsByCategoryIds = async (categoryIds, limitPerCategory = 8, page = 1) => {
   const skip = (page - 1) * limitPerCategory;
-  
-  // 🔥 AÑADIR FILTRO DE BOUTIQUE
-  const posts = await Post.find({ 
-    category: { $in: categoryIds }, 
-    status: 'active',
-    $and: [
-      { $or: [
-        { isFromBoutique: { $ne: true } },
-        { isFromBoutique: { $exists: false } }
-      ]}
-    ]
-  })
-    .populate('category', 'categorie subCategory articleType name')
+  const posts = await Post.find({ category: { $in: categoryIds }, status: 'active' })
+  .populate('cateogry', 'categorie subCategory articleType name')
     .populate('user', 'username avatar')
     .populate('category', 'name slug level')
     .sort({ createdAt: -1 })
@@ -195,21 +174,81 @@ const obtenerCategoriaPorId= async (categoryIds, limitPerCategory = 8, page = 1)
     .limit(limitPerCategory)
     .lean();
 
-  const total = await Post.countDocuments({ 
-    category: { $in: categoryIds }, 
-    status: 'active',
-    $and: [
-      { $or: [
-        { isFromBoutique: { $ne: true } },
-        { isFromBoutique: { $exists: false } }
-      ]}
-    ]
-  });
-  
+  const total = await Post.countDocuments({ category: { $in: categoryIds }, status: 'active' });
   const hasMore = page * limitPerCategory < total;
 
   return { posts, total, hasMore, currentPage: page };
 };
+ 
+const mapPostsToCategories = (categories, postsMap, limit = 8) => {
+  categories.forEach(cat => {
+    const childrenPosts = (cat.children || []).flatMap(c => postsMap[String(c._id)] || []);
+    cat.posts = [...(postsMap[String(cat._id)] || []), ...childrenPosts].slice(0, limit);
+
+    if (cat.children && cat.children.length > 0) {
+      mapPostsToCategories(cat.children, postsMap, limit); // recursivo para hijos
+    }
+  });
+};
+
+ 
+const obtenerCategoriaPorId = asyncHandler(async (req, res) => {
+  const { identifier } = req.params;
+  const incluirHijos = req.query.children === 'true' || req.query.children === 'deep';
+  const incluirHijosProfundo = req.query.children === 'deep';
+  const incluirPosts = req.query.posts === 'true';
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 12;
+
+  const query = mongoose.Types.ObjectId.isValid(identifier) ? { _id: identifier } : { slug: identifier };
+  const categoria = await Category.findOne(query).lean();
+  if (!categoria) return res.status(404).json({ success: false, message: 'Categoría no encontrada' });
+
+  const datosRespuesta = { ...categoria };
+
+  // Hijos directos
+  if (incluirHijos && categoria.hasChildren) {
+    datosRespuesta.children = await getChildren(categoria._id);
+    if (incluirHijosProfundo) {
+      for (let i = 0; i < datosRespuesta.children.length; i++) {
+        const ch = datosRespuesta.children[i];
+        ch.hasChildren = await Category.exists({ parent: ch._id });
+      }
+    }
+  }
+
+  // Posts con paginación
+  if (incluirPosts) {
+    let todasCategoriasIds = [categoria._id];
+
+    if (categoria.level === 1) {
+      const nivel2 = await getChildren(categoria._id, 2);
+      const nivel2Ids = nivel2.map(c => c._id);
+      const nivel3 = await Category.find({ parent: { $in: nivel2Ids }, level: 3 }).lean();
+      todasCategoriasIds = [...todasCategoriasIds, ...nivel2Ids, ...nivel3.map(c => c._id)];
+    } else if (categoria.level === 2) {
+      const nivel3 = await getChildren(categoria._id, 3);
+      todasCategoriasIds = [...todasCategoriasIds, ...nivel3.map(c => c._id)];
+    }
+
+    const { posts, total, hasMore } = await getPostsByCategoryIds(todasCategoriasIds, limit, page);
+    datosRespuesta.posts = posts;
+    datosRespuesta.hasMore = hasMore;
+    datosRespuesta.total = total;
+    datosRespuesta.postsPagination = { currentPage: page, limit };
+  }
+
+  // Ancestros
+  if (categoria.ancestors && categoria.ancestors.length > 0) {
+    datosRespuesta.ancestors = await Category.find({ _id: { $in: categoria.ancestors } })
+      .select('name slug level icon iconType iconColor bgColor')
+      .sort({ level: 1 })
+      .lean();
+  }
+
+  res.json({ success: true, category: datosRespuesta, children: datosRespuesta.children || [], posts: datosRespuesta.posts || [] });
+});
+
  
 const obtenerArbolDeCategorias = asyncHandler(async (req, res) => {
   const todas = await Category.find({ isActive: true }).sort({ order: 1 }).lean();

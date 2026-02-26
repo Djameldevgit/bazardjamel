@@ -69,7 +69,7 @@ const boutiqueSchema = new mongoose.Schema({
   },
 
 
-   
+  //default: 'https://res.cloudinary.com/dfjipgj2o/image/upload/0000_hbd2mt.jpg'
 
    
 

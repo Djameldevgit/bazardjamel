@@ -169,7 +169,7 @@ export const deleteBoutique = ({
   auth 
 }) => async (dispatch) => {
   try {
-    console.log('🗑️ deleteBoutique action iniciada', { boutiqueId });
+    
     dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: true} });
     
     const res = await deleteDataAPI(`boutique/${boutiqueId}`, auth.token);

@@ -298,38 +298,37 @@ updateBoutique: async (req, res) => {
 
   deleteBoutique: async (req, res) => {
     try {
-      const id = req.params.id;
+      const { boutiqueId } = req.params; // ✅ usar boutiqueId
       const user = req.user;
-      
-      const boutique = await Boutique.findById(id);
-      
+  
+      const boutique = await Boutique.findById(boutiqueId);
+  
       if (!boutique) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Boutique non trouvée' 
+        return res.status(404).json({
+          success: false,
+          message: 'Boutique non trouvée',
         });
       }
-      
+  
       if (boutique.user.toString() !== user._id.toString()) {
-        return res.status(403).json({ 
-          success: false, 
-          message: 'Non autorisé à supprimer cette boutique' 
+        return res.status(403).json({
+          success: false,
+          message: 'Non autorisé à supprimer cette boutique',
         });
       }
-      
-      await Boutique.findByIdAndDelete(id);
-      
+  
+      await Boutique.findByIdAndDelete(boutiqueId);
+  
       res.json({
         success: true,
-        message: 'Boutique supprimée avec succès'
+        message: 'Boutique supprimée avec succès',
       });
-      
     } catch (error) {
       console.error('❌ Error en deleteBoutique:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Erreur lors de la suppression de la boutique', 
-        error: error.message 
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors de la suppression de la boutique',
+        error: error.message,
       });
     }
   },
