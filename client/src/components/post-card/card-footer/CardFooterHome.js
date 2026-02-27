@@ -1,19 +1,25 @@
-// 📂 frontend/src/components/card-footer/CardFooterHome.jsx - VERSIÓN CLÁSICA CON ICONOS DISTINTOS
+// 📂 frontend/src/components/card-footer/CardFooterHome.jsx - VERSIÓN CENTRADA Y GRIS MÁS INTENSO
 import React from 'react';
-import { Badge } from 'react-bootstrap';
-import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
 import { 
-  FaPhone, 
-  FaWeixin,
-  FaRegCommentDots
+  FaPhoneAlt, 
+  FaRegEnvelope, 
+  FaRegComment 
 } from 'react-icons/fa';
 
 const CardFooterHome = ({ post }) => {
   const { auth } = useSelector(state => state);
-  const { t } = useTranslation();
   const history = useHistory();
+
+  // Determinar el título a mostrar
+  const getDisplayTitle = () => {
+    if (post.title) return post.title;
+    if (post.subCategory && post.articleType) {
+      return `${post.subCategory} ${post.articleType}`;
+    }
+    return post.subCategory || post.articleType || 'Annonce';
+  };
 
   // Handlers de acciones
   const handleCall = (e) => {
@@ -24,160 +30,124 @@ const CardFooterHome = ({ post }) => {
     }
   };
 
-  const handleChat = (e) => {
+  const handleMessage = (e) => {
     e.stopPropagation();
     if (!auth.token) return history.push('/login');
-    history.push(`/messages/${post.user?._id}`, { post });
+    console.log('Open chat with user:', post.user?._id);
   };
 
-  // Formatear precio
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(price);
+  const handleComment = (e) => {
+    e.stopPropagation();
+    if (!auth.token) return history.push('/login');
+    console.log('Open comments for post:', post._id);
   };
 
   return (
     <div style={styles.container}>
       {/* FILA 1: Título */}
-      <div style={styles.titleRow}>
+      <div style={styles.row}>
         <span style={styles.title}>
-          {post.title}
+          {getDisplayTitle()}
         </span>
       </div>
 
       {/* FILA 2: Precio */}
-      <div style={styles.priceRow}>
+      <div style={styles.row}>
         <span style={styles.price}>
-          {formatPrice(post.price)}
+          {post.price?.toLocaleString()} {post.currency || 'DA'}
         </span>
-        {post.negotiable && (
-          <Badge style={styles.negotiableBadge}>
-            {t('negotiable')}
-          </Badge>
-        )}
       </div>
 
-      {/* FILA 3: Iconos clásicos MUY separados */}
+      {/* FILA 3: Wilaya y Commune */}
+      <div style={styles.row}>
+        <span style={styles.location}>
+          {post.wilaya || ''} {post.commune ? `- ${post.commune}` : ''}
+        </span>
+      </div>
+
+      {/* FILA 4: Iconos - CENTRADOS y GRIS MÁS INTENSO */}
       <div style={styles.iconsRow}>
-        {/* Téléphone */}
-        <button onClick={handleCall} style={styles.iconButton} title={t('call')}>
-          <FaPhone size={20} color="#333" />
+        <button 
+          onClick={handleCall} 
+          style={styles.iconButton}
+          aria-label="Appeler"
+        >
+          <FaPhoneAlt size={18} color="#6b7280" />
         </button>
-
-        {/* Chat - Icono diferente */}
-        <button onClick={handleChat} style={styles.iconButton} title={t('chat')}>
-          <FaWeixin size={22} color="#333" />
+        
+        <button 
+          onClick={handleMessage} 
+          style={styles.iconButton}
+          aria-label="Message"
+        >
+          <FaRegEnvelope size={18} color="#6b7280" />
         </button>
-
-        {/* Commentaires - Icono diferente */}
-        <div style={styles.commentWrapper}>
-          <FaRegCommentDots size={20} color="#333" />
-          {post.comments?.length > 0 && (
-            <span style={styles.commentCount}>{post.comments.length}</span>
-          )}
-        </div>
+        
+        <button 
+          onClick={handleComment} 
+          style={styles.iconButton}
+          aria-label="Commentaire"
+        >
+          <FaRegComment size={18} color="#6b7280" />
+        </button>
       </div>
     </div>
   );
 };
 
-// Estilos con separación MÁXIMA
+// Estilos con iconos CENTRADOS
 const styles = {
   container: {
-    padding: '2px 0px',
+    padding: '2px 0',
     borderTop: '1px solid #e5e7eb',
-    backgroundColor: '#ffffff'
+    backgroundColor: '#ffffff',
+    width: '100%'
   },
-  titleRow: {
-    marginBottom: '4px'
+  row: {
+    margin: '2px 0',
+    lineHeight: 1.3
   },
   title: {
-    fontSize: '14px',
-    fontWeight: '700',
-    color: '#1a1a1a',
+    fontSize: '15px',
+    fontWeight: '600',
+    color: '#1f2937',
     display: '-webkit-box',
-    WebkitLineClamp: 2,
+    WebkitLineClamp: 1,
     WebkitBoxOrient: 'vertical',
     overflow: 'hidden',
-    lineHeight: '1.4',
-    fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
-  },
-  priceRow: {
-    display: 'flex',
-    alignItems: 'center',
-    
-    fontWeight: '400',
-   
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
   },
   price: {
     fontSize: '13px',
-    fontWeight: '400',
+    fontWeight: '600',
     color: '#dc2626',
-    fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
   },
-  negotiableBadge: {
-    fontSize: '10px',
-    padding: '2px 6px',
-    borderRadius: '4px',
-    backgroundColor: '#f3f4f6',
-    color: '#4b5563',
-    fontWeight: '400',
-    border: '1px solid #e5e7eb'
+  location: {
+    fontSize: '12px',
+    color: '#6b7280',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
   },
+  // Iconos CENTRADOS con separación perfecta
   iconsRow: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between', // ← SEPARACIÓN MÁXIMA
-    padding: '2px 0',
+    justifyContent: 'center', // ← CENTRADO en el eje X
+    gap: '35px', // ← Espacio ENTRE iconos (ajusta este valor)
+    margin: '6px 0 2px 0',
+    padding: '0',
     width: '100%'
   },
   iconButton: {
     background: 'none',
     border: 'none',
-    padding: '8px', // Más área de clic
+    padding: '4px',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: '#4b5563',
-    flex: '0 0 auto' // No se estiran
-  },
-  commentWrapper: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '8px',
-    position: 'relative'
-  },
-  commentCount: {
-    fontSize: '13px',
-    fontWeight: '400',
-    color: '#6b7280',
-    fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
+    // Sin ancho mínimo para que se centren naturalmente
   }
 };
-
-// Media queries para móvil
-const globalStyles = `
-  @media (max-width: 480px) {
-    .icon-button {
-      padding: 3px !important;
-    }
-    .icon-button svg {
-      width: 18px !important;
-      height: 18px !important;
-    }
-  }
-`;
-
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.textContent = globalStyles;
-  document.head.appendChild(style);
-}
 
 export default React.memo(CardFooterHome);

@@ -1,16 +1,17 @@
-// 📁 src/components/post/DescriptionPost.js - VERSIÓN MEJORADA
+// 📂 frontend/src/components/post/DescriptionPost.jsx
 import React, { useMemo } from 'react';
-import { Container, Row, Col, Badge, Button, Card } from 'react-bootstrap';
-import { useSelector, useDispatch } from 'react-redux';
+import { Card, Badge } from 'react-bootstrap';
+import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
-import { MESS_TYPES } from '../../redux/actions/messageAction';
-import { GLOBALTYPES } from '../../redux/actions/globalTypes';
+import moment from 'moment';
+import 'moment/locale/fr';
+
+moment.locale('fr');
 
 const DescriptionPost = ({ post }) => {
     const { auth } = useSelector(state => state);
-    const dispatch = useDispatch();
     const history = useHistory();
-    
+
     // 🎯 OBTENER TODOS LOS DATOS COMBINADOS (post + categorySpecificData)
     const postData = useMemo(() => {
         if (!post) return {};
@@ -24,23 +25,18 @@ const DescriptionPost = ({ post }) => {
         
         return allData;
     }, [post]);
-    
-    // 🎨 MAPA DE EMOJIS POR CATEGORÍA Y CAMPO
-    const fieldEmojiMap = {
+
+    // 🎨 MAPA DE ICONOS POR CAMPO
+    const fieldIconMap = {
         // Campos base
-        'title': '🏷️',
-        'description': '📄',
         'categorie': '📂',
         'subCategory': '📁',
         'articleType': '📌',
         'price': '💰',
         'etat': '⭐',
-        'wilaya': '🏙️',
-        'commune': '🏘️',
-        'address': '📍',
-        'phone': '📱',
-        'email': '📧',
         'views': '👁️',
+        'createdAt': '📅',
+        'description': '📄',
         
         // Automobile
         'marque': '🚗',
@@ -102,29 +98,14 @@ const DescriptionPost = ({ post }) => {
         'tarif': '💰',
         'zone': '📍',
         
-        // Boutique
-        'boutique': '🏪',
-        'isFromBoutique': '🏬',
-        'stock': '📦',
-        
         'default': '📋'
     };
-    
-    // 🎯 OBTENER EMOJI SEGÚN CATEGORÍA Y CAMPO
-    const getFieldEmoji = (field, value, category) => {
-        // Prioridad: mapa por campo
-        if (fieldEmojiMap[field]) return fieldEmojiMap[field];
-        
-        // Emojis especiales según valor
-        if (field === 'etat' || field === 'condition') {
-            const val = String(value).toLowerCase();
-            if (val.includes('neuf') || val === 'new') return '✨';
-            if (val.includes('occasion') || val === 'used') return '🔄';
-        }
-        
-        return fieldEmojiMap.default;
+
+    // 🎯 OBTENER ICONO SEGÚN CAMPO
+    const getFieldIcon = (field) => {
+        return fieldIconMap[field] || fieldIconMap.default;
     };
-    
+
     // 📝 FORMATO DE VALORES
     const formatValue = (field, value) => {
         if (value === undefined || value === null || value === '') {
@@ -147,39 +128,34 @@ const DescriptionPost = ({ post }) => {
             if (field === 'surface') {
                 return new Intl.NumberFormat('fr-DZ').format(value) + ' m²';
             }
-            if (field === 'chambres' || field === 'sallesBain' || field === 'places' || field === 'portes') {
-                return value;
-            }
-            if (field === 'annee') {
-                return value;
+            if (field === 'views') {
+                return new Intl.NumberFormat('fr-DZ').format(value);
             }
             return new Intl.NumberFormat('fr-DZ').format(value);
         }
         
+        // Fechas
+        if (field === 'createdAt' || field === 'updatedAt') {
+            return moment(value).format('DD/MM/YYYY');
+        }
+        
         // Strings
         const stringValue = String(value).trim();
-        
-        // Capitalizar primera letra
         return stringValue.charAt(0).toUpperCase() + stringValue.slice(1);
     };
-    
+
     // 🏷️ TRADUCIR NOMBRES DE CAMPOS
     const translateField = (field) => {
         const translations = {
             // Campos base
-            'title': 'Titre',
-            'description': 'Description',
             'categorie': 'Catégorie',
             'subCategory': 'Sous-catégorie',
-            'articleType': 'Type',
+            'articleType': "Type d'article",
             'price': 'Prix',
             'etat': 'État',
-            'wilaya': 'Wilaya',
-            'commune': 'Commune',
-            'address': 'Adresse',
-            'phone': 'Téléphone',
-            'email': 'Email',
             'views': 'Vues',
+            'createdAt': 'Publié le',
+            'description': 'Description',
             
             // Automobile
             'marque': 'Marque',
@@ -188,11 +164,11 @@ const DescriptionPost = ({ post }) => {
             'kilometrage': 'Kilométrage',
             'carburant': 'Carburant',
             'boiteVitesse': 'Boîte de vitesse',
-            'couleurExterieur': 'Couleur ext.',
-            'couleurInterieur': 'Couleur int.',
-            'puissance': 'Puissance',
-            'places': 'Places',
-            'portes': 'Portes',
+            'couleurExterieur': 'Couleur extérieure',
+            'couleurInterieur': 'Couleur intérieure',
+            'puissance': 'Puissance (CV)',
+            'places': 'Nombre de places',
+            'portes': 'Nombre de portes',
             'premiereMain': 'Première main',
             'garantie': 'Garantie',
             
@@ -216,7 +192,7 @@ const DescriptionPost = ({ post }) => {
             'ecran': 'Écran',
             'camera': 'Caméra',
             'batterie': 'Batterie',
-            'systeme': 'Système',
+            'systeme': "Système d'exploitation",
             'connectivite': 'Connectivité',
             'couleur': 'Couleur',
             
@@ -239,17 +215,12 @@ const DescriptionPost = ({ post }) => {
             'duree': 'Durée',
             'disponibilite': 'Disponibilité',
             'tarif': 'Tarif',
-            'zone': 'Zone',
-            
-            // Boutique
-            'boutique': 'Boutique',
-            'isFromBoutique': 'Type',
-            'stock': 'Stock'
+            'zone': 'Zone de service'
         };
         
         return translations[field] || field;
     };
-    
+
     // 📊 FILTRAR Y ORDENAR CAMPOS
     const getFieldsToDisplay = useMemo(() => {
         if (!postData) return [];
@@ -257,20 +228,19 @@ const DescriptionPost = ({ post }) => {
         // Campos a excluir
         const excludeFields = [
             '_id', '__v', 'user', 'categorySpecificData', 'images',
-            'createdAt', 'updatedAt', 'isActive', 'likes', 'comments',
-            'boutique', 'isFromBoutique', 'category'
+            'updatedAt', 'isActive', 'likes', 'comments',
+            'boutique', 'isFromBoutique', 'category', 'title',
+            'wilaya', 'commune', 'address',
+            'phone', 'email', 'website'
         ];
         
-        // Campos que van en el header
-        const headerFields = ['title', 'description', 'price', 'categorie', 'subCategory', 'articleType'];
+        // Campos base que siempre queremos mostrar
+        const baseFields = ['categorie', 'subCategory', 'articleType', 'etat', 'price', 'views', 'createdAt'];
         
         // Obtener todos los campos disponibles
         const fields = Object.keys(postData).filter(field => {
             // Excluir campos internos
             if (excludeFields.includes(field)) return false;
-            
-            // Excluir header fields
-            if (headerFields.includes(field)) return false;
             
             const value = postData[field];
             
@@ -283,8 +253,12 @@ const DescriptionPost = ({ post }) => {
             return true;
         });
         
-        // Orden de prioridad por categoría
+        // Combinar campos base con otros campos
+        const allFields = [...new Set([...baseFields, ...fields])];
+        
+        // Orden de prioridad
         const priorityOrder = [
+            'categorie', 'subCategory', 'articleType', 'etat', 'price',
             // Auto
             'marque', 'modele', 'annee', 'kilometrage', 'carburant', 'boiteVitesse', 'couleurExterieur', 'couleurInterieur', 'places', 'portes', 'premiereMain', 'garantie',
             // Immobilier
@@ -297,11 +271,10 @@ const DescriptionPost = ({ post }) => {
             'type', 'marque', 'matiere', 'dimensions', 'poids',
             // Services
             'duree', 'disponibilite', 'tarif', 'zone',
-            // Contact
-            'wilaya', 'commune', 'address'
+            'views', 'createdAt'
         ];
         
-        return fields.sort((a, b) => {
+        return allFields.sort((a, b) => {
             const indexA = priorityOrder.indexOf(a);
             const indexB = priorityOrder.indexOf(b);
             
@@ -311,160 +284,95 @@ const DescriptionPost = ({ post }) => {
             return a.localeCompare(b);
         });
     }, [postData]);
-    
-    // 💬 MANEJAR CONTACTO
-    const handleContact = () => {
-        if (!auth.user) {
-            dispatch({ 
-                type: GLOBALTYPES.ALERT, 
-                payload: { error: 'Connectez-vous pour contacter le vendeur' } 
-            });
-            return;
-        }
-        
-        const postUser = post?.user || {};
-        if (!postUser?._id || auth.user._id === postUser._id) return;
-        
-        dispatch({
-            type: MESS_TYPES.ADD_USER,
-            payload: { 
-                ...postUser, 
-                text: '', 
-                media: [],
-                postTitle: postData.title || 'Annonce',
-                postId: post._id,
-                postPrice: postData.price,
-                postImage: post.images?.[0]?.url
-            }
-        });
-        
-        history.push(`/message/${postUser._id}`);
-    };
-    
-    // 🏷️ RENDER HEADER
+
+    // 🏷️ RENDER HEADER (Título y descripción)
     const renderHeader = () => {
         const title = postData.title || 'Annonce';
-        const price = postData.price;
-        const categorie = postData.categorie;
-        const subCategory = postData.subCategory;
-        const articleType = postData.articleType;
-        const isFromBoutique = post.isFromBoutique;
-        const boutique = post.boutique;
+        const description = postData.description;
         
         return (
             <Card className="border-0 shadow-sm mb-4">
+                <Card.Header className="bg-white border-bottom py-3">
+                    <h5 className="mb-0 fw-bold text-dark">
+                        <span style={{ fontSize: '1.2rem', marginRight: '8px' }}>📄</span>
+                        Description de l'annonce
+                    </h5>
+                </Card.Header>
                 <Card.Body className="p-4">
-                    <div className="d-flex flex-column flex-md-row justify-content-between align-items-start gap-4">
-                        <div className="flex-grow-1">
-                            <div className="d-flex align-items-center gap-2 mb-2">
-                                <h1 className="fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                                    {title}
-                                </h1>
-                                {isFromBoutique && boutique && (
-                                    <Badge 
-                                        bg="primary" 
-                                        className="px-3 py-2"
-                                        style={{ fontSize: '0.9rem' }}
-                                    >
-                                        🏪 {boutique.nom_boutique}
-                                    </Badge>
-                                )}
-                            </div>
-                            
-                            <div className="d-flex flex-wrap gap-2 mb-3">
-                                {categorie && (
-                                    <Badge bg="primary" className="px-3 py-2">
-                                        {categorie}
-                                    </Badge>
-                                )}
-                                {subCategory && (
-                                    <Badge bg="secondary" className="px-3 py-2">
-                                        {subCategory}
-                                    </Badge>
-                                )}
-                                {articleType && (
-                                    <Badge bg="info" className="px-3 py-2">
-                                        {articleType}
-                                    </Badge>
-                                )}
-                            </div>
-                            
-                            {postData.description && (
-                                <p className="text-muted mb-0" style={{ fontSize: '1.1rem', lineHeight: '1.6' }}>
-                                    {postData.description}
-                                </p>
-                            )}
-                        </div>
-                        
-                        {price > 0 && (
-                            <div className="text-start text-md-end price-card">
-                                <div className="text-muted small mb-1">Prix</div>
-                                <div className="fw-bold text-success" style={{ fontSize: '2.2rem' }}>
-                                    {formatValue('price', price)}
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    <h1 className="fw-bold mb-3" style={{ fontSize: '1.8rem', color: '#111827' }}>
+                        {title}
+                    </h1>
+                    {description && (
+                        <p className="text-muted mb-0" style={{ fontSize: '1rem', lineHeight: '1.6' }}>
+                            {description}
+                        </p>
+                    )}
                 </Card.Body>
             </Card>
         );
     };
-    
-    // 🎯 RENDER CAMPO (en formato horizontal)
+
+    // ✅ RENDER CAMPO (estilo exacto como UserInfo)
     const FieldItem = ({ field }) => {
         const value = postData[field];
         const formattedValue = formatValue(field, value);
         
         if (!formattedValue) return null;
         
-        const emoji = getFieldEmoji(field, value, postData.categorie);
+        const icon = getFieldIcon(field);
         const label = translateField(field);
         
         return (
-            <div className="field-item d-flex align-items-center py-3 px-4 border-bottom">
-                <div className="d-flex align-items-center" style={{ minWidth: '180px' }}>
-                    <span className="field-emoji me-3" style={{ fontSize: '1.3rem' }}>
-                        {emoji}
-                    </span>
-                    <span className="fw-medium text-secondary" style={{ fontSize: '1rem' }}>
-                        {label}:
-                    </span>
-                </div>
-                <div className="field-value ms-4">
-                    <span className="fw-semibold" style={{ fontSize: '1.1rem' }}>
-                        {formattedValue}
-                    </span>
+            <div className="p-3 border-bottom">
+                <div className="d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center">
+                        <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
+                            {icon}
+                        </div>
+                        <span className="text-muted me-2">{label}:</span>
+                    </div>
+                    <div className="d-flex align-items-center">
+                        {field === 'price' ? (
+                            <span className="fw-bold" style={{ color: '#dc2626' }}>
+                                {formattedValue}
+                            </span>
+                        ) : (
+                            <span className="fw-bold text-dark">
+                                {formattedValue}
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
         );
     };
-    
+
     // ✅ VALIDACIONES
     if (!post) {
         return (
-            <Container className="py-5 text-center">
-                <div className="spinner-border text-primary" role="status">
+            <div className="text-center py-5">
+                <div className="spinner-border text-secondary" role="status">
                     <span className="visually-hidden">Chargement...</span>
                 </div>
                 <p className="mt-3 text-muted">Chargement de l'annonce...</p>
-            </Container>
+            </div>
         );
     }
     
     const fieldsToDisplay = getFieldsToDisplay;
-    
+
     return (
-        <Container className="py-4">
+        <div className="description-post-container">
             {/* HEADER */}
             {renderHeader()}
             
             {/* DÉTAILS SPÉCIFIQUES */}
             {fieldsToDisplay.length > 0 && (
                 <Card className="border-0 shadow-sm mb-4">
-                    <Card.Header className="bg-white border-0 py-3 px-4">
-                        <h5 className="mb-0 fw-bold d-flex align-items-center gap-2">
-                            <span>📋</span>
-                            <span>Caractéristiques détaillées</span>
+                    <Card.Header className="bg-white border-bottom py-3">
+                        <h5 className="mb-0 fw-bold text-dark">
+                            <span style={{ fontSize: '1.2rem', marginRight: '8px' }}>📋</span>
+                            Caractéristiques détaillées
                         </h5>
                     </Card.Header>
                     <Card.Body className="p-0">
@@ -475,94 +383,23 @@ const DescriptionPost = ({ post }) => {
                 </Card>
             )}
             
-            {/* BOUTONS D'ACTION */}
-            <div className="d-flex flex-column flex-sm-row gap-3 mt-4">
-                {postData.phone && (
-                    <Button 
-                        variant="success" 
-                        size="lg"
-                        className="flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-3"
-                        onClick={() => window.location.href = `tel:${postData.phone}`}
-                    >
-                        <span style={{ fontSize: '1.3rem' }}>📞</span>
-                        <span>Appeler</span>
-                    </Button>
-                )}
-                
-                {auth.user && post?.user?._id && auth.user._id !== post.user._id && (
-                    <Button 
-                        variant="primary" 
-                        size="lg"
-                        className="flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-3"
-                        onClick={handleContact}
-                    >
-                        <span style={{ fontSize: '1.3rem' }}>💬</span>
-                        <span>Contacter le vendeur</span>
-                    </Button>
-                )}
-                
-                <Button 
-                    variant="outline-secondary" 
-                    size="lg"
-                    className="flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-3"
-                    onClick={() => window.history.back()}
+            {/* BOTÓN RETOUR */}
+            <div className="d-flex justify-content-center mt-4">
+                <button 
+                    className="btn btn-outline-secondary py-2 px-4"
+                    onClick={() => history.goBack()}
+                    style={{ 
+                        border: '1px solid #e5e7eb',
+                        backgroundColor: '#ffffff',
+                        color: '#4b5563',
+                        fontSize: '14px'
+                    }}
                 >
-                    <span style={{ fontSize: '1.3rem' }}>←</span>
-                    <span>Retour</span>
-                </Button>
+                    <span style={{ marginRight: '6px' }}>←</span>
+                    Retour
+                </button>
             </div>
-            
-            {/* ESTILOS */}
-            <style jsx="true">{`
-                .field-item {
-                    min-height: 70px;
-                    transition: background-color 0.2s;
-                    border-color: #e9ecef !important;
-                }
-                
-                .field-item:hover {
-                    background-color: #f8f9fa;
-                }
-                
-                .field-item:last-child {
-                    border-bottom: none !important;
-                }
-                
-                .field-value {
-                    flex: 1;
-                }
-                
-                .price-card {
-                    background-color: #f8f9fa;
-                    padding: 15px 25px;
-                    border-radius: 12px;
-                    min-width: 200px;
-                }
-                
-                @media (max-width: 768px) {
-                    .field-item {
-                        flex-direction: column;
-                        align-items: flex-start !important;
-                        gap: 10px;
-                        padding: 20px !important;
-                    }
-                    
-                    .field-item > div:first-child {
-                        min-width: 100%;
-                    }
-                    
-                    .field-value {
-                        margin-left: 0 !important;
-                        width: 100%;
-                    }
-                    
-                    .price-card {
-                        width: 100%;
-                        text-align: center !important;
-                    }
-                }
-            `}</style>
-        </Container>
+        </div>
     );
 };
 

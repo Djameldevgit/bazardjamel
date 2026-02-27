@@ -5,7 +5,7 @@ import { Card } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
 import CardBodyCarousel from './CardBodyCarousel';
 import CardBodyTitle from './CardBodyTitle';
-import CardHeader from './CardHeader';
+ 
 import DescriptionPost from './DescriptionPost';
 import UserInfo from './UserInfo';
 import CardFooterHome from './card-footer/CardFooterHome';
@@ -118,7 +118,7 @@ const PostCard = ({ post }) => {
         
         @media (max-width: 768px) {
           .card {
-            margin-bottom: 4px;
+            margin-bottom: 2px;
             border-radius: 8px !important;
           }
           

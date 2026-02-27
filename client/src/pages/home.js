@@ -1,4 +1,4 @@
-// src/pages/Home.jsx - VERSIÓN CON BOUTIQUES EN SLIDER HORIZONTAL
+// src/pages/Home.jsx - VERSIÓN CORREGIDA (eliminar categoría Boutiques)
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
@@ -17,9 +17,8 @@ import MainCategorySlider from '../components/SlidersCategories/CategorySlider';
 import Header from '../components/SlidersCategories/HeaderCarousel';
 import PostCard from '../components/post-card/PostCard';
 import BoutiqueCard from '../components/BoutiquePostCard';
-import { ArrowRight, ChevronLeft, ChevronRight } from 'react-bootstrap-icons';
- 
- 
+import { ArrowRight, ChevronLeft, ChevronRight, Store } from 'react-bootstrap-icons';
+
 const Home = () => {
   const dispatch = useDispatch();
   const history = useHistory();
@@ -28,14 +27,12 @@ const Home = () => {
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const hasLoadedRef = useRef(false);
   
-  // Refs para el slider de boutiques
   const boutiqueSliderRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
   
   const { theme = 'light' } = useSelector(state => state.theme || {});
   
-  // Estados para posts/categorías
   const {
     categories = [],
     loading,
@@ -44,26 +41,20 @@ const Home = () => {
     currentPage
   } = useSelector((state) => state.category || {});
 
-  // Estado para boutiques del home
   const { homeBoutiques = [] } = useSelector((state) => state.boutique || {});
 
-  // Carga inicial
   useEffect(() => {
     if (hasLoadedRef.current || loading) return;
     
     hasLoadedRef.current = true;
     
-    // Cargar categorías con posts
     dispatch(getAllCategoriesWithPosts(1, 2));
-    
-    // Cargar boutiques para el home
-    dispatch(getBoutiquesForHome(10)); // Cargamos 10 boutiques para el slider
+    dispatch(getBoutiquesForHome(10));
     
     const timer = setTimeout(() => setInitialLoadDone(true), 1500);
     return () => clearTimeout(timer);
   }, [dispatch, loading]);
 
-  // Verificar posición del scroll para mostrar/ocultar flechas
   const checkScrollPosition = useCallback(() => {
     if (boutiqueSliderRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = boutiqueSliderRef.current;
@@ -76,7 +67,6 @@ const Home = () => {
     const slider = boutiqueSliderRef.current;
     if (slider) {
       slider.addEventListener('scroll', checkScrollPosition);
-      // Verificar posición inicial
       checkScrollPosition();
       
       return () => slider.removeEventListener('scroll', checkScrollPosition);
@@ -135,7 +125,43 @@ const Home = () => {
     history.push(`/boutique/${boutiqueId}`);
   };
 
-  // Render condicional
+  // 🔥 FILTRO PRINCIPAL: Excluir la categoría "Boutiques" de las secciones normales
+  const filterCategories = () => {
+    return categories.filter(category => {
+      const categoryName = category.name?.toLowerCase() || '';
+      const categorySlug = category.slug?.toLowerCase() || '';
+      
+      // Excluir cualquier categoría relacionada con boutiques
+      return categoryName !== 'boutique' && 
+             categoryName !== 'boutiques' && 
+             categorySlug !== 'boutique' && 
+             categorySlug !== 'boutiques' &&
+             categoryName !== 'tiendas' &&
+             categorySlug !== 'tiendas';
+    });
+  };
+
+  // Filtrar posts normales (por si acaso)
+  const filterNormalPosts = (posts) => {
+    if (!posts) return [];
+    
+    return posts.filter(post => {
+      // Excluir si es de boutique
+      if (post.isFromBoutique) return false;
+      
+      const categoryName = post.category?.name?.toLowerCase() || '';
+      const categorySlug = post.category?.slug?.toLowerCase() || '';
+      
+      return categoryName !== 'boutique' && 
+             categorySlug !== 'boutique' && 
+             categoryName !== 'boutiques' && 
+             categorySlug !== 'boutiques';
+    });
+  };
+
+  // Aplicar filtros
+  const filteredCategories = filterCategories();
+
   if (loading && categories.length === 0 && !initialLoadDone) {
     return (
       <div className={`min-vh-100 d-flex flex-column ${theme === 'dark' ? 'bg-dark' : 'bg-gradient-light'}`}>
@@ -177,25 +203,6 @@ const Home = () => {
     );
   }
 
-  if (!loading && categories.length === 0 && homeBoutiques.length === 0 && initialLoadDone) {
-    return (
-      <div className={`min-vh-100 d-flex flex-column ${theme === 'dark' ? 'bg-dark' : ''}`}>
-        <Header />
-        <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
-          <div className="text-center">
-            <i className="fas fa-search fa-4x text-muted mb-4"></i>
-            <h4 className="h5 mb-2">Marketplace vacío</h4>
-            <p className="text-muted mb-4">Aún no hay productos ni boutiques publicados</p>
-            <Button variant="outline-primary" className="rounded-pill px-4">
-              <i className="fas fa-plus me-2"></i>
-              Publicar primer producto
-            </Button>
-          </div>
-        </Container>
-      </div>
-    );
-  }
-
   return (
     <div className={`min-vh-100 d-flex flex-column ${theme === 'dark' ? 'bg-dark text-light' : 'bg-light'}`}>
       <Header />
@@ -211,18 +218,20 @@ const Home = () => {
         </section>
 
         <Container className="py-1">
-          {/* SECCIÓN BOUTIQUES EN SLIDER HORIZONTAL */}
+          {/* SECCIÓN BOUTIQUES EN SLIDER HORIZONTAL - SOLO BOUTIQUES REALES */}
           {homeBoutiques.length > 0 && (
-            <section className="mb-5">
-              <div className="d-flex justify-content-between align-items-center mb-4">
+            <section className="mb-2">
+              <div className="d-flex justify-content-between align-items-center mb-2">
                 <div>
                   <div className="d-flex align-items-center gap-3 mb-2">
-                    
+                    <div className="category-icon bg-purple bg-opacity-10 rounded-3 p-3">
+                      <p className="text-purple" size={20} />
+                    </div>
                     <div>
-                      
-                      <p className="text-muted mb-0">
-                        {homeBoutiques.length} boutiques disponibles
-                      </p>
+                      <h3 className="h4 fw-bold mb-0">Boutiques {homeBoutiques.length} </h3>
+                     
+                         
+                       
                     </div>
                   </div>
                 </div>
@@ -263,13 +272,13 @@ const Home = () => {
                     className="rounded-pill px-4 ms-2"
                     onClick={handleViewAllBoutiques}
                   >
-                    Voir toutes
+                    Voir
                     <ArrowRight className="ms-2" size={16} />
                   </Button>
                 </div>
               </div>
 
-              {/* Slider horizontal de boutiques */}
+              {/* Slider horizontal de boutiques - SOLO BOUTIQUES REALES */}
               <div className="boutique-slider-container position-relative">
                 <div 
                   className="boutique-slider d-flex gap-3 pb-3"
@@ -296,9 +305,9 @@ const Home = () => {
             </section>
           )}
 
-          {/* Secciones de categorías con posts */}
+          {/* SECCIONES DE CATEGORÍAS - SIN LA CATEGORÍA BOUTIQUES */}
           <InfiniteScroll
-            dataLength={categories.length}
+            dataLength={filteredCategories.length}
             next={fetchMoreData}
             hasMore={hasMoreCategories}
             loader={
@@ -316,49 +325,54 @@ const Home = () => {
             }
             scrollThreshold={0.9}
           >
-            {categories.map((category) => (
-              <section key={category._id} className="mb-5">
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                  <div>
-                    <div className="d-flex align-items-center gap-3 mb-2">
-                      <div className="category-icon bg-primary bg-opacity-10 rounded-3 p-3">
-                        <i className="fas fa-tag text-primary" style={{ fontSize: '1.5rem' }}></i>
-                      </div>
-                      <div>
-                        <h3 className="h4 fw-bold mb-0">{category.name}</h3>
-                        <p className="text-muted mb-0">
-                          {category.posts?.length || 0} productos
-                        </p>
+            {filteredCategories.map((category) => {
+              // Filtrar posts normales (excluir cualquier post de boutique)
+              const normalPosts = filterNormalPosts(category.posts);
+              
+              return (
+                <section key={category._id} className="mb-5">
+                  <div className="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                      <div className="d-flex align-items-center gap-3 mb-2">
+                        <div className="category-icon bg-primary bg-opacity-10 rounded-3 p-3">
+                          <i className="fas fa-tag text-primary" style={{ fontSize: '1.5rem' }}></i>
+                        </div>
+                        <div>
+                          <h3 className="h4 fw-bold mb-0">{category.name}</h3>
+                          <p className="text-muted mb-0">
+                            {normalPosts.length} productos
+                          </p>
+                        </div>
                       </div>
                     </div>
+                    
+                    <Button 
+                      variant="outline-primary"
+                      className="rounded-pill px-4"
+                      onClick={() => handleViewMore(category.slug, category.name)}
+                    >
+                      Ver todos
+                      <ArrowRight className="ms-2" size={16} />
+                    </Button>
                   </div>
-                  
-                  <Button 
-                    variant="outline-primary"
-                    className="rounded-pill px-4"
-                    onClick={() => handleViewMore(category.slug, category.name)}
-                  >
-                    Ver todos
-                    <ArrowRight className="ms-2" size={16} />
-                  </Button>
-                </div>
 
-                {category.posts && category.posts.length > 0 ? (
-                  <Row>
-                    {category.posts.slice(0, 6).map((post) => (
-                      <Col key={post._id} xs={6} md={4} lg={2} className="mb-4">
-                        <PostCard post={post} />
-                      </Col>
-                    ))}
-                  </Row>
-                ) : (
-                  <Alert variant="info" className="text-center">
-                    <i className="fas fa-info-circle me-2"></i>
-                    Aún no hay productos en esta categoría
-                  </Alert>
-                )}
-              </section>
-            ))}
+                  {normalPosts.length > 0 ? (
+                    <Row>
+                      {normalPosts.slice(0, 6).map((post) => (
+                        <Col key={post._id} xs={6} md={4} lg={2} className="mb-4">
+                          <PostCard post={post} />
+                        </Col>
+                      ))}
+                    </Row>
+                  ) : (
+                    <Alert variant="info" className="text-center">
+                      <i className="fas fa-info-circle me-2"></i>
+                      Aún no hay productos en esta categoría
+                    </Alert>
+                  )}
+                </section>
+              );
+            })}
           </InfiniteScroll>
         </Container>
       </main>
@@ -383,7 +397,6 @@ const Home = () => {
           border-color: #8B5CF6;
         }
         
-        /* Estilos para el slider de boutiques */
         .boutique-slider {
           overflow-x: auto;
           overflow-y: hidden;
@@ -425,7 +438,6 @@ const Home = () => {
           transform: translateY(-4px);
         }
         
-        /* Flechas de navegación */
         .boutique-slider-container {
           margin: 0 -5px;
         }

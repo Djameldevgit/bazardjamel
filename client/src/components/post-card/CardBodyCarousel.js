@@ -1,4 +1,4 @@
-// 📂 frontend/src/components/CardBodyCarousel.jsx - VERSIÓN OPTIMIZADA
+// 📂 frontend/src/components/CardBodyCarousel.jsx - VERSIÓN CON ALTURA PERSONALIZABLE
 import React, { useState, useEffect } from 'react';
 import { Carousel, Spinner, Modal, Button } from 'react-bootstrap';
 import { useSelector, useDispatch } from 'react-redux';
@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Heart, HeartFill, Bookmark, BookmarkFill } from 'react-bootstrap-icons';
 import { likePost, unLikePost, savePost, unSavePost } from '../../redux/actions/postAction';
 
-const CardBodyCarousel = ({ post }) => {
+const CardBodyCarousel = ({ post, customHeight }) => { // ← AÑADIMOS customHeight como prop
   const [isLike, setIsLike] = useState(false);
   const [loadLike, setLoadLike] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -88,18 +88,23 @@ const CardBodyCarousel = ({ post }) => {
     setIndex(selectedIndex);
   };
 
-  // Altura fija según dispositivo - sin animaciones
+  // ALTURA: usar customHeight si se proporciona, sino usar valores por defecto
   const getImageHeight = () => {
+    if (customHeight) return customHeight; // ← ALTURA PERSONALIZADA DESDE EL PADRE
+    
+    // Valores por defecto
     if (isMobile) return '180px';
     return '220px';
   };
 
-  // Contenedor de imagen con aspecto fijo
+  const imageHeight = getImageHeight();
+
+  // Contenedor de imagen con altura fija
   const ImageContainer = ({ src, alt }) => (
     <div 
       style={{
         width: '100%',
-        height: getImageHeight(),
+        height: imageHeight, // ← Usamos la altura calculada
         backgroundColor: '#f5f5f5',
         display: 'flex',
         alignItems: 'center',
@@ -113,7 +118,7 @@ const CardBodyCarousel = ({ post }) => {
         style={{
           width: '100%',
           height: '100%',
-          objectFit: 'cover', // 'cover' recorta la imagen para llenar el contenedor
+          objectFit: 'cover', // 'cover' para llenar todo el espacio
           display: 'block'
         }}
         loading="lazy"
@@ -125,21 +130,12 @@ const CardBodyCarousel = ({ post }) => {
   );
 
   return (
-    <div className="position-relative">
+    <div style={styles.container}>
       {/* Carrusel de imágenes */}
       <div onClick={() => history.push(`/post/${post._id}`)} style={{ cursor: 'pointer' }}>
         {loading ? (
-          <div 
-            style={{ 
-              height: getImageHeight(),
-              backgroundColor: '#f5f5f5',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: isMobile ? '4px' : '6px'
-            }}
-          >
-            <Spinner animation="border" variant="primary" size="sm" />
+          <div style={{...styles.loaderContainer, height: imageHeight}}> {/* ← Altura dinámica */}
+            <Spinner animation="border" variant="secondary" size="sm" />
           </div>
         ) : images.length > 0 ? (
           <Carousel
@@ -151,10 +147,7 @@ const CardBodyCarousel = ({ post }) => {
             touch={true}
             prevIcon={<span className="carousel-control-prev-icon" />}
             nextIcon={<span className="carousel-control-next-icon" />}
-            style={{
-              borderRadius: isMobile ? '4px' : '6px',
-              overflow: 'hidden'
-            }}
+            style={styles.carousel}
           >
             {images.map((img, idx) => (
               <Carousel.Item key={idx}>
@@ -165,20 +158,7 @@ const CardBodyCarousel = ({ post }) => {
                 
                 {/* Contador de imágenes (solo si hay más de 1) */}
                 {images.length > 1 && (
-                  <div 
-                    style={{
-                      position: 'absolute',
-                      bottom: '8px',
-                      right: '8px',
-                      backgroundColor: 'rgba(0,0,0,0.5)',
-                      color: 'white',
-                      padding: '2px 8px',
-                      borderRadius: '12px',
-                      fontSize: '11px',
-                      fontWeight: '500',
-                      zIndex: 10
-                    }}
-                  >
+                  <div style={styles.imageCounter}>
                     {idx + 1}/{images.length}
                   </div>
                 )}
@@ -186,18 +166,7 @@ const CardBodyCarousel = ({ post }) => {
             ))}
           </Carousel>
         ) : (
-          <div 
-            style={{ 
-              height: getImageHeight(),
-              backgroundColor: '#f5f5f5',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: isMobile ? '4px' : '6px',
-              color: '#999',
-              fontSize: isMobile ? '13px' : '14px'
-            }}
-          >
+          <div style={{...styles.noImageContainer, height: imageHeight}}> {/* ← Altura dinámica */}
             {t("noImagesAvailable")}
           </div>
         )}
@@ -208,29 +177,17 @@ const CardBodyCarousel = ({ post }) => {
         onClick={handleSave}
         disabled={saveLoad}
         style={{
-          position: 'absolute',
-          top: '8px',
-          right: '8px',
-          width: isMobile ? '32px' : '36px',
-          height: isMobile ? '32px' : '36px',
-          borderRadius: '50%',
-          border: 'none',
-          backgroundColor: saved ? '#ffc107' : 'white',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          zIndex: 15,
-          padding: 0
+          ...styles.actionButton,
+          ...styles.saveButton,
+          backgroundColor: saved ? '#ffc107' : '#ffffff'
         }}
       >
         {saveLoad ? (
           <Spinner size="sm" />
         ) : saved ? (
-          <BookmarkFill size={isMobile ? 14 : 16} color="white" />
+          <BookmarkFill size={isMobile ? 14 : 16} color="#ffffff" />
         ) : (
-          <Bookmark size={isMobile ? 14 : 16} color="#666" />
+          <Bookmark size={isMobile ? 14 : 16} color="#6b7280" />
         )}
       </button>
 
@@ -239,52 +196,24 @@ const CardBodyCarousel = ({ post }) => {
         onClick={handleLike}
         disabled={loadLike}
         style={{
-          position: 'absolute',
-          top: '8px',
-          left: '8px',
-          width: isMobile ? '32px' : '36px',
-          height: isMobile ? '32px' : '36px',
-          borderRadius: '50%',
-          border: 'none',
-          backgroundColor: isLike ? '#dc3545' : 'white',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          zIndex: 15,
-          padding: 0
+          ...styles.actionButton,
+          ...styles.likeButton,
+          backgroundColor: isLike ? '#dc2626' : '#ffffff'
         }}
       >
         {loadLike ? (
           <Spinner size="sm" />
         ) : isLike ? (
-          <HeartFill size={isMobile ? 14 : 16} color="white" />
+          <HeartFill size={isMobile ? 14 : 16} color="#ffffff" />
         ) : (
-          <Heart size={isMobile ? 14 : 16} color="#dc3545" />
+          <Heart size={isMobile ? 14 : 16} color="#6b7280" />
         )}
       </button>
 
       {/* Contador de likes (si hay) */}
       {post?.likes?.length > 0 && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '8px',
-            left: '8px',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            color: 'white',
-            padding: '2px 8px',
-            borderRadius: '12px',
-            fontSize: '11px',
-            fontWeight: '500',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            zIndex: 15
-          }}
-        >
-          <HeartFill size={10} color="#ff4757" />
+        <div style={styles.likeCounter}>
+          <HeartFill size={10} color="#dc2626" />
           <span>{post.likes.length}</span>
         </div>
       )}
@@ -297,22 +226,22 @@ const CardBodyCarousel = ({ post }) => {
         size="sm"
       >
         <Modal.Header closeButton>
-          <Modal.Title className="d-flex align-items-center gap-2">
-            <Heart size={18} color="#ff4757" />
-            <span style={{ fontSize: '1rem' }}>{t("title")}</span>
+          <Modal.Title style={styles.modalTitle}>
+            <Heart size={18} color="#dc2626" />
+            <span>{t("title")}</span>
           </Modal.Title>
         </Modal.Header>
         
         <Modal.Body>
-          <p className="text-muted mb-3" style={{ fontSize: '0.9rem' }}>
+          <p style={styles.modalText}>
             {t("message")}
           </p>
           
-          <div className="d-flex gap-2">
+          <div style={styles.modalButtons}>
             <Button
               variant="primary"
               size="sm"
-              className="flex-grow-1"
+              style={styles.modalButton}
               onClick={() => history.push("/login")}
             >
               {t("login")}
@@ -321,7 +250,7 @@ const CardBodyCarousel = ({ post }) => {
             <Button
               variant="success"
               size="sm"
-              className="flex-grow-1"
+              style={styles.modalButton}
               onClick={() => history.push("/register")}
             >
               {t("register")}
@@ -331,43 +260,143 @@ const CardBodyCarousel = ({ post }) => {
       </Modal>
 
       {/* Estilos CSS simples - sin animaciones */}
-      <style>{`
-        .carousel-control-prev,
-        .carousel-control-next {
-          width: 10%;
-          background: rgba(0,0,0,0.1);
-        }
-        
-        .carousel-indicators {
-          margin-bottom: 2px;
-        }
-        
-        .carousel-indicators button {
-          width: 6px;
-          height: 6px;
-          border-radius: 6px;
-          background-color: rgba(255,255,255,0.7);
-          border: none;
-        }
-        
-        .carousel-indicators button.active {
-          background-color: white;
-        }
-        
-        button:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-        }
-        
-        @media (max-width: 768px) {
-          .carousel-control-prev,
-          .carousel-control-next {
-            display: none;
-          }
-        }
-      `}</style>
+      <style>{styles.globalStyles}</style>
     </div>
   );
+};
+
+// Estilos en objeto para mejor rendimiento
+const styles = {
+  container: {
+    position: 'relative',
+    width: '100%',
+    margin: 0,
+    padding: 0,
+    backgroundColor: '#ffffff'
+  },
+  carousel: {
+    borderRadius: 0,
+    overflow: 'hidden',
+    width: '100%'
+  },
+  loaderContainer: {
+    backgroundColor: '#f5f5f5',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  noImageContainer: {
+    backgroundColor: '#f5f5f5',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#9ca3af',
+    fontSize: '14px'
+  },
+  actionButton: {
+    position: 'absolute',
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    border: '1px solid #e5e7eb',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    zIndex: 15,
+    padding: 0,
+    boxShadow: 'none'
+  },
+  saveButton: {
+    top: '8px',
+    right: '8px'
+  },
+  likeButton: {
+    top: '8px',
+    left: '8px'
+  },
+  imageCounter: {
+    position: 'absolute',
+    bottom: '8px',
+    right: '8px',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    color: '#ffffff',
+    padding: '2px 8px',
+    borderRadius: '12px',
+    fontSize: '11px',
+    fontWeight: '500',
+    zIndex: 10
+  },
+  likeCounter: {
+    position: 'absolute',
+    bottom: '8px',
+    left: '8px',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    color: '#ffffff',
+    padding: '2px 8px',
+    borderRadius: '12px',
+    fontSize: '11px',
+    fontWeight: '500',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    zIndex: 15
+  },
+  modalTitle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '1rem'
+  },
+  modalText: {
+    color: '#6b7280',
+    marginBottom: '12px',
+    fontSize: '0.9rem'
+  },
+  modalButtons: {
+    display: 'flex',
+    gap: '8px'
+  },
+  modalButton: {
+    flex: 1
+  },
+  globalStyles: `
+    .carousel-control-prev,
+    .carousel-control-next {
+      width: 10%;
+      background: rgba(0,0,0,0.1);
+      border: none;
+    }
+    
+    .carousel-indicators {
+      margin-bottom: 4px;
+    }
+    
+    .carousel-indicators button {
+      width: 6px;
+      height: 6px;
+      border-radius: 6px;
+      background-color: rgba(255,255,255,0.7);
+      border: none;
+      margin: 0 2px;
+    }
+    
+    .carousel-indicators button.active {
+      background-color: #ffffff;
+    }
+    
+    button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+    
+    @media (max-width: 768px) {
+      .carousel-control-prev,
+      .carousel-control-next {
+        display: none;
+      }
+    }
+  `
 };
 
 export default React.memo(CardBodyCarousel);
