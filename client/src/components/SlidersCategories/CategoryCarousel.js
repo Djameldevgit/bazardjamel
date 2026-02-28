@@ -120,7 +120,7 @@ const CategoryCarousel = memo(() => {
               <img
                 src={image}
                 alt={mainSlides[index]?.title}
-                style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '10px' }}
+                style={{ width: '100%', height: '164px', objectFit: 'cover', borderRadius: '10px' }}
               />
               <Carousel.Caption>
                 <h6>{mainSlides[index]?.title}</h6>
@@ -143,7 +143,7 @@ const CategoryCarousel = memo(() => {
                 <img
                   src={image}
                   alt={mainSlides[index]?.title}
-                  style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '12px' }}
+                  style={{ width: '100%', height: '250px', objectFit: 'cover', borderRadius: '12px' }}
                 />
                 <Carousel.Caption>
                   <h3>{mainSlides[index]?.title}</h3>
@@ -161,7 +161,7 @@ const CategoryCarousel = memo(() => {
                 <img
                   src={image}
                   alt="side"
-                  style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '12px' }}
+                  style={{ width: '100%', height: '250px', objectFit: 'cover', borderRadius: '12px' }}
                 />
               </Carousel.Item>
             ))}

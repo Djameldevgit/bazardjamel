@@ -1,12 +1,8 @@
-// 📂 frontend/src/components/CategorySlider.jsx
 import React, { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import { useHistory } from "react-router-dom";
- 
+
 /**
  * CategorySlider - Slider horizontal de categorías con imágenes PNG
- * @param {Array} categories - Array de categorías [{ name, slug, icon, level, ... }]
- * @param {Function} onCategoryClick - Callback cuando se hace clic en una categoría
- * @param {string} variant - 'home' | 'category' | 'subcategory'
  */
 const CategorySlider = ({ 
   categories = [], 
@@ -31,8 +27,7 @@ const CategorySlider = ({
         const { scrollLeft, scrollWidth, clientWidth } = sliderRef.current;
         setCanScrollLeft(scrollLeft > 5);
         setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
-        
-        // Calcular página actual
+
         const pageWidth = clientWidth * 0.9;
         const currentPageCalc = Math.round(scrollLeft / pageWidth);
         setCurrentPage(currentPageCalc);
@@ -103,7 +98,7 @@ const CategorySlider = ({
       const { scrollLeft, scrollWidth, clientWidth } = sliderRef.current;
       setCanScrollLeft(scrollLeft > 5);
       setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
-      
+
       const pageWidth = clientWidth * 0.9;
       const newPage = Math.round(scrollLeft / pageWidth);
       if (newPage !== currentPage) setCurrentPage(newPage);
@@ -119,12 +114,8 @@ const CategorySlider = ({
   const getImagePath = useCallback((category) => {
     if (!category || !category.slug) return null;
     
-    // Si la categoría ya tiene un icon definido en el seed, úsalo directamente
-    if (category.icon) {
-      return category.icon;
-    }
+    if (category.icon) return category.icon;
     
-    // Fallback: construir ruta basada en el slug y nivel
     const level = category.level || 1;
     const basePath = '/uploads/categories';
     const categoryFolder = category.parentSlug || category.slug;
@@ -150,38 +141,16 @@ const CategorySlider = ({
   // 📏 Verificar si necesita scroll
   const needsScroll = useMemo(() => {
     if (!categories.length) return false;
-    if (variant === 'home') {
-      return displayItems.length > 4;
-    }
+    if (variant === 'home') return displayItems.length > 4;
     return categories.length > 8;
   }, [categories.length, displayItems.length, variant]);
 
   // 📊 Número de páginas para paginación
   const totalPages = useMemo(() => {
     if (!needsScroll) return 1;
-    if (variant === 'home') {
-      return Math.ceil(displayItems.length / 4);
-    }
+    if (variant === 'home') return Math.ceil(displayItems.length / 4);
     return Math.ceil(categories.length / 8);
   }, [needsScroll, variant, displayItems.length, categories.length]);
-
-  // 🏷️ Formatear nombre según dispositivo
-  const formatName = useCallback((name) => {
-    if (!name) return "";
-    const maxLength = window.innerWidth <= 480 ? 8 : 
-                     window.innerWidth <= 768 ? 10 : 16;
-    if (name.length <= maxLength) return name;
-    return name.substring(0, maxLength) + "…";
-  }, []);
-
-  if (!categories || categories.length === 0) {
-    return (
-      <div className="category-slider-empty">
-        <span className="empty-emoji">📭</span>
-        <span className="empty-text">Aucune catégorie disponible</span>
-      </div>
-    );
-  }
 
   // Renderizar un item de categoría (reutilizable)
   const renderCategoryItem = (category, index, position = '') => {
@@ -205,12 +174,11 @@ const CategorySlider = ({
               onError={() => handleImageError(category._id || category.slug)}
             />
           ) : (
-            // Fallback: mostrar primera letra si la imagen falla
             <span className="category-fallback">
               {category.name?.charAt(0).toUpperCase() || '📁'}
             </span>
           )}
-          
+
           {showCount && (category.posts?.length || category.postCount || 0) > 0 && (
             <span className="category-badge">
               {category.posts?.length || category.postCount || 0}
@@ -221,103 +189,32 @@ const CategorySlider = ({
           className="category-name"
           onClick={() => onCategoryClick ? onCategoryClick(category) : history.push(`/category/${category.slug}`)}
         >
-          {formatName(category.name)}
+          {category.name} {/* ⬅️ Ahora mostramos todo el nombre y CSS controla la línea */}
         </div>
       </div>
     );
   };
 
-  // ========== RENDER PARA VARIANTE 'HOME' (PARES) ==========
-  if (variant === 'home') {
+  // =================== RENDER PRINCIPAL ===================
+  if (!categories || categories.length === 0) {
     return (
-      <div className={`category-slider-wrapper ${variant}`}>
-        {/* Botones de navegación (solo desktop) */}
-        {needsScroll && window.innerWidth > 768 && (
-          <>
-            <button 
-              className={`nav-btn prev ${!canScrollLeft ? 'disabled' : ''}`}
-              onClick={scrollLeft}
-              disabled={!canScrollLeft}
-              aria-label="Précédent"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-            <button 
-              className={`nav-btn next ${!canScrollRight ? 'disabled' : ''}`}
-              onClick={scrollRight}
-              disabled={!canScrollRight}
-              aria-label="Suivant"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-          </>
-        )}
-
-        {/* Slider principal */}
-        <div 
-          ref={sliderRef}
-          className="category-slider"
-          onScroll={handleScroll}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseLeave}
-          style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
-        >
-          {displayItems.map((group, index) => (
-            <div
-              key={`group-${group.top?.slug || index}`}
-              className="category-slider-item-group"
-            >
-              {/* Categoría superior */}
-              {renderCategoryItem(group.top, index, 'top')}
-
-              {/* Categoría inferior (si existe) */}
-              {group.bottom && renderCategoryItem(group.bottom, index, 'bottom')}
-            </div>
-          ))}
-        </div>
-
-        {/* PAGINACIÓN */}
-        {needsScroll && totalPages > 1 && (
-          <div className="category-pagination">
-            {Array.from({ length: totalPages }).map((_, idx) => (
-              <button
-                key={idx}
-                className={`pagination-dot ${currentPage === idx ? 'active' : ''}`}
-                onClick={() => {
-                  if (sliderRef.current) {
-                    const pageWidth = sliderRef.current.clientWidth * 0.9;
-                    sliderRef.current.scrollTo({
-                      left: pageWidth * idx,
-                      behavior: 'smooth'
-                    });
-                  }
-                }}
-                aria-label={`Page ${idx + 1}`}
-              />
-            ))}
-          </div>
-        )}
- 
+      <div className="category-slider-empty">
+        <span className="empty-emoji">📭</span>
+        <span className="empty-text">Aucune catégorie disponible</span>
       </div>
     );
   }
 
-  // ========== RENDER PARA VARIANTE 'CATEGORY' (INDIVIDUALES) ==========
   return (
     <div className={`category-slider-wrapper ${variant}`}>
-      {/* Botones de navegación */}
+      {/* Botones de navegación (solo desktop) */}
       {needsScroll && window.innerWidth > 768 && (
         <>
           <button 
             className={`nav-btn prev ${!canScrollLeft ? 'disabled' : ''}`}
             onClick={scrollLeft}
             disabled={!canScrollLeft}
+            aria-label="Précédent"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -327,6 +224,7 @@ const CategorySlider = ({
             className={`nav-btn next ${!canScrollRight ? 'disabled' : ''}`}
             onClick={scrollRight}
             disabled={!canScrollRight}
+            aria-label="Suivant"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -344,15 +242,17 @@ const CategorySlider = ({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
+        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >
-        {displayItems.map((category, index) => (
-          <div
-            key={category.slug || `cat-${index}`}
-            className="category-slider-item"
-          >
-            {renderCategoryItem(category, index)}
-          </div>
-        ))}
+        {variant === 'home'
+          ? displayItems.map((group, index) => (
+              <div key={`group-${group.top?.slug || index}`} className="category-slider-item-group">
+                {renderCategoryItem(group.top, index, 'top')}
+                {group.bottom && renderCategoryItem(group.bottom, index, 'bottom')}
+              </div>
+            ))
+          : categories.map((cat, idx) => renderCategoryItem(cat, idx))
+        }
       </div>
 
       {/* PAGINACIÓN */}
@@ -376,8 +276,6 @@ const CategorySlider = ({
           ))}
         </div>
       )}
-
-   
     </div>
   );
 };
