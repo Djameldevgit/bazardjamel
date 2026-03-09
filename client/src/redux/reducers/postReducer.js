@@ -101,12 +101,76 @@ const postReducer = (state = initialState, action) => {
     case POST_TYPES.GET_POST_BY_ID:
       return { ...state, postToEdit: action.payload };
 
-    case POST_TYPES.UPDATE_POST:
-      return {
-        ...state,
-        posts: state.posts.map(post => post._id === action.payload._id ? action.payload : post),
-        detailPost: state.detailPost?._id === action.payload._id ? action.payload : state.detailPost
-      };
+   // ========== UPDATE POST - VERSIÓN CORREGIDA ==========
+case POST_TYPES.UPDATE_POST: {
+  console.log('🔄 REDUCER UPDATE_POST - Post actualizado:', {
+    id: action.payload?._id,
+    nuevaCategoria: action.payload?.categorie,
+    categoriaAnterior: action.payload?._oldCategory
+  });
+
+  // 1. Actualizar detailPost si es el post que estamos viendo
+  const newDetailPost = state.detailPost?._id === action.payload._id 
+    ? action.payload 
+    : state.detailPost;
+
+  // 2. Buscar el post anterior en la lista
+  const oldPost = state.posts.find(p => p._id === action.payload._id);
+  
+  // 3. Verificar si cambió de categoría
+  const categoryChanged = oldPost && (
+    oldPost.categorie !== action.payload.categorie ||
+    oldPost.subCategory !== action.payload.subCategory ||
+    String(oldPost.category) !== String(action.payload.category)
+  );
+
+  if (categoryChanged) {
+    console.log('🔄 POST CAMBIÓ DE CATEGORÍA DETECTADO EN REDUCER:', {
+      old: {
+        categorie: oldPost.categorie,
+        subCategory: oldPost.subCategory,
+        category: oldPost.category
+      },
+      new: {
+        categorie: action.payload.categorie,
+        subCategory: action.payload.subCategory,
+        category: action.payload.category
+      }
+    });
+  }
+
+  // 4. Actualizar la lista de posts
+  let updatedPosts = [...state.posts];
+  
+  if (categoryChanged) {
+    // Si cambió de categoría, QUITAMOS el post de la lista actual
+    // (porque ya no pertenece a esta categoría)
+    updatedPosts = updatedPosts.filter(post => post._id !== action.payload._id);
+    console.log('🗑️ Post removido de la lista actual por cambio de categoría');
+  } else {
+    // Si no cambió de categoría, actualizamos normalmente
+    updatedPosts = updatedPosts.map(post => 
+      post._id === action.payload._id ? action.payload : post
+    );
+  }
+
+  // 5. IMPORTANTE: Forzar timestamp para que los componentes sepan que hubo cambio
+  const newState = {
+    ...state,
+    posts: updatedPosts,
+    detailPost: newDetailPost,
+    // Este timestamp fuerza la recarga de componentes que dependan de postsLastUpdate
+    postsLastUpdate: Date.now()
+  };
+
+  // 6. Si el post que cambió es el que estamos viendo en detalle, también actualizar
+  if (state.detailPost?._id === action.payload._id) {
+    newState.detailPost = action.payload;
+  }
+
+  console.log('✅ UPDATE_POST completado en reducer');
+  return newState;
+}
 
     case POST_TYPES.DELETE_POST:
       return { ...state, posts: DeleteData(state.posts, action.payload._id) };

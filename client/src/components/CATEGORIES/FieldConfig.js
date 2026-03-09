@@ -521,7 +521,7 @@ export const DYNAMIC_FIELDS_CONFIG = {
   },
 
   // ============ PIÈCES DÉTACHÉES ============
-  'piecesDetachees': {
+  'pieces-detachees': {
     step2: ['title', 'description', 'etat', 'reference', 'marque', 'modele', 'typePiece'],
     step3: ['price', 'unite', 'typeOffre', 'echange', 'compatibilite', 'garantie'],
     step4: ['wilaya', 'adresse', 'telephone', 'email'],

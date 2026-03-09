@@ -11,7 +11,12 @@
     "client-install": "cd client && npm install",
     "install-all": "concurrently \"npm run server-install\" \"npm run client-install\" ",
     "dev": "concurrently \"npm run server\" \"npm run client\" ",
-    "render-postbuild": "cd client && npm install && npm run build"
+    "render-postbuild": "cd client && npm install && npm run build",
+    "upload:categories": "node scripts/uploadCategoryImages.js",
+    "update:seed": "node scripts/update-seed-from-cloudinary.js",
+    "migrate:categories": "npm run upload:categories && npm run update:seed"
+
+
   },
   "keywords": [],
   "author": "",
@@ -26,6 +31,8 @@
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "express-async-handler": "^1.2.0",
+    "form-data": "^4.0.5",
+    "fs": "0.0.1-security",
     "googleapis": "^61.0.0",
     "i18n": "^0.15.1",
     "i18next": "^23.4.4",

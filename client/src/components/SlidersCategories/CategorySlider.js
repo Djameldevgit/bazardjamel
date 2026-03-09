@@ -110,18 +110,20 @@ const CategorySlider = ({
     setImageErrors(prev => ({ ...prev, [categoryId]: true }));
   };
 
-  // Obtener ruta de la imagen según el nivel de la categoría
+  // ========== ÚNICA FUNCIÓN MODIFICADA ==========
+  // Obtener ruta de la imagen (ahora usa Cloudinary)
   const getImagePath = useCallback((category) => {
     if (!category || !category.slug) return null;
     
-    if (category.icon) return category.icon;
+    // ✅ Usar category.icon (URL de Cloudinary)
+    if (category.icon) {
+      return category.icon;
+    }
     
-    const level = category.level || 1;
-    const basePath = '/uploads/categories';
-    const categoryFolder = category.parentSlug || category.slug;
-    
-    return `${basePath}/${categoryFolder}/level${level}/${category.slug}.png`;
+    // Si no hay icon, retornar null (se mostrará el fallback)
+    return null;
   }, []);
+  // ==============================================
 
   // 🧮 Agrupar en pares SOLO para variante 'home'
   const displayItems = useMemo(() => {
@@ -189,7 +191,7 @@ const CategorySlider = ({
           className="category-name"
           onClick={() => onCategoryClick ? onCategoryClick(category) : history.push(`/category/${category.slug}`)}
         >
-          {category.name} {/* ⬅️ Ahora mostramos todo el nombre y CSS controla la línea */}
+          {category.name}
         </div>
       </div>
     );

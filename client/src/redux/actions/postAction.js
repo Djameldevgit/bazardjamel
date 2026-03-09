@@ -154,7 +154,7 @@ export const updatePost = ({
     console.log('🟡 updatePost action iniciada', { postId });
     dispatch({ type: GLOBALTYPES.ALERT, payload: {loading: true} })
     
-    // Subir imágenes nuevas si las hay
+    // Subir imágenes nuevas
     const newImages = images.filter(img => !img.isExisting && img.url?.startsWith('blob:'));
     const existingImages = images.filter(img => img.isExisting);
     
@@ -163,10 +163,8 @@ export const updatePost = ({
       media = await imageUpload(newImages);
     }
     
-    // Combinar imágenes existentes con las nuevas
     const finalImages = [...existingImages, ...media];
 
-    // Preparar datos para actualizar
     const postToSend = {
       ...postData,
       images: finalImages,
@@ -178,17 +176,19 @@ export const updatePost = ({
       imagesCount: finalImages.length
     });
 
-    // Enviar al backend
     const res = await patchDataAPI(`post/${postId}`, postToSend, auth.token);
     
-    console.log('✅ Respuesta:', res.data);
+    console.log('✅ Respuesta del backend:', res.data);
 
+    // 🔥 AHORA SÍ TENEMOS LA CATEGORÍA ANTERIOR
     dispatch({ 
       type: POST_TYPES.UPDATE_POST, 
       payload: {
         ...res.data.post,
         user: auth.user,
-        categorySpecificData: postData.categorySpecificData || {}
+        categorySpecificData: postData.categorySpecificData || {},
+        _oldCategory: res.data.oldCategory,  // ← Recibimos la categoría anterior
+        _categoryChanged: res.data.categoryChanged // ← Sabemos si cambió
       } 
     });
 
@@ -204,7 +204,6 @@ export const updatePost = ({
     console.timeEnd('⏱️ updatePost action time');
   }
 }
-
 export const getPost = (id) => async (dispatch) => {
     try {
         console.log('🔍 Fetching post with ID:', id)

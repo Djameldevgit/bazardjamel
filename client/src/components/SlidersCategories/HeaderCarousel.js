@@ -1,3 +1,6 @@
+// HeaderCarousel.jsx - VERSIÓN CON URLs DIRECTAS DE CLOUDINARY
+// PADDING CORREGIDO: 5px en móvil, en desktop: 5px arriba/lados y 2px abajo
+
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import Carousel from 'react-bootstrap/Carousel';
@@ -8,14 +11,53 @@ const HeaderCarousel = memo(() => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileCurrentIndex, setMobileCurrentIndex] = useState(0);
+  
+  // ===== URLs DIRECTAS DE CLOUDINARY =====
+  const mainImages = [
+    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773016206/caoumiajj_zrdhuz.jpg",
+    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773017994/caoumiajj2j_xyolln.png",
+    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773017058/caoumiajj2_hnbg0o.jpg",
+  ];
 
+  const sideImages = [
+    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773004688/00kras_whzeyt.webp",
+    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1772673017/header/carousel-side/side2.jpg",
+    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1772673019/header/carousel-side/side3.png",
+  ];
+
+  const [images] = useState({
+    main: mainImages,
+    side: sideImages
+  });
+
+  // Refs para el auto-play
   const animationFrameRef = useRef(null);
   const timeoutRef = useRef(null);
   const lastUpdateRef = useRef(0);
   const isMountedRef = useRef(true);
   const carouselPausedRef = useRef(false);
 
-  // Detectar tamaño de pantalla
+  // Textos del carrusel principal
+  const mainSlides = useRef([
+    { title: t('carousel.title1', 'Nouvelle Collection Printemps'), description: t('carousel.desc1', 'Découvrez les dernières tendances de la saison') },
+    { title: t('carousel.title2', 'Soldes Exceptionnelles'), description: t('carousel.desc2', 'Jusqu\'à -50% sur toute la boutique') },
+    { title: t('carousel.title3', 'Livraison Gratuite'), description: t('carousel.desc3', 'Partout en Algérie à partir de 3000 DZD') },
+    { title: t('carousel.title4', 'Mode Homme & Femme'), description: t('carousel.desc4', 'Des styles uniques pour tous les goûts') },
+    { title: t('carousel.title5', 'Qualité Garantie'), description: t('carousel.desc5', 'Des matériaux premium et une confection soignée') },
+    { title: t('carousel.title6', 'Nouveautés Quotidiennes'), description: t('carousel.desc6', 'Découvrez nos nouvelles arrivées chaque jour') }
+  ]);
+
+  // Textos del carrusel lateral
+  const sideSlides = useRef([
+    { title: 'Promo -30%', color: '#dc3545' },
+    { title: 'Livraison Rapide', color: '#198754' },
+    { title: 'Nouveautés', color: '#0d6efd' },
+    { title: 'Collection Été', color: '#fd7e14' },
+    { title: 'Accessoires', color: '#6f42c1' },
+    { title: 'Soldes Flash', color: '#20c997' }
+  ]);
+
+  // Detectar tamaño de pantalla para responsive
   useEffect(() => {
     let resizeTimeout;
     const checkMobile = () => setIsMobile(window.innerWidth <= 768);
@@ -31,56 +73,19 @@ const HeaderCarousel = memo(() => {
     };
   }, []);
 
-  // Imágenes locales
-  const mainCarouselImages = useRef([
-    '/images/banner1.jpg',
-    '/images/banner2.jpg',
-    '/images/banner0.jpg',
-    '/images/banner4.jpg',
-    '/images/banner5.jpg',
-    '/images/banner7.jpg'
-  ]);
-
-  const sideCarouselImages = useRef([
-    '/images/side1.jpg',
-    '/images/side2.jpg',
-    '/images/side3.jpg',
-    '/images/side4.jpg',
-    '/images/side5.jpg',
-    '/images/side6.jpg'
-  ]);
-
-  // Textos
-  const mainSlides = useRef([
-    { title: t('carousel.title1','Nouvelle Collection Printemps'), description: t('carousel.desc1','Découvrez les dernières tendances de la saison') },
-    { title: t('carousel.title2','Soldes Exceptionnelles'), description: t('carousel.desc2','Jusqu\'à -50% sur toute la boutique') },
-    { title: t('carousel.title3','Livraison Gratuite'), description: t('carousel.desc3','Partout en Algérie à partir de 3000 DZD') },
-    { title: t('carousel.title4','Mode Homme & Femme'), description: t('carousel.desc4','Des styles uniques pour tous les goûts') },
-    { title: t('carousel.title5','Qualité Garantie'), description: t('carousel.desc5','Des matériaux premium et une confection soignée') },
-    { title: t('carousel.title6','Nouveautés Quotidiennes'), description: t('carousel.desc6','Découvrez nos nouvelles arrivées chaque jour') }
-  ]);
-
-  const sideSlides = useRef([
-    { title: 'Promo -30%', color: '#dc3545' },
-    { title: 'Livraison Rapide', color: '#198754' },
-    { title: 'Nouveautés', color: '#0d6efd' },
-    { title: 'Collection Été', color: '#fd7e14' },
-    { title: 'Accessoires', color: '#6f42c1' },
-    { title: 'Soldes Flash', color: '#20c997' }
-  ]);
-
-  // Auto-play
+  // Función para avanzar al siguiente slide
   const goToNextSlide = useCallback(() => {
-    if (!isMountedRef.current || carouselPausedRef.current) return;
+    if (!isMountedRef.current || carouselPausedRef.current || images.main.length === 0) return;
     
     if (isMobile) {
-      setMobileCurrentIndex(prev => (prev + 1) % mainCarouselImages.current.length);
+      setMobileCurrentIndex(prev => (prev + 1) % images.main.length);
     } else {
-      setCurrentIndex(prev => (prev + 1) % mainCarouselImages.current.length);
+      setCurrentIndex(prev => (prev + 1) % images.main.length);
     }
     lastUpdateRef.current = Date.now();
-  }, [isMobile]);
+  }, [isMobile, images.main.length]);
 
+  // Programar el siguiente slide
   const scheduleNextSlide = useCallback(() => {
     if (!isMountedRef.current || carouselPausedRef.current) return;
     const INTERVAL_DURATION = 4000;
@@ -101,6 +106,7 @@ const HeaderCarousel = memo(() => {
     }
   }, [goToNextSlide]);
 
+  // Iniciar auto-play
   useEffect(() => {
     isMountedRef.current = true;
     lastUpdateRef.current = Date.now();
@@ -111,106 +117,222 @@ const HeaderCarousel = memo(() => {
     };
   }, [scheduleNextSlide]);
 
+  // Limpiar timeouts al desmontar
   useEffect(() => () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
   }, []);
 
-  // Pausa al interactuar
-  const handleMouseEnter = () => {
+  // Pausar al pasar el mouse
+  const handleMouseEnter = useCallback(() => {
     carouselPausedRef.current = true;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-  };
-  const handleMouseLeave = () => {
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
     carouselPausedRef.current = false;
     lastUpdateRef.current = Date.now();
     scheduleNextSlide();
-  };
+  }, [scheduleNextSlide]);
 
-  const handleMainSelect = index => {
+  // Manejadores de selección
+  const handleMainSelect = useCallback((index) => {
     if (isMobile) setMobileCurrentIndex(index);
     else setCurrentIndex(index);
     lastUpdateRef.current = Date.now();
-  };
+  }, [isMobile]);
 
-  const handleSideSelect = index => {
+  const handleSideSelect = useCallback((index) => {
     if (isMobile) setMobileCurrentIndex(index);
     else setCurrentIndex(index);
     lastUpdateRef.current = Date.now();
-  };
+  }, [isMobile]);
 
-  // Render desktop
+  // Renderizar slide principal
   const renderMainSlide = useCallback((image, index) => {
-    const slide = mainSlides.current[index] || { title: 'Tassili Fashion', description: 'Votre destination mode préférée' };
+    const slide = mainSlides.current[index] || { 
+      title: 'Tassili Fashion', 
+      description: 'Votre destination mode préférée' 
+    };
+    
     return (
       <Carousel.Item key={index}>
-        <div style={{ height:'40vh', maxHeight:'350px', minHeight:'250px', overflow:'hidden', borderRadius:'12px', position:'relative' }}>
-          <img src={image} alt={slide.title} loading={index<2?"eager":"lazy"} style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'12px' }} />
+        <div style={{ 
+          height: '40vh', 
+          maxHeight: '350px', 
+          minHeight: '250px', 
+          overflow: 'hidden', 
+          borderRadius: '12px', 
+          position: 'relative' 
+        }}>
+          <img 
+            src={image} 
+            alt={slide.title} 
+            loading={index < 2 ? "eager" : "lazy"} 
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              objectFit: 'cover', 
+              borderRadius: '12px' 
+            }} 
+          />
         </div>
-        <Carousel.Caption style={{ backgroundColor:'rgba(0,0,0,0.6)', backdropFilter:'blur(4px)', borderRadius:'10px', padding:'15px 20px', bottom:'25px' }}>
-          <h3 style={{ fontSize:'1.8rem', fontWeight:'700', color:'#fff' }}>{slide.title}</h3>
-          <p style={{ fontSize:'1.1rem', color:'#f8f8f8' }}>{slide.description}</p>
+        <Carousel.Caption style={{ 
+          backgroundColor: 'rgba(0,0,0,0.3)',
+          backdropFilter: 'blur(2px)',
+          borderRadius: '10px', 
+          padding: '15px 20px', 
+          bottom: '25px' 
+        }}>
+          <h3 style={{ fontSize: '1.8rem', fontWeight: '700', color: '#fff' }}>{slide.title}</h3>
+          <p style={{ fontSize: '1.1rem', color: '#f8f8f8' }}>{slide.description}</p>
         </Carousel.Caption>
       </Carousel.Item>
     );
   }, []);
 
+  // Renderizar slide lateral (sin degradado, con sombra)
   const renderSideSlide = useCallback((image, index) => {
-    const slide = sideSlides.current[index] || { title:'Promo', color:'#8b5cf6' };
+    const slide = sideSlides.current[index] || { title: 'Promo', color: '#8b5cf6' };
+    
     return (
       <Carousel.Item key={index}>
-        <div style={{ height:'40vh', maxHeight:'350px', minHeight:'250px', overflow:'hidden', position:'relative', borderRadius:'12px', cursor:'pointer' }} onClick={()=>handleSideSelect(index)}>
-          <img src={image} alt={slide.title} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'12px' }} />
-          <div style={{ position:'absolute', top:0, left:0, right:0, bottom:0, display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', background:'linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7))', borderRadius:'12px' }}>
-            <div style={{ fontSize:'1.3rem', fontWeight:'700', marginBottom:'10px', color:'#fff' }}>{slide.title}</div>
-            <div style={{ width:'28px', height:'28px', borderRadius:'50%', backgroundColor: currentIndex===index?'white':'rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', color: currentIndex===index?slide.color:'white', marginTop:'10px' }}>{index+1}</div>
+        <div style={{ 
+          height: '40vh', 
+          maxHeight: '350px', 
+          minHeight: '250px', 
+          overflow: 'hidden', 
+          position: 'relative', 
+          borderRadius: '12px', 
+          cursor: 'pointer' 
+        }} onClick={() => handleSideSelect(index)}>
+          <img 
+            src={image} 
+            alt={slide.title} 
+            loading="lazy" 
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              objectFit: 'cover', 
+              borderRadius: '12px' 
+            }} 
+          />
+          <div style={{ 
+            position: 'absolute', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            borderRadius: '12px' 
+          }}>
+            <div style={{ 
+              fontSize: '1.3rem', 
+              fontWeight: '700', 
+              marginBottom: '10px', 
+              color: '#fff',
+              textShadow: '2px 2px 4px rgba(0,0,0,0.7)'
+            }}>{slide.title}</div>
+            <div style={{ 
+              width: '28px', 
+              height: '28px', 
+              borderRadius: '50%', 
+              backgroundColor: currentIndex === index ? 'white' : 'rgba(0,0,0,0.5)',
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              color: currentIndex === index ? slide.color : 'white',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+            }}>{index + 1}</div>
           </div>
         </div>
       </Carousel.Item>
     );
-  }, [currentIndex]);
+  }, [currentIndex, handleSideSelect]);
 
-  // Versión móvil: SOLO carrusel principal
-  if (isMobile) {
+  // Estado de carga
+  if (images.main.length === 0) {
     return (
-      <Container fluid className="px-0">
-        <div className="mb-2" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
-          <Carousel 
-            activeIndex={mobileCurrentIndex} 
-            onSelect={handleMainSelect} 
-            fade 
-            indicators 
-            controls 
-            interval={null}
-            style={{ padding: '7px' }}
-          >
-            {mainCarouselImages.current.map((img, idx) => {
-              const slide = mainSlides.current[idx] || { title: 'Tassili Fashion' };
-              return (
-                <Carousel.Item key={idx}>
-                  <div style={{ height: '22vh', maxHeight: '180px', minHeight: '140px', overflow: 'hidden', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-                    <img src={img} alt={slide.title} loading={idx<2?"eager":"lazy"} style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'8px' }} />
-                  </div>
-                  <Carousel.Caption style={{ backgroundColor:'rgba(0,0,0,0.5)', backdropFilter:'blur(2px)', borderRadius:'6px', padding:'6px 10px', bottom:'10px' }}>
-                    <h3 style={{ fontSize:'0.9rem', fontWeight:'600', color:'#fff' }}>{slide.title}</h3>
-                  </Carousel.Caption>
-                </Carousel.Item>
-              );
-            })}
-          </Carousel>
+      <Container fluid style={{ padding: '5px', backgroundColor: '#9E9B9B' }}>
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Cargando carousel...</span>
+          </div>
         </div>
-        {/* ⚡️ NO HAY CARRUSEL LATERAL EN MÓVIL */}
       </Container>
     );
   }
 
-  // Versión desktop
+  // Versión móvil (solo carrusel principal)
+  if (isMobile) {
+    return (
+      <Container  fluid style={{ padding: '10px 5px 5px 5px', backgroundColor: '#CACECF' }}>
+        <Row className="g-0">
+          <Col xs={12}>
+            <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+              <Carousel 
+                activeIndex={mobileCurrentIndex} 
+                onSelect={handleMainSelect} 
+                fade 
+                indicators 
+                controls 
+                interval={null}
+              >
+                {images.main.map((img, idx) => {
+                  const slide = mainSlides.current[idx] || { title: 'Tassili Fashion' };
+                  
+                  return (
+                    <Carousel.Item key={idx}>
+                      <div style={{ 
+                        height: '22vh', 
+                        maxHeight: '180px', 
+                        minHeight: '140px', 
+                        overflow: 'hidden', 
+                        backgroundColor: '#f8f9fa', 
+                        borderRadius: '8px' 
+                      }}>
+                        <img 
+                          src={img} 
+                          alt={slide.title} 
+                          loading={idx < 2 ? "eager" : "lazy"} 
+                          style={{ 
+                            width: '100%', 
+                            height: '100%', 
+                            objectFit: 'cover', 
+                            borderRadius: '8px' 
+                          }} 
+                        />
+                      </div>
+                      <Carousel.Caption style={{ 
+                        backgroundColor: 'rgba(0,0,0,0.3)', 
+                        backdropFilter: 'blur(2px)', 
+                        borderRadius: '6px', 
+                        padding: '6px 10px', 
+                        bottom: '10px' 
+                      }}>
+                        <h3 style={{ fontSize: '0.9rem', fontWeight: '600', color: '#fff' }}>{slide.title}</h3>
+                      </Carousel.Caption>
+                    </Carousel.Item>
+                  );
+                })}
+              </Carousel>
+            </div>
+          </Col>
+        </Row>
+      </Container>
+    );
+  }
+
+  // Versión desktop (carrusel principal + lateral)
   return (
-    <Container fluid style={{ padding:'7px' }}>
+    <Container fluid style={{ padding: '10px 5px 0px 5px', backgroundColor: '#CACECF' }}>
       <Row className="g-0">
-        {/* CARRUSEL PRINCIPAL */}
-        <Col lg={9} md={12} className="pe-1">
+        {/* CARRUSEL PRINCIPAL: con padding right 5px para separación del lateral */}
+        <Col lg={9} md={12} style={{ paddingRight: '5px' }}>
           <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
             <Carousel 
               activeIndex={currentIndex} 
@@ -221,13 +343,13 @@ const HeaderCarousel = memo(() => {
               interval={null} 
               className="main-carousel"
             >
-              {mainCarouselImages.current.map((img, idx) => renderMainSlide(img, idx))}
+              {images.main.map((img, idx) => renderMainSlide(img, idx))}
             </Carousel>
           </div>
         </Col>
 
-        {/* CARRUSEL LATERAL SOLO DESKTOP */}
-        <Col lg={3} md={0} className="ps-1 d-none d-lg-block">
+        {/* CARRUSEL LATERAL: sin padding extra, solo visible en lg */}
+        <Col lg={3} md={0} className="d-none d-lg-block" style={{ paddingLeft: 0 }}>
           <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
             <Carousel 
               activeIndex={currentIndex} 
@@ -237,13 +359,26 @@ const HeaderCarousel = memo(() => {
               interval={null} 
               className="side-carousel"
             >
-              {sideCarouselImages.current.map((img, idx) => renderSideSlide(img, idx))}
+              {images.side.map((img, idx) => renderSideSlide(img, idx))}
             </Carousel>
           </div>
-          {/* Miniaturas */}
-          <div className="d-flex justify-content-center mt-2">
-            {mainCarouselImages.current.map((_, idx) => (
-              <button key={idx} onClick={()=>handleMainSelect(idx)} style={{ width:'10px', height:'10px', borderRadius:'50%', border:'none', margin:'0 3px', cursor:'pointer', backgroundColor: currentIndex===idx?'#8b5cf6':'#dee2e6', transition:'all 0.3s ease' }} aria-label={`Go to slide ${idx + 1}`} />
+          <div className="d-flex justify-content-center">
+            {images.main.map((_, idx) => (
+              <button 
+                key={idx} 
+                onClick={() => handleMainSelect(idx)} 
+                style={{ 
+                  width: '10px', 
+                  height: '10px', 
+                  borderRadius: '50%', 
+                  border: 'none', 
+                  margin: '0 3px', 
+                  cursor: 'pointer', 
+                  backgroundColor: currentIndex === idx ? '#8b5cf6' : '#dee2e6', 
+                  transition: 'all 0.3s ease' 
+                }} 
+                aria-label={`Go to slide ${idx + 1}`} 
+              />
             ))}
           </div>
         </Col>
