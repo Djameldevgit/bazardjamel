@@ -1,34 +1,88 @@
 // 📂 frontend/src/components/post/DescriptionPost.jsx
-import React, { useMemo } from 'react';
-import { Card, Badge } from 'react-bootstrap';
-import { useSelector } from 'react-redux';
+import React, { useMemo, useCallback, useEffect } from 'react';
+import { Card } from 'react-bootstrap';
+import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import moment from 'moment';
 import 'moment/locale/fr';
+import { getCategoriesForAccordion } from '../../redux/actions/categoryAction';
 
 moment.locale('fr');
 
 const DescriptionPost = ({ post }) => {
-    const { auth } = useSelector(state => state);
+    const dispatch = useDispatch();
+    const { accordionCategories = [], accordionLoading } = useSelector(state => state.category || {});
     const history = useHistory();
+
+    // Cargar categorías si no están disponibles
+    useEffect(() => {
+        if (accordionCategories.length === 0 && !accordionLoading) {
+            dispatch(getCategoriesForAccordion());
+        }
+    }, [dispatch, accordionCategories.length, accordionLoading]);
 
     // 🎯 OBTENER TODOS LOS DATOS COMBINADOS (post + categorySpecificData)
     const postData = useMemo(() => {
         if (!post) return {};
-        
         const allData = { ...post };
-        
-        // Si existe categorySpecificData, combinarlo al nivel principal
         if (post.categorySpecificData && typeof post.categorySpecificData === 'object') {
             Object.assign(allData, post.categorySpecificData);
         }
-        
         return allData;
     }, [post]);
 
-    // 🎨 MAPA DE ICONOS POR CAMPO
+    // 🎯 FUNCIÓN PARA OBTENER LA RUTA LEGIBLE DE LA CATEGORÍA
+    const getCategoryDisplay = useCallback(() => {
+        const categorie = postData.categorie;
+        const subCategory = postData.subCategory;
+        const articleType = postData.articleType;
+
+        if (!categorie) return null;
+
+        // Fallback con slugs si no se encuentran nombres
+        let fallbackPath = categorie;
+        if (subCategory) fallbackPath += ` → ${subCategory}`;
+        if (articleType && articleType !== subCategory) fallbackPath += ` → ${articleType}`;
+
+        if (accordionCategories.length === 0) return fallbackPath; // aún no cargadas
+
+        const mainCat = accordionCategories.find(c => c.slug === categorie || c.name === categorie);
+        if (!mainCat) return fallbackPath;
+
+        let path = mainCat.name;
+
+        if (subCategory) {
+            const level1 = mainCat.children?.find(c => c.slug === subCategory || c.name === subCategory);
+            if (level1) {
+                path += ` → ${level1.name}`;
+                if (articleType && articleType !== subCategory) {
+                    const level2 = level1.children?.find(c => c.slug === articleType || c.name === articleType);
+                    path += ` → ${level2 ? level2.name : articleType}`;
+                }
+            } else {
+                // Buscar como nivel3
+                for (const l1 of mainCat.children || []) {
+                    const l2 = l1.children?.find(c => c.slug === subCategory || c.name === subCategory);
+                    if (l2) {
+                        path += ` → ${l1.name} → ${l2.name}`;
+                        break;
+                    }
+                }
+            }
+        } else if (articleType) {
+            for (const l1 of mainCat.children || []) {
+                const l2 = l1.children?.find(c => c.slug === articleType || c.name === articleType);
+                if (l2) {
+                    path += ` → ${l1.name} → ${l2.name}`;
+                    break;
+                }
+            }
+        }
+        return path;
+    }, [postData, accordionCategories]);
+
+    // 🎨 MAPA DE ICONOS POR CAMPO (completo)
     const fieldIconMap = {
-        // Campos base
         'categorie': '📂',
         'subCategory': '📁',
         'articleType': '📌',
@@ -37,8 +91,6 @@ const DescriptionPost = ({ post }) => {
         'views': '👁️',
         'createdAt': '📅',
         'description': '📄',
-        
-        // Automobile
         'marque': '🚗',
         'modele': '🚘',
         'annee': '📅',
@@ -52,8 +104,6 @@ const DescriptionPost = ({ post }) => {
         'portes': '🚪',
         'premiereMain': '👤',
         'garantie': '🛡️',
-        
-        // Immobilier
         'surface': '📏',
         'chambres': '🛏️',
         'sallesBain': '🚿',
@@ -65,8 +115,6 @@ const DescriptionPost = ({ post }) => {
         'chauffage': '🔥',
         'piscine': '🏊',
         'ascenseur': '🛗',
-        
-        // Électronique
         'ram': '💾',
         'stockage': '💿',
         'processeur': '⚙️',
@@ -76,78 +124,38 @@ const DescriptionPost = ({ post }) => {
         'systeme': '💻',
         'connectivite': '📶',
         'couleur': '🎨',
-        
-        // Mode
         'taille': '📏',
         'matiere': '🧵',
-        'couleur': '🎨',
-        'marque': '👔',
         'genre': '👤',
         'age': '🔞',
-        
-        // Maison & Jardin
         'type': '🏷️',
-        'marque': '🏷️',
-        'matiere': '🧱',
         'dimensions': '📐',
         'poids': '⚖️',
-        
-        // Services
         'duree': '⏱️',
         'disponibilite': '📅',
         'tarif': '💰',
         'zone': '📍',
-        
         'default': '📋'
     };
 
-    // 🎯 OBTENER ICONO SEGÚN CAMPO
-    const getFieldIcon = (field) => {
-        return fieldIconMap[field] || fieldIconMap.default;
-    };
+    const getFieldIcon = (field) => fieldIconMap[field] || fieldIconMap.default;
 
-    // 📝 FORMATO DE VALORES
     const formatValue = (field, value) => {
-        if (value === undefined || value === null || value === '') {
-            return null;
-        }
-        
-        // Booleanos
-        if (typeof value === 'boolean') {
-            return value ? 'Oui' : 'Non';
-        }
-        
-        // Números
+        if (value === undefined || value === null || value === '') return null;
+        if (typeof value === 'boolean') return value ? 'Oui' : 'Non';
         if (typeof value === 'number') {
-            if (field === 'price') {
-                return new Intl.NumberFormat('fr-DZ').format(value) + ' DA';
-            }
-            if (field === 'kilometrage') {
-                return new Intl.NumberFormat('fr-DZ').format(value) + ' km';
-            }
-            if (field === 'surface') {
-                return new Intl.NumberFormat('fr-DZ').format(value) + ' m²';
-            }
-            if (field === 'views') {
-                return new Intl.NumberFormat('fr-DZ').format(value);
-            }
+            if (field === 'price') return new Intl.NumberFormat('fr-DZ').format(value) + ' DA';
+            if (field === 'kilometrage') return new Intl.NumberFormat('fr-DZ').format(value) + ' km';
+            if (field === 'surface') return new Intl.NumberFormat('fr-DZ').format(value) + ' m²';
+            if (field === 'views') return new Intl.NumberFormat('fr-DZ').format(value);
             return new Intl.NumberFormat('fr-DZ').format(value);
         }
-        
-        // Fechas
-        if (field === 'createdAt' || field === 'updatedAt') {
-            return moment(value).format('DD/MM/YYYY');
-        }
-        
-        // Strings
-        const stringValue = String(value).trim();
-        return stringValue.charAt(0).toUpperCase() + stringValue.slice(1);
+        if (field === 'createdAt' || field === 'updatedAt') return moment(value).format('DD/MM/YYYY');
+        return String(value).trim().charAt(0).toUpperCase() + String(value).trim().slice(1);
     };
 
-    // 🏷️ TRADUCIR NOMBRES DE CAMPOS
     const translateField = (field) => {
         const translations = {
-            // Campos base
             'categorie': 'Catégorie',
             'subCategory': 'Sous-catégorie',
             'articleType': "Type d'article",
@@ -156,8 +164,6 @@ const DescriptionPost = ({ post }) => {
             'views': 'Vues',
             'createdAt': 'Publié le',
             'description': 'Description',
-            
-            // Automobile
             'marque': 'Marque',
             'modele': 'Modèle',
             'annee': 'Année',
@@ -171,8 +177,6 @@ const DescriptionPost = ({ post }) => {
             'portes': 'Nombre de portes',
             'premiereMain': 'Première main',
             'garantie': 'Garantie',
-            
-            // Immobilier
             'surface': 'Surface',
             'chambres': 'Chambres',
             'sallesBain': 'Salles de bain',
@@ -184,8 +188,6 @@ const DescriptionPost = ({ post }) => {
             'chauffage': 'Chauffage',
             'piscine': 'Piscine',
             'ascenseur': 'Ascenseur',
-            
-            // Électronique
             'ram': 'RAM',
             'stockage': 'Stockage',
             'processeur': 'Processeur',
@@ -195,37 +197,24 @@ const DescriptionPost = ({ post }) => {
             'systeme': "Système d'exploitation",
             'connectivite': 'Connectivité',
             'couleur': 'Couleur',
-            
-            // Mode
             'taille': 'Taille',
             'matiere': 'Matière',
-            'couleur': 'Couleur',
-            'marque': 'Marque',
             'genre': 'Genre',
             'age': 'Âge',
-            
-            // Maison & Jardin
             'type': 'Type',
-            'marque': 'Marque',
-            'matiere': 'Matière',
             'dimensions': 'Dimensions',
             'poids': 'Poids',
-            
-            // Services
             'duree': 'Durée',
             'disponibilite': 'Disponibilité',
             'tarif': 'Tarif',
             'zone': 'Zone de service'
         };
-        
         return translations[field] || field;
     };
 
     // 📊 FILTRAR Y ORDENAR CAMPOS
     const getFieldsToDisplay = useMemo(() => {
         if (!postData) return [];
-        
-        // Campos a excluir
         const excludeFields = [
             '_id', '__v', 'user', 'categorySpecificData', 'images',
             'updatedAt', 'isActive', 'likes', 'comments',
@@ -233,63 +222,42 @@ const DescriptionPost = ({ post }) => {
             'wilaya', 'commune', 'address',
             'phone', 'email', 'website'
         ];
-        
-        // Campos base que siempre queremos mostrar
         const baseFields = ['categorie', 'subCategory', 'articleType', 'etat', 'price', 'views', 'createdAt'];
-        
-        // Obtener todos los campos disponibles
+
         const fields = Object.keys(postData).filter(field => {
-            // Excluir campos internos
             if (excludeFields.includes(field)) return false;
-            
             const value = postData[field];
-            
-            // Excluir valores vacíos
             if (value === undefined || value === null || value === '') return false;
-            
-            // Excluir arrays vacíos
             if (Array.isArray(value) && value.length === 0) return false;
-            
             return true;
         });
-        
-        // Combinar campos base con otros campos
+
         const allFields = [...new Set([...baseFields, ...fields])];
-        
-        // Orden de prioridad
+
         const priorityOrder = [
             'categorie', 'subCategory', 'articleType', 'etat', 'price',
-            // Auto
             'marque', 'modele', 'annee', 'kilometrage', 'carburant', 'boiteVitesse', 'couleurExterieur', 'couleurInterieur', 'places', 'portes', 'premiereMain', 'garantie',
-            // Immobilier
             'surface', 'chambres', 'sallesBain', 'etage', 'meuble', 'jardin', 'parking', 'climatisation', 'chauffage', 'piscine', 'ascenseur',
-            // Électronique
             'ram', 'stockage', 'processeur', 'ecran', 'camera', 'batterie', 'systeme', 'connectivite', 'couleur',
-            // Mode
             'taille', 'matiere', 'couleur', 'marque', 'genre', 'age',
-            // Maison & Jardin
             'type', 'marque', 'matiere', 'dimensions', 'poids',
-            // Services
             'duree', 'disponibilite', 'tarif', 'zone',
             'views', 'createdAt'
         ];
-        
+
         return allFields.sort((a, b) => {
-            const indexA = priorityOrder.indexOf(a);
-            const indexB = priorityOrder.indexOf(b);
-            
-            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-            if (indexA !== -1) return -1;
-            if (indexB !== -1) return 1;
+            const ia = priorityOrder.indexOf(a);
+            const ib = priorityOrder.indexOf(b);
+            if (ia !== -1 && ib !== -1) return ia - ib;
+            if (ia !== -1) return -1;
+            if (ib !== -1) return 1;
             return a.localeCompare(b);
         });
     }, [postData]);
 
-    // 🏷️ RENDER HEADER (Título y descripción)
     const renderHeader = () => {
         const title = postData.title || 'Annonce';
         const description = postData.description;
-        
         return (
             <Card className="border-0 shadow-sm mb-4">
                 <Card.Header className="bg-white border-bottom py-3">
@@ -312,33 +280,45 @@ const DescriptionPost = ({ post }) => {
         );
     };
 
-    // ✅ RENDER CAMPO (estilo exacto como UserInfo)
     const FieldItem = ({ field }) => {
-        const value = postData[field];
-        const formattedValue = formatValue(field, value);
-        
-        if (!formattedValue) return null;
-        
-        const icon = getFieldIcon(field);
-        const label = translateField(field);
-        
+        // Ocultar subCategory y articleType si ya se muestran en la ruta de categoría
+        if ((field === 'subCategory' || field === 'articleType') && postData.categorie) return null;
+
+        let displayValue;
+        let displayIcon;
+        let displayLabel;
+
+        if (field === 'categorie') {
+            const categoryDisplay = getCategoryDisplay();
+            if (!categoryDisplay) return null;
+            displayValue = categoryDisplay;
+            displayIcon = '🏷️';
+            displayLabel = 'Catégorie';
+        } else {
+            const value = postData[field];
+            displayValue = formatValue(field, value);
+            if (!displayValue) return null;
+            displayIcon = getFieldIcon(field);
+            displayLabel = translateField(field);
+        }
+
         return (
             <div className="p-3 border-bottom">
                 <div className="d-flex align-items-center justify-content-between">
                     <div className="d-flex align-items-center">
                         <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
-                            {icon}
+                            {displayIcon}
                         </div>
-                        <span className="text-muted me-2">{label}:</span>
+                        <span className="text-muted me-2">{displayLabel}:</span>
                     </div>
                     <div className="d-flex align-items-center">
                         {field === 'price' ? (
                             <span className="fw-bold" style={{ color: '#dc2626' }}>
-                                {formattedValue}
+                                {displayValue}
                             </span>
                         ) : (
                             <span className="fw-bold text-dark">
-                                {formattedValue}
+                                {displayValue}
                             </span>
                         )}
                     </div>
@@ -347,7 +327,6 @@ const DescriptionPost = ({ post }) => {
         );
     };
 
-    // ✅ VALIDACIONES
     if (!post) {
         return (
             <div className="text-center py-5">
@@ -358,15 +337,12 @@ const DescriptionPost = ({ post }) => {
             </div>
         );
     }
-    
+
     const fieldsToDisplay = getFieldsToDisplay;
 
     return (
         <div className="description-post-container">
-            {/* HEADER */}
             {renderHeader()}
-            
-            {/* DÉTAILS SPÉCIFIQUES */}
             {fieldsToDisplay.length > 0 && (
                 <Card className="border-0 shadow-sm mb-4">
                     <Card.Header className="bg-white border-bottom py-3">
@@ -382,8 +358,6 @@ const DescriptionPost = ({ post }) => {
                     </Card.Body>
                 </Card>
             )}
-            
-            {/* BOTÓN RETOUR */}
             <div className="d-flex justify-content-center mt-4">
                 <button 
                     className="btn btn-outline-secondary py-2 px-4"

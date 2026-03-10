@@ -119,7 +119,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
     return category?.subcategories2?.[level1Id] || category?.properties?.[level1Id] || [];
   };
 
-  // 🔄 INICIALIZAR CON POSTDATA
+  // 🔄 INICIALIZAR CON POSTDATA - MEJORADO
   useEffect(() => {
     if (!isInitialized && !accordionLoading && categories.length > 0 && categoryHierarchy) {
       const { categorie, subCategory, articleType } = postData;
@@ -134,37 +134,58 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           const categoryData = categoryHierarchy[mainCategory.id];
           if (categoryData) {
             const level1Items = getCategoryItems(mainCategory.id);
-            
-            // Buscar subcategoría
             let level1Item = null;
+            let level2Item = null;
+
+            // Intento 1: buscar nivel2 con subCategory
             if (subCategory) {
               level1Item = level1Items.find(item => 
                 item.id === subCategory || item.name === subCategory
               );
             }
-            
+
+            // Intento 2: si no se encontró nivel2, buscar como nivel3 (artículo)
+            if (!level1Item && subCategory) {
+              for (const l1 of level1Items) {
+                if (l1.hasSublevel) {
+                  const level2Items = getLevel2Items(mainCategory.id, l1.id);
+                  level2Item = level2Items.find(item => 
+                    item.id === subCategory || item.name === subCategory
+                  );
+                  if (level2Item) {
+                    level1Item = l1; // el nivel2 es este
+                    break;
+                  }
+                }
+              }
+            }
+
             if (level1Item) {
               const newSelected = {
                 category: mainCategory.id,
                 level1: level1Item.id,
                 level2: null
               };
-              
-              // Buscar artículo específico
-              if (articleType && level1Item.hasSublevel) {
-                const level2Items = getLevel2Items(mainCategory.id, level1Item.id);
-                const level2Item = level2Items.find(item => 
-                  item.id === articleType || item.name === articleType
-                );
-                
-                if (level2Item) {
-                  newSelected.level2 = level2Item.id;
-                  setExpandedSubcategories({
-                    [`${mainCategory.id}-${level1Item.id}`]: true
-                  });
+
+              // Buscar artículo (nivel3) si existe
+              if (articleType || (level2Item && level2Item.id)) {
+                const targetArticle = articleType || (level2Item ? level2Item.id : null);
+                if (targetArticle && level1Item.hasSublevel) {
+                  const level2Items = getLevel2Items(mainCategory.id, level1Item.id);
+                  const foundLevel2 = level2Items.find(item => 
+                    item.id === targetArticle || item.name === targetArticle
+                  );
+                  if (foundLevel2) {
+                    newSelected.level2 = foundLevel2.id;
+                    // 🔥 FORZAR EXPANSIÓN DE LA SUBCATEGORÍA
+                    setExpandedSubcategories(prev => ({
+                      ...prev,
+                      [`${mainCategory.id}-${level1Item.id}`]: true
+                    }));
+                  }
                 }
               }
-              
+
               setSelectedItems(newSelected);
             }
           }
@@ -175,15 +196,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
     }
   }, [accordionLoading, categories, categoryHierarchy, postData, isInitialized]);
 
-  // 🎯 HANDLERS ACTUALIZADOS PARA CONECTAR CON COMPONENTES
-  const handleMainCategoryToggle = (categoryId) => {
-    if (activeMainCategory === categoryId) {
-      setActiveMainCategory(null);
-    } else {
-      setActiveMainCategory(categoryId);
-    }
-  };
-
+  // 🎯 HANDLER PARA SUBCATEGORÍA (NIVEL 2)
   const handleSubcategoryClick = (categoryId, level1Id, level1Item) => {
     const category = categoryHierarchy[categoryId];
     if (!category) return;
@@ -196,71 +209,65 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
     };
     setSelectedItems(newSelected);
 
-    // 🎯 CRÍTICO: Para categorías SIN subniveles (2 niveles totales)
+    // Para categorías SIN subniveles (2 niveles totales)
     if (!level1Item.hasSublevel) {
       console.log('✅ Selección de 2 niveles completada');
       console.log('🎯 Datos a enviar:', {
-        categorie: categoryId,          // Ej: "vetements"
-        subCategory: level1Id,         // Ej: "vetements-homme"
-        articleType: level1Id          // Mismo que subCategory
+        categorie: categoryId,
+        subCategory: level1Id,
+        articleType: level1Id
       });
       
-      // 🔄 CONEXIÓN CON COMPONENTES: Enviar datos para DynamicFieldManager
+      // 🔄 Enviar slugs al padre
       handleChangeInput({ target: { name: 'categorie', value: categoryId } });
       handleChangeInput({ target: { name: 'subCategory', value: level1Id } });
       handleChangeInput({ target: { name: 'articleType', value: level1Id } });
 
-      // Llamar a onComplete para avanzar al siguiente paso
       setTimeout(() => onComplete && onComplete(), 150);
       return;
     }
 
-    // 🎯 Para categorías CON subniveles (3 niveles)
+    // Para categorías CON subniveles (3 niveles)
     const key = `${categoryId}-${level1Id}`;
     setExpandedSubcategories(prev => ({
       ...prev,
       [key]: !prev[key]
     }));
 
-    // Solo actualizar articleType temporalmente
+    // Actualizar temporalmente articleType
     handleChangeInput({ target: { name: 'articleType', value: level1Id } });
   };
 
+  // 🎯 HANDLER PARA ARTÍCULO (NIVEL 3)
   const handleLevel2Select = (categoryId, level1Id, level2Id) => {
     const category = categoryHierarchy[categoryId];
     if (!category || !level1Id || !level2Id) return;
 
-    // Obtener nombres
-    const level1Items = getCategoryItems(categoryId);
-    const level1Item = level1Items.find(item => item.id === level1Id);
-    const level1Name = level1Item?.name || level1Id;
-    
-    const level2Items = getLevel2Items(categoryId, level1Id);
-    const level2Item = level2Items.find(item => item.id === level2Id);
-    const level2Name = level2Item?.name || level2Id;
-
     console.log('✅ Selección de 3 niveles completada');
     console.log('🎯 Datos a enviar:', {
-      categorie: categoryId,          // Ej: "vetements"
-      subCategory: level2Name,        // Ej: "Hauts & Chemises" (NOMBRE del nivel 3)
-      articleType: level2Id,          // Ej: "vetements-hauts-chemises-homme" (SLUG del nivel 3)
-      level1Name: level1Name          // Para referencia
+      categorie: categoryId,
+      subCategory: level1Id,
+      articleType: level2Id
     });
 
-    // Actualizar estado
+    // Actualizar estado local
     setSelectedItems({
       category: categoryId,
       level1: level1Id,
       level2: level2Id
     });
 
-    // 🔄 CONEXIÓN CON COMPONENTES: Enviar datos CORRECTOS
-    // DynamicFieldManager usa subCategory (NOMBRE) para cargar componentes
-    handleChangeInput({ target: { name: 'categorie', value: categoryId } });
-    handleChangeInput({ target: { name: 'subCategory', value: level2Name } }); // ← NOMBRE del nivel 3
-    handleChangeInput({ target: { name: 'articleType', value: level2Id } });   // ← SLUG del nivel 3
+    // 🔥 Asegurar que la subcategoría esté expandida
+    setExpandedSubcategories(prev => ({
+      ...prev,
+      [`${categoryId}-${level1Id}`]: true
+    }));
 
-    // Llamar a onComplete para avanzar
+    // 🔄 Enviar slugs al padre
+    handleChangeInput({ target: { name: 'categorie', value: categoryId } });
+    handleChangeInput({ target: { name: 'subCategory', value: level1Id } }); // slug nivel 2
+    handleChangeInput({ target: { name: 'articleType', value: level2Id } }); // slug nivel 3
+
     setTimeout(() => onComplete && onComplete(), 150);
   };
 
@@ -598,7 +605,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
             className="main-category-item"
           >
             <Accordion.Header
-              onClick={() => handleMainCategoryToggle(category.id)}
+              onClick={() => setActiveMainCategory(activeMainCategory === category.id ? null : category.id)}
               className="main-category-header"
             >
               <div className="main-category-content">
@@ -722,12 +729,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           font-size: 1.1rem;
           font-weight: 600;
           color: #212529;
-        }
-        
-        .category-type-badge .badge {
-          font-size: 0.75rem;
-          padding: 4px 8px;
-          font-weight: 500;
         }
         
         .category-status {
@@ -864,7 +865,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           padding: 2px 6px;
         }
         
-        /* Nivel 2 - Contenido expandido */
+        /* Nivel 3 - Contenido expandido */
         .level2-container {
           background: #f1f3f4;
           border-top: 1px solid #dee2e6;

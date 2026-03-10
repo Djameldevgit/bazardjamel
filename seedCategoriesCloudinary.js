@@ -525,7 +525,7 @@ const categoriesData = [
     icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1/icons/emploi/emploi.png',
     order: 13,
     children: [
-      { name: 'Offres d\'emploi', slug: 'offres-emploi', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1/icons/emploi/emploi.png', order: 1, children: [] },
+      { name: 'Offres d\'emploi', slug: 'offres-emploi', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1773033270/11_juwumq.png', order: 1, children: [] },
       { name: 'Demandes d\'emploi', slug: 'demandes-emploi', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1/icons/emploi/emploi.png', order: 2, children: [] },
       { name: 'Autres services emploi', slug: 'autres-services-emploi', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1/icons/emploi/emploi.png', order: 3, children: [] }
     ]
@@ -1351,7 +1351,8 @@ const categoriesData = [
       { name: 'Location de voitures', slug: 'location-voitures', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1/icons/vehicules/voitures.png', order: 7, children: [] },
       { name: 'Réparation & Services Véhicules', slug: 'reparation-services-vehicules', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1/icons/vehicules/vehicules.png', order: 8, children: [] },
       { name: 'Téléphones & Accessoires', slug: 'telephones-accessoires', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/marketplace/icons/boutiques/telephones-accessoires.png', order: 9, children: [] },
-      { name: 'Magasin d\'informatique', slug: 'magasin-informatique', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1/icons/informatique/informatique.png', order: 10, children: [] },
+     { name: 'Magasin d\'informatique', slug: 'magasin-informatique', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1/icons/informatique/informatique.png', order: 10, children: [] },
+     
       { name: 'Magasin d\'électroménager', slug: 'magasin-electromenager', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1/icons/electromenager/electromenager.png', order: 11, children: [] },
       { name: 'Equipements de sécurité', slug: 'equipements-securite', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/marketplace/icons/boutiques/equipements-securite.png', order: 12, children: [] },
       { name: 'Audiovisuel', slug: 'audiovisuel', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/marketplace/icons/boutiques/audiovisuel.png', order: 13, children: [] },
@@ -1362,6 +1363,7 @@ const categoriesData = [
       { name: 'Meubles de bureau', slug: 'meubles-et-bureau', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/marketplace/icons/boutiques/meubles-et-bureau.png', order: 18, children: [] },
       { name: 'Vaisselles', slug: 'vaisselles', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/marketplace/icons/boutiques/vaisselles.png', order: 19, children: [] },
       { name: 'Puéricultures & Jouets', slug: 'puericultures-jouets', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1/icons/loisirs/jouets.png', order: 20, children: [] },
+    
       { name: 'Jardinage', slug: 'jardinages', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1/icons/loisirs/jardinage.png', order: 21, children: [] },
       { name: 'Fournitures & Articles scolaires', slug: 'fournitures-articles-scolaires', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/marketplace/icons/boutiques/fournitures-articles-scolaires.png', order: 22, children: [] },
       { name: 'Articles de sport', slug: 'articles-sport', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1/icons/sport/sport.png', order: 23, children: [] },
@@ -1372,6 +1374,7 @@ const categoriesData = [
       { name: 'Outillages & Quincaillerie', slug: 'outillages-quincaillerie', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/marketplace/icons/boutiques/outillages-quincaillerie.png', order: 28, children: [] },
       { name: 'Matériaux de construction', slug: 'materiaux-et-construction', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/marketplace/icons/boutiques/materiaux-et-onstruction.png', order: 29, children: [] },
       { name: 'Matériel professionnel', slug: 'materiel-et-professionnel', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/marketplace/icons/boutiques/materiel-et-professionnel.png', order: 30, children: [] },
+     
       { name: 'Matières premières', slug: 'matieres-et-premieres', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/marketplace/icons/boutiques/matieres-et-premieres.png', order: 31, children: [] },
       { name: 'Agences de voyages', slug: 'agences-voyages', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1/icons/voyages/voyages.png', order: 32, children: [] },
       { name: 'Animalerie', slug: 'animaleries', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1/icons/loisirs/animalerie.png', order: 33, children: [] },
@@ -1382,6 +1385,7 @@ const categoriesData = [
       { name: 'Publicité & Communication', slug: 'publicite-et-communication', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/marketplace/icons/boutiques/publicite-et-communication.png', order: 38, children: [] },
       { name: 'Service de Nettoyage & Entretien', slug: 'service-nettoyage-entretien', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1/icons/pieces-detachees/nettoyage-entretien.png', order: 39, children: [] },
       { name: 'Froid & Climatisation', slug: 'froid-et-climatisation', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/marketplace/icons/boutiques/froid-et-climatisation.png', order: 40, children: [] },
+     
       { name: 'Traiteur & Gateaux', slug: 'traiteur-gateaux', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1/icons/alimentaires/gateaux.png', order: 41, children: [] },
       { name: 'Hôtels', slug: 'hotels', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/marketplace/icons/boutiques/hotels.png', order: 42, children: [] },
       { name: 'Restaurants & Salles des fêtes', slug: 'restaurants-salles-fetes', level: 2, icon: 'https://res.cloudinary.com/dfjipgj2o/image/upload/marketplace/icons/boutiques/restaurants-salles-fetes.png', order: 43, children: [] },

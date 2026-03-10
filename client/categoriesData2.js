@@ -1,11 +1,11 @@
 // node categoriesData2.js
-// Script para crear carpetas organizadas por categoría en /public/icons/
+// Script para crear carpetas organizadas por categoría en /public/categories/
 
 const fs = require('fs');
 const path = require('path');
 
-// Ruta base - /public/icons/
-const basePath = path.join(__dirname, 'public', 'icons');
+// Ruta base - /public/categories/
+const basePath = path.join(__dirname, 'public', 'categories');
 
 // Estructura completa de categorías con niveles 1, 2 y 3
 // Las rutas ahora coinciden exactamente con el seed de MongoDB
@@ -189,10 +189,64 @@ const categories = {
   // ==================== 16. BOUTIQUES ====================
   "boutiques": {
     "level1": ["boutiques.png"],
-    "level2": ["boutique-vehicules.png", "boutique-vetements.png", "boutique-electromenager.png", "boutique-immobilier.png", "boutique-alimentaire.png", "boutique-emploi.png", "boutique-informatique.png", "boutique-loisirs.png", "boutique-materiaux.png", "boutique-meubles.png", "boutique-pieces-detachees.png", "boutique-sante-beaute.png", "boutique-services.png", "boutique-sport.png", "boutique-voyages.png", "boutique-telephone.png"],
+    "level2": [
+      "agences-immobilieres.png",
+      "promotions-immobilieres.png",
+      "showroom-automobiles.png",
+      "showroom-moto.png",
+      "camions-engins.png",
+      "pieces-accessoires-vehicules.png",
+      "location-voitures.png",
+      "reparation-services-vehicules.png",
+      "telephones-accessoires.png",
+      "magasin-informatique.png",
+
+      "magasin-electromenager.png",
+      "equipements-securite.png",
+      "audiovisuel.png",
+      "electronique.png",
+      "vetements-accessoires-mode.png",
+      "cosmetiques-et-beaute.png",
+      "maison-meubles.png",
+      "meubles-et-bureau.png",
+      "vaisselles.png",
+      "puericultures-jouets.png",
+
+      "jardinages.png",
+      "fournitures-articles-scolaires.png",
+       "articles-sport.png",
+      "consoles-jeux-video.png",
+      "librairie-papeterie.png",
+      "instruments-et-musique.png",
+      "chasse-et-peche.png",
+      "outillages-quincaillerie.png",
+      "materiaux-et-construction.png",
+      "materiel-et-professionnel.png",
+
+      "matieres-et-premieres.png",
+      "agences-voyages.png",
+      "animaleries.png",
+      "alimentaire.png",
+      "transport-et-demenagement.png",
+      "travaux-construction-amenagement.png",
+      "ecoles-et-formations.png",
+      "publicite-et-communication.png",
+      "service-nettoyage-entretien.png",
+      "froid-et-climatisation.png",
+
+      "traiteur-gateaux.png",
+      "hotels.png",
+      "restaurants-salles-fetes.png",
+      "services-sante.png",
+      "etudes-consulting.png",
+      "logiciel-web-services.png",
+      "esthetique-bien-etre.png",
+ "comptabilite-finance.png",
+      "couture-et-confection.png",
+      "reparation-electronique-electromenager.png"
+    ],
     "level3": {}
   },
-
   // ==================== 17. TELEPHONE ====================
   "telephone": {
     "level1": ["telephone.png"],
@@ -283,7 +337,7 @@ function createFolders(base, obj) {
 }
 
 // Ejecutar
-console.log('🚀 Iniciando creación de estructura organizada de iconos en /public/icons/');
+console.log('🚀 Iniciando creación de estructura organizada de iconos en /public/categories');
 console.log('📂 Ruta base:', basePath);
 console.log('='.repeat(50));
 
@@ -297,7 +351,7 @@ console.log(`   • ${stats.totalLevel3} iconos de nivel 3`);
 console.log(`   • TOTAL: ${stats.totalLevel1 + stats.totalLevel2 + stats.totalLevel3} iconos`);
 console.log(`   • ${Object.keys(categories).length} categorías principales`);
 console.log('\n📂 Estructura creada:');
-console.log('   /public/icons/');
+console.log('   /public/categories/');
 Object.keys(categories).forEach(cat => {
   console.log(`   ├── ${cat}/`);
   console.log(`   │   ├── (archivos level1 .png)`);
@@ -309,7 +363,7 @@ Object.keys(categories).forEach(cat => {
 console.log('\n✅ PROCESO COMPLETADO');
 console.log('\n📝 NOTAS:');
 console.log('   • Los archivos están organizados por categoría y jerarquía');
-console.log('   • Ruta completa: /public/icons/categoría/archivo.png');
-console.log('   • Para nivel 3: /public/icons/categoría/subcategoría/archivo.png');
+console.log('   • Ruta completa: /public/categories/categoría/archivo.png');
+console.log('   • Para nivel 3: /public/categories/categoría/subcategoría/archivo.png');
 console.log('   • Coinciden exactamente con las rutas del seed de MongoDB');
 console.log('   • Son placeholders vacíos - reemplázalos con tus imágenes reales');

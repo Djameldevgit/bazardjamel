@@ -14,15 +14,16 @@ const HeaderCarousel = memo(() => {
   
   // ===== URLs DIRECTAS DE CLOUDINARY =====
   const mainImages = [
-    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773016206/caoumiajj_zrdhuz.jpg",
-    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773017994/caoumiajj2j_xyolln.png",
-    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773017058/caoumiajj2_hnbg0o.jpg",
+    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773122597/caoumiajj2j_g28c7e.png",
+     
+    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773122713/caoumiajj2_isoynj.jpg",
+    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773122775/caoumiajj_u6fu7u.jpg",
   ];
 
   const sideImages = [
-    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773004688/00kras_whzeyt.webp",
-    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1772673017/header/carousel-side/side2.jpg",
-    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1772673019/header/carousel-side/side3.png",
+    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773122893/carousjhjhj2_ra5znt.png",
+    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773122901/carousjhjhj_rdunbx.png",
+    
   ];
 
   const [images] = useState({
@@ -329,7 +330,7 @@ const HeaderCarousel = memo(() => {
 
   // Versión desktop (carrusel principal + lateral)
   return (
-    <Container fluid style={{ padding: '10px 5px 0px 5px', backgroundColor: '#CACECF' }}>
+    <Container fluid style={{ padding: '10px 5px 5px 5px', backgroundColor: '#CACECF' }}>
       <Row className="g-0">
         {/* CARRUSEL PRINCIPAL: con padding right 5px para separación del lateral */}
         <Col lg={9} md={12} style={{ paddingRight: '5px' }}>
@@ -362,25 +363,7 @@ const HeaderCarousel = memo(() => {
               {images.side.map((img, idx) => renderSideSlide(img, idx))}
             </Carousel>
           </div>
-          <div className="d-flex justify-content-center">
-            {images.main.map((_, idx) => (
-              <button 
-                key={idx} 
-                onClick={() => handleMainSelect(idx)} 
-                style={{ 
-                  width: '10px', 
-                  height: '10px', 
-                  borderRadius: '50%', 
-                  border: 'none', 
-                  margin: '0 3px', 
-                  cursor: 'pointer', 
-                  backgroundColor: currentIndex === idx ? '#8b5cf6' : '#dee2e6', 
-                  transition: 'all 0.3s ease' 
-                }} 
-                aria-label={`Go to slide ${idx + 1}`} 
-              />
-            ))}
-          </div>
+          
         </Col>
       </Row>
     </Container>

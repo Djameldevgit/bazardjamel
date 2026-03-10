@@ -46,25 +46,14 @@ const CreateAnnoncePage = () => {
   const [alert, setAlert] = useState({ show: false, message: '', variant: 'info' });
   const [isLoadingEditData, setIsLoadingEditData] = useState(true);
   const [hasManuallyGoneBack, setHasManuallyGoneBack] = useState(false);
-  // Estado para controlar si los datos de edición ya están cargados
   const [editDataLoaded, setEditDataLoaded] = useState(false);
 
   // ============ EFECTOS ============
 
   // 📥 Cargar categorías para el accordion
   useEffect(() => {
-    console.log('🔄 Cargando categorías para accordion...');
-
     if (categoryState.accordionCategories?.length === 0 && !categoryState.accordionLoading) {
-      dispatch(getCategoriesForAccordion())
-        .then(result => {
-          if (result.success) {
-            console.log('✅ Categorías para accordion cargadas:', result.categories?.length);
-          }
-        })
-        .catch(error => {
-          console.error('❌ Error cargando categorías:', error);
-        });
+      dispatch(getCategoriesForAccordion());
     }
   }, [dispatch, categoryState.accordionCategories, categoryState.accordionLoading]);
 
@@ -81,23 +70,52 @@ const CreateAnnoncePage = () => {
       try {
         let postDataToLoad = postToEdit;
 
-        console.log('📝 Cargando datos de edición...');
-
         if (postId) {
-          console.log('🔍 Fetching post from backend with ID:', postId);
           const res = await axios.get(`${BASE_URL}/api/posts/${postId}`);
           postDataToLoad = res.data.post;
         }
 
         if (postDataToLoad) {
-          console.log('📋 Post data to load:', postDataToLoad);
+          console.log('📦 postDataToLoad original:', {
+            categorie: postDataToLoad.categorie,
+            subCategory: postDataToLoad.subCategory,
+            articleType: postDataToLoad.articleType
+          });
 
-          // Cargar datos de categoría
-          const loadedCategoryData = {
+          // ===== CORRECCIÓN: Reconstruir slugs correctos si están mal guardados =====
+          let loadedCategoryData = {
             categorie: postDataToLoad.categorie || '',
             subCategory: postDataToLoad.subCategory || '',
             articleType: postDataToLoad.articleType || ''
           };
+
+          // Si subCategory parece ser un artículo (nivel 3) y articleType está vacío,
+          // intentamos reconstruir usando la jerarquía de categorías
+          if (loadedCategoryData.subCategory && !loadedCategoryData.articleType) {
+            const categories = categoryState.accordionCategories || [];
+            const mainCat = categories.find(c => 
+              c.slug === loadedCategoryData.categorie || c.name === loadedCategoryData.categorie
+            );
+            if (mainCat) {
+              // Buscar si subCategory coincide con algún artículo (nivel 3)
+              for (const level1 of mainCat.children || []) {
+                const level2 = level1.children?.find(ch => 
+                  ch.slug === loadedCategoryData.subCategory || ch.name === loadedCategoryData.subCategory
+                );
+                if (level2) {
+                  // Encontramos: el verdadero nivel2 es level1.slug, y el artículo es level2.slug
+                  loadedCategoryData = {
+                    categorie: mainCat.slug,
+                    subCategory: level1.slug,
+                    articleType: level2.slug
+                  };
+                  break;
+                }
+              }
+            }
+          }
+
+          console.log('📦 postDataToLoad corregido:', loadedCategoryData);
 
           // Cargar datos comunes
           const excludeFromCommon = [
@@ -108,10 +126,7 @@ const CreateAnnoncePage = () => {
 
           const loadedCommonData = {};
           Object.entries(postDataToLoad).forEach(([key, value]) => {
-            if (!excludeFromCommon.includes(key) &&
-              value !== undefined &&
-              value !== null &&
-              value !== '') {
+            if (!excludeFromCommon.includes(key) && value !== undefined && value !== null && value !== '') {
               loadedCommonData[key] = value;
             }
           });
@@ -124,17 +139,9 @@ const CreateAnnoncePage = () => {
           if (postDataToLoad.images && Array.isArray(postDataToLoad.images)) {
             postDataToLoad.images.forEach((img, index) => {
               if (typeof img === 'string') {
-                loadedImages.push({
-                  url: img,
-                  public_id: `existing_${index}`,
-                  isExisting: true
-                });
+                loadedImages.push({ url: img, public_id: `existing_${index}`, isExisting: true });
               } else if (img && img.url) {
-                loadedImages.push({
-                  url: img.url,
-                  public_id: img.public_id || `existing_${index}`,
-                  isExisting: true
-                });
+                loadedImages.push({ url: img.url, public_id: img.public_id || `existing_${index}`, isExisting: true });
               }
             });
           }
@@ -144,77 +151,48 @@ const CreateAnnoncePage = () => {
           setCommonData(loadedCommonData);
           setSpecificData(loadedSpecificData);
           setImages(loadedImages);
-          
-          // Marcar que los datos están cargados pero MANTENER STEP 1
           setEditDataLoaded(true);
-          
-          // Mensaje informativo
-          setAlert({
-            show: true,
-            message: "📝 Mode édition activé",
-            variant: "info"
-          });
+
+          setAlert({ show: true, message: "📝 Mode édition activé", variant: "info" });
 
         } else {
-          setAlert({
-            show: true,
-            message: "⚠️ Impossible de charger les données",
-            variant: "warning"
-          });
+          setAlert({ show: true, message: "⚠️ Impossible de charger les données", variant: "warning" });
         }
-
       } catch (error) {
         console.error('❌ Error loading edit data:', error);
-        setAlert({
-          show: true,
-          message: `❌ Erreur: ${error.message}`,
-          variant: "danger"
-        });
+        setAlert({ show: true, message: `❌ Erreur: ${error.message}`, variant: "danger" });
       } finally {
         setIsLoadingEditData(false);
       }
     };
 
     loadEditData();
-  }, [isEdit, postId, postToEdit]);
+  }, [isEdit, postId, postToEdit, categoryState.accordionCategories]);
 
   // ⚡ Auto-avance SOLO para creación, NO para edición
   useEffect(() => {
-    // No auto-avanzar en modo edición
     if (isEdit) return;
-    
+
     if (hasManuallyGoneBack || currentStep !== 1) {
-      if (autoAdvanceTimeout.current) {
-        clearTimeout(autoAdvanceTimeout.current);
-      }
+      if (autoAdvanceTimeout.current) clearTimeout(autoAdvanceTimeout.current);
       return;
     }
 
     const hasCategory = categoryData.categorie && categoryData.subCategory;
 
     if (hasCategory) {
-      if (autoAdvanceTimeout.current) {
-        clearTimeout(autoAdvanceTimeout.current);
-      }
-
+      if (autoAdvanceTimeout.current) clearTimeout(autoAdvanceTimeout.current);
       autoAdvanceTimeout.current = setTimeout(() => {
         const stillHasCategory = categoryData.categorie && categoryData.subCategory;
-
         if (stillHasCategory && currentStep === 1 && !hasManuallyGoneBack) {
           setCurrentStep(2);
-          setAlert({
-            show: true,
-            message: "✅ Catégorie sélectionnée. Complétez les détails.",
-            variant: "success"
-          });
+          setAlert({ show: true, message: "✅ Catégorie sélectionnée. Complétez les détails.", variant: "success" });
         }
       }, 500);
     }
 
     return () => {
-      if (autoAdvanceTimeout.current) {
-        clearTimeout(autoAdvanceTimeout.current);
-      }
+      if (autoAdvanceTimeout.current) clearTimeout(autoAdvanceTimeout.current);
     };
   }, [categoryData.categorie, categoryData.subCategory, currentStep, hasManuallyGoneBack, isEdit]);
 
@@ -227,30 +205,21 @@ const CreateAnnoncePage = () => {
     if (['categorie', 'articleType', 'subCategory'].includes(name)) {
       setCategoryData(prev => {
         const newData = { ...prev, [name]: val };
-
         if (name === 'categorie') {
           newData.articleType = '';
           newData.subCategory = '';
           setSpecificData({});
-          if (currentStep === 1) {
-            setHasManuallyGoneBack(false);
-          }
+          if (currentStep === 1) setHasManuallyGoneBack(false);
         } else if (name === 'articleType' && prev.articleType !== val) {
           setSpecificData({});
         } else if (name === 'subCategory' && prev.subCategory !== val) {
           setSpecificData({});
         }
-
         return newData;
       });
-    }
-    else if (['wilaya', 'commune', 'price', 'description', 'title', 'telephone', 'phone', 'email', 'address', 'etat'].includes(name)) {
-      setCommonData(prev => ({
-        ...prev,
-        [name]: val
-      }));
-    }
-    else {
+    } else if (['wilaya', 'commune', 'price', 'description', 'title', 'telephone', 'phone', 'email', 'address', 'etat'].includes(name)) {
+      setCommonData(prev => ({ ...prev, [name]: val }));
+    } else {
       setSpecificData(prev => {
         if (val === '' || val === undefined || val === null) {
           const { [name]: removed, ...rest } = prev;
@@ -262,95 +231,49 @@ const CreateAnnoncePage = () => {
   }, [currentStep]);
 
   const handleCategorySelect = useCallback((selected) => {
-    console.log('✅ Categoría seleccionada:', selected);
-
     if (selected.categorie) {
-      const categorieEvent = {
-        target: {
-          name: 'categorie',
-          value: selected.categorie
-        }
-      };
-      handleInputChange(categorieEvent);
+      handleInputChange({ target: { name: 'categorie', value: selected.categorie } });
     }
-
     if (selected.subCategory) {
-      const subCategoryEvent = {
-        target: {
-          name: 'subCategory',
-          value: selected.subCategory
-        }
-      };
-      handleInputChange(subCategoryEvent);
+      handleInputChange({ target: { name: 'subCategory', value: selected.subCategory } });
     }
-
     if (selected.articleType) {
-      const articleTypeEvent = {
-        target: {
-          name: 'articleType',
-          value: selected.articleType
-        }
-      };
-      handleInputChange(articleTypeEvent);
+      handleInputChange({ target: { name: 'articleType', value: selected.articleType } });
     }
-
-    setAlert({
-      show: true,
-      message: `✅ "${selected.subCategory || selected.categorie}" sélectionnée`,
-      variant: "success"
-    });
-
+    setAlert({ show: true, message: `✅ "${selected.subCategory || selected.categorie}" sélectionnée`, variant: "success" });
   }, [handleInputChange]);
 
   const handleStepChange = useCallback((newStep) => {
-    if (autoAdvanceTimeout.current) {
-      clearTimeout(autoAdvanceTimeout.current);
-    }
-
+    if (autoAdvanceTimeout.current) clearTimeout(autoAdvanceTimeout.current);
     if (newStep === 1) {
       setHasManuallyGoneBack(true);
     } else if (newStep > currentStep) {
       setHasManuallyGoneBack(false);
     }
-
     setCurrentStep(newStep);
   }, [currentStep]);
 
   const showAlertMessage = useCallback((message, variant = 'info', duration = 4000) => {
     setAlert({ show: true, message, variant });
-    setTimeout(() => {
-      setAlert({ show: false, message: '', variant: 'info' });
-    }, duration);
+    setTimeout(() => setAlert({ show: false, message: '', variant: 'info' }), duration);
   }, []);
 
   const canProceedToNextStep = () => {
     switch (currentStep) {
-      case 1:
-        return categoryData.categorie && categoryData.subCategory;
-      case 2:
-        return commonData.title && commonData.title.trim() !== '' &&
-          commonData.description && commonData.description.trim() !== '';
-      case 3:
-        return commonData.price && commonData.price.toString().trim() !== '';
-      case 4:
-        return commonData.wilaya && commonData.wilaya.toString().trim() !== '' &&
-          commonData.commune && commonData.commune.toString().trim() !== '';
-      case 5:
-        return images.length > 0;
-      default:
-        return true;
+      case 1: return categoryData.categorie && categoryData.subCategory;
+      case 2: return commonData.title && commonData.title.trim() !== '' && commonData.description && commonData.description.trim() !== '';
+      case 3: return commonData.price && commonData.price.toString().trim() !== '';
+      case 4: return commonData.wilaya && commonData.wilaya.toString().trim() !== '' && commonData.commune && commonData.commune.toString().trim() !== '';
+      case 5: return images.length > 0;
+      default: return true;
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if(images.length === 0) {
-      return showAlertMessage("Ajoutez des photos.", "danger");
-    }
 
-    if(!categoryData.categorie || !categoryData.subCategory || 
-       !commonData.title || !commonData.wilaya || !commonData.commune) {
+    if (images.length === 0) return showAlertMessage("Ajoutez des photos.", "danger");
+    if (!categoryData.categorie || !categoryData.subCategory || !commonData.title || !commonData.wilaya || !commonData.commune) {
       return showAlertMessage("Remplissez les champs requis.", "warning");
     }
 
@@ -361,7 +284,6 @@ const CreateAnnoncePage = () => {
         categorie: categoryData.categorie,
         subCategory: categoryData.subCategory,
         articleType: categoryData.articleType || '',
-        
         title: commonData.title,
         description: commonData.description || '',
         price: commonData.price || 0,
@@ -371,57 +293,58 @@ const CreateAnnoncePage = () => {
         address: commonData.address || '',
         phone: commonData.phone || commonData.telephone || '',
         email: commonData.email || '',
-        
         categorySpecificData: specificData
       };
 
       if (isEdit && postToEdit?._id) {
-        await dispatch(updatePost({
-          postId: postToEdit._id,
-          postData: postContent,
-          images, 
-          auth
-        }));
-        
+        await dispatch(updatePost({ postId: postToEdit._id, postData: postContent, images, auth }));
         showAlertMessage('✅ Modifié!', "success");
         setTimeout(() => history.push('/'), 1200);
-        
       } else {
-        await dispatch(createPost({
-          postData: postContent,
-          images,
-          auth,
-          socket
-        }));
-        
+        await dispatch(createPost({ postData: postContent, images, auth, socket }));
         showAlertMessage('✅ Publié!', "success");
         setTimeout(() => history.push('/'), 1200);
       }
-
     } catch (err) {
       console.error('❌ Error:', err);
-      showAlertMessage(
-        err.response?.data?.msg || 
-        err.message || 
-        'Erreur de publication', 
-        "danger"
-      );
+      showAlertMessage(err.response?.data?.msg || err.message || 'Erreur de publication', "danger");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Función para obtener texto completo de categoría
-  const getFullCategoryText = () => {
-    let text = categoryData.categorie;
-    if (categoryData.subCategory) {
-      text += ` → ${categoryData.subCategory}`;
+  // 🆕 Función para obtener nombres de categoría a partir de slugs
+  const getCategoryPathNames = useCallback(() => {
+    const { categorie, subCategory, articleType } = categoryData;
+    const categories = categoryState.accordionCategories || [];
+
+    if (!categorie) return '';
+
+    const mainCat = categories.find(c => c.slug === categorie || c.name === categorie);
+    if (!mainCat) return categorie;
+
+    let path = mainCat.name;
+
+    if (subCategory) {
+      const level1 = mainCat.children?.find(c => c.slug === subCategory || c.name === subCategory);
+      if (level1) {
+        path += ` → ${level1.name}`;
+        if (articleType && articleType !== subCategory) {
+          const level2 = level1.children?.find(c => c.slug === articleType || c.name === articleType);
+          if (level2) {
+            path += ` → ${level2.name}`;
+          } else {
+            path += ` (${articleType})`;
+          }
+        }
+      } else {
+        path += ` → ${subCategory}`;
+      }
     }
-    if (categoryData.articleType && categoryData.articleType !== categoryData.subCategory) {
-      text += ` (${categoryData.articleType})`;
-    }
-    return text;
-  };
+    return path;
+  }, [categoryData, categoryState.accordionCategories]);
+
+  const getFullCategoryText = useCallback(() => getCategoryPathNames(), [getCategoryPathNames]);
 
   const renderCurrentStep = () => {
     if (isLoadingEditData) {
@@ -433,66 +356,39 @@ const CreateAnnoncePage = () => {
       );
     }
 
-    const allPostData = {
-      ...categoryData,
-      ...commonData,
-      ...specificData
-    };
+    const allPostData = { ...categoryData, ...commonData, ...specificData };
 
     switch (currentStep) {
       case 1:
         return (
-          <motion.div
-            key="step1"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="step-content"
-          >
+          <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="step-content">
             <Card className="border-0">
               <Card.Body>
-                <h5 className="text-center mb-3">
-                  {isEdit ? '✏️ Modifier la catégorie' : '🏷️ Sélectionnez une catégorie'}
-                </h5>
+                <h5 className="text-center mb-3">{isEdit ? '✏️ Modifier la catégorie' : '🏷️ Sélectionnez une catégorie'}</h5>
 
-                {/* Banner simple para modo edición - OCUPA POCO ESPACIO */}
                 {isEdit && editDataLoaded && (
                   <div className="alert alert-info py-1 mb-3 small">
                     <div className="d-flex align-items-center">
                       <i className="fas fa-edit me-1 text-info"></i>
-                      <span>
-                        <strong>Édition:</strong> "{commonData.title || 'Sans titre'}"
-                      </span>
+                      <span><strong>Édition:</strong> "{commonData.title || 'Sans titre'}"</span>
                     </div>
                   </div>
                 )}
 
-                {/* Mostrar categoría actual si existe */}
                 {(categoryData.categorie && categoryData.subCategory) && (
                   <div className={`alert ${hasManuallyGoneBack ? 'alert-warning' : 'alert-success'} py-1 mb-3 small`}>
                     <div className="d-flex align-items-center justify-content-between">
                       <div>
                         <i className={`fas fa-${hasManuallyGoneBack ? 'exclamation-triangle' : 'check-circle'} me-1`}></i>
-                        <span>
-                          <strong>Catégorie:</strong> {getFullCategoryText()}
-                        </span>
+                        <span><strong>Catégorie:</strong> {getFullCategoryText()}</span>
                       </div>
                       {hasManuallyGoneBack && (
-                        <Button
-                          variant="outline-primary"
-                          size="sm"
-                          className="py-0 px-2"
-                          onClick={() => {
-                            setCategoryData({
-                              categorie: '',
-                              articleType: '',
-                              subCategory: ''
-                            });
-                            setSpecificData({});
-                            setCommonData({});
-                            setHasManuallyGoneBack(false);
-                          }}
-                        >
+                        <Button variant="outline-primary" size="sm" className="py-0 px-2" onClick={() => {
+                          setCategoryData({ categorie: '', articleType: '', subCategory: '' });
+                          setSpecificData({});
+                          setCommonData({});
+                          setHasManuallyGoneBack(false);
+                        }}>
                           <i className="fas fa-sync-alt"></i>
                         </Button>
                       )}
@@ -500,7 +396,6 @@ const CreateAnnoncePage = () => {
                   </div>
                 )}
 
-                {/* Información de carga */}
                 {categoryState.accordionLoading && (
                   <div className="text-center mb-3">
                     <Spinner size="sm" animation="border" className="me-2" />
@@ -508,18 +403,14 @@ const CreateAnnoncePage = () => {
                   </div>
                 )}
 
-                {/* Componente de categorías - CON SEÑAL DEL ARTÍCULO */}
                 <div className="position-relative">
-                  {/* 🆕 SEÑAL DEL ARTÍCULO SOBRE EL ACCORDION */}
                   {isEdit && editDataLoaded && commonData.title && (
-                    <div className="position-absolute top-0 start-50 translate-middle-x z-index-1" style={{ marginTop: '-10px' }}>
+                    <div className="position-absolute top-0 start-50 translate-middle z-index-1" style={{ marginTop: '-10px' }}>
                       <Badge bg="warning" className="px-3 py-1 shadow-sm">
                         <i className="fas fa-box me-1"></i>
                         <span className="fw-bold">Article: </span>
                         <span className="text-truncate" style={{ maxWidth: '200px' }}>
-                          {commonData.title.length > 30 
-                            ? commonData.title.substring(0, 30) + '...' 
-                            : commonData.title}
+                          {commonData.title.length > 30 ? commonData.title.substring(0, 30) + '...' : commonData.title}
                         </span>
                       </Badge>
                     </div>
@@ -533,16 +424,9 @@ const CreateAnnoncePage = () => {
                   />
                 </div>
 
-                {/* Botón para continuar (siempre visible cuando hay categoría) */}
                 {categoryData.categorie && categoryData.subCategory && (
                   <div className="text-center mt-4">
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      onClick={() => handleStepChange(2)}
-                      disabled={categoryState.accordionLoading}
-                      className="px-5"
-                    >
+                    <Button variant="primary" size="lg" onClick={() => handleStepChange(2)} disabled={categoryState.accordionLoading} className="px-5">
                       {isEdit ? 'Continuer la modification' : 'Continuer'}
                       <i className="fas fa-arrow-right ms-2"></i>
                     </Button>
@@ -557,55 +441,46 @@ const CreateAnnoncePage = () => {
       case 3:
       case 4:
         return (
-          <motion.div
-            key={`step${currentStep}`}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="step-content"
-          >
+          <motion.div key={`step${currentStep}`} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="step-content">
             <Card className="border-0">
               <Card.Body>
-                {/* Banner simple para modo edición */}
                 {isEdit && commonData.title && (
                   <div className="alert alert-warning py-1 mb-3 small">
                     <div className="d-flex align-items-center">
                       <i className="fas fa-edit me-1 text-warning"></i>
-                      <span>
-                        <strong>Édition:</strong> "{commonData.title}"
-                      </span>
+                      <span><strong>Édition:</strong> "{commonData.title}"</span>
                     </div>
                   </div>
                 )}
 
-                {/* Banner de categoría actual */}
                 <div className="mb-3 p-2 bg-light rounded">
                   <div className="d-flex align-items-center">
                     <div className="flex-grow-1">
                       <small className="text-muted">Catégorie:</small>
                       <div>
                         <Badge bg="secondary" className="me-1">
-                          {categoryData.categorie}
+                          {categoryState.accordionCategories?.find(c => c.slug === categoryData.categorie)?.name || categoryData.categorie}
                         </Badge>
                         {categoryData.subCategory && (
-                          <>
-                            <Badge bg="info" className="me-1">
-                              {categoryData.subCategory}
-                            </Badge>
-                          </>
+                          <Badge bg="info" className="me-1">
+                            {categoryState.accordionCategories
+                              ?.find(c => c.slug === categoryData.categorie)
+                              ?.children?.find(ch => ch.slug === categoryData.subCategory)?.name || categoryData.subCategory}
+                          </Badge>
                         )}
                         {categoryData.articleType && categoryData.articleType !== categoryData.subCategory && (
                           <Badge bg="light" text="dark">
-                            {categoryData.articleType}
+                            {(() => {
+                              const main = categoryState.accordionCategories?.find(c => c.slug === categoryData.categorie);
+                              const level1 = main?.children?.find(ch => ch.slug === categoryData.subCategory);
+                              const level2 = level1?.children?.find(gch => gch.slug === categoryData.articleType);
+                              return level2?.name || categoryData.articleType;
+                            })()}
                           </Badge>
                         )}
                       </div>
                     </div>
-                    <Button
-                      variant="outline-secondary"
-                      size="sm"
-                      onClick={() => handleStepChange(1)}
-                    >
+                    <Button variant="outline-secondary" size="sm" onClick={() => handleStepChange(1)}>
                       <i className="fas fa-pencil-alt"></i>
                     </Button>
                   </div>
@@ -630,55 +505,46 @@ const CreateAnnoncePage = () => {
 
       case 5:
         return (
-          <motion.div
-            key="step5"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="step-content"
-          >
+          <motion.div key="step5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="step-content">
             <Card className="border-0">
               <Card.Body>
-                {/* Banner simple para modo edición */}
                 {isEdit && commonData.title && (
                   <div className="alert alert-warning py-1 mb-3 small">
                     <div className="d-flex align-items-center">
                       <i className="fas fa-edit me-1 text-warning"></i>
-                      <span>
-                        <strong>Édition:</strong> "{commonData.title}"
-                      </span>
+                      <span><strong>Édition:</strong> "{commonData.title}"</span>
                     </div>
                   </div>
                 )}
 
-                {/* Banner de categoría actual */}
                 <div className="mb-3 p-2 bg-light rounded">
                   <div className="d-flex align-items-center">
                     <div className="flex-grow-1">
                       <small className="text-muted">Catégorie:</small>
                       <div>
                         <Badge bg="secondary" className="me-1">
-                          {categoryData.categorie}
+                          {categoryState.accordionCategories?.find(c => c.slug === categoryData.categorie)?.name || categoryData.categorie}
                         </Badge>
                         {categoryData.subCategory && (
-                          <>
-                            <Badge bg="info" className="me-1">
-                              {categoryData.subCategory}
-                            </Badge>
-                          </>
+                          <Badge bg="info" className="me-1">
+                            {categoryState.accordionCategories
+                              ?.find(c => c.slug === categoryData.categorie)
+                              ?.children?.find(ch => ch.slug === categoryData.subCategory)?.name || categoryData.subCategory}
+                          </Badge>
                         )}
                         {categoryData.articleType && categoryData.articleType !== categoryData.subCategory && (
                           <Badge bg="light" text="dark">
-                            {categoryData.articleType}
+                            {(() => {
+                              const main = categoryState.accordionCategories?.find(c => c.slug === categoryData.categorie);
+                              const level1 = main?.children?.find(ch => ch.slug === categoryData.subCategory);
+                              const level2 = level1?.children?.find(gch => gch.slug === categoryData.articleType);
+                              return level2?.name || categoryData.articleType;
+                            })()}
                           </Badge>
                         )}
                       </div>
                     </div>
-                    <Button
-                      variant="outline-secondary"
-                      size="sm"
-                      onClick={() => handleStepChange(1)}
-                    >
+                    <Button variant="outline-secondary" size="sm" onClick={() => handleStepChange(1)}>
                       <i className="fas fa-pencil-alt"></i>
                     </Button>
                   </div>
@@ -713,20 +579,10 @@ const CreateAnnoncePage = () => {
 
   return (
     <Container className="py-4" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Alerta */}
       <AnimatePresence>
         {alert.show && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            <Alert
-              variant={alert.variant}
-              dismissible
-              onClose={() => setAlert({ ...alert, show: false })}
-              className="mb-3 py-2"
-            >
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+            <Alert variant={alert.variant} dismissible onClose={() => setAlert({ ...alert, show: false })} className="mb-3 py-2">
               <div className="d-flex align-items-center">
                 <i className={`fas fa-${alert.variant === 'success' ? 'check' : 'exclamation-triangle'} me-2`}></i>
                 <span>{alert.message}</span>
@@ -737,9 +593,7 @@ const CreateAnnoncePage = () => {
       </AnimatePresence>
 
       <div className="text-center mb-4">
-        <h1 className="fw-bold mb-2">
-          {isEdit ? '✏️ Modifier une annonce' : '➕ Publier une annonce'}
-        </h1>
+        <h1 className="fw-bold mb-2">{isEdit ? '✏️ Modifier une annonce' : '➕ Publier une annonce'}</h1>
       </div>
 
       <div className="mb-4">
@@ -754,9 +608,7 @@ const CreateAnnoncePage = () => {
                 >
                   <div className="step-icon-wrapper">
                     <span className="step-icon">{step.icon}</span>
-                    {currentStep >= step.step && (
-                      <span className="step-dot"></span>
-                    )}
+                    {currentStep >= step.step && <span className="step-dot"></span>}
                   </div>
                   <div className="step-label mt-1">
                     <small className={`fw-medium ${currentStep === step.step ? 'text-primary' : 'text-muted'}`}>
@@ -765,7 +617,6 @@ const CreateAnnoncePage = () => {
                   </div>
                 </button>
               </div>
-
               {index < stepTitles.length - 1 && (
                 <div className="step-connector flex-grow-1">
                   <div className={`connector-line ${currentStep > step.step ? 'active' : ''}`}></div>
@@ -777,16 +628,10 @@ const CreateAnnoncePage = () => {
       </div>
 
       <div className="border-0 shadow-sm overflow-hidden rounded">
-        <AnimatePresence mode="wait">
-          {renderCurrentStep()}
-        </AnimatePresence>
+        <AnimatePresence mode="wait">{renderCurrentStep()}</AnimatePresence>
       </div>
 
-      <motion.div
-        className="mt-4 pt-3 border-top"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
+      <motion.div className="mt-4 pt-3 border-top" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <Row className="g-3">
           <Col xs={6}>
             <Button
@@ -796,11 +641,9 @@ const CreateAnnoncePage = () => {
               disabled={currentStep === 1 || isSubmitting}
               className="w-100 py-2"
             >
-              <i className="fas fa-arrow-left me-2"></i>
-              Retour
+              <i className="fas fa-arrow-left me-2"></i> Retour
             </Button>
           </Col>
-
           <Col xs={6}>
             {currentStep < 5 ? (
               <Button
@@ -823,8 +666,7 @@ const CreateAnnoncePage = () => {
                 disabled={isSubmitting || categoryState.accordionLoading || (currentStep === 1 && !categoryData.categorie)}
                 className="w-100 py-2"
               >
-                Suivant
-                <i className="fas fa-arrow-right ms-2"></i>
+                Suivant <i className="fas fa-arrow-right ms-2"></i>
               </Button>
             ) : (
               <Button
@@ -852,86 +694,18 @@ const CreateAnnoncePage = () => {
       </motion.div>
 
       <style jsx>{`
-        .step-content {
-          min-height: 400px;
-          padding: 20px;
-        }
-        
-        .step-indicator {
-          background: none;
-          border: none;
-          padding: 0;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-        
-        .step-indicator.active .step-icon-wrapper {
-          background: #4f46e5;
-          color: white;
-          transform: scale(1.1);
-          box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-        }
-        
-        .step-indicator:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        
-        .step-icon-wrapper {
-          width: 50px;
-          height: 50px;
-          border-radius: 50%;
-          background: #f8f9fa;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 auto;
-          position: relative;
-          transition: all 0.3s ease;
-          border: 3px solid white;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
-        .step-icon {
-          font-size: 20px;
-        }
-        
-        .step-dot {
-          position: absolute;
-          bottom: -4px;
-          right: -4px;
-          width: 16px;
-          height: 16px;
-          background: #10b981;
-          border-radius: 50%;
-          border: 3px solid white;
-        }
-        
-        .step-connector {
-          display: flex;
-          align-items: center;
-          padding: 0 10px;
-        }
-        
-        .connector-line {
-          height: 3px;
-          background: #e9ecef;
-          width: 100%;
-          transition: all 0.3s ease;
-        }
-        
-        .connector-line.active {
-          background: #4f46e5;
-        }
-        
-        .step-label {
-          font-size: 0.85rem;
-          margin-top: 8px;
-        }
-        
-        .z-index-1 {
-          z-index: 1;
-        }
+        .step-content { min-height: 400px; padding: 20px; }
+        .step-indicator { background: none; border: none; padding: 0; cursor: pointer; transition: all 0.2s ease; }
+        .step-indicator.active .step-icon-wrapper { background: #4f46e5; color: white; transform: scale(1.1); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
+        .step-indicator:disabled { opacity: 0.5; cursor: not-allowed; }
+        .step-icon-wrapper { width: 50px; height: 50px; border-radius: 50%; background: #f8f9fa; display: flex; align-items: center; justify-content: center; margin: 0 auto; position: relative; transition: all 0.3s ease; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .step-icon { font-size: 20px; }
+        .step-dot { position: absolute; bottom: -4px; right: -4px; width: 16px; height: 16px; background: #10b981; border-radius: 50%; border: 3px solid white; }
+        .step-connector { display: flex; align-items: center; padding: 0 10px; }
+        .connector-line { height: 3px; background: #e9ecef; width: 100%; transition: all 0.3s ease; }
+        .connector-line.active { background: #4f46e5; }
+        .step-label { font-size: 0.85rem; margin-top: 8px; }
+        .z-index-1 { z-index: 1; }
       `}</style>
     </Container>
   );
