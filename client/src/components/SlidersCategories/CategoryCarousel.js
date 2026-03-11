@@ -18,12 +18,13 @@ const IMAGES_BY_CATEGORY = {
   },
   vetements: {
     main: [
-      'https://images.unsplash.com/photo-1520975928316-56c2d8e4d0d9?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=1200&q=80',
+      'https://res.cloudinary.com/dfjipgj2o/image/upload/v1773190250/caoumiajj2jkkj_d5aupo.jpg',
+      'https://res.cloudinary.com/dfjipgj2o/image/upload/v1773190404/caoumiajj2jk_vlvrcr.jpg',
     ],
     side: [
-      'https://images.unsplash.com/photo-1475180098004-ca48cd668fe0?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=600&q=80',
+      'https://res.cloudinary.com/dfjipgj2o/image/upload/v1773190618/images_7_kde9te.jpg',
+      
+      'https://res.cloudinary.com/dfjipgj2o/image/upload/v1773190860/vetementshj_cyuuax.jpg',
     ]
   },
   electromenager: {
@@ -149,9 +150,11 @@ const IMAGES_BY_CATEGORY = {
   voyages: {
     main: [
       'https://images.unsplash.com/photo-1500835556837-99ac94a94552?auto=format&fit=crop&w=1200&q=80',
+      "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773191664/0000000000000000hj_lzx59w.png",
       'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=80',
     ],
     side: [
+      'https://res.cloudinary.com/dfjipgj2o/image/upload/v1773191664/0000000000000000hj_lzx59w.png',
       'https://images.unsplash.com/photo-1488085061387-422e29b40080?auto=format&fit=crop&w=600&q=80',
       'https://images.unsplash.com/photo-1473625247510-8ceb1760943f?auto=format&fit=crop&w=600&q=80',
     ]

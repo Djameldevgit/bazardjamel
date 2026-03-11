@@ -30,13 +30,12 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
     level2: null
   });
   const [isInitialized, setIsInitialized] = useState(false);
+  const [imageErrors, setImageErrors] = useState({}); // 🆕 Estado para errores de imagen
 
-  // 🔄 DEBUG
-  useEffect(() => {
-    console.log('=== CATEGORYACCORDION DEBUG ===');
-    console.log('📥 Props recibidos:', postData);
-    console.log('🎯 selectedItems actual:', selectedItems);
-  }, [postData, selectedItems]);
+  // 🆕 Manejador de error de imagen
+  const handleImageError = (itemId) => {
+    setImageErrors(prev => ({ ...prev, [itemId]: true }));
+  };
 
   // 🔄 CARGAR CATEGORÍAS
   useEffect(() => {
@@ -45,7 +44,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
     }
   }, [dispatch, accordionCategories.length, accordionLoading]);
 
-  // 🎯 TRANSFORMACIÓN SIMPLIFICADA
+  // 🎯 TRANSFORMACIÓN SIMPLIFICADA (con soporte para icon)
   const categoryHierarchy = useMemo(() => {
     if (!accordionCategories || accordionCategories.length === 0) return {};
 
@@ -60,6 +59,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
       hierarchy[mainCat.slug] = {
         name: mainCat.name,
         emoji: mainCat.emoji || '📦',
+        icon: mainCat.icon, // 🆕 Incluir icon
         levels: hasDeepChildren ? 2 : 1,
         level1: 'type',
         requiresLevel2: hasDeepChildren,
@@ -69,6 +69,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           id: child.slug,
           name: child.name,
           emoji: child.emoji || '📄',
+          icon: child.icon, // 🆕 Incluir icon
           hasSublevel: child.children && child.children.length > 0
         })) : [],
         
@@ -85,7 +86,8 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
             level3Map[child.slug] = child.children.map(grandChild => ({
               id: grandChild.slug,
               name: grandChild.name,
-              emoji: grandChild.emoji || '📋'
+              emoji: grandChild.emoji || '📋',
+              icon: grandChild.icon // 🆕 Incluir icon
             }));
           }
         });
@@ -98,13 +100,14 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
     return hierarchy;
   }, [accordionCategories]);
 
-  // 🎨 CATEGORÍAS PRINCIPALES
+  // 🎨 CATEGORÍAS PRINCIPALES (con icon)
   const categories = useMemo(() => {
     if (!accordionCategories || accordionCategories.length === 0) return [];
     return accordionCategories.map(cat => ({
       id: cat.slug,
       name: cat.name,
-      emoji: cat.emoji || '📦'
+      emoji: cat.emoji || '📦',
+      icon: cat.icon // 🆕 Incluir icon
     }));
   }, [accordionCategories]);
 
@@ -211,13 +214,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
 
     // Para categorías SIN subniveles (2 niveles totales)
     if (!level1Item.hasSublevel) {
-      console.log('✅ Selección de 2 niveles completada');
-      console.log('🎯 Datos a enviar:', {
-        categorie: categoryId,
-        subCategory: level1Id,
-        articleType: level1Id
-      });
-      
       // 🔄 Enviar slugs al padre
       handleChangeInput({ target: { name: 'categorie', value: categoryId } });
       handleChangeInput({ target: { name: 'subCategory', value: level1Id } });
@@ -242,13 +238,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
   const handleLevel2Select = (categoryId, level1Id, level2Id) => {
     const category = categoryHierarchy[categoryId];
     if (!category || !level1Id || !level2Id) return;
-
-    console.log('✅ Selección de 3 niveles completada');
-    console.log('🎯 Datos a enviar:', {
-      categorie: categoryId,
-      subCategory: level1Id,
-      articleType: level2Id
-    });
 
     // Actualizar estado local
     setSelectedItems({
@@ -307,7 +296,17 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
                 >
                   <div className="subcategory-content">
                     <div className="subcategory-icon">
-                      <span className="item-emoji">{item.emoji}</span>
+                      {/* 🆕 Imagen si existe, sino emoji */}
+                      {item.icon && !imageErrors[item.id] ? (
+                        <img 
+                          src={item.icon} 
+                          alt={item.name}
+                          className="item-image"
+                          onError={() => handleImageError(item.id)}
+                        />
+                      ) : (
+                        <span className="item-emoji">{item.emoji}</span>
+                      )}
                       {hasSublevel && (
                         <span className="sublevel-indicator">
                           <ArrowRightCircle size={14} />
@@ -379,7 +378,17 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
                                 }}
                               >
                                 <div className="level2-item-content">
-                                  <span className="level2-emoji">{level2Item.emoji}</span>
+                                  {/* 🆕 Imagen si existe, sino emoji */}
+                                  {level2Item.icon && !imageErrors[level2Item.id] ? (
+                                    <img 
+                                      src={level2Item.icon} 
+                                      alt={level2Item.name}
+                                      className="level2-image"
+                                      onError={() => handleImageError(level2Item.id)}
+                                    />
+                                  ) : (
+                                    <span className="level2-emoji">{level2Item.emoji}</span>
+                                  )}
                                   <span className="level2-name">{level2Item.name}</span>
                                   {selectedItems.level2 === level2Item.id && (
                                     <CheckCircle className="text-success ms-auto" size={16} />
@@ -424,7 +433,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
     const categoryName = categories.find(c => c.id === selectedItems.category)?.name;
 
     return (
-      <Card className="selection-panel mt-4">
+      <div className="selection-panel mt-4">
         <Card.Header className="selection-header">
           <div className="d-flex align-items-center justify-content-between">
             <div className="d-flex align-items-center">
@@ -437,10 +446,10 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           </div>
         </Card.Header>
 
-        <Card.Body>
           <div className="selection-path">
             <div className="path-step active">
               <div className="step-icon">
+                {/* Podríamos usar imagen aquí también, pero por simplicidad mantenemos emoji */}
                 {categories.find(c => c.id === selectedItems.category)?.emoji}
               </div>
               <div className="step-info">
@@ -515,8 +524,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
             <i className="fas fa-times me-2"></i>
             Changer de catégorie
           </Button>
-        </Card.Body>
-      </Card>
+      </div>
     );
   };
 
@@ -610,7 +618,17 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
             >
               <div className="main-category-content">
                 <div className="category-main-info">
-                  <span className="category-emoji">{category.emoji}</span>
+                  {/* 🆕 Imagen si existe, sino emoji */}
+                  {category.icon && !imageErrors[category.id] ? (
+                    <img 
+                      src={category.icon} 
+                      alt={category.name}
+                      className="category-image"
+                      onError={() => handleImageError(category.id)}
+                    />
+                  ) : (
+                    <span className="category-emoji">{category.emoji}</span>
+                  )}
                   <span className="category-name">{category.name}</span>
                 </div>
 
@@ -650,7 +668,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
         }
         
         .search-input {
-          padding: 12px 15px 12px 45px;
+          padding: 12px 0 12px 45px;
           border-radius: 8px;
           border: 2px solid #e9ecef;
           font-size: 1rem;
@@ -685,7 +703,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
         }
         
         .main-category-header {
-          padding: 20px;
+          padding: 20px 0;
           background: white;
           transition: all 0.2s ease;
         }
@@ -725,6 +743,14 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           min-width: 40px;
         }
         
+        /* 🆕 Estilos para imágenes */
+        .category-image {
+          width: 40px;
+          height: 40px;
+          object-fit: cover;
+          border-radius: 8px;
+        }
+        
         .category-name {
           font-size: 1.1rem;
           font-weight: 600;
@@ -755,7 +781,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
         
         /* Contenido de categoría */
         .category-content {
-          padding: 20px;
+          padding: 20px 0;
         }
         
         .subcategories-list {
@@ -778,7 +804,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
         }
         
         .subcategory-item {
-          padding: 15px;
+          padding: 15px 0;
           cursor: pointer;
           position: relative;
           transition: all 0.2s ease;
@@ -810,6 +836,14 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
         
         .item-emoji {
           font-size: 1.8rem;
+        }
+        
+        /* 🆕 Estilos para imágenes de subcategoría */
+        .item-image {
+          width: 40px;
+          height: 40px;
+          object-fit: cover;
+          border-radius: 8px;
         }
         
         .sublevel-indicator {
@@ -873,7 +907,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
         }
         
         .level2-content {
-          padding: 20px;
+          padding: 20px 0;
         }
         
         .level2-header {
@@ -896,7 +930,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
         }
         
         .level2-item {
-          padding: 12px 15px;
+          padding: 12px 0;
           background: white;
           border-radius: 6px;
           border: 1px solid #e9ecef;
@@ -925,6 +959,14 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           min-width: 30px;
         }
         
+        /* 🆕 Estilos para imágenes de nivel 3 */
+        .level2-image {
+          width: 30px;
+          height: 30px;
+          object-fit: cover;
+          border-radius: 6px;
+        }
+        
         .level2-name {
           font-size: 0.9rem;
           font-weight: 500;
@@ -948,7 +990,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           align-items: center;
           flex-wrap: wrap;
           gap: 10px;
-          padding: 15px;
+          padding: 15px 0;
           background: #f8f9fa;
           border-radius: 8px;
         }
@@ -956,7 +998,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
         .path-step {
           display: flex;
           align-items: center;
-          padding: 10px 15px;
+          padding: 10px 0;
           background: white;
           border-radius: 6px;
           border: 1px solid #dee2e6;
@@ -1069,19 +1111,19 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
         
         @media (max-width: 576px) {
           .main-category-header {
-            padding: 15px;
+            padding: 15px 0;
           }
           
           .category-content {
-            padding: 15px;
+            padding: 15px 0;
           }
           
           .subcategory-item {
-            padding: 12px;
+            padding: 12px 0;
           }
           
           .level2-content {
-            padding: 15px;
+            padding: 15px 0;
           }
           
           .category-emoji {

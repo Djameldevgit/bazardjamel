@@ -1,5 +1,5 @@
-// 📂 pages/FilterDrawer.js - VERSIÓN COMPLETA CORREGIDA
-import React, { useState, useEffect, useCallback } from 'react';
+// 📂 pages/FilterDrawer.js - VERSIÓN CORREGIDA
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Offcanvas, Form, Button, Accordion, Spinner } from 'react-bootstrap';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -28,11 +28,11 @@ const FilterDrawer = ({
   const { slug, subSlug, articleSlug } = useParams();
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   
-  // Estados con valores por defecto seguros
+  // Estados
   const [categoryChildren, setCategoryChildren] = useState([]);
   const [loadingChildren, setLoadingChildren] = useState(false);
+  const [imageErrors, setImageErrors] = useState({});
   
-  // Inicializar con estructura completa
   const [filterMetadata, setFilterMetadata] = useState({
     wilayas: [],
     priceRange: { min: 0, max: 1000000 },
@@ -43,6 +43,11 @@ const FilterDrawer = ({
   const categoryState = useSelector((state) => state.category || {});
   const { children = [] } = categoryState;
 
+  // Manejador de error de imagen
+  const handleImageError = (itemId) => {
+    setImageErrors(prev => ({ ...prev, [itemId]: true }));
+  };
+
   // ============ CARGAR HIJOS ============
   useEffect(() => {
     if (!show || !slug) return;
@@ -50,15 +55,12 @@ const FilterDrawer = ({
     const loadData = async () => {
       setLoadingChildren(true);
       try {
-        console.log('🔄 Cargando datos para drawer:', slug);
-        
         const result = await dispatch(getCategoryPosts(slug, subSlug, articleSlug, 1, 1));
         
         if (result && result.children) {
           setCategoryChildren(result.children);
         }
         
-        // Asegurar que filterMetadata tenga la estructura correcta
         if (result && result.filterMetadata) {
           setFilterMetadata({
             wilayas: result.filterMetadata.wilayas || [],
@@ -69,7 +71,6 @@ const FilterDrawer = ({
             appliedFilters: result.filterMetadata.appliedFilters || {}
           });
         }
-        
       } catch (error) {
         console.error('❌ Error cargando datos:', error);
       } finally {
@@ -98,27 +99,20 @@ const FilterDrawer = ({
     
     if (subSlug) {
       const subCategory = categoryChildren.find(sub => sub.slug === subSlug);
-      
       if (subCategory) {
         subId = subCategory._id;
-        
         if (articleSlug && subCategory.articles) {
           const article = subCategory.articles.find(art => art.slug === articleSlug);
-          if (article) {
-            articleId = article._id;
-          }
+          if (article) articleId = article._id;
         }
       }
     }
-    
     return { subId, articleId };
   }, [categoryChildren, subSlug, articleSlug]);
 
   // ============ INICIALIZAR FILTROS ============
   const getInitialFilters = () => {
     const { subId, articleId } = findIdsFromSlugs();
-    
-    // Acceso seguro a priceRange
     const min = filterMetadata?.priceRange?.min ?? 0;
     const max = filterMetadata?.priceRange?.max ?? 1000000;
     
@@ -134,8 +128,6 @@ const FilterDrawer = ({
   };
 
   const [tempFilters, setTempFilters] = useState(getInitialFilters());
-  
-  // Inicializar priceRange de forma segura
   const [priceRange, setPriceRange] = useState([
     filterMetadata?.priceRange?.min ?? 0,
     filterMetadata?.priceRange?.max ?? 1000000
@@ -145,8 +137,6 @@ const FilterDrawer = ({
   useEffect(() => {
     const newFilters = getInitialFilters();
     setTempFilters(newFilters);
-    
-    // Actualizar priceRange de forma segura
     setPriceRange([
       filterMetadata?.priceRange?.min ?? 0,
       filterMetadata?.priceRange?.max ?? 1000000
@@ -163,14 +153,8 @@ const FilterDrawer = ({
   // ============ HANDLERS ============
   const handleFilterChange = (key, value) => {
     setTempFilters(prev => ({ ...prev, [key]: value }));
-    
-    if (key === 'subCategory') {
-      setTempFilters(prev => ({ ...prev, article: '' }));
-    }
-    
-    if (key === 'wilaya') {
-      setTempFilters(prev => ({ ...prev, commune: '' }));
-    }
+    if (key === 'subCategory') setTempFilters(prev => ({ ...prev, article: '' }));
+    if (key === 'wilaya') setTempFilters(prev => ({ ...prev, commune: '' }));
   };
 
   const handlePriceRangeChange = (values) => {
@@ -183,22 +167,14 @@ const FilterDrawer = ({
   };
 
   const applyFilters = () => {
-    console.log('🎯 Aplicando filtros:', tempFilters);
-    
-    // ✅ Verificar que onApplyFilters existe
     if (onApplyFilters && typeof onApplyFilters === 'function') {
       onApplyFilters(tempFilters);
-    } else {
-      console.error('❌ onApplyFilters no está definida');
     }
-    
-    onHide(); // Cerrar el drawer
+    onHide();
   };
 
   const resetFilters = () => {
     const { subId, articleId } = findIdsFromSlugs();
-    
-    // Valores seguros
     const min = filterMetadata?.priceRange?.min ?? 0;
     const max = filterMetadata?.priceRange?.max ?? 1000000;
     
@@ -216,12 +192,9 @@ const FilterDrawer = ({
 
   const countActiveFilters = () => {
     const { subId, articleId } = findIdsFromSlugs();
-    let count = 0;
-    
-    // Valores seguros para comparación
     const min = filterMetadata?.priceRange?.min ?? 0;
     const max = filterMetadata?.priceRange?.max ?? 1000000;
-    
+    let count = 0;
     if (tempFilters.subCategory && tempFilters.subCategory !== subId) count++;
     if (tempFilters.article && tempFilters.article !== articleId) count++;
     if (tempFilters.wilaya) count++;
@@ -229,19 +202,104 @@ const FilterDrawer = ({
     if (tempFilters.priceMin && Number(tempFilters.priceMin) !== min) count++;
     if (tempFilters.priceMax && Number(tempFilters.priceMax) !== max) count++;
     if (tempFilters.sortBy !== 'recent') count++;
-    
     return count;
   };
 
-  // Obtener artículos para el select de nivel 3
-  const getArticlesForSelect = () => {
+  // ============ OPCIONES PARA SELECTS CON IMÁGENES ============
+  const subCategoryOptions = useMemo(() => {
+    return categoryChildren.map(sub => ({
+      value: sub._id,
+      label: sub.name,
+      icon: sub.icon,
+      emoji: sub.emoji || '📌',
+      postCount: sub.postCount || 0
+    }));
+  }, [categoryChildren]);
+
+  const articleOptions = useMemo(() => {
     if (!tempFilters.subCategory) return [];
-    
-    const selectedSub = categoryChildren.find(
-      sub => String(sub._id) === String(tempFilters.subCategory)
+    const selectedSub = categoryChildren.find(sub => String(sub._id) === String(tempFilters.subCategory));
+    return (selectedSub?.articles || []).map(article => ({
+      value: article._id,
+      label: article.name,
+      icon: article.icon,
+      emoji: article.emoji || '📄'
+    }));
+  }, [categoryChildren, tempFilters.subCategory]);
+
+  // Componentes personalizados para react-select
+  const CustomOption = (props) => {
+    const { data, innerRef, innerProps } = props;
+    const hasError = imageErrors[data.value];
+    return (
+      <div ref={innerRef} {...innerProps} style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', cursor: 'pointer' }}>
+        {data.icon && !hasError ? (
+          <img 
+            src={data.icon} 
+            alt={data.label}
+            style={{ width: 24, height: 24, objectFit: 'cover', borderRadius: 4, marginRight: 8 }}
+            onError={() => handleImageError(data.value)}
+          />
+        ) : (
+          <span style={{ fontSize: 20, marginRight: 8 }}>{data.emoji}</span>
+        )}
+        <span>{data.label}</span>
+        {data.postCount ? <span style={{ marginLeft: 'auto', color: '#666', fontSize: 12 }}>({data.postCount})</span> : null}
+      </div>
     );
-    
-    return selectedSub?.articles || [];
+  };
+
+  const CustomSingleValue = (props) => {
+    const { data } = props;
+    const hasError = imageErrors[data.value];
+    return (
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        {data.icon && !hasError ? (
+          <img 
+            src={data.icon} 
+            alt={data.label}
+            style={{ width: 20, height: 20, objectFit: 'cover', borderRadius: 3, marginRight: 8 }}
+            onError={() => handleImageError(data.value)}
+          />
+        ) : (
+          <span style={{ fontSize: 16, marginRight: 8 }}>{data.emoji}</span>
+        )}
+        <span>{data.label}</span>
+      </div>
+    );
+  };
+
+  // Estilos para react-select (corregidos)
+  const selectStyles = {
+    control: (base) => ({
+      ...base,
+      borderColor: '#e9ecef',
+      borderRadius: '10px',
+      minHeight: '42px',
+      fontSize: '14px',
+      boxShadow: 'none',
+      '&:hover': { borderColor: '#667eea' }
+    }),
+    menu: (base) => ({
+      ...base,
+      zIndex: 1060, // Aumentado para que esté por encima del Offcanvas
+      borderRadius: '10px',
+      overflow: 'hidden'
+    }),
+    menuPortal: (base) => ({
+      ...base,
+      zIndex: 1060
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected ? '#667eea' : state.isFocused ? '#f0f3ff' : 'white',
+      color: state.isSelected ? 'white' : '#333',
+      fontSize: '14px',
+      cursor: 'pointer',
+      padding: 0 // Importante: el padding lo manejamos en CustomOption
+    }),
+    placeholder: (base) => ({ ...base, color: '#adb5bd' }),
+    singleValue: (base) => ({ ...base, display: 'flex', alignItems: 'center' })
   };
 
   const isMobile = windowWidth <= 768;
@@ -253,39 +311,6 @@ const FilterDrawer = ({
     { value: 'price_desc', label: 'Prix décroissant', icon: '💎' }
   ];
 
-  // Estilos para react-select
-  const selectStyles = {
-    control: (base) => ({
-      ...base,
-      borderColor: '#e9ecef',
-      borderRadius: '10px',
-      minHeight: '42px',
-      fontSize: '14px',
-      boxShadow: 'none',
-      '&:hover': {
-        borderColor: '#667eea'
-      }
-    }),
-    menu: (base) => ({
-      ...base,
-      zIndex: 1050,
-      borderRadius: '10px',
-      overflow: 'hidden'
-    }),
-    option: (base, state) => ({
-      ...base,
-      backgroundColor: state.isSelected ? '#667eea' : state.isFocused ? '#f0f3ff' : 'white',
-      color: state.isSelected ? 'white' : '#333',
-      fontSize: '14px',
-      cursor: 'pointer',
-      padding: '10px 12px'
-    }),
-    placeholder: (base) => ({
-      ...base,
-      color: '#adb5bd'
-    })
-  };
-
   if (loadingChildren) {
     return (
       <Offcanvas 
@@ -293,8 +318,9 @@ const FilterDrawer = ({
         onHide={onHide} 
         placement="start" 
         style={{ 
-          width: isMobile ? '100%' : '400px',
-          maxWidth: '100%'
+          width: isMobile ? 'calc(100% - 20px)' : '400px', // 10px de margen a cada lado
+          maxWidth: '100%',
+          margin: isMobile ? '10px' : '0' // Margen en móvil
         }}
       >
         <div style={styles.loadingContainer}>
@@ -305,7 +331,6 @@ const FilterDrawer = ({
     );
   }
 
-  // Valores seguros para el slider
   const minPrice = filterMetadata?.priceRange?.min ?? 0;
   const maxPrice = filterMetadata?.priceRange?.max ?? 1000000;
 
@@ -315,8 +340,9 @@ const FilterDrawer = ({
       onHide={onHide}
       placement="start"
       style={{
-        width: isMobile ? '100%' : '400px',
-        maxWidth: '100%'
+        width: isMobile ? 'calc(100% - 20px)' : '400px',
+        maxWidth: '100%',
+        margin: isMobile ? '10px' : '0' // Margen en móvil
       }}
     >
       {/* Header */}
@@ -327,9 +353,7 @@ const FilterDrawer = ({
           </div>
           <h6 style={styles.headerTitle}>Filtres</h6>
           {countActiveFilters() > 0 && (
-            <span style={styles.badge}>
-              {countActiveFilters()}
-            </span>
+            <span style={styles.badge}>{countActiveFilters()}</span>
           )}
         </div>
         
@@ -342,19 +366,11 @@ const FilterDrawer = ({
             </span>
           </div>
           
-          <button 
-            onClick={resetFilters}
-            style={styles.iconButton}
-            title="Réinitialiser"
-          >
+          <button onClick={resetFilters} style={styles.iconButton} title="Réinitialiser">
             <ArrowCounterclockwise size={16} color="#666" />
           </button>
           
-          <button 
-            onClick={onHide}
-            style={styles.iconButton}
-            title="Fermer"
-          >
+          <button onClick={onHide} style={styles.iconButton} title="Fermer">
             <XLg size={16} color="#666" />
           </button>
         </div>
@@ -372,41 +388,33 @@ const FilterDrawer = ({
                 </div>
               </Accordion.Header>
               <Accordion.Body style={styles.accordionBody}>
-                <Form.Label style={styles.label}>
-                  Sous-catégorie
-                </Form.Label>
-                <Form.Select
-                  value={tempFilters.subCategory}
-                  onChange={(e) => handleFilterChange('subCategory', e.target.value)}
-                  style={styles.select}
-                >
-                  <option value="">Toutes les sous-catégories</option>
-                  {categoryChildren.map(sub => (
-                    <option key={sub._id} value={sub._id}>
-                      {sub.icon || '📌'} {sub.name} {sub.postCount ? `(${sub.postCount})` : ''}
-                      {sub.slug === subSlug ? ' ✓' : ''}
-                    </option>
-                  ))}
-                </Form.Select>
+                <Form.Label style={styles.label}>Sous-catégorie</Form.Label>
+                <Select
+                  options={subCategoryOptions}
+                  value={subCategoryOptions.find(opt => opt.value === tempFilters.subCategory) || null}
+                  onChange={(option) => handleFilterChange('subCategory', option?.value || '')}
+                  isClearable
+                  placeholder="Toutes les sous-catégories"
+                  styles={selectStyles}
+                  components={{ Option: CustomOption, SingleValue: CustomSingleValue }}
+                  menuPortalTarget={document.body} // Para que el menú no se recorte
+                  menuShouldBlockScroll={true}
+                />
 
-                {tempFilters.subCategory && getArticlesForSelect().length > 0 && (
+                {tempFilters.subCategory && articleOptions.length > 0 && (
                   <>
-                    <Form.Label style={{...styles.label, marginTop: '20px'}}>
-                      Article
-                    </Form.Label>
-                    <Form.Select
-                      value={tempFilters.article}
-                      onChange={(e) => handleFilterChange('article', e.target.value)}
-                      style={styles.select}
-                    >
-                      <option value="">Tous les articles</option>
-                      {getArticlesForSelect().map(article => (
-                        <option key={article._id} value={article._id}>
-                          {article.icon || '📄'} {article.name}
-                          {article.slug === articleSlug ? ' ✓' : ''}
-                        </option>
-                      ))}
-                    </Form.Select>
+                    <Form.Label style={{...styles.label, marginTop: '20px'}}>Article</Form.Label>
+                    <Select
+                      options={articleOptions}
+                      value={articleOptions.find(opt => opt.value === tempFilters.article) || null}
+                      onChange={(option) => handleFilterChange('article', option?.value || '')}
+                      isClearable
+                      placeholder="Tous les articles"
+                      styles={selectStyles}
+                      components={{ Option: CustomOption, SingleValue: CustomSingleValue }}
+                      menuPortalTarget={document.body}
+                      menuShouldBlockScroll={true}
+                    />
                   </>
                 )}
               </Accordion.Body>
@@ -433,6 +441,8 @@ const FilterDrawer = ({
                 placeholder="Sélectionner une wilaya"
                 styles={selectStyles}
                 isDisabled={!filterMetadata.wilayas || filterMetadata.wilayas.length === 0}
+                menuPortalTarget={document.body}
+                menuShouldBlockScroll={true}
               />
 
               {tempFilters.wilaya && (
@@ -471,24 +481,8 @@ const FilterDrawer = ({
                   onChange={handlePriceRangeChange}
                   trackStyle={[{ backgroundColor: '#667eea', height: '4px' }]}
                   handleStyle={[
-                    { 
-                      borderColor: '#667eea', 
-                      backgroundColor: '#667eea',
-                      width: '18px',
-                      height: '18px',
-                      marginTop: '-7px',
-                      opacity: 1,
-                      boxShadow: '0 2px 4px rgba(102,126,234,0.3)'
-                    },
-                    { 
-                      borderColor: '#667eea', 
-                      backgroundColor: '#667eea',
-                      width: '18px',
-                      height: '18px',
-                      marginTop: '-7px',
-                      opacity: 1,
-                      boxShadow: '0 2px 4px rgba(102,126,234,0.3)'
-                    }
+                    { borderColor: '#667eea', backgroundColor: '#667eea', width: '18px', height: '18px', marginTop: '-7px', opacity: 1, boxShadow: '0 2px 4px rgba(102,126,234,0.3)' },
+                    { borderColor: '#667eea', backgroundColor: '#667eea', width: '18px', height: '18px', marginTop: '-7px', opacity: 1, boxShadow: '0 2px 4px rgba(102,126,234,0.3)' }
                   ]}
                   railStyle={{ backgroundColor: '#e9ecef', height: '4px' }}
                 />
@@ -577,18 +571,10 @@ const FilterDrawer = ({
 
       {/* Footer */}
       <div style={styles.footer}>
-        <Button 
-          variant="outline-secondary" 
-          onClick={resetFilters}
-          style={styles.resetButton}
-        >
+        <Button variant="outline-secondary" onClick={resetFilters} style={styles.resetButton}>
           Réinitialiser
         </Button>
-        <Button 
-          variant="primary" 
-          onClick={applyFilters}
-          style={styles.applyButton}
-        >
+        <Button variant="primary" onClick={applyFilters} style={styles.applyButton}>
           Appliquer les filtres
         </Button>
       </div>
@@ -596,249 +582,239 @@ const FilterDrawer = ({
   );
 };
 
-// Estilos integrados
-const styles = {
-  loadingContainer: {
-    height: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '20px'
-  },
-  loadingText: {
-    marginTop: '16px',
-    color: '#666',
-    fontSize: '14px'
-  },
-  header: {
-    padding: '16px 20px',
-    borderBottom: '1px solid #e9ecef',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'white'
-  },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px'
-  },
-  iconCircle: {
-    width: '32px',
-    height: '32px',
-    borderRadius: '8px',
-    backgroundColor: '#f0f3ff',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  headerTitle: {
-    margin: 0,
-    fontSize: '16px',
-    fontWeight: '600',
-    color: '#333'
-  },
-  badge: {
-    backgroundColor: '#667eea',
-    color: 'white',
-    fontSize: '11px',
-    fontWeight: '600',
-    padding: '2px 6px',
-    borderRadius: '12px',
-    marginLeft: '4px'
-  },
-  headerRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px'
-  },
-  urlIndicator: {
-    backgroundColor: '#f8f9fa',
-    padding: '6px 10px',
-    borderRadius: '20px',
-    border: '1px solid #e9ecef'
-  },
-  urlText: {
-    fontSize: '12px',
-    color: '#667eea',
-    fontWeight: '500'
-  },
-  iconButton: {
-    width: '32px',
-    height: '32px',
-    borderRadius: '8px',
-    border: '1px solid #e9ecef',
-    backgroundColor: 'white',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    transition: 'all 0.2s'
-  },
-  body: {
-    padding: '16px',
-    backgroundColor: '#f8f9fa',
-    flex: 1,
-    overflowY: 'auto'
-  },
-  accordion: {
-    marginBottom: '12px',
-    borderRadius: '12px',
-    overflow: 'hidden',
-    border: 'none',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-  },
-  accordionItem: {
-    border: 'none',
-    backgroundColor: 'white'
-  },
-  accordionTitle: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    fontWeight: '500',
-    color: '#333'
-  },
-  accordionBody: {
-    padding: '16px',
-    backgroundColor: 'white',
-    borderTop: '1px solid #e9ecef'
-  },
-  label: {
-    fontSize: '13px',
-    fontWeight: '500',
-    marginBottom: '6px',
-    color: '#495057',
-    display: 'block'
-  },
-  select: {
-    width: '100%',
-    padding: '10px 12px',
-    borderRadius: '10px',
-    border: '1px solid #e9ecef',
-    fontSize: '14px',
-    color: '#333',
-    backgroundColor: 'white',
-    cursor: 'pointer',
-    outline: 'none'
-  },
-  input: {
-    width: '100%',
-    padding: '10px 12px',
-    borderRadius: '10px',
-    border: '1px solid #e9ecef',
-    fontSize: '14px',
-    outline: 'none'
-  },
-  countBadge: {
-    backgroundColor: '#e9ecef',
-    color: '#666',
-    fontSize: '11px',
-    fontWeight: '600',
-    padding: '2px 6px',
-    borderRadius: '10px',
-    marginLeft: '8px'
-  },
-  priceRangeContainer: {
-    padding: '8px 0'
-  },
-  priceInputs: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    marginTop: '24px'
-  },
-  priceInputGroup: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px'
-  },
-  priceLabel: {
-    fontSize: '12px',
-    color: '#666',
-    marginLeft: '4px'
-  },
-  priceInputWrapper: {
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center'
-  },
-  priceCurrency: {
-    position: 'absolute',
-    left: '10px',
-    fontSize: '12px',
-    color: '#999'
-  },
-  priceInput: {
-    width: '100%',
-    padding: '10px 10px 10px 30px',
-    borderRadius: '8px',
-    border: '1px solid #e9ecef',
-    fontSize: '13px',
-    outline: 'none'
-  },
-  priceSeparator: {
-    color: '#666',
-    fontSize: '18px',
-    marginTop: '16px'
-  },
-  sortOptions: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px'
-  },
-  sortOption: {
-    padding: '12px 16px',
-    border: '1px solid #e9ecef',
-    borderRadius: '10px',
-    cursor: 'pointer',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  sortOptionLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px'
-  },
-  sortIcon: {
-    fontSize: '16px'
-  },
-  sortLabel: {
-    fontSize: '14px',
-    color: '#333'
-  },
-  footer: {
-    padding: '16px 20px',
-    borderTop: '1px solid #e9ecef',
-    backgroundColor: 'white',
-    display: 'flex',
-    gap: '12px'
-  },
-  resetButton: {
-    flex: 1,
-    padding: '12px',
-    borderRadius: '10px',
-    fontSize: '14px',
-    fontWeight: '500',
-    border: '1px solid #e9ecef',
-    backgroundColor: 'white',
-    color: '#666',
-    cursor: 'pointer'
-  },
-  applyButton: {
-    flex: 1,
-    padding: '12px',
-    borderRadius: '10px',
-    fontSize: '14px',
-    fontWeight: '500',
-    border: 'none',
-    backgroundColor: '#667eea',
-    color: 'white',
-    cursor: 'pointer'
-  }
-};
+// Estilos integrados (sin cambios)
+ const styles = {
+    loadingContainer: {
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px'
+    },
+    loadingText: {
+      marginTop: '16px',
+      color: '#666',
+      fontSize: '14px'
+    },
+    header: {
+      padding: '12px 16px', // Reducido de 16px 20px
+      borderBottom: '1px solid #e9ecef',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: 'white'
+    },
+    headerLeft: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px' // Reducido de 10px
+    },
+    iconCircle: {
+      width: '28px', // Reducido de 32px
+      height: '28px',
+      borderRadius: '6px',
+      backgroundColor: '#f0f3ff',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    headerTitle: {
+      margin: 0,
+      fontSize: '15px', // Reducido de 16px
+      fontWeight: '600',
+      color: '#333'
+    },
+    badge: {
+      backgroundColor: '#667eea',
+      color: 'white',
+      fontSize: '10px', // Reducido de 11px
+      fontWeight: '600',
+      padding: '2px 5px', // Reducido
+      borderRadius: '10px',
+      marginLeft: '4px'
+    },
+    headerRight: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px' // Reducido de 8px
+    },
+    urlIndicator: {
+      backgroundColor: '#f8f9fa',
+      padding: '4px 8px', // Reducido de 6px 10px
+      borderRadius: '16px',
+      border: '1px solid #e9ecef'
+    },
+    urlText: {
+      fontSize: '11px', // Reducido de 12px
+      color: '#667eea',
+      fontWeight: '500'
+    },
+    iconButton: {
+      width: '28px', // Reducido de 32px
+      height: '28px',
+      borderRadius: '6px',
+      border: '1px solid #e9ecef',
+      backgroundColor: 'white',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      cursor: 'pointer',
+      transition: 'all 0.2s'
+    },
+    body: {
+      padding: '12px', // Reducido de 16px
+      backgroundColor: '#f8f9fa',
+      flex: 1,
+      overflowY: 'auto'
+    },
+    accordion: {
+      marginBottom: '10px', // Reducido de 12px
+      borderRadius: '10px',
+      overflow: 'hidden',
+      border: 'none',
+      boxShadow: '0 2px 6px rgba(0,0,0,0.04)' // Sombra más ligera
+    },
+    accordionItem: {
+      border: 'none',
+      backgroundColor: 'white'
+    },
+    accordionTitle: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px', // Reducido de 8px
+      fontWeight: '500',
+      color: '#333',
+      fontSize: '14px' // Añadido
+    },
+    accordionBody: {
+      padding: '12px', // Reducido de 16px
+      backgroundColor: 'white',
+      borderTop: '1px solid #e9ecef'
+    },
+    label: {
+      fontSize: '12px', // Reducido de 13px
+      fontWeight: '500',
+      marginBottom: '4px', // Reducido de 6px
+      color: '#495057',
+      display: 'block'
+    },
+    input: {
+      width: '100%',
+      padding: '8px 10px', // Reducido de 10px 12px
+      borderRadius: '8px',
+      border: '1px solid #e9ecef',
+      fontSize: '13px', // Reducido de 14px
+      outline: 'none'
+    },
+    countBadge: {
+      backgroundColor: '#e9ecef',
+      color: '#666',
+      fontSize: '10px', // Reducido de 11px
+      fontWeight: '600',
+      padding: '2px 5px', // Reducido
+      borderRadius: '8px',
+      marginLeft: '6px' // Reducido de 8px
+    },
+    priceRangeContainer: {
+      padding: '6px 0' // Reducido de 8px
+    },
+    priceInputs: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px', // Reducido de 12px
+      marginTop: '16px' // Reducido de 24px
+    },
+    priceInputGroup: {
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '2px' // Reducido de 4px
+    },
+    priceLabel: {
+      fontSize: '11px', // Reducido de 12px
+      color: '#666',
+      marginLeft: '4px'
+    },
+    priceInputWrapper: {
+      position: 'relative',
+      display: 'flex',
+      alignItems: 'center'
+    },
+    priceCurrency: {
+      position: 'absolute',
+      left: '8px', // Reducido de 10px
+      fontSize: '11px', // Reducido de 12px
+      color: '#999'
+    },
+    priceInput: {
+      width: '100%',
+      padding: '8px 8px 8px 25px', // Ajustado
+      borderRadius: '6px', // Reducido de 8px
+      border: '1px solid #e9ecef',
+      fontSize: '12px', // Reducido de 13px
+      outline: 'none'
+    },
+    priceSeparator: {
+      color: '#666',
+      fontSize: '16px', // Reducido de 18px
+      marginTop: '14px' // Reducido de 16px
+    },
+    sortOptions: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '6px' // Reducido de 8px
+    },
+    sortOption: {
+      padding: '10px 14px', // Reducido de 12px 16px
+      border: '1px solid #e9ecef',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center'
+    },
+    sortOptionLeft: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px' // Reducido de 10px
+    },
+    sortIcon: {
+      fontSize: '15px' // Reducido de 16px
+    },
+    sortLabel: {
+      fontSize: '13px', // Reducido de 14px
+      color: '#333'
+    },
+    footer: {
+      padding: '12px 16px', // Reducido de 16px 20px
+      borderTop: '1px solid #e9ecef',
+      backgroundColor: 'white',
+      display: 'flex',
+      gap: '10px' // Reducido de 12px
+    },
+    resetButton: {
+      flex: 1,
+      padding: '10px', // Reducido de 12px
+      borderRadius: '8px',
+      fontSize: '13px', // Reducido de 14px
+      fontWeight: '500',
+      border: '1px solid #e9ecef',
+      backgroundColor: 'white',
+      color: '#666',
+      cursor: 'pointer'
+    },
+    applyButton: {
+      flex: 1,
+      padding: '10px', // Reducido de 12px
+      borderRadius: '8px',
+      fontSize: '13px', // Reducido de 14px
+      fontWeight: '500',
+      border: 'none',
+      backgroundColor: '#667eea',
+      color: 'white',
+      cursor: 'pointer'
+    }
+  };
 
 export default FilterDrawer;

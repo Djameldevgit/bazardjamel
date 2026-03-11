@@ -256,7 +256,7 @@ const BaseCategoryField = ({
   return (
     <div className="all-steps">
       {allSteps.map((stepName) => (
-        <div key={stepName} className={`step-section mb-4 ${stepName}`}>
+        <div key={stepName} className={`step-section mb-2 ${stepName}`}>
           <h5 className="border-bottom pb-2 mb-3">
             {t(`steps.${stepName}`)}
           </h5>

@@ -1,9 +1,10 @@
-// 📂 components/common/Drawer.js - VERSIÓN COMPLETA CON IMÁGENES PNG
-import React, { useState, useEffect } from 'react';
+// 📂 components/common/Drawer.js - VERSIÓN COMPLETA CON IMÁGENES PNG DESDE REDUX
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useLocation, useHistory } from 'react-router-dom';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import { logout } from '../../redux/actions/authAction';
+import { getCategoriesForAccordion } from '../../redux/actions/categoryAction';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
@@ -20,7 +21,51 @@ const Drawer = ({
   const { t, i18n } = useTranslation('global');
   const [darkMode, setDarkMode] = useState(false);
   const [imageErrors, setImageErrors] = useState({});
-  
+
+  // 🆕 Obtener categorías desde Redux (igual que en CategoryAccordion)
+  const { accordionCategories = [] } = useSelector((state) => ({
+    accordionCategories: state.category?.accordionCategories || []
+  }));
+
+  // 🔄 Cargar categorías si no están disponibles
+  useEffect(() => {
+    if (accordionCategories.length === 0) {
+      dispatch(getCategoriesForAccordion());
+    }
+  }, [dispatch, accordionCategories.length]);
+
+  // 🎨 Paleta de colores para generar colores consistentes por nombre
+  const colorPalette = useMemo(() => [
+    '#4361ee', '#3a0ca3', '#4cc9f0', '#f72585', '#b5179e',
+    '#7209b7', '#560bad', '#480ca8', '#3f37c9', '#4895ef',
+    '#e63946', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51',
+    '#6d597a', '#b56576', '#e56b6f', '#9c89b8', '#ef476f',
+    '#ffd166', '#06d6a0', '#118ab2', '#073b4c', '#fb8b24',
+    '#d90429', '#ff9770', '#6a994e', '#bc4c51', '#5e548e'
+  ], []);
+
+  // 🎨 Generar color a partir del nombre
+  const generateColorFromName = useCallback((name) => {
+    if (!name) return colorPalette[0];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colorPalette.length;
+    return colorPalette[index];
+  }, [colorPalette]);
+
+  // 🆕 Categorías formateadas para el drawer (con icon, slug, color)
+  const categoryItems = useMemo(() => {
+    return accordionCategories.map(cat => ({
+      name: cat.name,
+      icon: cat.icon,          // URL de la imagen (Cloudinary o backend)
+      slug: cat.slug,
+      color: generateColorFromName(cat.name),
+      isStore: cat.slug === 'boutiques' // Marcar la categoría de boutiques
+    }));
+  }, [accordionCategories, generateColorFromName]);
+
   // 🔥 SIMPLIFICADO: Solo 3 idiomas - AR, FR, EN
   const [currentLang, setCurrentLang] = useState(() => {
     const savedLang = localStorage.getItem('appLanguage') || 'fr';
@@ -34,28 +79,6 @@ const Drawer = ({
   const isDashboardPage = location.pathname.includes('/users/dashboard') || 
                          location.pathname.includes('/profile') ||
                          location.pathname.startsWith('/mes-');
-
-  // ✅ CATEGORÍAS ACTUALIZADAS - Con rutas de imágenes PNG (coinciden con el seed)
- // ✅ CATEGORÍAS ACTUALIZADAS - Con rutas de imágenes PNG corregidas
-const categories = [
-  { name: 'Boutiques', icon: '/uploads/categories/boutiques/level1/boutiques.png', slug: 'boutiques', color: '#667eea', isStore: true },
-  { name: 'Immobilier', icon: '/uploads/categories/immobilier/level1/immobilier.png', slug: 'immobilier', color: '#f093fb' },
-  { name: 'Automobiles & Véhicules', icon: '/uploads/categories/vehicules/level1/vehicules.png', slug: 'vehicules', color: '#f5576c' },
-  { name: 'Pièces détachées', icon: '/uploads/categories/pieces-detachees/level1/pieces-detachees.png', slug: 'pieces-detachees', color: '#48c6ef' },
-  { name: 'Téléphonie & Accessoires', icon: '/uploads/categories/telephone/level1/telephone.png', slug: 'telephones', color: '#6a11cb' },
-  { name: 'Informatique', icon: '/uploads/categories/informatique/level1/informatique.png', slug: 'informatique', color: '#37ecba' },
-  { name: 'Électroménager & Électronique', icon: '/uploads/categories/electromenager/level1/electromenager.png', slug: 'electromenager', color: '#ff9a9e' },
-  { name: 'Vêtements & Mode', icon: '/uploads/categories/vetements/level1/vetements.png', slug: 'vetements', color: '#a18cd1' },
-  { name: 'Santé & Beauté', icon: '/uploads/categories/sante-beaute/level1/sante-beaute.png', slug: 'sante-beaute', color: '#fbc2eb' },
-  { name: 'Meubles & Maison', icon: '/uploads/categories/meubles/level1/meubles.png', slug: 'meubles', color: '#667eea' },
-  { name: 'Loisirs & Divertissements', icon: '/uploads/categories/loisirs/level1/loisirs.png', slug: 'loisirs', color: '#f093fb' },
-  { name: 'Sport', icon: '/uploads/categories/sport/level1/sport.png', slug: 'sport', color: '#f5576c' },
-  { name: "Offres & Demandes d'emploi", icon: '/uploads/categories/emploi/level1/emploi.png', slug: 'emploi', color: '#48c6ef' },
-  { name: 'Matériaux & Équipement', icon: '/uploads/categories/materiaux/level1/materiaux.png', slug: 'materiaux', color: '#6a11cb' },
-  { name: 'Alimentaires', icon: '/uploads/categories/alimentaires/level1/alimentaires.png', slug: 'alimentaires', color: '#37ecba' },
-  { name: 'Services', icon: '/uploads/categories/services/level1/services.png', slug: 'services', color: '#ff9a9e' },
-  { name: 'Voyages', icon: '/uploads/categories/voyages/level1/voyages.png', slug: 'voyages', color: '#a18cd1' }
-];
 
   // Emojis (mantenemos para iconos que no son categorías)
   const emojis = {
@@ -71,8 +94,8 @@ const categories = [
   };
 
   // Manejar error de imagen
-  const handleImageError = (categoryId) => {
-    setImageErrors(prev => ({ ...prev, [categoryId]: true }));
+  const handleImageError = (itemId) => {
+    setImageErrors(prev => ({ ...prev, [itemId]: true }));
   };
 
   // 📍 FUNCIÓN PARA GENERAR RUTAS
@@ -140,7 +163,7 @@ const categories = [
   // Componente LinkItem actualizado para soportar imágenes PNG
   const LinkItem = ({ 
     emoji, 
-    icon, // Nueva prop para imagen PNG
+    icon, // Prop para imagen PNG
     name, 
     path, 
     onClick, 
@@ -307,11 +330,10 @@ const categories = [
         isDashboardLink={true}
       />
       
-          <i className='fas fa-user'/> 
-        <LinkItem 
-
-        name="Mon profile" 
-        path={`/profile/${auth.user._id}`}
+      <LinkItem 
+        emoji="👤"
+        name="Mon profil" 
+        path={`/profile/${auth.user?._id}`}
         color="#8b5cf6" 
         isDashboardLink={true}
       />
@@ -391,12 +413,12 @@ const categories = [
         <>
           {renderGuestContent()}
           
-          {/* Categorías principales (para invitados) - AHORA CON IMÁGENES PNG */}
+          {/* Categorías principales (para invitados) - AHORA CON IMÁGENES PNG DESDE REDUX */}
           <div style={{ margin: '20px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
             {emojis.categories} Catégories
           </div>
           
-          {categories.map((category, index) => (
+          {categoryItems.map((category, index) => (
             <LinkItem 
               key={index} 
               icon={category.icon}
@@ -415,12 +437,12 @@ const categories = [
       <>
         {renderLoggedInContent()}
         
-        {/* Categorías principales (para usuarios autenticados) - AHORA CON IMÁGENES PNG */}
+        {/* Categorías principales (para usuarios autenticados) - AHORA CON IMÁGENES PNG DESDE REDUX */}
         <div style={{ margin: '20px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
           {emojis.categories} Catégories
         </div>
         
-        {categories.map((category, index) => (
+        {categoryItems.map((category, index) => (
           <LinkItem 
             key={index} 
             icon={category.icon}
@@ -456,16 +478,7 @@ const categories = [
         background: '#f8fafc'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ 
-            fontWeight: '700', 
-            fontSize: '1.1rem', 
-            color: '#1f2937',
-            background: 'linear-gradient(90deg, #667eea, #8b5cf6)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
-          }}>
-            
-          </div>
+          
           {auth.user && (
             <span style={{
               backgroundColor: '#10b981',

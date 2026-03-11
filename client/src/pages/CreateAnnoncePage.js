@@ -363,7 +363,7 @@ const CreateAnnoncePage = () => {
         return (
           <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="step-content">
             <Card className="border-0">
-              <Card.Body>
+              <div>
                 <h5 className="text-center mb-3">{isEdit ? '✏️ Modifier la catégorie' : '🏷️ Sélectionnez une catégorie'}</h5>
 
                 {isEdit && editDataLoaded && (
@@ -432,7 +432,7 @@ const CreateAnnoncePage = () => {
                     </Button>
                   </div>
                 )}
-              </Card.Body>
+              </div>
             </Card>
           </motion.div>
         );
@@ -443,7 +443,7 @@ const CreateAnnoncePage = () => {
         return (
           <motion.div key={`step${currentStep}`} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="step-content">
             <Card className="border-0">
-              <Card.Body>
+              <div>
                 {isEdit && commonData.title && (
                   <div className="alert alert-warning py-1 mb-3 small">
                     <div className="d-flex align-items-center">
@@ -498,7 +498,7 @@ const CreateAnnoncePage = () => {
                   handleChangeInput={handleInputChange}
                   isRTL={isRTL}
                 />
-              </Card.Body>
+              </div>
             </Card>
           </motion.div>
         );
@@ -507,7 +507,7 @@ const CreateAnnoncePage = () => {
         return (
           <motion.div key="step5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="step-content">
             <Card className="border-0">
-              <Card.Body>
+              <div>
                 {isEdit && commonData.title && (
                   <div className="alert alert-warning py-1 mb-3 small">
                     <div className="d-flex align-items-center">
@@ -559,7 +559,7 @@ const CreateAnnoncePage = () => {
                   isEdit={isEdit}
                   isSubmitting={isSubmitting}
                 />
-              </Card.Body>
+              </div>
             </Card>
           </motion.div>
         );
