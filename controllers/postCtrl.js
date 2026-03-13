@@ -1330,7 +1330,112 @@ getSavePosts: async (req, res) => {
 },
 
 
+getFilterOptions: async (req, res) => {
+  try {
+    const { category: categorySlug, sub: subSlug, article: articleSlug } = req.query;
+    if (!categorySlug) {
+      return res.status(400).json({ msg: "Se requiere categoría" });
+    }
 
+    // 1. Buscar categoría nivel 1
+    const categoryDoc = await Category.findOne({ slug: categorySlug, level: 1, isActive: true }).lean();
+    if (!categoryDoc) {
+      return res.status(404).json({ msg: "Categoría no encontrada" });
+    }
+
+    // 2. Obtener subcategorías y artículos
+    const [allSubCategories, allArticles] = await Promise.all([
+      Category.find({ parent: categoryDoc._id, level: 2, isActive: true }).lean(),
+      Category.find({ level: 3, isActive: true }).lean()
+    ]);
+
+    // 3. Construir children con artículos anidados (para el select)
+    const childrenWithArticles = allSubCategories.map(sub => ({
+      _id: sub._id,
+      name: sub.name,
+      slug: sub.slug,
+      level: sub.level,
+      icon: sub.icon || '📦',
+      iconType: sub.iconType || 'emoji',
+      iconColor: sub.iconColor || '#667eea',
+      bgColor: sub.bgColor || '#f0f3ff',
+      postCount: sub.postCount || 0,
+      articles: allArticles
+        .filter(a => String(a.parent) === String(sub._id))
+        .map(article => ({
+          _id: article._id,
+          name: article.name,
+          slug: article.slug,
+          level: article.level,
+          icon: article.icon || '📄',
+          iconType: article.iconType || 'emoji',
+          iconColor: article.iconColor || '#667eea',
+          bgColor: article.bgColor || '#f0f3ff',
+          postCount: article.postCount || 0
+        }))
+    }));
+
+    // 4. Obtener wilayas y rango de precios de los posts de esta categoría
+    const filterBase = { 
+      isActive: true,
+      $or: [
+        { category: categoryDoc._id },
+        { categorie: { $regex: new RegExp(categoryDoc.name, 'i') } }
+      ]
+    };
+    // Si hay subSlug, filtrar por subcategoría para limitar opciones
+    if (subSlug) {
+      const subDoc = allSubCategories.find(s => s.slug === subSlug);
+      if (subDoc) {
+        const articleSlugs = allArticles.filter(a => String(a.parent) === String(subDoc._id)).map(a => a.slug);
+        filterBase.$and = [{
+          $or: [
+            { subCategory: { $in: [subDoc.slug, ...articleSlugs] } },
+            { articleType: { $in: [subDoc.slug, ...articleSlugs] } }
+          ]
+        }];
+      }
+    }
+    if (articleSlug) {
+      // similar
+    }
+
+    const [wilayasResult, priceRangeResult] = await Promise.all([
+      Post.aggregate([
+        { $match: filterBase },
+        { $group: { _id: "$wilaya" } },
+        { $sort: { _id: 1 } }
+      ]),
+      Post.aggregate([
+        { $match: filterBase },
+        { $group: { _id: null, minPrice: { $min: "$price" }, maxPrice: { $max: "$price" } } }
+      ])
+    ]);
+
+    const wilayas = wilayasResult.map(w => ({ value: w._id, label: w._id })).filter(w => w.value);
+    const priceRange = priceRangeResult[0] || { minPrice: 0, maxPrice: 1000000 };
+
+    res.json({
+      success: true,
+      categoryInfo: {
+        _id: categoryDoc._id,
+        name: categoryDoc.name,
+        slug: categoryDoc.slug,
+        emoji: categoryDoc.emoji
+      },
+      children: childrenWithArticles,
+      wilayas,
+      priceRange: {
+        min: priceRange.minPrice,
+        max: priceRange.maxPrice
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ getFilterOptions error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+}
 
 
 

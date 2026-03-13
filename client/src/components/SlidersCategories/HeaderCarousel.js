@@ -14,15 +14,16 @@ const HeaderCarousel = memo(() => {
   
   // ===== URLs DIRECTAS DE CLOUDINARY =====
   const mainImages = [
-    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773122597/caoumiajj2j_g28c7e.png",
-     
-    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773122713/caoumiajj2_isoynj.jpg",
-    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773122775/caoumiajj_u6fu7u.jpg",
+    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773265475/automobile_sxuh2c.png",
+    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773265553/immobiler_ukz4xk.png",
+     "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773122713/caoumiajj2_isoynj.jpg"
+    
   ];
 
   const sideImages = [
-    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773122893/carousjhjhj2_ra5znt.png",
     "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773122901/carousjhjhj_rdunbx.png",
+    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773122893/carousjhjhj2_ra5znt.png",
+    "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773122901/carousjhjhj_rdunbx.png"
     
   ];
 

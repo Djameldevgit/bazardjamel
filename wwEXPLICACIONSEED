@@ -1,0 +1,14 @@
+ Scripts actuales
+uploadCategoriesToCloudinary.js
+
+Crea carpetas en Cloudinary con la estructura categories/categoria/subcategoria/....
+
+Sube las imágenes locales (desde client/public/categories) a esas carpetas.
+
+Genera un archivo cloudinary-mapping.json con las correspondencias entre rutas locales y URLs de Cloudinary.
+
+seedCategoriesCloudinaryParaMongodb.js
+
+Inserta en MongoDB la estructura completa de categorías (niveles 1, 2, 3) con sus slugs, nombres, niveles, etc.
+
+Incluye el campo icon con URLs hardcodeadas (ej: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1/icons/vehicules/voitures.png').

@@ -8,12 +8,14 @@ import { useParams } from 'react-router-dom'; // por si acaso
 const IMAGES_BY_CATEGORY = {
   vehicules: {
     main: [
+      "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773266802/caoumiajj_rnev3f.jpg",
       'https://res.cloudinary.com/dfjipgj2o/image/upload/v1773123129/caoumiajj_ywdbrh.jpg',
-       
+       "https://images.unsplash.com/photo-1508798179027-a00aa5326443?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fHZlaGljdWxlc3xlbnwwfHwwfHx8MA%3D%3D"
     ],
     side: [
-      'https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1504215680853-026ed2a45def?auto=format&fit=crop&w=600&q=80',
+      'https://plus.unsplash.com/premium_photo-1742418773865-5b8956a240c6?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTN8fHZlaGljdWxlc3xlbnwwfHwwfHx8MA%3D%3D',
+      'https://www.google.com/imgres?imgurl=https%3A%2F%2Fimg.freepik.com%2Fvector-premium%2Fmotocicleta-deportiva-azul-negra-aislada-sobre-fondo-transparente_1190923-3559.jpg%3Fsemt%3Dais_rp_50_assets%26w%3D740%26q%3D80&tbnid=UWuv9qsIDeRZcM&vet=10CAUQxiAoAWoXChMI4MGg_-yYkwMVAAAAAB0AAAAAEAc..i&imgrefurl=https%3A%2F%2Fwww.freepik.es%2Fvectores%2Fmotos-png%2F3&docid=Qj-3xghxPDvAsM&w=740&h=740&q=motos%20png&ved=0CAUQxiAoAWoXChMI4MGg_-yYkwMVAAAAAB0AAAAAEAc',
+    "https://plus.unsplash.com/premium_photo-1661963005592-182d602c6a3f?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTN8fG1vdG9zfGVufDB8fDB8fHww"
     ]
   },
   vetements: {
@@ -149,14 +151,14 @@ const IMAGES_BY_CATEGORY = {
   },
   voyages: {
     main: [
-      'https://images.unsplash.com/photo-1500835556837-99ac94a94552?auto=format&fit=crop&w=1200&q=80',
+      'https://agenciaune.com/wp-content/uploads/2020/02/a6b425_48880d306dd5487ab1f9fed9a4ab7f91_mv2.jpg',
       "https://res.cloudinary.com/dfjipgj2o/image/upload/v1773191664/0000000000000000hj_lzx59w.png",
       'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=80',
     ],
     side: [
       'https://res.cloudinary.com/dfjipgj2o/image/upload/v1773191664/0000000000000000hj_lzx59w.png',
       'https://images.unsplash.com/photo-1488085061387-422e29b40080?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1473625247510-8ceb1760943f?auto=format&fit=crop&w=600&q=80',
+      'https://img.freepik.com/vector-gratis/fondo-vacaciones-dias-festivos-maleta-globo-realista-camara-fotos_1284-10476.jpg?semt=ais_hybrid&w=740&q=80',
     ]
   },
   boutiques: {

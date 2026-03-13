@@ -1,4 +1,3 @@
-// node seedCategoriesCloudinary.js
 require('dotenv').config();
 const mongoose = require('mongoose');
 const Category = require('./models/categoryModel');
@@ -16,25 +15,26 @@ db.once('open', async () => {
   await seedCategories();
 });
 
-// Crear slug único - SOLO EL NOMBRE, SIN PREFIJOS
-const createSlug = (text, existingSlugs = new Set()) => {
-  let baseSlug = text.toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+// Configuración de Cloudinary
+const CLOUD_NAME = 'dfjipgj2o';
+const BASE_URL = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/categories`; // Sin versión
 
-  let slug = baseSlug;
-  let counter = 1;
-
-  while (existingSlugs.has(slug)) {
-    slug = `${baseSlug}-${counter}`;
-    counter++;
+// Función para generar URL según el nivel y los slugs de los padres
+const generateIconUrl = (categorySlug, parentSlug = null, grandParentSlug = null) => {
+  let path = '';
+  if (grandParentSlug) {
+    // Nivel 3: categoría/ subcategoría/ archivo.png
+    path = `${grandParentSlug}/${parentSlug}/${categorySlug}.png`;
+  } else if (parentSlug) {
+    // Nivel 2: categoría/ archivo.png
+    path = `${parentSlug}/${categorySlug}.png`;
+  } else {
+    // Nivel 1: categoría/ archivo.png
+    path = `${categorySlug}/${categorySlug}.png`;
   }
-
-  existingSlugs.add(slug);
-  return slug;
+  return `${BASE_URL}/${path}`;
 };
+
 
 // 🎯 ESTRUCTURA PERFECTA CON ICONOS PNG PARA TODOS LOS NIVELES - ACTUALIZADO CON URLs DE CLOUDINARY
 const categoriesData = [

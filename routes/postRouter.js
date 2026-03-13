@@ -13,7 +13,7 @@ router.get('/recent', postCtrl.getRecentPosts);
  
 router.get('/posts/filter', postCtrl.filterPosts);
 router.get('/posts/similar', postCtrl.getSimilarPosts);
-
+router.get('/filters/options', postCtrl.getFilterOptions);
 // ============ 3. RUTAS CON PARÁMETROS ESPECÍFICOS ============
 router.get('/search/:query', postCtrl.searchPosts);
 router.get('/user_posts/:id', auth, postCtrl.getUserPosts);

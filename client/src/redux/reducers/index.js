@@ -32,9 +32,9 @@ import category from './categoryReducer'
 import { accordionReducer } from './accordionReducer'
 import boutiquePost  from './boutiquePostReducer'
  import boutique from './boutiqueReducer'
+import   filter   from './filterReducer.'
  
  
-// Solo importar el reducer que usas
  
 
 export default combineReducers({
@@ -65,5 +65,5 @@ export default combineReducers({
     form,
     settings,
     privacy,
-boutique ,boutiquePost,  posts, category,accordionReducer
+boutique ,boutiquePost,  posts, category,accordionReducer, filter 
 })

@@ -544,3 +544,32 @@ export const resetCategoryState = () => (dispatch) => {
   dispatch({ type: types.SET_ACTIVE_ARTICLE, payload: null });
   // También puedes despachar un tipo específico de reset si lo necesitas
 };
+export const getFilterOptions = (categorySlug, subSlug = null, articleSlug = null) => async (dispatch) => {
+  try {
+    dispatch({ type: types.GET_FILTER_OPTIONS });
+
+    const params = { category: categorySlug };
+    if (subSlug) params.sub = subSlug;
+    if (articleSlug) params.article = articleSlug;
+
+    const { data } = await axios.get(`${BASE_URL}/api/filters/options`, { params });
+
+    dispatch({
+      type: types.GET_FILTER_OPTIONS_SUCCESS,
+      payload: {
+        categoryInfo: data.categoryInfo,
+        children: data.children,
+        wilayas: data.wilayas,
+        priceRange: data.priceRange
+      }
+    });
+
+    return data;
+  } catch (error) {
+    dispatch({
+      type: types.GET_FILTER_OPTIONS_FAIL,
+      payload: error.response?.data?.message || error.message
+    });
+    throw error;
+  }
+};
