@@ -10,7 +10,7 @@ export const BOUTIQUE_TYPES = {
   GET_BOUTIQUE: 'GET_BOUTIQUE',
   UPDATE_BOUTIQUE: 'UPDATE_BOUTIQUE',
   DELETE_BOUTIQUE: 'DELETE_BOUTIQUE',
- 
+  INCREMENT_BOUTIQUE_VIEW:'INCREMENT_BOUTIQUE_VIEW',
   GET_BOUTIQUES_BY_CATEGORY: 'GET_BOUTIQUES_BY_CATEGORY',
   GET_BOUTIQUES_FOR_HOME: 'GET_BOUTIQUES_FOR_HOME',
   // User specific
@@ -427,3 +427,25 @@ export const resetBoutiquesByCategory = (categoryPath) => ({
 export const resetAllBoutiques = () => ({
   type: 'CLEAR_BOUTIQUES'
 });
+
+ 
+export const incrementBoutiqueView = (boutiqueId) => async (dispatch) => {
+  try {
+    const res = await axios.patch(`/api/boutique/${boutiqueId}/view`);
+
+    dispatch({
+      type: 'UPDATE_BOUTIQUE_STATS',
+      payload: {
+        boutiqueId,
+        stats: res.data.stats
+      }
+    });
+
+  } catch (err) {
+    console.error('❌ Error incrementando views:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: {error: err.response?.data?.message || err.message}
+    });
+  }
+};

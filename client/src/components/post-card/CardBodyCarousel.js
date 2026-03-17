@@ -1,13 +1,12 @@
-// 📂 frontend/src/components/CardBodyCarousel.jsx - VERSIÓN CON ALTURA PERSONALIZABLE
+// 📂 frontend/src/components/CardBodyCarousel.jsx
 import React, { useState, useEffect } from 'react';
 import { Carousel, Spinner, Modal, Button } from 'react-bootstrap';
 import { useSelector, useDispatch } from 'react-redux';
 import { useHistory } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { Heart, HeartFill, Bookmark, BookmarkFill } from 'react-bootstrap-icons';
+import { Heart, HeartFill, Bookmark, BookmarkFill, Eye } from 'react-bootstrap-icons';
 import { likePost, unLikePost, savePost, unSavePost } from '../../redux/actions/postAction';
 
-const CardBodyCarousel = ({ post, customHeight }) => { // ← AÑADIMOS customHeight como prop
+const CardBodyCarousel = ({ post, customHeight }) => {
   const [isLike, setIsLike] = useState(false);
   const [loadLike, setLoadLike] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -19,8 +18,7 @@ const CardBodyCarousel = ({ post, customHeight }) => { // ← AÑADIMOS customHe
   
   const images = post?.images || [];
 
-  const { auth, theme = 'light' } = useSelector((state) => state);
-  const { t } = useTranslation();
+  const { auth } = useSelector((state) => state);
   const history = useHistory();
   const dispatch = useDispatch();
 
@@ -88,23 +86,24 @@ const CardBodyCarousel = ({ post, customHeight }) => { // ← AÑADIMOS customHe
     setIndex(selectedIndex);
   };
 
-  // ALTURA: usar customHeight si se proporciona, sino usar valores por defecto
+  // Altura de la imagen: customHeight si se proporciona, si no, valores responsive
   const getImageHeight = () => {
-    if (customHeight) return customHeight; // ← ALTURA PERSONALIZADA DESDE EL PADRE
-    
-    // Valores por defecto
-    if (isMobile) return '180px';
-    return '220px';
+    if (customHeight) return customHeight;
+    return isMobile ? '180px' : '220px';
   };
 
   const imageHeight = getImageHeight();
 
-  // Contenedor de imagen con altura fija
+  // Tamaño de iconos según móvil
+  const iconSize = isMobile ? 14 : 16;
+  const buttonSize = isMobile ? 30 : 32;
+
+  // Contenedor de imagen
   const ImageContainer = ({ src, alt }) => (
     <div 
       style={{
         width: '100%',
-        height: imageHeight, // ← Usamos la altura calculada
+        height: imageHeight,
         backgroundColor: '#f5f5f5',
         display: 'flex',
         alignItems: 'center',
@@ -118,7 +117,7 @@ const CardBodyCarousel = ({ post, customHeight }) => { // ← AÑADIMOS customHe
         style={{
           width: '100%',
           height: '100%',
-          objectFit: 'cover', // 'cover' para llenar todo el espacio
+          objectFit: 'cover',
           display: 'block'
         }}
         loading="lazy"
@@ -134,7 +133,7 @@ const CardBodyCarousel = ({ post, customHeight }) => { // ← AÑADIMOS customHe
       {/* Carrusel de imágenes */}
       <div onClick={() => history.push(`/post/${post._id}`)} style={{ cursor: 'pointer' }}>
         {loading ? (
-          <div style={{...styles.loaderContainer, height: imageHeight}}> {/* ← Altura dinámica */}
+          <div style={{ ...styles.loaderContainer, height: imageHeight }}>
             <Spinner animation="border" variant="secondary" size="sm" />
           </div>
         ) : images.length > 0 ? (
@@ -156,7 +155,6 @@ const CardBodyCarousel = ({ post, customHeight }) => { // ← AÑADIMOS customHe
                   alt={`${post.title} - ${idx + 1}`}
                 />
                 
-                {/* Contador de imágenes (solo si hay más de 1) */}
                 {images.length > 1 && (
                   <div style={styles.imageCounter}>
                     {idx + 1}/{images.length}
@@ -166,51 +164,61 @@ const CardBodyCarousel = ({ post, customHeight }) => { // ← AÑADIMOS customHe
             ))}
           </Carousel>
         ) : (
-          <div style={{...styles.noImageContainer, height: imageHeight}}> {/* ← Altura dinámica */}
-            {t("noImagesAvailable")}
+          <div style={{ ...styles.noImageContainer, height: imageHeight }}>
+            Aucune image
           </div>
         )}
       </div>
 
-      {/* Botón de guardado - arriba derecha */}
+      {/* Botón de guardado */}
       <button
         onClick={handleSave}
         disabled={saveLoad}
         style={{
           ...styles.actionButton,
           ...styles.saveButton,
+          width: buttonSize,
+          height: buttonSize,
           backgroundColor: saved ? '#ffc107' : '#ffffff'
         }}
       >
         {saveLoad ? (
           <Spinner size="sm" />
         ) : saved ? (
-          <BookmarkFill size={isMobile ? 14 : 16} color="#ffffff" />
+          <BookmarkFill size={iconSize} color="#ffffff" />
         ) : (
-          <Bookmark size={isMobile ? 14 : 16} color="#6b7280" />
+          <Bookmark size={iconSize} color="#6b7280" />
         )}
       </button>
 
-      {/* Botón de like - arriba izquierda */}
+     {/* Contador de views */}
+{post?.views > 0 && (
+  <div style={styles.viewCounter}>
+    <Eye size={10} color="#ffffff" />
+    <span>{post.views}</span>
+  </div>
+)}
       <button
         onClick={handleLike}
         disabled={loadLike}
         style={{
           ...styles.actionButton,
           ...styles.likeButton,
+          width: buttonSize,
+          height: buttonSize,
           backgroundColor: isLike ? '#dc2626' : '#ffffff'
         }}
       >
         {loadLike ? (
           <Spinner size="sm" />
         ) : isLike ? (
-          <HeartFill size={isMobile ? 14 : 16} color="#ffffff" />
+          <HeartFill size={iconSize} color="#ffffff" />
         ) : (
-          <Heart size={isMobile ? 14 : 16} color="#6b7280" />
+          <Heart size={iconSize} color="#6b7280" />
         )}
       </button>
 
-      {/* Contador de likes (si hay) */}
+      {/* Contador de likes */}
       {post?.likes?.length > 0 && (
         <div style={styles.likeCounter}>
           <HeartFill size={10} color="#dc2626" />
@@ -218,7 +226,7 @@ const CardBodyCarousel = ({ post, customHeight }) => { // ← AÑADIMOS customHe
         </div>
       )}
 
-      {/* Modal de autenticación */}
+      {/* Modal de autenticación (en francés) */}
       <Modal 
         show={showModal} 
         onHide={() => setShowModal(false)}
@@ -228,13 +236,13 @@ const CardBodyCarousel = ({ post, customHeight }) => { // ← AÑADIMOS customHe
         <Modal.Header closeButton>
           <Modal.Title style={styles.modalTitle}>
             <Heart size={18} color="#dc2626" />
-            <span>{t("title")}</span>
+            <span>Authentification requise</span>
           </Modal.Title>
         </Modal.Header>
         
         <Modal.Body>
           <p style={styles.modalText}>
-            {t("message")}
+            Vous devez vous connecter ou vous inscrire pour aimer ou sauvegarder une annonce.
           </p>
           
           <div style={styles.modalButtons}>
@@ -244,7 +252,7 @@ const CardBodyCarousel = ({ post, customHeight }) => { // ← AÑADIMOS customHe
               style={styles.modalButton}
               onClick={() => history.push("/login")}
             >
-              {t("login")}
+              Se connecter
             </Button>
             
             <Button
@@ -253,19 +261,18 @@ const CardBodyCarousel = ({ post, customHeight }) => { // ← AÑADIMOS customHe
               style={styles.modalButton}
               onClick={() => history.push("/register")}
             >
-              {t("register")}
+              S'inscrire
             </Button>
           </div>
         </Modal.Body>
       </Modal>
 
-      {/* Estilos CSS simples - sin animaciones */}
       <style>{styles.globalStyles}</style>
     </div>
   );
 };
 
-// Estilos en objeto para mejor rendimiento
+// Estilos en objeto
 const styles = {
   container: {
     position: 'relative',
@@ -295,8 +302,6 @@ const styles = {
   },
   actionButton: {
     position: 'absolute',
-    width: '32px',
-    height: '32px',
     borderRadius: '50%',
     border: '1px solid #e5e7eb',
     display: 'flex',
@@ -311,6 +316,24 @@ const styles = {
     top: '8px',
     right: '8px'
   },
+  viewCounter: {
+    position: 'absolute',
+    top: '45px',
+    right: '8px',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    color: '#ffffff',
+    padding: '2px 8px',
+    borderRadius: '12px',
+    fontSize: '13px',
+    fontWeight: '500',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    zIndex: 15
+  },
+
+
+
   likeButton: {
     top: '8px',
     left: '8px'

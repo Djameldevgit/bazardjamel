@@ -1,4 +1,4 @@
-// node uploadCategoriesToCloudinary.js
+// node subircategoriascloudinary.js
 // ============================================================
 // Script para crear carpetas y subir imágenes de categorías a Cloudinary
 // con estructura: Home/categories/categoria/subcategoria/...

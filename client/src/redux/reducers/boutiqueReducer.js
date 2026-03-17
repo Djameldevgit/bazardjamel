@@ -51,7 +51,15 @@ const boutiqueReducer = (state = initialState, action) => {
           [action.payload.category]: action.payload.loading
         }
       };
-    
+      case 'UPDATE_BOUTIQUE_STATS':
+      return {
+        ...state,
+        boutiques: state.boutiques.map(b =>
+          b._id === action.payload.boutiqueId
+            ? { ...b, stats: action.payload.stats }
+            : b
+        )
+      };
     // ============ GET BOUTIQUES BY CATEGORY ============
     case BOUTIQUE_TYPES.GET_BOUTIQUES_BY_CATEGORY:
       const { 

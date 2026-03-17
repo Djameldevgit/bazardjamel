@@ -483,9 +483,29 @@ updateBoutique: async (req, res) => {
     }
   },
   
+  // 📂 ctrls/boutiquePostCtrl.js
 
+  // boutiqueCtrl.js
+incrementBoutiqueView: async (req, res) => {
+  try {
+    const { boutiqueId } = req.params;
+    const boutique = await Boutique.findById(boutiqueId);
 
+    if (!boutique) return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
 
+    // Incrementar vistas
+    boutique.stats.vues = (boutique.stats.vues || 0) + 1;
+    await boutique.save();
+
+    res.json({
+      success: true,
+      stats: boutique.stats
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+}
 };
 
 module.exports = boutiqueCtrl;

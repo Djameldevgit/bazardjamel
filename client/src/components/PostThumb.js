@@ -15,6 +15,7 @@ import {
   GeoAlt,
   PersonCircle
 } from 'react-bootstrap-icons';
+import { Modal, Button } from 'react-bootstrap'; // ← Importamos Modal y Button
 import { likePost, unLikePost, savePost, unSavePost } from '../redux/actions/postAction';
 import ImageWithFallback from './ImageWithFallback';
 import moment from 'moment';
@@ -31,6 +32,7 @@ const PostThumb = ({ posts, result }) => {
     const [savedPosts, setSavedPosts] = useState({});
     const [carouselIndexes, setCarouselIndexes] = useState({});
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    const [showModal, setShowModal] = useState(false); // ← Estado para el modal
 
     // Detectar tamaño de pantalla
     useEffect(() => {
@@ -71,7 +73,7 @@ const PostThumb = ({ posts, result }) => {
         setCarouselIndexes(initialCarousel);
     }, [posts, auth.user]);
 
-    // Formatear precio (solo número + DA)
+    // Formatear precio
     const formatPrice = (price) => {
         if (!price && price !== 0) return null;
         return `${price?.toLocaleString()} DA`;
@@ -119,7 +121,10 @@ const PostThumb = ({ posts, result }) => {
     const handleLike = async (post, e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (!auth.token || !post) return;
+        if (!auth.token) {
+            setShowModal(true); // ← Mostrar modal si no hay token
+            return;
+        }
         
         const postId = post._id;
         const wasLiked = likedPosts[postId];
@@ -140,7 +145,10 @@ const PostThumb = ({ posts, result }) => {
     const handleSave = async (post, e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (!auth.token || !post) return;
+        if (!auth.token) {
+            setShowModal(true); // ← Mostrar modal si no hay token
+            return;
+        }
         
         const postId = post._id;
         const wasSaved = savedPosts[postId];
@@ -212,7 +220,7 @@ const PostThumb = ({ posts, result }) => {
                             className="post-thumb-link"
                         >
                             <div className="post-thumb-card">
-                                {/* ====== CONTENEDOR DE IMAGEN ====== */}
+                                {/* Contenedor de imagen */}
                                 <div className="post-thumb-image-container">
                                     {currentImage ? (
                                         <>
@@ -295,7 +303,7 @@ const PostThumb = ({ posts, result }) => {
                                     )}
                                 </div>
 
-                                {/* ====== FOOTER DEL POST (estilo minimalista) ====== */}
+                                {/* Footer del post */}
                                 <div className="post-thumb-footer">
                                     {/* FILA 1: Título */}
                                     <div className="post-thumb-row">
@@ -304,7 +312,7 @@ const PostThumb = ({ posts, result }) => {
                                         </span>
                                     </div>
 
-                                    {/* FILA 2: Precio (solo en rojo) */}
+                                    {/* FILA 2: Precio */}
                                     {formatPrice(post.price) && (
                                         <div className="post-thumb-row">
                                             <span className="post-thumb-price">
@@ -335,21 +343,7 @@ const PostThumb = ({ posts, result }) => {
                                         </span>
                                     </div>
 
-                                    {/* FILA 5: Vendedor */}
-                                    <div className="post-thumb-seller">
-                                        {post.user?.avatar ? (
-                                            <img 
-                                                src={post.user.avatar} 
-                                                alt={post.user?.name || 'Vendeur'}
-                                                className="post-thumb-seller-avatar"
-                                            />
-                                        ) : (
-                                            <PersonCircle size={16} color="#9ca3af" />
-                                        )}
-                                        <span className="post-thumb-seller-name">
-                                            {post.user?.name || 'Vendeur'}
-                                        </span>
-                                    </div>
+                                  
                                 </div>
                             </div>
                         </Link>
@@ -357,7 +351,40 @@ const PostThumb = ({ posts, result }) => {
                 );
             })}
 
-            {/* Estilos CSS simplificados */}
+            {/* Modal de autenticación */}
+            <Modal show={showModal} onHide={() => setShowModal(false)} centered size="sm">
+                <Modal.Header closeButton>
+                    <Modal.Title style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Heart size={18} color="#dc2626" />
+                        <span>Authentification requise</span>
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <p style={{ color: '#6b7280', marginBottom: '12px' }}>
+                        Vous devez vous connecter ou vous inscrire pour aimer ou sauvegarder une annonce.
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <Button 
+                            variant="primary" 
+                            size="sm" 
+                            style={{ flex: 1 }}
+                            onClick={() => window.location.href = '/login'}
+                        >
+                            Se connecter
+                        </Button>
+                        <Button 
+                            variant="success" 
+                            size="sm" 
+                            style={{ flex: 1 }}
+                            onClick={() => window.location.href = '/register'}
+                        >
+                            S'inscrire
+                        </Button>
+                    </div>
+                </Modal.Body>
+            </Modal>
+
+            {/* Estilos CSS (se mantienen igual) */}
             <style jsx="true">{`
                 .post-thumb-grid {
                     display: grid;
@@ -516,7 +543,7 @@ const PostThumb = ({ posts, result }) => {
                 .post-thumb-price {
                     font-size: ${isMobile ? '13px' : '14px'};
                     font-weight: 600;
-                    color: #dc2626; /* Solo el precio en rojo */
+                    color: #dc2626;
                 }
                 
                 .post-thumb-location {

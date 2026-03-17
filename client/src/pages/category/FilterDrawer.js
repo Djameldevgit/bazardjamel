@@ -331,14 +331,9 @@ const FilterDrawer = ({
         {children.length > 0 && (
           <Accordion defaultActiveKey="0" style={styles.accordion}>
             <Accordion.Item eventKey="0" style={styles.accordionItem}>
-              <Accordion.Header>
-                <div style={styles.accordionTitle}>
-                  <span>Catégories</span>
-                  <span style={styles.countBadge}>{children.length}</span>
-                </div>
-              </Accordion.Header>
+            
               <Accordion.Body style={styles.accordionBody}>
-                <Form.Label style={styles.label}>Sous-catégorie</Form.Label>
+                <Form.Label style={styles.label}>Sous catégorie</Form.Label>
                 <Select
                   options={subCategoryOptions}
                   value={subCategoryOptions.find(opt => opt.value === tempFilters.subCategory) || null}
@@ -375,12 +370,7 @@ const FilterDrawer = ({
         {/* SECCIÓN LOCALISATION CON JSON */}
         <Accordion defaultActiveKey="1" style={styles.accordion}>
           <Accordion.Item eventKey="1" style={styles.accordionItem}>
-            <Accordion.Header>
-              <div style={styles.accordionTitle}>
-                <GeoAlt size={16} color="#667eea" style={{ marginRight: '8px' }} />
-                <span>Localisation</span>
-              </div>
-            </Accordion.Header>
+           
             <Accordion.Body style={styles.accordionBody}>
               <Form.Label style={styles.label}>Wilaya</Form.Label>
               <Form.Select
@@ -434,12 +424,12 @@ const FilterDrawer = ({
         {/* SECCIÓN PRIX (igual) */}
         <Accordion defaultActiveKey="2" style={styles.accordion}>
           <Accordion.Item eventKey="2" style={styles.accordionItem}>
-            <Accordion.Header>
+        
               <div style={styles.accordionTitle}>
                 <CurrencyEuro size={16} color="#667eea" style={{ marginRight: '8px' }} />
                 <span>Prix</span>
               </div>
-            </Accordion.Header>
+          
             <Accordion.Body style={styles.accordionBody}>
               <div style={styles.priceRangeContainer}>
                 <Slider
@@ -498,12 +488,12 @@ const FilterDrawer = ({
         {/* SECCIÓN TRI (igual) */}
         <Accordion defaultActiveKey="3" style={styles.accordion}>
           <Accordion.Item eventKey="3" style={styles.accordionItem}>
-            <Accordion.Header>
+            
               <div style={styles.accordionTitle}>
                 <SortDown size={16} color="#667eea" style={{ marginRight: '8px' }} />
                 <span>Trier par</span>
               </div>
-            </Accordion.Header>
+           
             <Accordion.Body style={styles.accordionBody}>
               <div style={styles.sortOptions}>
                 {sortOptions.map(option => (

@@ -106,7 +106,7 @@ const boutiqueSchema = new mongoose.Schema({
     type: String,
     default: '#2563eb'
   }, // Color principal del diseño.
-
+  
   stats: {
     vues: { type: Number, default: 0 }, // Número de visitas recibidas.
     produits: { type: Number, default: 0 }, // Cantidad de productos publicados.

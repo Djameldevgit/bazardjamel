@@ -6,7 +6,7 @@ import CardBodyCarousel from '../home/post_card/CardBodyCarousel';
 
 const PostCard = ({post }) => {
     return (
-        <div className="card my-3"> 
+        <div  > 
                 
             <CardBodyCarousel  post={post}  />
             

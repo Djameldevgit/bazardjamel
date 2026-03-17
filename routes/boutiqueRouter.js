@@ -6,7 +6,8 @@ const auth = require('../middleware/auth');
 // Rutas públicas
 router.get('/boutique/filter', boutiqueCtrl.filterBoutiques);
 router.get('/boutique/:id', boutiqueCtrl.getBoutique);
-
+// Incrementar views de un producto
+router.patch('/boutique/:boutiqueId/view', boutiqueCtrl.incrementBoutiqueView);
 // Rutas protegidas
 router.post('/boutique', auth, boutiqueCtrl.createBoutique);
 router.patch('/boutique/:boutiqueId', auth, boutiqueCtrl.updateBoutique);

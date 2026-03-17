@@ -14,14 +14,12 @@ const DescriptionPost = ({ post }) => {
     const { accordionCategories = [], accordionLoading } = useSelector(state => state.category || {});
     const history = useHistory();
 
-    // Cargar categorías si no están disponibles
     useEffect(() => {
         if (accordionCategories.length === 0 && !accordionLoading) {
             dispatch(getCategoriesForAccordion());
         }
     }, [dispatch, accordionCategories.length, accordionLoading]);
 
-    // 🎯 OBTENER TODOS LOS DATOS COMBINADOS (post + categorySpecificData)
     const postData = useMemo(() => {
         if (!post) return {};
         const allData = { ...post };
@@ -31,7 +29,6 @@ const DescriptionPost = ({ post }) => {
         return allData;
     }, [post]);
 
-    // 🎯 FUNCIÓN PARA OBTENER LA RUTA LEGIBLE DE LA CATEGORÍA
     const getCategoryDisplay = useCallback(() => {
         const categorie = postData.categorie;
         const subCategory = postData.subCategory;
@@ -39,12 +36,11 @@ const DescriptionPost = ({ post }) => {
 
         if (!categorie) return null;
 
-        // Fallback con slugs si no se encuentran nombres
         let fallbackPath = categorie;
         if (subCategory) fallbackPath += ` → ${subCategory}`;
         if (articleType && articleType !== subCategory) fallbackPath += ` → ${articleType}`;
 
-        if (accordionCategories.length === 0) return fallbackPath; // aún no cargadas
+        if (accordionCategories.length === 0) return fallbackPath;
 
         const mainCat = accordionCategories.find(c => c.slug === categorie || c.name === categorie);
         if (!mainCat) return fallbackPath;
@@ -60,7 +56,6 @@ const DescriptionPost = ({ post }) => {
                     path += ` → ${level2 ? level2.name : articleType}`;
                 }
             } else {
-                // Buscar como nivel3
                 for (const l1 of mainCat.children || []) {
                     const l2 = l1.children?.find(c => c.slug === subCategory || c.name === subCategory);
                     if (l2) {
@@ -81,7 +76,6 @@ const DescriptionPost = ({ post }) => {
         return path;
     }, [postData, accordionCategories]);
 
-    // 🎨 MAPA DE ICONOS POR CAMPO (completo)
     const fieldIconMap = {
         'categorie': '📂',
         'subCategory': '📁',
@@ -212,7 +206,6 @@ const DescriptionPost = ({ post }) => {
         return translations[field] || field;
     };
 
-    // 📊 FILTRAR Y ORDENAR CAMPOS
     const getFieldsToDisplay = useMemo(() => {
         if (!postData) return [];
         const excludeFields = [
@@ -267,11 +260,11 @@ const DescriptionPost = ({ post }) => {
                     </h5>
                 </Card.Header>
                 <Card.Body className="p-4">
-                    <h1 className="fw-bold mb-3" style={{ fontSize: '1.8rem', color: '#111827' }}>
+                    <h1 className="fw-bold mb-3" style={{ fontSize: '1.8rem', color: '#111827', wordBreak: 'break-word' }}>
                         {title}
                     </h1>
                     {description && (
-                        <p className="text-muted mb-0" style={{ fontSize: '1rem', lineHeight: '1.6' }}>
+                        <p className="text-muted mb-0" style={{ fontSize: '1rem', lineHeight: '1.6', wordBreak: 'break-word' }}>
                             {description}
                         </p>
                     )}
@@ -281,7 +274,6 @@ const DescriptionPost = ({ post }) => {
     };
 
     const FieldItem = ({ field }) => {
-        // Ocultar subCategory y articleType si ya se muestran en la ruta de categoría
         if ((field === 'subCategory' || field === 'articleType') && postData.categorie) return null;
 
         let displayValue;
@@ -302,22 +294,25 @@ const DescriptionPost = ({ post }) => {
             displayLabel = translateField(field);
         }
 
+        // Determinar si el valor es largo (más de 30 caracteres) para ajustar el layout en móvil
+        const isLongValue = displayValue.length > 30;
+
         return (
             <div className="p-3 border-bottom">
-                <div className="d-flex align-items-center justify-content-between">
+                <div className={`d-flex ${isLongValue ? 'flex-column align-items-start' : 'align-items-center justify-content-between'} flex-wrap gap-2`}>
                     <div className="d-flex align-items-center">
-                        <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
+                        <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px', flexShrink: 0 }}>
                             {displayIcon}
                         </div>
-                        <span className="text-muted me-2">{displayLabel}:</span>
+                        <span className="text-muted me-2" style={{ whiteSpace: 'nowrap' }}>{displayLabel}:</span>
                     </div>
-                    <div className="d-flex align-items-center">
+                    <div className={`d-flex align-items-center ${isLongValue ? 'ms-4' : ''}`} style={{ maxWidth: '100%', wordBreak: 'break-word' }}>
                         {field === 'price' ? (
-                            <span className="fw-bold" style={{ color: '#dc2626' }}>
+                            <span className="fw-bold" style={{ color: '#dc2626', whiteSpace: 'normal' }}>
                                 {displayValue}
                             </span>
                         ) : (
-                            <span className="fw-bold text-dark">
+                            <span className="fw-bold text-dark" style={{ whiteSpace: 'normal' }}>
                                 {displayValue}
                             </span>
                         )}
@@ -349,6 +344,7 @@ const DescriptionPost = ({ post }) => {
                         <h5 className="mb-0 fw-bold text-dark">
                             <span style={{ fontSize: '1.2rem', marginRight: '8px' }}>📋</span>
                             Caractéristiques détaillées
+                            <span>👁 vistas: {post.views}</span>
                         </h5>
                     </Card.Header>
                     <Card.Body className="p-0">

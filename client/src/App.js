@@ -8,8 +8,7 @@ import Register from './pages/register'
 import { refreshToken } from './redux/actions/authAction'
 import io from 'socket.io-client'
 import { GLOBALTYPES } from './redux/actions/globalTypes'
-//mport PageRender from './customRouter/PageRender'
-//import PrivateRouter from './customRouter/PrivateRouter'
+ 
 import Home from './pages/home';
 
 import NotFound from './pages/NotFound';

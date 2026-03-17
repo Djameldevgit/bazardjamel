@@ -17,16 +17,18 @@ router.get('/filters/options', postCtrl.getFilterOptions);
 // ============ 3. RUTAS CON PARÁMETROS ESPECÍFICOS ============
 router.get('/search/:query', postCtrl.searchPosts);
 router.get('/user_posts/:id', auth, postCtrl.getUserPosts);
-
+router.get('/public/user_posts/:userId', postCtrl.getPublicUserPosts);
 // ============ 4. RUTAS CON ID (DEBEN IR AL FINAL) ============
 router.route('/post/:id')
   .patch(auth, postCtrl.updatePost)
-  .get(postCtrl.getPost)
+  
   .delete(auth, postCtrl.deletePost);
+  
+  router.get('/post/:id', postCtrl.getPost);
 
-router.get('/posts/:id', postCtrl.getPostById);
-
-// ============ 5. RUTAS PROTEGIDAS POST ============
+router.get('/posts/:id/', postCtrl.getPostById);
+router.patch('/post/:id/view', postCtrl.addView)
+ 
 router.post('/posts', auth, postCtrl.createPost);
 
  

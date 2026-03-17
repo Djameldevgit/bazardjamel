@@ -3,8 +3,15 @@ import React, { useState, useEffect } from 'react';
 import PostThumb from './PostThumb';
 import LoadIcon from '../images/loading.gif';
 import LoadMoreBtn from './LoadMoreBtn';
-import { getDataAPI } from '../utils/fetchData';
-import { useSelector } from 'react-redux';
+
+// Función auxiliar para peticiones GET sin autenticación
+const fetchPublicAPI = async (url) => {
+  const response = await fetch(`${process.env.REACT_APP_API_URL}/api/${url}`);
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+  return await response.json();
+};
 
 const UserPosts = ({ 
     userId, 
@@ -13,7 +20,6 @@ const UserPosts = ({
     excludePostId = null // Para excluir el post actual en detail
 }) => {
     
-    const { auth } = useSelector(state => state);
     const [posts, setPosts] = useState([]);
     const [result, setResult] = useState(0);
     const [page, setPage] = useState(1);
@@ -23,23 +29,24 @@ const UserPosts = ({
     // Cargar posts iniciales
     useEffect(() => {
         const fetchUserPosts = async () => {
+            if (!userId) return;
+
             setLoading(true);
             try {
-                const res = await getDataAPI(
-                    `user_posts/${userId}?limit=${limit}&page=1`,
-                    auth.token
+                const res = await fetchPublicAPI(
+                    `public/user_posts/${userId}?limit=${limit}&page=1`
                 );
                 
                 // Filtrar el post actual si se proporciona excludePostId
-                let filteredPosts = res.data.posts || [];
+                let filteredPosts = res.posts || [];
                 if (excludePostId) {
                     filteredPosts = filteredPosts.filter(post => post._id !== excludePostId);
                 }
                 
                 setPosts(filteredPosts);
-                setResult(res.data.result || 0);
+                setResult(res.result || 0);
                 setPage(2); // Siguiente página
-                setHasMore(res.data.hasMore || false);
+                setHasMore(res.hasMore || false);
             } catch (err) {
                 console.error('Error cargando posts del usuario:', err);
             } finally {
@@ -47,32 +54,29 @@ const UserPosts = ({
             }
         };
 
-        if (userId && auth.token) {
-            fetchUserPosts();
-        }
-    }, [userId, auth.token, limit, excludePostId]);
+        fetchUserPosts();
+    }, [userId, limit, excludePostId]); // Eliminada dependencia de auth.token
 
     // Cargar más posts
     const handleLoadMore = async () => {
-        if (!hasMore || loading) return;
+        if (!hasMore || loading || !userId) return;
         
         setLoading(true);
         try {
-            const res = await getDataAPI(
-                `user_posts/${userId}?limit=${limit}&page=${page}`,
-                auth.token
+            const res = await fetchPublicAPI(
+                `public/user_posts/${userId}?limit=${limit}&page=${page}`
             );
             
             // Filtrar el post actual si se proporciona excludePostId
-            let newPosts = res.data.posts || [];
+            let newPosts = res.posts || [];
             if (excludePostId) {
                 newPosts = newPosts.filter(post => post._id !== excludePostId);
             }
             
             setPosts(prev => [...prev, ...newPosts]);
-            setResult(res.data.result || 0);
+            setResult(res.result || 0);
             setPage(prev => prev + 1);
-            setHasMore(res.data.hasMore || false);
+            setHasMore(res.hasMore || false);
         } catch (err) {
             console.error('Error cargando más posts:', err);
         } finally {
@@ -141,7 +145,7 @@ const UserPosts = ({
                 </>
             )}
 
-            {/* Estilos CSS */}
+            {/* Estilos CSS (se mantienen igual) */}
             <style jsx>{`
                 .user-posts-container {
                     background: transparent;
@@ -170,7 +174,6 @@ const UserPosts = ({
                     padding: 10px 0;
                 }
 
-                /* Responsive */
                 @media (max-width: 768px) {
                     .user-posts-container {
                         padding: 15px 0;
