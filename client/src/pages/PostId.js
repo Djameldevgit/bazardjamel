@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { Container,   Spinner, Alert,   Badge } from 'react-bootstrap';
+import { Container, Spinner, Alert, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { getSimilarPosts, clearSimilarPosts } from '../redux/actions/postAction';
- import PostCard from '../components/post-card/PostCard';
- import { addView } from '../redux/actions/postAction'
+import PostCard from '../components/post-card/PostCard';
+import { addView } from '../redux/actions/postAction';
 import PostThumb from '../components/PostThumb';
 import UserPosts from '../components/UserPosts';
 import { getDataAPI } from '../utils/fetchData';
@@ -133,19 +133,15 @@ const PostId = () => {
       dispatch(clearSimilarPosts());
     };
   }, [post, id, dispatch]);
+  
   useEffect(() => {
-
-    const viewed = localStorage.getItem(`viewed_${id}`)
-  
-    if(!viewed){
-  
-      dispatch(addView(id))
-  
-      localStorage.setItem(`viewed_${id}`, true)
-  
+    const viewed = localStorage.getItem(`viewed_${id}`);
+    if (!viewed) {
+      dispatch(addView(id));
+      localStorage.setItem(`viewed_${id}`, true);
     }
+  }, [id, dispatch]);
   
-  }, [id, dispatch])
   // Actualizar post si cambia detailPost
   useEffect(() => {
     if (detailPostData && detailPostData._id === id && !hasFetchedPostRef.current) {
@@ -192,7 +188,7 @@ const PostId = () => {
         <PostCard post={post} />
       </div>
 
-      {/* 2. POSTS DEL USUARIO */}
+      {/* 2. POSTS DEL USUARIO EN HORIZONTAL CON SCROLL - UNA SOLA FILA */}
       {post.user && post.user._id && (
         <div className="mb-5">
           <div className="mb-4">
@@ -201,14 +197,28 @@ const PostId = () => {
             </h5>
           </div>
           
-          <UserPosts
-            userId={post.user._id}
-            auth={auth}
-            limit={6}
-            excludePostId={post._id}
-            showTitle={false}
-            gridView={true}
-          />
+          {/* Contenedor con scroll horizontal - UNA SOLA FILA */}
+          <div
+            style={{
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              padding: '0.5rem 0 1rem 0',
+              scrollbarWidth: 'thin',
+              WebkitOverflowScrolling: 'touch',
+            }}
+            className="user-posts-horizontal-scroll"
+          >
+            <div style={{ display: 'flex', gap: '1rem', width: 'max-content', minWidth: '100%' }}>
+              <UserPosts
+                userId={post.user._id}
+                auth={auth}
+                limit={6}
+                excludePostId={post._id}
+                showTitle={false}
+                gridView={true}
+              />
+            </div>
+          </div>
         </div>
       )}
 
@@ -260,6 +270,58 @@ const PostId = () => {
           )}
         </div>
       )}
+
+      {/* Estilos para forzar UNA SOLA FILA horizontal y barra de scroll */}
+      <style jsx="true">{`
+        .user-posts-horizontal-scroll {
+          width: 100%;
+        }
+        
+        /* Forzar que el contenedor de UserPosts se muestre en UNA SOLA FILA */
+        .user-posts-horizontal-scroll .row {
+          flex-wrap: nowrap !important;
+          overflow-x: visible !important;
+          margin-right: 0 !important;
+          margin-left: 0 !important;
+          display: flex !important;
+          gap: 1rem;
+          width: max-content !important;
+          min-width: 100%;
+        }
+        
+        /* Cada columna debe tener ancho fijo y NO SALTAR DE LÍNEA */
+        .user-posts-horizontal-scroll .row > [class*="col-"] {
+          flex: 0 0 auto !important;
+          width: 280px !important;
+          max-width: 280px !important;
+          padding-right: 0 !important;
+          padding-left: 0 !important;
+        }
+        
+        /* Ocultar cualquier fila adicional que pueda crear UserPosts */
+        .user-posts-horizontal-scroll .row + .row {
+          display: none !important;
+        }
+        
+        /* Estilos para la barra de scroll */
+        .user-posts-horizontal-scroll::-webkit-scrollbar {
+          height: 8px;
+        }
+        
+        .user-posts-horizontal-scroll::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+        
+        .user-posts-horizontal-scroll::-webkit-scrollbar-thumb {
+          background: #cbd5e0;
+          border-radius: 10px;
+        }
+        
+        .user-posts-horizontal-scroll::-webkit-scrollbar-thumb:hover {
+          background: #a0aec0;
+        }
+      `}</style>
     </Container>
   );
 };

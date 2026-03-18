@@ -1,5 +1,6 @@
 // redux/actions/boutiqueAction.js
 import { GLOBALTYPES } from './globalTypes';
+import axios from 'axios';
 import { postDataAPI, getDataAPI, patchDataAPI, deleteDataAPI } from '../../utils/fetchData';
 import { imageUpload } from '../../utils/imageUpload';
  

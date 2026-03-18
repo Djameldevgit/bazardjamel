@@ -8,18 +8,17 @@ import {
   FaList,
   FaTimes,
   FaSlidersH,
-  
   FaChevronDown,
   FaChevronUp
 } from 'react-icons/fa';
 import BoutiquePostCard from './boutiquePost/BoutiquePostCard';
-  
 import { getBoutiquePosts } from '../../redux/actions/boutiquePostAction';
 
 const BoutiquePostsGrid = ({ boutique }) => {
   const dispatch = useDispatch();
   const { products: boutiqueProducts, loadingProducts } = useSelector(state => state.boutiquePost || {});
- 
+  
+  // Estados
   const [viewMode, setViewMode] = useState('grid');
   const [sortBy, setSortBy] = useState('recent');
   const [filterPrice, setFilterPrice] = useState({ min: '', max: '' });
@@ -27,19 +26,38 @@ const BoutiquePostsGrid = ({ boutique }) => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
-  const [isFilterOpen, setIsFilterOpen] = useState(true); // Para desktop
+  const [isFilterOpen, setIsFilterOpen] = useState(true);
+  const [hasMounted, setHasMounted] = useState(false);
 
-  // Obtener posts de esta boutique
+  // Validación de boutique
+  useEffect(() => {
+    setHasMounted(true);
+    return () => setHasMounted(false);
+  }, []);
+
+  // Cargar posts cuando boutique esté disponible
+  useEffect(() => {
+    if (boutique?._id && hasMounted) {
+      console.log('📦 Cargando posts para boutique:', boutique._id);
+      dispatch(getBoutiquePosts(boutique._id, page, 12));
+    }
+  }, [dispatch, boutique?._id, page, hasMounted]);
+
+  // Si boutique no está disponible, mostrar loading o null
+  if (!boutique) {
+    return (
+      <div className="text-center py-5">
+        <Spinner animation="border" variant="primary" />
+        <p className="mt-3">Cargando información de la boutique...</p>
+      </div>
+    );
+  }
+
+  // Obtener posts de esta boutique con validación segura
   const boutiqueData = boutiqueProducts?.[boutique._id] || {};
   const posts = boutiqueData.products || [];
   const total = boutiqueData.total || 0;
   const hasMore = boutiqueData.hasMore || false;
-
-  useEffect(() => {
-    if (boutique._id) {
-      dispatch(getBoutiquePosts(boutique._id, page, 12));
-    }
-  }, [dispatch, boutique._id, page]);
 
   // Opciones de filtro
   const etatOptions = [
@@ -51,6 +69,8 @@ const BoutiquePostsGrid = ({ boutique }) => {
 
   // Ordenar posts
   const getSortedPosts = () => {
+    if (!posts.length) return [];
+    
     let sorted = [...posts];
     
     switch(sortBy) {
@@ -330,6 +350,7 @@ const BoutiquePostsGrid = ({ boutique }) => {
                                 borderColor: boutique?.couleur_theme || '#6366F1',
                                 color: boutique?.couleur_theme || '#6366F1'
                               }}
+                              onClick={() => window.location.href = `/post/${post._id}`}
                             >
                               Voir détails
                             </Button>
@@ -376,7 +397,7 @@ const BoutiquePostsGrid = ({ boutique }) => {
         </Col>
       </Row>
 
-      {/* Offcanvas pour filtres mobiles */}
+      {/* Offcanvas para filtres mobiles */}
       <Offcanvas 
         show={showMobileFilters} 
         onHide={() => setShowMobileFilters(false)}
@@ -394,59 +415,6 @@ const BoutiquePostsGrid = ({ boutique }) => {
           <FiltersContent />
         </Offcanvas.Body>
       </Offcanvas>
-
-      <style jsx="true">{`
-        .filter-section h6 {
-          color: #2c3e50;
-          font-size: 0.95rem;
-        }
-
-        .filter-checkbox {
-          cursor: pointer;
-          font-size: 0.9rem;
-        }
-
-        .filter-checkbox .form-check-input:checked {
-          background-color: ${boutique?.couleur_theme || '#6366F1'};
-          border-color: ${boutique?.couleur_theme || '#6366F1'};
-        }
-
-        .filter-input, .filter-select {
-          border-radius: 8px;
-          border: 1px solid #e9ecef;
-          padding: 0.2rem;
-          font-size: 0.9rem;
-        }
-
-        .filter-input:focus, .filter-select:focus {
-          border-color: ${boutique?.couleur_theme || '#6366F1'};
-          box-shadow: 0 0 0 0.2rem ${boutique?.couleur_theme || '#6366F1'}20;
-        }
-
-        .filters-sidebar {
-          transition: all 0.3s ease;
-          border: 1px solid rgba(0,0,0,0.05);
-        }
-
-        .hover-shadow {
-          transition: all 0.3s ease;
-        }
-
-        .hover-shadow:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-        }
-
-        .transition {
-          transition: all 0.3s ease;
-        }
-
-        @media (max-width: 768px) {
-          .boutique-posts-grid {
-            padding: 0 0.2rem;
-          }
-        }
-      `}</style>
     </div>
   );
 };
