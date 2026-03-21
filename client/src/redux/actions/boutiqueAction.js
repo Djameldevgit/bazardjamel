@@ -18,10 +18,13 @@ export const BOUTIQUE_TYPES = {
   GET_USER_BOUTIQUES: 'GET_USER_BOUTIQUES',
   GET_BOUTIQUE_BY_DOMAIN: 'GET_BOUTIQUE_BY_DOMAIN',
   
-  // Products
-  
-  
-  // Status
+ 
+  UPDATE_BOUTIQUE_HEADER_IMAGES: 'UPDATE_BOUTIQUE_HEADER_IMAGES',
+  DELETE_BOUTIQUE_HEADER_IMAGE: 'DELETE_BOUTIQUE_HEADER_IMAGE', 
+
+
+
+
   UPDATE_BOUTIQUE_STATUS: 'UPDATE_BOUTIQUE_STATUS',
   
   // Stats
@@ -254,38 +257,34 @@ export const getUserBoutiques = (auth) => async (dispatch) => {
 };
 
 // ============ GET BOUTIQUES BY CATEGORY ============
-export const getBoutiquesByCategory = (categorySlug, subSlug = null, page = 1, limit = 12) => async (dispatch) => {
+export const getBoutiquesByCategory = (
+  categorySlug,
+  subSlug = null,
+  page = 1,
+  limit = 12,
+  wilaya = '',
+  commune = '',
+  minPrice = null,
+  maxPrice = null,
+  sortBy = 'recent'
+) => async (dispatch) => {
   try {
     const categoryPath = subSlug ? `${categorySlug}/${subSlug}` : categorySlug;
-    
-    console.log('🔍 Cargando boutiques por categoría:', {
-      category: categorySlug,
-      sub: subSlug,
-      page,
-      limit,
-      categoryPath
-    });
 
-    dispatch({ 
-      type: BOUTIQUE_TYPES.LOADING_BOUTIQUES_BY_CATEGORY, 
-      payload: { category: categoryPath, loading: true }
-    });
-
-    const params = { 
-      category: categorySlug, 
-      page, 
-      limit 
-    };
-    if (subSlug && subSlug !== 'undefined' && subSlug !== 'null') {
-      params.sub = subSlug;
-    }
+    const params = { category: categorySlug, page, limit };
+    if (subSlug && subSlug !== 'undefined' && subSlug !== 'null') params.sub = subSlug;
+    if (wilaya) params.wilaya = wilaya;
+    if (commune) params.commune = commune;
+    if (minPrice !== null) params.minPrice = minPrice;
+    if (maxPrice !== null) params.maxPrice = maxPrice;
+    if (sortBy) params.sortBy = sortBy;
 
     const res = await getDataAPI(`boutique/filter?${new URLSearchParams(params)}`);
     
     dispatch({
       type: BOUTIQUE_TYPES.GET_BOUTIQUES_BY_CATEGORY,
       payload: {
-        categoryPath: categoryPath,
+        categoryPath,
         boutiques: res.data.boutiques || [],
         total: res.data.total || 0,
         page: res.data.page || page,
@@ -296,30 +295,12 @@ export const getBoutiquesByCategory = (categorySlug, subSlug = null, page = 1, l
       }
     });
 
-    return {
-      boutiques: res.data.boutiques || [],
-      total: res.data.total || 0,
-      hasMore: res.data.hasMore || false,
-      categoryInfo: res.data.categoryInfo || null,
-      children: res.data.children || []
-    };
-
+    return res.data;
   } catch (err) {
     console.error('❌ Error en getBoutiquesByCategory:', err);
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { error: err.response?.data?.message || err.message }
-    });
     throw err;
-  } finally {
-    const categoryPath = subSlug ? `${categorySlug}/${subSlug}` : categorySlug;
-    dispatch({ 
-      type: BOUTIQUE_TYPES.LOADING_BOUTIQUES_BY_CATEGORY, 
-      payload: { category: categoryPath, loading: false }
-    });
   }
 };
-
 // ============ GET BOUTIQUES FOR HOME ============
 export const getBoutiquesForHome = (limit = 6) => async (dispatch) => {
   try {
@@ -448,5 +429,129 @@ export const incrementBoutiqueView = (boutiqueId) => async (dispatch) => {
       type: GLOBALTYPES.ALERT,
       payload: {error: err.response?.data?.message || err.message}
     });
+  }
+};
+// redux/actions/boutiqueAction.js - Verificar esta parte
+
+export const updateBoutiqueHeaderImages = ({ boutiqueId, images, auth }) => async (dispatch) => {
+  try {
+    console.log('🟡 updateBoutiqueHeaderImages action iniciada');
+    console.log('📦 boutiqueId:', boutiqueId);
+    console.log('📦 images count:', images?.length || 0);
+    console.log('📦 images[0]:', images[0]); // Ver qué tipo de datos llega
+    
+    if (!images || images.length === 0) {
+      console.warn('⚠️ No hay imágenes para subir');
+      return { success: false, error: 'No images to upload' };
+    }
+
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+
+    let headerImages = [];
+
+    // ✅ PASO 1: Subir imágenes a Cloudinary
+    console.log(`📤 Subiendo ${images.length} imágenes a Cloudinary...`);
+    
+    // ✅ IMPORTANTE: Pasar las imágenes directamente a imageUpload
+    // imageUpload espera el formato: [{ url, isExisting, name, file }, ...]
+    const uploadedImages = await imageUpload(images);
+    console.log('✅ Imágenes subidas desde Cloudinary:', uploadedImages);
+    
+    if (uploadedImages.length === 0) {
+      throw new Error('No se pudieron subir las imágenes a Cloudinary');
+    }
+    
+    // Formatear para el backend
+    headerImages = uploadedImages.map(img => ({
+      url: img.url,
+      public_id: img.public_id,
+      alt: `Header image ${Date.now()}`
+    }));
+
+    console.log('📦 Enviando al backend:', { 
+      header_images: headerImages,
+      boutiqueId 
+    });
+
+    // ✅ PASO 2: Enviar al backend con el nombre correcto "header_images"
+    const res = await patchDataAPI(
+      `boutique/${boutiqueId}/headerimages`,
+      { header_images: headerImages },
+      auth.token
+    );
+
+    console.log('✅ Respuesta del backend:', res.data);
+
+    dispatch({ 
+      type: GLOBALTYPES.ALERT, 
+      payload: { success: '✅ Images téléchargées' }
+    });
+
+    // Actualizar el estado de Redux
+    dispatch({
+      type: 'UPDATE_BOUTIQUE_HEADER_IMAGES',
+      payload: {
+        boutiqueId,
+        header_images: res.data.header_images || headerImages
+      }
+    });
+
+    return { success: true, header_images: res.data.header_images || headerImages };
+
+  } catch (err) {
+    console.error('❌ Error en updateBoutiqueHeaderImages:', err);
+    console.error('❌ Response:', err.response?.data);
+    console.error('❌ Status:', err.response?.status);
+    
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || err.message }
+    });
+    
+    return { success: false, error: err.message };
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
+  }
+};
+// ============ ELIMINAR IMAGEN DE HEADER ============
+export const deleteBoutiqueHeaderImage = ({ 
+  boutiqueId, 
+  imageId, 
+  auth 
+}) => async (dispatch) => {
+  try {
+    console.log('🗑️ Eliminando imagen de header:', { boutiqueId, imageId });
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+
+    const res = await deleteDataAPI(
+      `boutique/${boutiqueId}/headerimages/${imageId}`, 
+      auth.token
+    );
+
+    dispatch({ 
+      type: GLOBALTYPES.ALERT, 
+      payload: { success: '✅ Image supprimée avec succès' }
+    });
+
+    // Actualizar el estado
+    dispatch({
+      type: BOUTIQUE_TYPES.UPDATE_BOUTIQUE_HEADER_IMAGES,
+      payload: {
+        boutiqueId,
+        header_images: res.data.header_images
+      }
+    });
+
+    return { success: true };
+
+  } catch (err) {
+    console.error('❌ Error en deleteBoutiqueHeaderImage:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || err.message }
+    });
+    throw err;
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
   }
 };

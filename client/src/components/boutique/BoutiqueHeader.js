@@ -1,32 +1,127 @@
 // components/boutique/BoutiqueHeader.jsx
-import React, { useEffect, useState } from 'react';
-import { Container, Row, Col, Badge, Button, Dropdown, Image } from 'react-bootstrap';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { Container, Row, Col, Badge, Button, Dropdown, Image, Modal, Form } from 'react-bootstrap';
 import { useSelector, useDispatch } from 'react-redux';
 import { 
   FaStore, FaEye, FaBoxOpen, FaStar, FaRegStar, 
   FaPlus, FaImages, FaTags, FaFileAlt,
   FaCheckCircle, FaShare, FaHeart, FaRegHeart,
-  FaFacebook, FaTwitter, FaWhatsapp, FaLink
+  FaFacebook, FaTwitter, FaWhatsapp, FaLink,
+  FaChevronLeft, FaChevronRight, FaCamera, FaTrash,
+  FaUpload, FaTimes, FaPhotoVideo, FaEllipsisV,
+  FaEdit, FaChartLine
 } from 'react-icons/fa';
-import { incrementBoutiqueView } from '../../redux/actions/boutiqueAction';
+import { incrementBoutiqueView, updateBoutiqueHeaderImages, deleteBoutiqueHeaderImage } from '../../redux/actions/boutiqueAction';
+import '../../styles/BoutiqueHeader.css';
+
+const RatingStars = React.memo(({ rating = 0 }) => {
+  const stars = useMemo(() => {
+    const result = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+
+    for (let i = 1; i <= 5; i++) {
+      if (i <= fullStars) {
+        result.push(<FaStar key={i} className="text-warning" size={12} />);
+      } else if (i === fullStars + 1 && hasHalfStar) {
+        result.push(
+          <div key={i} className="position-relative d-inline-block">
+            <FaRegStar className="text-secondary" size={12} />
+            <FaStar className="text-warning position-absolute top-0 start-0" style={{ clipPath: 'inset(0 50% 0 0)' }} size={12} />
+          </div>
+        );
+      } else {
+        result.push(<FaRegStar key={i} className="text-secondary" size={12} />);
+      }
+    }
+    return result;
+  }, [rating]);
+
+  return <div className="boutique-rating-stars">{stars}</div>;
+});
+
+RatingStars.displayName = 'RatingStars';
 
 const BoutiqueHeader = ({ boutique }) => {
   const dispatch = useDispatch();
+  
+  // Estados de autenticación
+  const authState = useSelector(state => state.auth);
+  const { token, user } = authState || {};
+  const isAuthenticated = !!token;
+  const isOwner = user?._id === boutique?.user?._id || user?._id === boutique?.user;
+  
+  // Estados del componente
   const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(1247);
   const [showShareTooltip, setShowShareTooltip] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [headerImages, setHeaderImages] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [previewUrls, setPreviewUrls] = useState([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [imageToDelete, setImageToDelete] = useState(null);
+  const [themeColor, setThemeColor] = useState('#2563eb');
+
+  // Definición de clases CSS como strings
+  const headerContainer = "boutique-header-container";
+  const heroSection = "boutique-hero-section";
+  const overlay = "boutique-overlay";
+  const carouselControl = "boutique-carousel-control";
+  const carouselControlLeft = "boutique-carousel-control-left";
+  const carouselControlRight = "boutique-carousel-control-right";
+  const carouselIndicators = "boutique-carousel-indicators";
+  const indicatorDot = "boutique-indicator-dot";
+  const indicatorDotActive = "boutique-indicator-dot-active";
+  const logoCorner = "boutique-logo-corner";
+  const actionBarMetrics = "boutique-action-bar-metrics";
+  const actionButton = "boutique-action-button";
+  const actionButtonIcon = "boutique-action-button-icon";
+  const actionButtonLabel = "boutique-action-button-label";
+  const actionButtonCount = "boutique-action-button-count";
+  const dropdownMenuCustom = "boutique-dropdown-menu";
+  const dropdownItem = "boutique-dropdown-item";
+  const dropdownHeader = "boutique-dropdown-header";
+  const headerContent = "boutique-header-content";
+  const boutiqueInfo = "boutique-info";
+  const boutiqueTitle = "boutique-title";
+  const verifiedBadge = "boutique-verified-badge";
+  const slogan = "boutique-slogan";
+  const description = "boutique-description";
+  const quickStats = "boutique-quick-stats";
+  const categoryBadge = "boutique-category-badge";
+  const ratingContainer = "boutique-rating-container";
+  const ratingCount = "boutique-rating-count";
+  const actionBar = "boutique-action-bar";
+  const actionBarContent = "boutique-action-bar-content";
+  const actionButtonBar = "boutique-action-button-bar";
+  const imageThumbnail = "boutique-image-thumbnail";
+  const modalCustom = "boutique-modal";
+  const modalHeader = "boutique-modal-header";
+  const modalBody = "boutique-modal-body";
+  const modalFooter = "boutique-modal-footer";
+  const imageGrid = "boutique-image-grid";
+  const imageCard = "boutique-image-card";
+  const deleteImageBtn = "boutique-delete-image-btn";
+  const activeBadge = "boutique-active-badge";
+  const shareIconOnly = "boutique-share-icon-only";
+  const publishButtonFull = "boutique-publish-button-full";
 
   // Obtener datos actualizados de Redux
   const reduxBoutique = useSelector(state =>
-    state.boutique.boutiques.find(b => b._id === boutique._id)
+    state.boutique.boutiques?.find(b => b._id === boutique._id)
   );
   const currentBoutique = reduxBoutique || boutique;
 
+  // Destructurar datos de la boutique
   const {
     _id,
     nom_boutique,
     slogan_boutique,
     description_boutique,
-    header_image,
+    header_images = [],
     images = [],
     categorie,
     isVerified,
@@ -37,41 +132,180 @@ const BoutiqueHeader = ({ boutique }) => {
 
   const logoImage = images.length > 0 ? images[0] : null;
 
-  // Incrementar vistas
+  // Manejar follow
+  const handleFollow = () => {
+    if (!isFollowing) {
+      setFollowersCount(prev => prev + 1);
+    } else {
+      setFollowersCount(prev => prev - 1);
+    }
+    setIsFollowing(!isFollowing);
+  };
+
+  // Actualizar headerImages
+  useEffect(() => {
+    if (header_images && header_images.length > 0) {
+      setHeaderImages(header_images);
+    }
+  }, [header_images]);
+
+  // Actualizar color de tema
+  useEffect(() => {
+    setThemeColor(couleur_theme);
+    document.documentElement.style.setProperty('--theme-color', couleur_theme);
+  }, [couleur_theme]);
+
+  // Auto-play del carousel
+  useEffect(() => {
+    if (headerImages.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % headerImages.length);
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [headerImages.length]);
+
+  // Incrementar vistas al montar
   useEffect(() => {
     if (_id) {
       dispatch(incrementBoutiqueView(_id));
     }
   }, [_id, dispatch]);
 
-  // Renderizar estrellas
-  const renderStars = (rating = 0) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
+  // Navegación del carousel
+  const nextSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev + 1) % headerImages.length);
+  }, [headerImages.length]);
 
-    for (let i = 1; i <= 5; i++) {
-      if (i <= fullStars) {
-        stars.push(<FaStar key={i} className="text-warning" size={14} />);
-      } else if (i === fullStars + 1 && hasHalfStar) {
-        stars.push(
-          <div key={i} className="position-relative d-inline-block">
-            <FaRegStar className="text-secondary" size={14} />
-            <FaStar className="text-warning position-absolute top-0 start-0" style={{ clipPath: 'inset(0 50% 0 0)' }} size={14} />
-          </div>
-        );
-      } else {
-        stars.push(<FaRegStar key={i} className="text-secondary" size={14} />);
-      }
+  const prevSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev - 1 + headerImages.length) % headerImages.length);
+  }, [headerImages.length]);
+
+  // Manejar selección de archivos
+  const handleFileSelect = useCallback((e) => {
+    const files = Array.from(e.target.files);
+    const validFiles = files.filter(file => {
+      const isValidType = file.type.startsWith('image/');
+      const isValidSize = file.size <= 5 * 1024 * 1024;
+      if (!isValidType) alert('Format non supporté');
+      if (!isValidSize) alert('Image trop volumineuse (max 5MB)');
+      return isValidType && isValidSize;
+    });
+
+    setSelectedFiles(validFiles);
+    const urls = validFiles.map(file => URL.createObjectURL(file));
+    setPreviewUrls(urls);
+  }, []);
+
+  // Subir imágenes
+  const handleUpload = useCallback(async () => {
+    if (selectedFiles.length === 0) return;
+
+    if (!token) {
+      alert('❌ Vous devez être connecté pour modifier les images');
+      return;
     }
-    return stars;
-  };
+
+    setUploading(true);
+    try {
+      const imagesToUpload = selectedFiles.map(file => ({
+        url: URL.createObjectURL(file),
+        name: file.name,
+        isExisting: false,
+        file: file
+      }));
+      
+      const result = await dispatch(updateBoutiqueHeaderImages({
+        boutiqueId: _id,
+        images: imagesToUpload,
+        auth: authState
+      }));
+
+      if (result?.success) {
+        setHeaderImages(result.header_images);
+        setShowImageModal(false);
+        setSelectedFiles([]);
+        previewUrls.forEach(url => URL.revokeObjectURL(url));
+        setPreviewUrls([]);
+        alert('✅ Images téléchargées avec succès!');
+      } else {
+        throw new Error(result?.error || 'Erreur lors du téléchargement');
+      }
+    } catch (error) {
+      console.error('Error uploading:', error);
+      alert('❌ Erreur: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  }, [selectedFiles, token, _id, authState, dispatch, previewUrls]);
+
+  // Eliminar imagen
+  const handleDeleteImage = useCallback(async () => {
+    if (imageToDelete === null) return;
+    
+    if (!token) {
+      alert('❌ Vous devez être connecté pour supprimer des images');
+      return;
+    }
+  
+    try {
+      const imageId = headerImages[imageToDelete]._id || headerImages[imageToDelete].public_id;
+      
+      const result = await dispatch(deleteBoutiqueHeaderImage({
+        boutiqueId: _id,
+        imageId: imageId,
+        auth: authState
+      }));
+  
+      if (result && result.success) {
+        const newImages = headerImages.filter((_, index) => index !== imageToDelete);
+        setHeaderImages(newImages);
+        if (currentSlide >= newImages.length) {
+          setCurrentSlide(Math.max(0, newImages.length - 1));
+        }
+        setShowDeleteConfirm(false);
+        setImageToDelete(null);
+        alert('✅ Image supprimée avec succès');
+      }
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      alert('Erreur lors de la suppression de l\'image');
+    }
+  }, [imageToDelete, token, _id, headerImages, currentSlide, authState, dispatch]);
+
+  const confirmDelete = useCallback((index) => {
+    setImageToDelete(index);
+    setShowDeleteConfirm(true);
+  }, []);
+
+  const handleCancel = useCallback(() => {
+    previewUrls.forEach(url => URL.revokeObjectURL(url));
+    setSelectedFiles([]);
+    setPreviewUrls([]);
+    setShowImageModal(false);
+  }, [previewUrls]);
+
+  // Renderizar fondo del header
+  const headerBackgroundStyle = useMemo(() => {
+    if (headerImages.length === 0) {
+      return {
+        background: `linear-gradient(135deg, ${themeColor} 0%, ${adjustColor(themeColor, 30)} 100%)`
+      };
+    }
+    return {
+      backgroundImage: `url(${headerImages[currentSlide]?.url || headerImages[currentSlide]})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      transition: 'background-image 0.5s ease-in-out'
+    };
+  }, [headerImages, currentSlide, themeColor]);
 
   // Compartir en redes sociales
-  const shareUrl = window.location.href;
+  const shareUrl = useMemo(() => window.location.href, []);
   const shareTitle = `Découvrez ${nom_boutique} sur notre marketplace`;
 
-  const handleShare = (platform) => {
+  const handleShare = useCallback((platform) => {
     let url = '';
     switch(platform) {
       case 'facebook':
@@ -92,401 +326,436 @@ const BoutiqueHeader = ({ boutique }) => {
         return;
     }
     window.open(url, '_blank', 'width=600,height=400');
-  };
+  }, [shareUrl, shareTitle]);
 
-  const headerStyle = {
-    backgroundImage: header_image ? `url(${header_image})` : `linear-gradient(135deg, ${couleur_theme} 0%, ${adjustColor(couleur_theme, 30)} 100%)`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    position: 'relative',
-    minHeight: header_image ? '300px' : '200px',
-    display: 'flex',
-    alignItems: 'flex-end',
-    paddingBottom: '40px'
-  };
-
-  const overlayStyle = header_image
-    ? {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)',
-        zIndex: 1
-      }
-    : {};
-
-  // Función para aclarar/oscurecer color
+  // Helper para ajustar color
   function adjustColor(color, percent) {
     const num = parseInt(color.replace('#', ''), 16);
     const amt = Math.round(2.55 * percent);
     const R = (num >> 16) + amt;
-    const G = (num >> 8 & 0x00FF) + amt;
+    const G = ((num >> 8) & 0x00FF) + amt;
     const B = (num & 0x0000FF) + amt;
-    return `#${(0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1)}`;
+    return `#${(0x1000000 + (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 + (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 + (B < 255 ? (B < 1 ? 0 : B) : 255)).toString(16).slice(1)}`;
   }
 
+  // Formatear números (ej: 1.2k, 1.5M)
+  const formatNumber = (num) => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    }
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'k';
+    }
+    return num.toString();
+  };
+
   return (
-    <div className="boutique-header-wrapper">
-      {/* Header con imagen de fondo */}
-      <div style={headerStyle}>
-        <div style={overlayStyle}></div>
+    <div className={headerContainer}>
+      {/* Sección hero con fondo - altura reducida en móvil */}
+      <div 
+        className={heroSection} 
+        style={{ 
+          ...headerBackgroundStyle, 
+          minHeight: '200px'
+        }}
+      >
+        <div className={overlay} />
         
-        {/* Logo en la esquina superior izquierda (como estaba antes) */}
+        {/* Controles del carousel */}
+        {headerImages.length > 1 && (
+          <>
+            <button
+              onClick={prevSlide}
+              className={`${carouselControl} ${carouselControlLeft}`}
+              aria-label="Image précédente"
+            >
+              <FaChevronLeft size={16} />
+            </button>
+            <button
+              onClick={nextSlide}
+              className={`${carouselControl} ${carouselControlRight}`}
+              aria-label="Image suivante"
+            >
+              <FaChevronRight size={16} />
+            </button>
+
+            <div className={carouselIndicators}>
+              {headerImages.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentSlide(index)}
+                  className={`${indicatorDot} ${index === currentSlide ? indicatorDotActive : ''}`}
+                  aria-label={`Aller à l'image ${index + 1}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Logo */}
         {logoImage && (
-          <div
-            className="logo-corner"
-            style={{
-              position: 'absolute',
-              top: '20px',
-              left: '20px',
-              zIndex: 10,
-              width: '80px',
-              height: '80px',
-              borderRadius: '50%',
-              border: `4px solid ${couleur_theme}`,
-              overflow: 'hidden',
-              backgroundColor: 'white',
-              boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-              transition: 'transform 0.3s ease',
-              cursor: 'pointer'
-            }}
-          >
+          <div className={logoCorner}>
             <img
               src={logoImage.url || logoImage}
               alt={nom_boutique}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              loading="lazy"
             />
           </div>
         )}
 
-        {/* Botones de acción superiores */}
-        <div style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 3 }}>
-          <div className="d-flex gap-2">
-            <Button
-              variant="light"
-              size="sm"
-              className="rounded-pill shadow-sm"
-              onClick={() => setIsFollowing(!isFollowing)}
-              style={{ backdropFilter: 'blur(10px)', backgroundColor: 'rgba(255,255,255,0.9)' }}
-            >
-              {isFollowing ? (
-                <>
-                  <FaHeart className="text-danger me-2" /> Suivi
-                </>
-              ) : (
-                <>
-                  <FaRegHeart className="me-2" /> Suivre
-                </>
-              )}
-            </Button>
-
-            <Dropdown align="end">
-              <Dropdown.Toggle
-                variant="light"
-                size="sm"
-                className="rounded-pill shadow-sm"
-                style={{ backdropFilter: 'blur(10px)', backgroundColor: 'rgba(255,255,255,0.9)' }}
-              >
-                <FaShare className="me-2" /> Partager
-              </Dropdown.Toggle>
-
-              <Dropdown.Menu>
-                <Dropdown.Item onClick={() => handleShare('facebook')}>
-                  <FaFacebook className="text-primary me-2" /> Facebook
-                </Dropdown.Item>
-                <Dropdown.Item onClick={() => handleShare('twitter')}>
-                  <FaTwitter className="text-info me-2" /> Twitter
-                </Dropdown.Item>
-                <Dropdown.Item onClick={() => handleShare('whatsapp')}>
-                  <FaWhatsapp className="text-success me-2" /> WhatsApp
-                </Dropdown.Item>
-                <Dropdown.Item onClick={() => handleShare('copy')}>
-                  <FaLink className="me-2" /> Copier le lien
-                  {showShareTooltip && (
-                    <Badge bg="success" className="ms-2">Copié!</Badge>
-                  )}
-                </Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown>
-          </div>
-        </div>
-
-        <Container style={{ position: 'relative', zIndex: 2 }}>
+        {/* Contenido principal */}
+        <Container className={headerContent}>
           <Row className="align-items-end">
-            <Col xs={12} md={8} className="text-white">
-              <div className="d-flex flex-wrap align-items-center gap-2 gap-md-3 mb-2">
-                <h1 className="fw-bold mb-0" style={{ fontSize: 'clamp(1.5rem, 5vw, 3rem)' }}>
+            <Col xs={12}>
+              <div className={boutiqueInfo}>
+                <h1 className={boutiqueTitle}>
                   {nom_boutique}
                 </h1>
                 {isVerified && (
-                  <Badge bg="success" className="rounded-pill px-2 px-md-3 py-1 py-md-2">
-                    <FaCheckCircle className="me-1" size={12} /> 
-                    <span className="d-none d-sm-inline">Boutique vérifiée</span>
-                    <span className="d-sm-none">Vérifiée</span>
+                  <Badge className={verifiedBadge}>
+                    <FaCheckCircle size={10} /> 
+                    <span className="d-none d-sm-inline">Vérifiée</span>
                   </Badge>
                 )}
               </div>
               
               {slogan_boutique && (
-                <p className="mb-2" style={{ fontSize: 'clamp(1rem, 4vw, 1.3rem)', opacity: 0.95 }}>
+                <p className={slogan}>
                   {slogan_boutique}
                 </p>
               )}
               
               {description_boutique && (
-                <p className="mb-3 d-none d-md-block" style={{ opacity: 0.9, maxWidth: '600px' }}>
-                  {description_boutique.substring(0, 150)}
-                  {description_boutique.length > 150 && '...'}
+                <p className={description}>
+                  {description_boutique.substring(0, 100)}
+                  {description_boutique.length > 100 && '...'}
                 </p>
               )}
 
-              <div className="d-flex flex-wrap align-items-center gap-2 gap-md-3 mb-3">
-                <Badge bg="light" text="dark" className="rounded-pill px-3 py-2">
-                  <FaStore className="me-1" size={12} /> 
-                  <span className="d-none d-sm-inline">{categorie}</span>
-                  <span className="d-sm-none">{categorie?.substring(0, 10)}...</span>
+              <div className={quickStats}>
+                <Badge className={categoryBadge}>
+                  <FaStore className="me-1" size={10} /> 
+                  <span>{categorie}</span>
                 </Badge>
                 
-                <div className="d-flex align-items-center">
-                  {renderStars(stats.notes)}
-                  <small className="ms-2 d-none d-sm-inline">
-                    ({stats.avis} avis)
-                  </small>
-                  <small className="ms-1 d-sm-none">
-                    {stats.notes?.toFixed(1)}
-                  </small>
+                <div className={ratingContainer}>
+                  <RatingStars rating={stats.notes} />
+                  <span className={ratingCount}>
+                    ({stats.avis})
+                  </span>
                 </div>
-
-                <div className="d-flex d-md-none gap-3 ms-auto">
-                  <div className="text-center">
-                    <small className="d-block fw-bold">{stats.vues?.toLocaleString() || 0}</small>
-                    <small>vues</small>
-                  </div>
-                  <div className="text-center">
-                    <small className="d-block fw-bold">{stats.produits || 0}</small>
-                    <small>prod.</small>
-                  </div>
-                </div>
-              </div>
-            </Col>
-
-            <Col md={4} className="d-none d-md-block">
-              <div className="stats-card bg-white bg-opacity-10 backdrop-blur rounded-4 p-3 text-white">
-                <Row className="g-2">
-                  <Col xs={4} className="text-center">
-                    <div className="stats-icon mb-1">
-                      <FaEye size={20} />
-                    </div>
-                    <div className="stats-value fw-bold">
-                      {stats.vues?.toLocaleString() || 0}
-                    </div>
-                    <div className="stats-label small">Vues</div>
-                  </Col>
-                  
-                  <Col xs={4} className="text-center">
-                    <div className="stats-icon mb-1">
-                      <FaBoxOpen size={20} />
-                    </div>
-                    <div className="stats-value fw-bold">
-                      {stats.produits || 0}
-                    </div>
-                    <div className="stats-label small">Produits</div>
-                  </Col>
-                  
-                  <Col xs={4} className="text-center">
-                    <div className="stats-icon mb-1">
-                      <FaStar size={20} />
-                    </div>
-                    <div className="stats-value fw-bold">
-                      {stats.notes?.toFixed(1) || 0}
-                    </div>
-                    <div className="stats-label small">Note</div>
-                  </Col>
-                </Row>
               </div>
             </Col>
           </Row>
         </Container>
       </div>
 
-      {/* Barra de acciones inferior */}
-      <div 
-        className="action-bar py-2 py-md-3"
-        style={{ 
-          backgroundColor: 'white',
-          borderBottom: '1px solid #e9ecef',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
-        }}
-      >
+      {/* BARRA DE ACCIONES - Dos filas en móvil */}
+      <div className={actionBarMetrics}>
         <Container>
-          <Row className="align-items-center">
-            <Col xs={12} md={4} className="mb-2 mb-md-0">
-              <div className="d-flex align-items-center gap-2">
-                <div>
-                  <h6 className="mb-0 fw-bold">{nom_boutique}</h6>
-                  <small className="text-muted">
-                    Membre depuis {new Date(createdAt).toLocaleDateString()}
-                  </small>
+          {/* Primera fila: métricas + compartir + tres puntos */}
+          <Row className="g-2 mb-2">
+            <Col xs={12}>
+              <div className="d-flex justify-content-between align-items-center">
+                {/* Grupo de métricas */}
+                <div className="d-flex gap-3 gap-md-4">
+                  {/* Like con contador */}
+                  <button 
+                    className={actionButton}
+                    onClick={handleFollow}
+                  >
+                    <span className={actionButtonIcon}>
+                      {isFollowing ? <FaHeart className="text-danger" /> : <FaRegHeart />}
+                    </span>
+                    <span className={actionButtonLabel}>
+                      {isFollowing ? 'Suivi' : 'Suivre'}
+                    </span>
+                    <span className={actionButtonCount}>
+                      {formatNumber(followersCount)}
+                    </span>
+                  </button>
+
+                  {/* Productos con contador */}
+                  <div className={actionButton}>
+                    <span className={actionButtonIcon}>
+                      <FaBoxOpen />
+                    </span>
+                    <span className={actionButtonLabel}>
+                      Produits
+                    </span>
+                    <span className={actionButtonCount}>
+                      {formatNumber(stats.produits || 0)}
+                    </span>
+                  </div>
+
+                  {/* Vistas con contador */}
+                  <div className={actionButton}>
+                    <span className={actionButtonIcon}>
+                      <FaEye />
+                    </span>
+                    <span className={actionButtonLabel}>
+                      Vues
+                    </span>
+                    <span className={actionButtonCount}>
+                      {formatNumber(stats.vues || 0)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Grupo de acciones: compartir y tres puntos */}
+                <div className="d-flex gap-2">
+                  {/* Botón Compartir - solo icono */}
+                  <Dropdown>
+                    <Dropdown.Toggle
+                      variant="light"
+                      size="sm"
+                      className={shareIconOnly}
+                    >
+                      <FaShare />
+                    </Dropdown.Toggle>
+
+                    <Dropdown.Menu className={dropdownMenuCustom} align="end">
+                      <Dropdown.Item onClick={() => handleShare('facebook')} className={dropdownItem}>
+                        <FaFacebook className="text-primary" size={16} /> Facebook
+                      </Dropdown.Item>
+                      <Dropdown.Item onClick={() => handleShare('twitter')} className={dropdownItem}>
+                        <FaTwitter className="text-info" size={16} /> Twitter
+                      </Dropdown.Item>
+                      <Dropdown.Item onClick={() => handleShare('whatsapp')} className={dropdownItem}>
+                        <FaWhatsapp className="text-success" size={16} /> WhatsApp
+                      </Dropdown.Item>
+                      <Dropdown.Item onClick={() => handleShare('copy')} className={dropdownItem}>
+                        <FaLink size={16} /> Copier le lien
+                        {showShareTooltip && (
+                          <Badge bg="success" className="ms-2">Copié!</Badge>
+                        )}
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+
+                  {/* Icono de tres puntos con acciones adicionales */}
+                  {isOwner && (
+                    <Dropdown>
+                      <Dropdown.Toggle
+                        variant="light"
+                        size="sm"
+                        className="boutique-actions-button"
+                      >
+                        <FaEllipsisV />
+                      </Dropdown.Toggle>
+
+                      <Dropdown.Menu className={dropdownMenuCustom} align="end">
+                        <Dropdown.Header className={dropdownHeader}>
+                          <FaCamera className="me-2" /> Gérer la boutique
+                        </Dropdown.Header>
+                        <Dropdown.Divider />
+                        <Dropdown.Item onClick={() => setShowImageModal(true)} className={dropdownItem}>
+                          <FaUpload className="text-primary" size={14} /> Changer l'image de fond
+                        </Dropdown.Item>
+                        <Dropdown.Item href={`/boutique/${_id}/edit`} className={dropdownItem}>
+                          <FaEdit className="text-warning" size={14} /> Modifier les infos
+                        </Dropdown.Item>
+                        <Dropdown.Item href={`/boutique/${_id}/dashboard`} className={dropdownItem}>
+                          <FaChartLine className="text-info" size={14} /> Tableau de bord
+                        </Dropdown.Item>
+                        {headerImages.length > 0 && (
+                          <>
+                            <Dropdown.Divider />
+                            <Dropdown.Header className={dropdownHeader}>
+                              Images actuelles
+                            </Dropdown.Header>
+                            {headerImages.map((img, index) => (
+                              <Dropdown.Item 
+                                key={index}
+                                className={dropdownItem}
+                                onClick={() => confirmDelete(index)}
+                              >
+                                <Image src={img.url || img} className={imageThumbnail} />
+                                <span className="flex-grow-1">Image {index + 1}</span>
+                                <FaTrash className="text-danger" size={12} />
+                              </Dropdown.Item>
+                            ))}
+                          </>
+                        )}
+                      </Dropdown.Menu>
+                    </Dropdown>
+                  )}
                 </div>
               </div>
             </Col>
+          </Row>
 
-            <Col xs={12} md={8}>
-              <div className="d-flex flex-column flex-sm-row justify-content-end gap-2">
-                <Dropdown>
+          {/* Segunda fila: botón Publier - ocupa todo el ancho */}
+          {isOwner && (
+            <Row className="g-2">
+              <Col xs={12}>
+                <Dropdown className="w-100">
                   <Dropdown.Toggle
                     variant="primary"
-                    size="sm"
-                    className="rounded-pill px-3 px-md-4 w-100 w-sm-auto"
-                    style={{
-                      backgroundColor: couleur_theme,
-                      borderColor: couleur_theme
-                    }}
+                    className={publishButtonFull}
+                    style={{ backgroundColor: themeColor, borderColor: themeColor }}
                   >
-                    <FaPlus className="me-2" /> Publier
+                    <FaPlus className="me-2" /> Publier une annonce
                   </Dropdown.Toggle>
 
-                  <Dropdown.Menu className="shadow-lg border-0 py-2">
-                    <Dropdown.Header className="text-muted small fw-bold">
+                  <Dropdown.Menu className={`${dropdownMenuCustom} w-100`}>
+                    <Dropdown.Header className={dropdownHeader}>
                       <FaBoxOpen className="me-2" /> Nouvelle annonce
                     </Dropdown.Header>
                     <Dropdown.Divider />
-                    
-                    <Dropdown.Item 
-                      href={`/boutique/${_id}/products/new`}
-                      className="py-2"
-                    >
-                      <FaFileAlt className="text-primary me-3" />
-                      <div>
-                        <div className="fw-bold">Produit standard</div>
-                        <small className="text-muted d-none d-md-inline">Pour un article classique</small>
-                      </div>
+                    <Dropdown.Item href={`/boutique/${_id}/products/new`} className={dropdownItem}>
+                      <FaFileAlt className="text-primary" size={14} /> Produit standard
                     </Dropdown.Item>
-                    
-                    <Dropdown.Item 
-                      href={`/boutique/${_id}/products/new?type=promo`}
-                      className="py-2"
-                    >
-                      <FaTags className="text-success me-3" />
-                      <div>
-                        <div className="fw-bold">Promotion</div>
-                        <small className="text-muted d-none d-md-inline">Mettez en avant une offre</small>
-                      </div>
+                    <Dropdown.Item href={`/boutique/${_id}/products/new?type=promo`} className={dropdownItem}>
+                      <FaTags className="text-success" size={14} /> Promotion
                     </Dropdown.Item>
-                    
-                    <Dropdown.Item 
-                      href={`/boutique/${_id}/gallery/new`}
-                      className="py-2"
-                    >
-                      <FaImages className="text-warning me-3" />
-                      <div>
-                        <div className="fw-bold">Album photo</div>
-                        <small className="text-muted d-none d-md-inline">Créez une galerie</small>
-                      </div>
-                    </Dropdown.Item>
-
-                    <Dropdown.Divider />
-                    
-                    <Dropdown.Item 
-                      href={`/boutique/${_id}/dashboard`}
-                      className="text-center text-primary"
-                    >
-                      Gérer ma boutique →
+                    <Dropdown.Item href={`/boutique/${_id}/gallery/new`} className={dropdownItem}>
+                      <FaImages className="text-warning" size={14} /> Album photo
                     </Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
-
-                <Button
-                  variant="outline-primary"
-                  size="sm"
-                  className="rounded-pill px-3 px-md-4 w-100 w-sm-auto"
-                  href={`/boutique/${_id}/products`}
-                  style={{
-                    borderColor: couleur_theme,
-                    color: couleur_theme
-                  }}
-                >
-                  Voir tous les produits
-                </Button>
-              </div>
-            </Col>
-          </Row>
+              </Col>
+            </Row>
+          )}
         </Container>
       </div>
 
-      <style jsx="true">{`
-        .backdrop-blur {
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-        }
-        
-        .stats-card {
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          border: 1px solid rgba(255,255,255,0.2);
-          transition: transform 0.3s ease;
-        }
-        
-        .stats-card:hover {
-          transform: translateY(-5px);
-        }
-        
-        .logo-corner {
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .logo-corner:hover {
-          transform: scale(1.05);
-          box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-        }
-        
-        .dropdown-item {
-          transition: background-color 0.2s ease;
-        }
-        
-        .dropdown-item:hover {
-          background-color: #f8f9fa;
-        }
-        
-        @media (max-width: 768px) {
-          .logo-corner {
-            width: 60px;
-            height: 60px;
-            top: 15px;
-            left: 15px;
-          }
-          
-          .action-bar .btn {
-            font-size: 0.9rem;
-            padding: 0.4rem 1rem;
-          }
-          
-          .dropdown-item div small {
-            display: none;
-          }
-        }
-        
-        @media (max-width: 576px) {
-          .logo-corner {
-            width: 50px;
-            height: 50px;
-            top: 10px;
-            left: 10px;
-          }
-          
-          .action-bar .d-flex {
-            flex-direction: column;
-          }
-          
-          .action-bar .btn {
-            width: 100%;
-          }
-        }
-      `}</style>
+      {/* Modal para gestionar imágenes */}
+      <Modal 
+        show={showImageModal} 
+        onHide={handleCancel} 
+        size="lg" 
+        centered
+        className={modalCustom}
+      >
+        <Modal.Header closeButton className={modalHeader}>
+          <Modal.Title>
+            <FaImages className="me-2 text-primary" />
+            Gérer les images de fond
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className={modalBody}>
+          {/* Imágenes actuales */}
+          {headerImages.length > 0 && (
+            <div className="mb-4">
+              <h6 className="mb-3 fw-bold">Images actuelles ({headerImages.length})</h6>
+              <div className={imageGrid}>
+                {headerImages.map((img, index) => (
+                  <div key={index} className={imageCard}>
+                    <img
+                      src={img.url || img}
+                      alt={`Image ${index + 1}`}
+                      loading="lazy"
+                    />
+                    <button
+                      className={deleteImageBtn}
+                      onClick={() => confirmDelete(index)}
+                      aria-label="Supprimer"
+                    >
+                      <FaTimes size={12} />
+                    </button>
+                    {index === currentSlide && (
+                      <span className={activeBadge}>
+                        Active
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Subir nuevas imágenes */}
+          <div>
+            <h6 className="mb-3 fw-bold">Ajouter des images</h6>
+            <Form.Group controlId="formFileMultiple" className="mb-3">
+              <Form.Label>Choisir des images (max 5MB par image)</Form.Label>
+              <Form.Control
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleFileSelect}
+                disabled={uploading}
+                className="py-2"
+              />
+              <Form.Text className="text-muted">
+                Formats acceptés: JPG, PNG, GIF, WEBP
+              </Form.Text>
+            </Form.Group>
+
+            {/* Previsualización */}
+            {previewUrls.length > 0 && (
+              <div className="mt-3">
+                <p className="mb-2 fw-semibold">Prévisualisation ({previewUrls.length} images)</p>
+                <div className={imageGrid}>
+                  {previewUrls.map((url, index) => (
+                    <div key={index} className={imageCard}>
+                      <img
+                        src={url}
+                        alt={`Preview ${index + 1}`}
+                        loading="lazy"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </Modal.Body>
+        <Modal.Footer className={modalFooter}>
+          <Button variant="secondary" onClick={handleCancel} disabled={uploading}>
+            Annuler
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleUpload}
+            disabled={selectedFiles.length === 0 || uploading}
+            style={{ backgroundColor: themeColor, borderColor: themeColor }}
+          >
+            {uploading ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Téléchargement...
+              </>
+            ) : (
+              <>
+                <FaUpload className="me-2" />
+                Télécharger {selectedFiles.length > 0 ? `(${selectedFiles.length})` : ''}
+              </>
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Modal de confirmación para eliminar */}
+      <Modal 
+        show={showDeleteConfirm} 
+        onHide={() => setShowDeleteConfirm(false)} 
+        centered 
+        size="sm"
+        className={modalCustom}
+      >
+        <Modal.Header closeButton className={modalHeader}>
+          <Modal.Title className="text-danger">
+            <FaTrash className="me-2" />
+            Confirmer la suppression
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className={modalBody}>
+          <p>Voulez-vous vraiment supprimer cette image ?</p>
+          <p className="text-muted small mb-0">Cette action est irréversible.</p>
+        </Modal.Body>
+        <Modal.Footer className={modalFooter}>
+          <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(false)}>
+            Annuler
+          </Button>
+          <Button variant="danger" size="sm" onClick={handleDeleteImage}>
+            Supprimer
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };
 
-export default BoutiqueHeader;
+export default React.memo(BoutiqueHeader);

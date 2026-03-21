@@ -7,7 +7,7 @@ export const BOUTIQUE_POST_TYPES = {
   DELETE_BOUTIQUE_PRODUCT:'DELETE_BOUTIQUE_PRODUCT',
   UPDATE_BOUTIQUE_PRODUCT:'UPDATE_BOUTIQUE_PRODUCT',
  
-  // User specific
+ 
  
   // Products
   GET_BOUTIQUE_PRODUCTS: 'GET_BOUTIQUE_PRODUCTS',
@@ -224,3 +224,31 @@ export const deleteBoutiquePost = ({
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
   }
 };
+
+export const getFeedPosts = (page = 1, limit = 12) => async (dispatch) => {
+  try {
+    dispatch({ type: BOUTIQUE_POST_TYPES.LOADING_FEED, payload: true });
+
+    const res = await getDataAPI(`posts/feed?page=${page}&limit=${limit}`);
+
+    dispatch({
+      type: BOUTIQUE_POST_TYPES.GET_FEED_POSTS,
+      payload: {
+        posts: res.data.posts,
+        page: res.data.page,
+        total: res.data.total,
+        hasMore: res.data.hasMore
+      }
+    });
+
+  } catch (err) {
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || err.message }
+    });
+  } finally {
+    dispatch({ type: BOUTIQUE_POST_TYPES.LOADING_FEED, payload: false });
+  }
+};
+
+ 

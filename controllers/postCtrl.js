@@ -171,8 +171,247 @@ const postCtrl = {
     }
   },
 
-
-
+  filterPosts: async (req, res) => {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 12;
+      const skip = (page - 1) * limit;
+  
+      // ============ PARÁMETROS ============
+      const {
+        category: categorySlug,
+        sub: subSlug,
+        article: articleSlug,
+        wilaya,
+        commune,
+        minPrice,
+        maxPrice,
+        sortBy = 'recent'
+      } = req.query;
+  
+      if (!categorySlug) {
+        return res.json({
+          success: true,
+          posts: [],
+          total: 0,
+          page,
+          hasMore: false,
+          message: 'Se requiere categoría'
+        });
+      }
+  
+      // 1. Buscar categoría nivel 1
+      const categoryDoc = await Category.findOne({
+        slug: categorySlug,
+        level: 1,
+        isActive: true
+      }).lean();
+  
+      if (!categoryDoc) {
+        return res.json({
+          success: true,
+          posts: [],
+          total: 0,
+          page,
+          hasMore: false,
+          message: 'Categoría no encontrada'
+        });
+      }
+  
+      // 2. Obtener subcategorías y artículos (para el slider)
+      const [allSubCategories, allArticles] = await Promise.all([
+        Category.find({ parent: categoryDoc._id, level: 2, isActive: true }).lean(),
+        Category.find({ level: 3, isActive: true }).lean()
+      ]);
+  
+      // 3. FILTRO BASE - TODOS los posts de la categoría
+      let filter = {
+        isActive: true,
+        $and: [
+          {
+            $or: [
+              { isFromBoutique: { $ne: true } },
+              { isFromBoutique: { $exists: false } }
+            ]
+          },
+          {
+            $or: [
+              { category: categoryDoc._id },
+              { categorie: { $regex: new RegExp(categoryDoc.name, 'i') } }
+            ]
+          }
+        ]
+      };
+  
+      let andConditions = [];
+  
+      // ============ FILTROS DE NAVEGACIÓN (slider) ============
+      if (subSlug) {
+        const subCategoryDoc = allSubCategories.find(
+          sub => sub.slug === subSlug || sub.name.toLowerCase() === subSlug.toLowerCase()
+        );
+  
+        if (subCategoryDoc) {
+          const articlesOfSub = allArticles.filter(
+            article => String(article.parent) === String(subCategoryDoc._id)
+          );
+  
+          const searchSlugs = [
+            subCategoryDoc.slug,
+            ...articlesOfSub.map(a => a.slug)
+          ];
+  
+          andConditions.push({
+            $or: [
+              { subCategory: { $in: searchSlugs } },
+              { articleType: { $in: searchSlugs } }
+            ]
+          });
+        }
+      }
+  
+      if (articleSlug) {
+        const articleDoc = allArticles.find(
+          article => article.slug === articleSlug || article.name.toLowerCase() === articleSlug.toLowerCase()
+        );
+  
+        if (articleDoc) {
+          andConditions.push({
+            $or: [
+              { subCategory: articleDoc.slug },
+              { articleType: articleDoc.slug }
+            ]
+          });
+        }
+      }
+  
+      // ============ FILTROS DE UBICACIÓN ============
+      if (wilaya) {
+        andConditions.push({
+          $or: [
+            { 'location.wilaya': wilaya },
+            { wilaya: wilaya }
+          ]
+        });
+      }
+  
+      if (commune) {
+        andConditions.push({
+          $or: [
+            { 'location.commune': new RegExp(commune, 'i') },
+            { commune: new RegExp(commune, 'i') }
+          ]
+        });
+      }
+  
+      // ============ FILTROS DE PRECIO ============
+      if (minPrice !== undefined || maxPrice !== undefined) {
+        let priceFilter = {};
+        if (minPrice !== undefined && minPrice !== '') priceFilter.$gte = Number(minPrice);
+        if (maxPrice !== undefined && maxPrice !== '') priceFilter.$lte = Number(maxPrice);
+        andConditions.push({ price: priceFilter });
+      }
+  
+      // Combinar condiciones
+      if (andConditions.length > 0) {
+        filter.$and = [...filter.$and, ...andConditions];
+      }
+  
+      // ============ ORDENAMIENTO ============
+      let sort = {};
+      switch (sortBy) {
+        case 'price_asc':
+          sort = { price: 1 };
+          break;
+        case 'price_desc':
+          sort = { price: -1 };
+          break;
+        case 'score': // NUEVO
+          sort = { score: -1, createdAt: -1 }; // primero por score, luego recientes
+          break;
+        case 'recent':
+        default:
+          sort = { createdAt: -1 };
+          break;
+      }
+  
+      // 4. Ejecutar consulta
+      const [posts, total] = await Promise.all([
+        Post.find(filter)
+          .sort(sort)
+          .skip(skip)
+          .limit(limit)
+          .select('_id title price images createdAt wilaya commune description etat views categorie subCategory articleType category location score')
+          .populate('user', 'username avatar')
+          .populate('boutique', 'nom_boutique images')
+          .lean(),
+        Post.countDocuments(filter)
+      ]);
+  
+      // 5. Preparar slider
+      const childrenWithArticles = allSubCategories.map(child => ({
+        _id: child._id,
+        name: child.name,
+        slug: child.slug,
+        level: child.level,
+        icon: child.icon || '📦',
+        iconType: child.iconType || 'emoji',
+        iconColor: child.iconColor || '#667eea',
+        bgColor: child.bgColor || '#f0f3ff',
+        postCount: child.postCount || 0,
+        articles: allArticles
+          .filter(a => String(a.parent) === String(child._id))
+          .map(article => ({
+            _id: article._id,
+            name: article.name,
+            slug: article.slug,
+            level: article.level,
+            icon: article.icon || '📄',
+            iconType: article.iconType || 'emoji',
+            iconColor: article.iconColor || '#667eea',
+            bgColor: article.bgColor || '#f0f3ff',
+            postCount: article.postCount || 0
+          })),
+        isLeaf: false
+      }));
+  
+      // ============ RESPUESTA ============
+      res.json({
+        success: true,
+        posts,
+        total,
+        page,
+        limit,
+        hasMore: page * limit < total,
+        totalPages: Math.ceil(total / limit),
+        categoryInfo: {
+          _id: categoryDoc._id,
+          name: categoryDoc.name,
+          slug: categoryDoc.slug,
+          level: categoryDoc.level,
+          emoji: categoryDoc.emoji || ''
+        },
+        children: childrenWithArticles,
+        filterMetadata: {
+          appliedFilters: {
+            wilaya: wilaya || null,
+            commune: commune || null,
+            minPrice: minPrice || null,
+            maxPrice: maxPrice || null,
+            sortBy
+          }
+        }
+      });
+  
+    } catch (error) {
+      console.error('❌ Error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al filtrar posts',
+        error: error.message
+      });
+    }
+  },
   /*filterPosts: async (req, res) => {
  try {
    const page = parseInt(req.query.page) || 1;
@@ -438,276 +677,7 @@ const postCtrl = {
 },
 
   */
-  // 📂 controllers/postCtrl.js - filterPosts VERSIÓN UNIFICADA (POSTS + BOUTIQUES)
-  // 📂 backend/controllers/postCtrl.js - filterPosts ACTUALIZADO (sin romper nada)
-  filterPosts: async (req, res) => {
-    try {
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 12;
-      const skip = (page - 1) * limit;
-
-      // ============ PARÁMETROS ============
-      const {
-        category: categorySlug,
-        sub: subSlug,
-        article: articleSlug,
-        wilaya,
-        commune,
-        minPrice,
-        maxPrice,
-        sortBy = 'recent'
-      } = req.query;
-
-      console.log('🔍 filterPosts - Parámetros:', {
-        category: categorySlug,
-        sub: subSlug,
-        article: articleSlug,
-        wilaya,
-        commune,
-        minPrice,
-        maxPrice,
-        sortBy,
-        page,
-        limit
-      });
-
-      if (!categorySlug) {
-        return res.json({
-          success: true,
-          posts: [],
-          total: 0,
-          page,
-          hasMore: false,
-          message: 'Se requiere categoría'
-        });
-      }
-
-      // 1. Buscar categoría nivel 1
-      const categoryDoc = await Category.findOne({
-        slug: categorySlug,
-        level: 1,
-        isActive: true
-      }).lean();
-
-      if (!categoryDoc) {
-        return res.json({
-          success: true,
-          posts: [],
-          total: 0,
-          page,
-          hasMore: false,
-          message: 'Categoría no encontrada'
-        });
-      }
-
-      // 2. Obtener subcategorías y artículos (para el slider)
-      const [allSubCategories, allArticles] = await Promise.all([
-        Category.find({ parent: categoryDoc._id, level: 2, isActive: true }).lean(),
-        Category.find({ level: 3, isActive: true }).lean()
-      ]);
-
-      // 3. FILTRO BASE - TODOS los posts de la categoría
-      let filter = {
-        isActive: true,
-        // 🔥 EXCLUIR POSTS DE BOUTIQUE DE LAS CATEGORÍAS GENERALES
-        $and: [
-          {
-            $or: [
-              { isFromBoutique: { $ne: true } }, // No es de boutique
-              { isFromBoutique: { $exists: false } } // O no tiene el campo (posts antiguos)
-            ]
-          },
-          {
-            $or: [
-              { category: categoryDoc._id },
-              { categorie: { $regex: new RegExp(categoryDoc.name, 'i') } }
-            ]
-          }
-        ]
-      };
-
-      // Array para condiciones adicionales
-      let andConditions = [];
-
-      // ============ FILTROS DE NAVEGACIÓN (slider) ============
-      if (subSlug) {
-        const subCategoryDoc = allSubCategories.find(
-          sub => sub.slug === subSlug || sub.name.toLowerCase() === subSlug.toLowerCase()
-        );
-
-        if (subCategoryDoc) {
-          console.log('✅ Subcategoría:', subCategoryDoc.name);
-
-          const articlesOfSub = allArticles.filter(
-            article => String(article.parent) === String(subCategoryDoc._id)
-          );
-
-          const searchSlugs = [
-            subCategoryDoc.slug,
-            ...articlesOfSub.map(a => a.slug)
-          ];
-
-          console.log('🔍 Buscando posts con slugs:', searchSlugs);
-
-          andConditions.push({
-            $or: [
-              { subCategory: { $in: searchSlugs } },
-              { articleType: { $in: searchSlugs } }
-            ]
-          });
-        }
-      }
-
-      if (articleSlug) {
-        const articleDoc = allArticles.find(
-          article => article.slug === articleSlug || article.name.toLowerCase() === articleSlug.toLowerCase()
-        );
-
-        if (articleDoc) {
-          console.log('✅ Artículo:', articleDoc.name);
-
-          andConditions.push({
-            $or: [
-              { subCategory: articleDoc.slug },
-              { articleType: articleDoc.slug }
-            ]
-          });
-        }
-      }
-
-      // ============ FILTROS DE UBICACIÓN ============
-      if (wilaya) {
-        andConditions.push({
-          $or: [
-            { 'location.wilaya': wilaya },
-            { wilaya: wilaya }
-          ]
-        });
-      }
-
-      if (commune) {
-        andConditions.push({
-          $or: [
-            { 'location.commune': new RegExp(commune, 'i') },
-            { commune: new RegExp(commune, 'i') }
-          ]
-        });
-      }
-
-      // ============ FILTROS DE PRECIO ============
-      if (minPrice !== undefined || maxPrice !== undefined) {
-        let priceFilter = {};
-        if (minPrice !== undefined && minPrice !== '') {
-          priceFilter.$gte = Number(minPrice);
-        }
-        if (maxPrice !== undefined && maxPrice !== '') {
-          priceFilter.$lte = Number(maxPrice);
-        }
-
-        andConditions.push({ price: priceFilter });
-      }
-
-      // Combinar condiciones
-      if (andConditions.length > 0) {
-        filter.$and = [...filter.$and, ...andConditions];
-      }
-
-      console.log('🎯 FILTRO FINAL:', JSON.stringify(filter, null, 2));
-
-      // ============ ORDENAMIENTO ============
-      let sort = {};
-      switch (sortBy) {
-        case 'price_asc':
-          sort = { price: 1 };
-          break;
-        case 'price_desc':
-          sort = { price: -1 };
-          break;
-        case 'recent':
-        default:
-          sort = { createdAt: -1 };
-          break;
-      }
-
-      // 4. Ejecutar consulta
-      const [posts, total] = await Promise.all([
-        Post.find(filter)
-          .sort(sort)
-          .skip(skip)
-          .limit(limit)
-          .select('_id title price images createdAt wilaya commune description etat views categorie subCategory articleType category location')
-          .populate('user', 'username avatar')
-          .populate('boutique', 'nom_boutique images') // Poblar boutique si existe (para mostrar de dónde viene)
-          .lean(),
-        Post.countDocuments(filter)
-      ]);
-
-      console.log(`📊 Encontrados: ${posts.length} de ${total}`);
-
-      // 5. Preparar slider
-      const childrenWithArticles = allSubCategories.map(child => ({
-        _id: child._id,
-        name: child.name,
-        slug: child.slug,
-        level: child.level,
-        icon: child.icon || '📦',
-        iconType: child.iconType || 'emoji',
-        iconColor: child.iconColor || '#667eea',
-        bgColor: child.bgColor || '#f0f3ff',
-        postCount: child.postCount || 0,
-        articles: allArticles
-          .filter(a => String(a.parent) === String(child._id))
-          .map(article => ({
-            _id: article._id,
-            name: article.name,
-            slug: article.slug,
-            level: article.level,
-            icon: article.icon || '📄',
-            iconType: article.iconType || 'emoji',
-            iconColor: article.iconColor || '#667eea',
-            bgColor: article.bgColor || '#f0f3ff',
-            postCount: article.postCount || 0
-          })),
-        isLeaf: false
-      }));
-
-      // ============ RESPUESTA ============
-      res.json({
-        success: true,
-        posts,
-        total,
-        page,
-        limit,
-        hasMore: page * limit < total,
-        totalPages: Math.ceil(total / limit),
-        categoryInfo: {
-          _id: categoryDoc._id,
-          name: categoryDoc.name,
-          slug: categoryDoc.slug,
-          level: categoryDoc.level,
-          emoji: categoryDoc.emoji || ''
-        },
-        children: childrenWithArticles,
-        filterMetadata: {
-          appliedFilters: {
-            wilaya: wilaya || null,
-            commune: commune || null,
-            minPrice: minPrice || null,
-            maxPrice: maxPrice || null,
-            sortBy
-          }
-        }
-      });
-
-    } catch (error) {
-      console.error('❌ Error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error al filtrar posts',
-        error: error.message
-      });
-    }
-  },
+  
 
   getPosts: async (req, res) => {
     try {

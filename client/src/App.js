@@ -89,8 +89,7 @@ function App() {
   
     <div className="App">
       <Navbar2 />
-  
-      {/* Contenedor oculto del traductor */}
+   
       <div id="google_translate_element" style={{ display: 'none' }}></div>
   
       <Switch>

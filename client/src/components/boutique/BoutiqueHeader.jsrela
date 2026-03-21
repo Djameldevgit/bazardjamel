@@ -1,0 +1,834 @@
+// components/boutique/BoutiqueHeader.jsx
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { Container, Row, Col, Badge, Button, Dropdown, Image, Modal, Form } from 'react-bootstrap';
+import { useSelector, useDispatch } from 'react-redux';
+import { 
+  FaStore, FaEye, FaBoxOpen, FaStar, FaRegStar, 
+  FaPlus, FaImages, FaTags, FaFileAlt,
+  FaCheckCircle, FaShare, FaHeart, FaRegHeart,
+  FaFacebook, FaTwitter, FaWhatsapp, FaLink,
+  FaChevronLeft, FaChevronRight, FaCamera, FaTrash,
+  FaUpload, FaTimes, FaPhotoVideo, FaEllipsisV
+} from 'react-icons/fa';
+import { incrementBoutiqueView, updateBoutiqueHeaderImages, deleteBoutiqueHeaderImage } from '../../redux/actions/boutiqueAction';
+import '../../styles/BoutiqueHeader.css';
+
+const RatingStars = React.memo(({ rating = 0 }) => {
+  const stars = useMemo(() => {
+    const result = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+
+    for (let i = 1; i <= 5; i++) {
+      if (i <= fullStars) {
+        result.push(<FaStar key={i} className="text-warning" size={14} />);
+      } else if (i === fullStars + 1 && hasHalfStar) {
+        result.push(
+          <div key={i} className="position-relative d-inline-block">
+            <FaRegStar className="text-secondary" size={14} />
+            <FaStar className="text-warning position-absolute top-0 start-0" style={{ clipPath: 'inset(0 50% 0 0)' }} size={14} />
+          </div>
+        );
+      } else {
+        result.push(<FaRegStar key={i} className="text-secondary" size={14} />);
+      }
+    }
+    return result;
+  }, [rating]);
+
+  return <div className="boutique-rating-stars">{stars}</div>;
+});
+
+RatingStars.displayName = 'RatingStars';
+
+const BoutiqueHeader = ({ boutique }) => {
+  const dispatch = useDispatch();
+  
+  // Estados de autenticación
+  const authState = useSelector(state => state.auth);
+  const { token, user } = authState || {};
+  const isAuthenticated = !!token;
+  const isOwner = user?._id === boutique?.user?._id || user?._id === boutique?.user;
+  
+  // Estados del componente
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [showShareTooltip, setShowShareTooltip] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [headerImages, setHeaderImages] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [previewUrls, setPreviewUrls] = useState([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [imageToDelete, setImageToDelete] = useState(null);
+  const [themeColor, setThemeColor] = useState('#2563eb');
+
+  // Definición de clases CSS como strings
+  const headerContainer = "boutique-header-container";
+  const heroSection = "boutique-hero-section";
+  const overlay = "boutique-overlay";
+  const carouselControl = "boutique-carousel-control";
+  const carouselControlLeft = "boutique-carousel-control-left";
+  const carouselControlRight = "boutique-carousel-control-right";
+  const carouselIndicators = "boutique-carousel-indicators";
+  const indicatorDot = "boutique-indicator-dot";
+  const indicatorDotActive = "boutique-indicator-dot-active";
+  const logoCorner = "boutique-logo-corner";
+  const actionButtonsTop = "boutique-action-buttons-top";
+  const actionButton = "boutique-action-button";
+  const dropdownMenuCustom = "boutique-dropdown-menu";
+  const dropdownItem = "boutique-dropdown-item";
+  const dropdownHeader = "boutique-dropdown-header";
+  const headerContent = "boutique-header-content";
+  const boutiqueInfo = "boutique-info";
+  const boutiqueTitle = "boutique-title";
+  const verifiedBadge = "boutique-verified-badge";
+  const slogan = "boutique-slogan";
+  const description = "boutique-description";
+  const quickStats = "boutique-quick-stats";
+  const categoryBadge = "boutique-category-badge";
+  const ratingContainer = "boutique-rating-container";
+  const ratingCount = "boutique-rating-count";
+  const statsCard = "boutique-stats-card";
+  const statsItem = "boutique-stats-item";
+  const statsIcon = "boutique-stats-icon";
+  const statsValue = "boutique-stats-value";
+  const statsLabel = "boutique-stats-label";
+  const actionBar = "boutique-action-bar";
+  const actionBarContent = "boutique-action-bar-content";
+  const actionButtonBar = "boutique-action-button-bar";
+  const imageThumbnail = "boutique-image-thumbnail";
+  const modalCustom = "boutique-modal";
+  const modalHeader = "boutique-modal-header";
+  const modalBody = "boutique-modal-body";
+  const modalFooter = "boutique-modal-footer";
+  const imageGrid = "boutique-image-grid";
+  const imageCard = "boutique-image-card";
+  const deleteImageBtn = "boutique-delete-image-btn";
+  const activeBadge = "boutique-active-badge";
+
+  // Obtener datos actualizados de Redux
+  const reduxBoutique = useSelector(state =>
+    state.boutique.boutiques?.find(b => b._id === boutique._id)
+  );
+  const currentBoutique = reduxBoutique || boutique;
+
+  // Destructurar datos de la boutique
+  const {
+    _id,
+    nom_boutique,
+    slogan_boutique,
+    description_boutique,
+    header_images = [],
+    images = [],
+    categorie,
+    isVerified,
+    stats = { vues: 0, produits: 0, notes: 0, avis: 0 },
+    couleur_theme = '#2563eb',
+    createdAt
+  } = currentBoutique;
+
+  const logoImage = images.length > 0 ? images[0] : null;
+
+  // Actualizar headerImages
+  useEffect(() => {
+    if (header_images && header_images.length > 0) {
+      setHeaderImages(header_images);
+    }
+  }, [header_images]);
+
+  // Actualizar color de tema
+  useEffect(() => {
+    setThemeColor(couleur_theme);
+    document.documentElement.style.setProperty('--theme-color', couleur_theme);
+  }, [couleur_theme]);
+
+  // Auto-play del carousel
+  useEffect(() => {
+    if (headerImages.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % headerImages.length);
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [headerImages.length]);
+
+  // Incrementar vistas al montar
+  useEffect(() => {
+    if (_id) {
+      dispatch(incrementBoutiqueView(_id));
+    }
+  }, [_id, dispatch]);
+
+  // Navegación del carousel
+  const nextSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev + 1) % headerImages.length);
+  }, [headerImages.length]);
+
+  const prevSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev - 1 + headerImages.length) % headerImages.length);
+  }, [headerImages.length]);
+
+  // Manejar selección de archivos
+  const handleFileSelect = useCallback((e) => {
+    const files = Array.from(e.target.files);
+    const validFiles = files.filter(file => {
+      const isValidType = file.type.startsWith('image/');
+      const isValidSize = file.size <= 5 * 1024 * 1024;
+      if (!isValidType) alert('Format non supporté');
+      if (!isValidSize) alert('Image trop volumineuse (max 5MB)');
+      return isValidType && isValidSize;
+    });
+
+    setSelectedFiles(validFiles);
+    const urls = validFiles.map(file => URL.createObjectURL(file));
+    setPreviewUrls(urls);
+  }, []);
+
+  // Subir imágenes
+  const handleUpload = useCallback(async () => {
+    if (selectedFiles.length === 0) return;
+
+    if (!token) {
+      alert('❌ Vous devez être connecté pour modifier les images');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const imagesToUpload = selectedFiles.map(file => ({
+        url: URL.createObjectURL(file),
+        name: file.name,
+        isExisting: false,
+        file: file
+      }));
+      
+      const result = await dispatch(updateBoutiqueHeaderImages({
+        boutiqueId: _id,
+        images: imagesToUpload,
+        auth: authState
+      }));
+
+      if (result?.success) {
+        setHeaderImages(result.header_images);
+        setShowImageModal(false);
+        setSelectedFiles([]);
+        previewUrls.forEach(url => URL.revokeObjectURL(url));
+        setPreviewUrls([]);
+        alert('✅ Images téléchargées avec succès!');
+      } else {
+        throw new Error(result?.error || 'Erreur lors du téléchargement');
+      }
+    } catch (error) {
+      console.error('Error uploading:', error);
+      alert('❌ Erreur: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  }, [selectedFiles, token, _id, authState, dispatch, previewUrls]);
+
+  // Eliminar imagen
+  const handleDeleteImage = useCallback(async () => {
+    if (imageToDelete === null) return;
+    
+    if (!token) {
+      alert('❌ Vous devez être connecté pour supprimer des images');
+      return;
+    }
+  
+    try {
+      const imageId = headerImages[imageToDelete]._id || headerImages[imageToDelete].public_id;
+      
+      const result = await dispatch(deleteBoutiqueHeaderImage({
+        boutiqueId: _id,
+        imageId: imageId,
+        auth: authState
+      }));
+  
+      if (result && result.success) {
+        const newImages = headerImages.filter((_, index) => index !== imageToDelete);
+        setHeaderImages(newImages);
+        if (currentSlide >= newImages.length) {
+          setCurrentSlide(Math.max(0, newImages.length - 1));
+        }
+        setShowDeleteConfirm(false);
+        setImageToDelete(null);
+        alert('✅ Image supprimée avec succès');
+      }
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      alert('Erreur lors de la suppression de l\'image');
+    }
+  }, [imageToDelete, token, _id, headerImages, currentSlide, authState, dispatch]);
+
+  const confirmDelete = useCallback((index) => {
+    setImageToDelete(index);
+    setShowDeleteConfirm(true);
+  }, []);
+
+  const handleCancel = useCallback(() => {
+    previewUrls.forEach(url => URL.revokeObjectURL(url));
+    setSelectedFiles([]);
+    setPreviewUrls([]);
+    setShowImageModal(false);
+  }, [previewUrls]);
+
+  // Renderizar fondo del header
+  const headerBackgroundStyle = useMemo(() => {
+    if (headerImages.length === 0) {
+      return {
+        background: `linear-gradient(135deg, ${themeColor} 0%, ${adjustColor(themeColor, 30)} 100%)`
+      };
+    }
+    return {
+      backgroundImage: `url(${headerImages[currentSlide]?.url || headerImages[currentSlide]})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      transition: 'background-image 0.5s ease-in-out'
+    };
+  }, [headerImages, currentSlide, themeColor]);
+
+  // Compartir en redes sociales
+  const shareUrl = useMemo(() => window.location.href, []);
+  const shareTitle = `Découvrez ${nom_boutique} sur notre marketplace`;
+
+  const handleShare = useCallback((platform) => {
+    let url = '';
+    switch(platform) {
+      case 'facebook':
+        url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+        break;
+      case 'twitter':
+        url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareTitle)}`;
+        break;
+      case 'whatsapp':
+        url = `https://wa.me/?text=${encodeURIComponent(shareTitle + ' ' + shareUrl)}`;
+        break;
+      case 'copy':
+        navigator.clipboard.writeText(shareUrl);
+        setShowShareTooltip(true);
+        setTimeout(() => setShowShareTooltip(false), 2000);
+        return;
+      default:
+        return;
+    }
+    window.open(url, '_blank', 'width=600,height=400');
+  }, [shareUrl, shareTitle]);
+
+  // Helper para ajustar color
+  function adjustColor(color, percent) {
+    const num = parseInt(color.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) + amt;
+    const G = ((num >> 8) & 0x00FF) + amt;
+    const B = (num & 0x0000FF) + amt;
+    return `#${(0x1000000 + (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 + (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 + (B < 255 ? (B < 1 ? 0 : B) : 255)).toString(16).slice(1)}`;
+  }
+
+  return (
+    <div className={headerContainer}>
+      {/* Sección hero con fondo */}
+      <div className={heroSection} style={headerBackgroundStyle}>
+        <div className={overlay} />
+        
+        {/* Controles del carousel */}
+        {headerImages.length > 1 && (
+          <>
+            <button
+              onClick={prevSlide}
+              className={`${carouselControl} ${carouselControlLeft}`}
+              aria-label="Image précédente"
+            >
+              <FaChevronLeft size={20} />
+            </button>
+            <button
+              onClick={nextSlide}
+              className={`${carouselControl} ${carouselControlRight}`}
+              aria-label="Image suivante"
+            >
+              <FaChevronRight size={20} />
+            </button>
+
+            <div className={carouselIndicators}>
+              {headerImages.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentSlide(index)}
+                  className={`${indicatorDot} ${index === currentSlide ? indicatorDotActive : ''}`}
+                  aria-label={`Aller à l'image ${index + 1}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Logo */}
+        {logoImage && (
+          <div className={logoCorner}>
+            <img
+              src={logoImage.url || logoImage}
+              alt={nom_boutique}
+              loading="lazy"
+            />
+          </div>
+        )}
+
+        {/* Botones de acción superiores */}
+        <div className={actionButtonsTop}>
+          <Button
+            variant="light"
+            size="sm"
+            className={actionButton}
+            onClick={() => setIsFollowing(!isFollowing)}
+          >
+            {isFollowing ? (
+              <>
+                <FaHeart className="text-danger" /> Suivi
+              </>
+            ) : (
+              <>
+                <FaRegHeart /> Suivre
+              </>
+            )}
+          </Button>
+
+          <Dropdown align="end">
+            <Dropdown.Toggle
+              variant="light"
+              size="sm"
+              className={actionButton}
+            >
+              <FaShare /> Partager
+            </Dropdown.Toggle>
+
+            <Dropdown.Menu className={dropdownMenuCustom}>
+              <Dropdown.Item onClick={() => handleShare('facebook')} className={dropdownItem}>
+                <FaFacebook className="text-primary" size={18} /> Facebook
+              </Dropdown.Item>
+              <Dropdown.Item onClick={() => handleShare('twitter')} className={dropdownItem}>
+                <FaTwitter className="text-info" size={18} /> Twitter
+              </Dropdown.Item>
+              <Dropdown.Item onClick={() => handleShare('whatsapp')} className={dropdownItem}>
+                <FaWhatsapp className="text-success" size={18} /> WhatsApp
+              </Dropdown.Item>
+              <Dropdown.Item onClick={() => handleShare('copy')} className={dropdownItem}>
+                <FaLink size={18} /> Copier le lien
+                {showShareTooltip && (
+                  <Badge bg="success" className="ms-2">Copié!</Badge>
+                )}
+              </Dropdown.Item>
+            </Dropdown.Menu>
+          </Dropdown>
+        </div>
+
+        {/* Contenido principal */}
+        <Container className={headerContent}>
+          <Row className="align-items-end">
+            <Col xs={12} md={8}>
+              <div className={boutiqueInfo}>
+                <h1 className={boutiqueTitle}>
+                  {nom_boutique}
+                </h1>
+                {isVerified && (
+                  <Badge className={verifiedBadge}>
+                    <FaCheckCircle size={12} /> 
+                    <span className="d-none d-sm-inline">Boutique vérifiée</span>
+                    <span className="d-sm-none">Vérifiée</span>
+                  </Badge>
+                )}
+              </div>
+              
+              {slogan_boutique && (
+                <p className={slogan}>
+                  {slogan_boutique}
+                </p>
+              )}
+              
+              {description_boutique && (
+                <p className={description}>
+                  {description_boutique.substring(0, 150)}
+                  {description_boutique.length > 150 && '...'}
+                </p>
+              )}
+
+              <div className={quickStats}>
+                <Badge className={categoryBadge}>
+                  <FaStore className="me-1" size={12} /> 
+                  <span>{categorie}</span>
+                </Badge>
+                
+                <div className={ratingContainer}>
+                  <RatingStars rating={stats.notes} />
+                  <span className={ratingCount}>
+                    ({stats.avis} avis)
+                  </span>
+                </div>
+
+                <div className="d-flex d-md-none gap-3 ms-auto">
+                  <div className="text-center">
+                    <small className="d-block fw-bold">{stats.vues?.toLocaleString() || 0}</small>
+                    <small>vues</small>
+                  </div>
+                  <div className="text-center">
+                    <small className="d-block fw-bold">{stats.produits || 0}</small>
+                    <small>prod.</small>
+                  </div>
+                </div>
+              </div>
+            </Col>
+
+            <Col md={4} className="d-none d-md-block">
+              <div className={statsCard}>
+                <Row className="g-2">
+                  <Col xs={4} className={statsItem}>
+                    <div className={statsIcon}>
+                      <FaEye size={20} />
+                    </div>
+                    <div className={statsValue}>
+                      {stats.vues?.toLocaleString() || 0}
+                    </div>
+                    <div className={statsLabel}>Vues</div>
+                  </Col>
+                  
+                  <Col xs={4} className={statsItem}>
+                    <div className={statsIcon}>
+                      <FaBoxOpen size={20} />
+                    </div>
+                    <div className={statsValue}>
+                      {stats.produits || 0}
+                    </div>
+                    <div className={statsLabel}>Produits</div>
+                  </Col>
+                  
+                  <Col xs={4} className={statsItem}>
+                    <div className={statsIcon}>
+                      <FaStar size={20} />
+                    </div>
+                    <div className={statsValue}>
+                      {stats.notes?.toFixed(1) || 0}
+                    </div>
+                    <div className={statsLabel}>Note</div>
+                  </Col>
+                </Row>
+              </div>
+            </Col>
+          </Row>
+        </Container>
+      </div>
+
+      {/* Barra de acciones */}
+      <div className={actionBar}>
+        <Container className={actionBarContent}>
+          <Row className="align-items-center">
+            <Col xs={12} md={4} className="mb-2 mb-md-0">
+              <div className="d-flex align-items-center gap-2">
+                <div>
+                  <h6 className="mb-0 fw-bold">{nom_boutique}</h6>
+                  <small className="text-muted">
+                    Membre depuis {new Date(createdAt).toLocaleDateString()}
+                  </small>
+                </div>
+              </div>
+            </Col>
+
+            <Col xs={12} md={8}>
+              <div className="d-flex flex-column flex-sm-row justify-content-end gap-2">
+                {/* Dropdown para gestión de imágenes - Solo visible para propietario */}
+                {isOwner && (
+                  <Dropdown>
+                    <Dropdown.Toggle
+                      variant="outline-primary"
+                      size="sm"
+                      className={actionButtonBar}
+                      style={{
+                        borderColor: themeColor,
+                        color: themeColor
+                      }}
+                    >
+                      <FaCamera className="me-2" />
+                      Fond d'écran
+                      {headerImages.length > 0 && (
+                        <Badge bg="primary" className="ms-2 rounded-pill">
+                          {headerImages.length}
+                        </Badge>
+                      )}
+                    </Dropdown.Toggle>
+
+                    <Dropdown.Menu className={dropdownMenuCustom}>
+                      <Dropdown.Header className={dropdownHeader}>
+                        <FaPhotoVideo className="me-2" /> Gérer les images
+                      </Dropdown.Header>
+                      <Dropdown.Divider />
+                      
+                      <Dropdown.Item onClick={() => setShowImageModal(true)} className={dropdownItem}>
+                        <FaPlus className="text-success" size={16} />
+                        <div>
+                          <div className="fw-bold">Ajouter des images</div>
+                          <small className="text-muted">Télécharger de nouvelles images</small>
+                        </div>
+                      </Dropdown.Item>
+                      
+                      {headerImages.length > 0 && (
+                        <>
+                          <Dropdown.Divider />
+                          <Dropdown.Header className={dropdownHeader}>
+                            Images actuelles ({headerImages.length})
+                          </Dropdown.Header>
+                          
+                          {headerImages.map((img, index) => (
+                            <Dropdown.Item 
+                              key={index}
+                              className={dropdownItem}
+                              onClick={() => setCurrentSlide(index)}
+                            >
+                              <Image 
+                                src={img.url || img} 
+                                className={imageThumbnail}
+                              />
+                              <span>Image {index + 1}</span>
+                              {index === currentSlide && (
+                                <Badge bg="primary" className="ms-auto" pill>active</Badge>
+                              )}
+                              <Button
+                                variant="link"
+                                className="p-0 text-danger ms-auto"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  confirmDelete(index);
+                                }}
+                              >
+                                <FaTrash size={14} />
+                              </Button>
+                            </Dropdown.Item>
+                          ))}
+                        </>
+                      )}
+                    </Dropdown.Menu>
+                  </Dropdown>
+                )}
+
+                {/* Dropdown pour publication - Solo visible para propietario */}
+                {isOwner && (
+                  <Dropdown>
+                    <Dropdown.Toggle
+                      variant="primary"
+                      size="sm"
+                      className={actionButtonBar}
+                      style={{
+                        backgroundColor: themeColor,
+                        borderColor: themeColor
+                      }}
+                    >
+                      <FaPlus className="me-2" /> Publier
+                    </Dropdown.Toggle>
+
+                    <Dropdown.Menu className={dropdownMenuCustom}>
+                      <Dropdown.Header className={dropdownHeader}>
+                        <FaBoxOpen className="me-2" /> Nouvelle annonce
+                      </Dropdown.Header>
+                      <Dropdown.Divider />
+                      
+                      <Dropdown.Item 
+                        href={`/boutique/${_id}/products/new`}
+                        className={dropdownItem}
+                      >
+                        <FaFileAlt className="text-primary" size={16} />
+                        <div>
+                          <div className="fw-bold">Produit standard</div>
+                          <small className="text-muted d-none d-md-inline">Pour un article classique</small>
+                        </div>
+                      </Dropdown.Item>
+                      
+                      <Dropdown.Item 
+                        href={`/boutique/${_id}/products/new?type=promo`}
+                        className={dropdownItem}
+                      >
+                        <FaTags className="text-success" size={16} />
+                        <div>
+                          <div className="fw-bold">Promotion</div>
+                          <small className="text-muted d-none d-md-inline">Mettez en avant une offre</small>
+                        </div>
+                      </Dropdown.Item>
+                      
+                      <Dropdown.Item 
+                        href={`/boutique/${_id}/gallery/new`}
+                        className={dropdownItem}
+                      >
+                        <FaImages className="text-warning" size={16} />
+                        <div>
+                          <div className="fw-bold">Album photo</div>
+                          <small className="text-muted d-none d-md-inline">Créez une galerie</small>
+                        </div>
+                      </Dropdown.Item>
+
+                      <Dropdown.Divider />
+                      
+                      <Dropdown.Item 
+                        href={`/boutique/${_id}/dashboard`}
+                        className={`${dropdownItem} text-center`}
+                      >
+                        <FaEllipsisV className="text-secondary" size={16} />
+                        Gérer ma boutique →
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+                )}
+
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  className={actionButtonBar}
+                  href={`/boutique/${_id}/products`}
+                  style={{
+                    borderColor: themeColor,
+                    color: themeColor
+                  }}
+                >
+                  Voir tous les produits
+                </Button>
+              </div>
+            </Col>
+          </Row>
+        </Container>
+      </div>
+
+      {/* Modal para gestionar imágenes */}
+      <Modal 
+        show={showImageModal} 
+        onHide={handleCancel} 
+        size="lg" 
+        centered
+        className={modalCustom}
+      >
+        <Modal.Header closeButton className={modalHeader}>
+          <Modal.Title>
+            <FaImages className="me-2 text-primary" />
+            Gérer les images de fond
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className={modalBody}>
+          {/* Imágenes actuales */}
+          {headerImages.length > 0 && (
+            <div className="mb-4">
+              <h6 className="mb-3 fw-bold">Images actuelles ({headerImages.length})</h6>
+              <div className={imageGrid}>
+                {headerImages.map((img, index) => (
+                  <div key={index} className={imageCard}>
+                    <img
+                      src={img.url || img}
+                      alt={`Image ${index + 1}`}
+                      loading="lazy"
+                    />
+                    <button
+                      className={deleteImageBtn}
+                      onClick={() => confirmDelete(index)}
+                      aria-label="Supprimer"
+                    >
+                      <FaTimes size={12} />
+                    </button>
+                    {index === currentSlide && (
+                      <span className={activeBadge}>
+                        Active
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Subir nuevas imágenes */}
+          <div>
+            <h6 className="mb-3 fw-bold">Ajouter des images</h6>
+            <Form.Group controlId="formFileMultiple" className="mb-3">
+              <Form.Label>Choisir des images (max 5MB par image)</Form.Label>
+              <Form.Control
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleFileSelect}
+                disabled={uploading}
+                className="py-2"
+              />
+              <Form.Text className="text-muted">
+                Formats acceptés: JPG, PNG, GIF, WEBP
+              </Form.Text>
+            </Form.Group>
+
+            {/* Previsualización */}
+            {previewUrls.length > 0 && (
+              <div className="mt-3">
+                <p className="mb-2 fw-semibold">Prévisualisation ({previewUrls.length} images)</p>
+                <div className={imageGrid}>
+                  {previewUrls.map((url, index) => (
+                    <div key={index} className={imageCard}>
+                      <img
+                        src={url}
+                        alt={`Preview ${index + 1}`}
+                        loading="lazy"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </Modal.Body>
+        <Modal.Footer className={modalFooter}>
+          <Button variant="secondary" onClick={handleCancel} disabled={uploading}>
+            Annuler
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleUpload}
+            disabled={selectedFiles.length === 0 || uploading}
+            style={{ backgroundColor: themeColor, borderColor: themeColor }}
+          >
+            {uploading ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" />
+                Téléchargement...
+              </>
+            ) : (
+              <>
+                <FaUpload className="me-2" />
+                Télécharger {selectedFiles.length > 0 ? `(${selectedFiles.length})` : ''}
+              </>
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Modal de confirmación para eliminar */}
+      <Modal 
+        show={showDeleteConfirm} 
+        onHide={() => setShowDeleteConfirm(false)} 
+        centered 
+        size="sm"
+        className={modalCustom}
+      >
+        <Modal.Header closeButton className={modalHeader}>
+          <Modal.Title className="text-danger">
+            <FaTrash className="me-2" />
+            Confirmer la suppression
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className={modalBody}>
+          <p>Voulez-vous vraiment supprimer cette image ?</p>
+          <p className="text-muted small mb-0">Cette action est irréversible.</p>
+        </Modal.Body>
+        <Modal.Footer className={modalFooter}>
+          <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(false)}>
+            Annuler
+          </Button>
+          <Button variant="danger" size="sm" onClick={handleDeleteImage}>
+            Supprimer
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </div>
+  );
+};
+
+export default React.memo(BoutiqueHeader);

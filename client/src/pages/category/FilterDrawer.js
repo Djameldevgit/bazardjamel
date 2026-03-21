@@ -1,142 +1,138 @@
-// 📂 pages/FilterDrawer.js
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Offcanvas, Form, Button, Accordion, Spinner } from 'react-bootstrap';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Offcanvas, Form, Button, Accordion } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
-import { useTranslation } from 'react-i18next';
-import { 
-  Funnel, 
-  XLg, 
-  ArrowCounterclockwise,
-  Check2,
-  GeoAlt,
-  CurrencyEuro,
-  SortDown
-} from 'react-bootstrap-icons';
 import Select from 'react-select';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
 import { getFilterOptions } from '../../redux/actions/categoryAction';
-import wilayasData from './wilayas.json'; // Ajusta la ruta según tu estructura
+import wilayasData from './wilayas.json';
 
 const FilterDrawer = ({ 
   show, 
   onHide, 
   onApplyFilters, 
-  category,          // slug de la categoría principal
-  subSlug = '',      // slug de subcategoría actual (desde URL)
-  articleSlug = '',  // slug de artículo actual (desde URL)
+  category,
+  subSlug = '',
+  articleSlug = '',
   initialWilaya = '',
   initialCommune = '',
   initialMinPrice = null,
   initialMaxPrice = null,
   initialSortBy = 'recent'
 }) => {
-  const { t } = useTranslation();
+
   const dispatch = useDispatch();
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const isBoutique = category === 'boutiques';
+  const isServices = category === 'services';
+  const isEmploi = category === 'emploi';
+  const isVoyages = category === 'voyages';
 
-  // Obtener datos del reducer filter
-  const { 
-    children = [], 
-    wilayas: wilayasFromBackend = [], 
-    priceRange = { min: 0, max: 1000000 }, 
-    loading 
-  } = useSelector(state => state.filter);
+  // Campos específicos por categoría
+  const getCategoryFields = () => {
+    // Categorías que NO tienen precio
+    const noPriceCategories = ['boutiques', 'services', 'emploi', 'voyages', 'immobilier'];
+    
+    // Categorías que tienen campos especiales
+    const specialFields = {
+      'immobilier': ['type_immobilier', 'surface', 'pieces', 'etage'],
+      'emploi': ['type_contrat', 'secteur', 'experience', 'salaire'],
+      'vehicules': ['marque', 'modele', 'annee', 'kilometrage', 'carburant'],
+      'voyages': ['type_voyage', 'destination', 'duree', 'hebergement'],
+      'services': ['type_service', 'disponibilite', 'tarif_horaire']
+    };
 
-  // Estado local para los filtros temporales
+    return {
+      hasPrice: !noPriceCategories.includes(category),
+      specialFields: specialFields[category] || []
+    };
+  };
+
+  const categoryFields = getCategoryFields();
+
+  const { children = [], priceRange = { min: 0, max: 1000000 } } = useSelector(state => state.filter);
+
   const [tempFilters, setTempFilters] = useState({
     subCategory: subSlug,
     article: articleSlug,
     wilaya: initialWilaya,
     commune: initialCommune,
-    priceMin: initialMinPrice !== null ? initialMinPrice : priceRange.min,
-    priceMax: initialMaxPrice !== null ? initialMaxPrice : priceRange.max,
-    sortBy: initialSortBy
+    priceMin: initialMinPrice || priceRange.min,
+    priceMax: initialMaxPrice || priceRange.max,
+    sortBy: initialSortBy,
+    // Campos especiales
+    type_immobilier: '',
+    surface_min: '',
+    surface_max: '',
+    pieces: '',
+    type_contrat: '',
+    secteur: '',
+    experience: '',
+    salaire_min: '',
+    salaire_max: '',
+    marque: '',
+    modele: '',
+    annee_min: '',
+    annee_max: '',
+    kilometrage_max: '',
+    carburant: '',
+    type_voyage: '',
+    destination: '',
+    duree: '',
+    type_service: '',
+    tarif_horaire_min: '',
+    tarif_horaire_max: ''
   });
 
-  // Estado para communes basado en JSON
   const [communesList, setCommunesList] = useState([]);
 
-  // Cargar opciones cuando se abre el drawer
   useEffect(() => {
     if (show && category) {
       dispatch(getFilterOptions(category, subSlug, articleSlug));
     }
   }, [show, category, subSlug, articleSlug, dispatch]);
 
-  // Actualizar precios cuando cambia el rango desde Redux
-  useEffect(() => {
-    setTempFilters(prev => ({
-      ...prev,
-      priceMin: priceRange.min,
-      priceMax: priceRange.max
-    }));
-  }, [priceRange]);
-
-  // Sincronizar con props iniciales
-  useEffect(() => {
-    setTempFilters({
-      subCategory: subSlug,
-      article: articleSlug,
-      wilaya: initialWilaya,
-      commune: initialCommune,
-      priceMin: initialMinPrice !== null ? initialMinPrice : priceRange.min,
-      priceMax: initialMaxPrice !== null ? initialMaxPrice : priceRange.max,
-      sortBy: initialSortBy
-    });
-  }, [subSlug, articleSlug, initialWilaya, initialCommune, initialMinPrice, initialMaxPrice, initialSortBy, priceRange]);
-
-  // Cargar communes cuando cambia la wilaya seleccionada
   useEffect(() => {
     if (tempFilters.wilaya) {
-      // Buscar la wilaya en el JSON (ajusta según la estructura real)
       const wilaya = wilayasData.find(w => 
         w.wilaya === tempFilters.wilaya || 
-        w.name === tempFilters.wilaya || 
-        w.code === tempFilters.wilaya
+        w.name === tempFilters.wilaya
       );
-      if (wilaya) {
-        // Obtener lista de communes (puede ser 'commune', 'communes', 'municipalities')
-        const communes = wilaya.commune || wilaya.communes || wilaya.municipalities || [];
-        setCommunesList(communes);
-      } else {
-        setCommunesList([]);
-      }
+
+      setCommunesList(wilaya?.commune || wilaya?.communes || []);
     } else {
       setCommunesList([]);
     }
   }, [tempFilters.wilaya]);
 
-  // Detectar tamaño de pantalla
-  useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Handlers
-  const handleFilterChange = (key, value) => {
+  const handleChange = (key, value) => {
     setTempFilters(prev => ({ ...prev, [key]: value }));
+
+    if (key === 'wilaya') {
+      setTempFilters(prev => ({ ...prev, commune: '' }));
+    }
+
     if (key === 'subCategory') {
       setTempFilters(prev => ({ ...prev, article: '' }));
     }
-    if (key === 'wilaya') {
-      setTempFilters(prev => ({ ...prev, commune: '' })); // reset commune al cambiar wilaya
-    }
-  };
-
-  const handlePriceRangeChange = (values) => {
-    setTempFilters(prev => ({
-      ...prev,
-      priceMin: values[0],
-      priceMax: values[1]
-    }));
   };
 
   const applyFilters = () => {
-    if (onApplyFilters && typeof onApplyFilters === 'function') {
-      onApplyFilters(tempFilters);
+    // Limpiar filtros según categoría
+    let finalFilters = { ...tempFilters };
+
+    if (!categoryFields.hasPrice) {
+      finalFilters.priceMin = null;
+      finalFilters.priceMax = null;
     }
+
+    // Eliminar campos vacíos
+    Object.keys(finalFilters).forEach(key => {
+      if (finalFilters[key] === '' || finalFilters[key] === null) {
+        delete finalFilters[key];
+      }
+    });
+
+    onApplyFilters(finalFilters);
     onHide();
   };
 
@@ -152,628 +148,456 @@ const FilterDrawer = ({
     });
   };
 
-  const countActiveFilters = () => {
-    let count = 0;
-    if (tempFilters.subCategory && tempFilters.subCategory !== subSlug) count++;
-    if (tempFilters.article && tempFilters.article !== articleSlug) count++;
-    if (tempFilters.wilaya) count++;
-    if (tempFilters.commune) count++;
-    if (tempFilters.priceMin && tempFilters.priceMin !== priceRange.min) count++;
-    if (tempFilters.priceMax && tempFilters.priceMax !== priceRange.max) count++;
-    if (tempFilters.sortBy !== 'recent') count++;
-    return count;
-  };
-
-  // Opciones para selects de categorías (usando slugs)
   const subCategoryOptions = useMemo(() => {
-    return children.map(sub => ({
-      value: sub.slug,
-      label: sub.name,
-      icon: sub.icon,
-      emoji: sub.emoji || '📌',
-      postCount: sub.postCount || 0
+    return children.map(c => ({
+      value: c.slug,
+      label: c.name
     }));
   }, [children]);
 
-  const articleOptions = useMemo(() => {
-    const selectedSub = children.find(sub => sub.slug === tempFilters.subCategory);
-    return (selectedSub?.articles || []).map(article => ({
-      value: article.slug,
-      label: article.name,
-      icon: article.icon,
-      emoji: article.emoji || '📄'
-    }));
-  }, [children, tempFilters.subCategory]);
-
-  // Opciones de ordenamiento
-  const sortOptions = [
-    { value: 'recent', label: 'Plus récents', icon: '🕐' },
-    { value: 'price_asc', label: 'Prix croissant', icon: '💰' },
-    { value: 'price_desc', label: 'Prix décroissant', icon: '💎' }
+  // Opciones para selects dinámicos
+  const contractOptions = [
+    { value: 'cdi', label: 'CDI' },
+    { value: 'cdd', label: 'CDD' },
+    { value: 'interim', label: 'Intérim' },
+    { value: 'stage', label: 'Stage' },
+    { value: 'freelance', label: 'Freelance' }
   ];
 
-  const isMobile = windowWidth <= 768;
+  const sectorOptions = [
+    { value: 'informatique', label: 'Informatique' },
+    { value: 'commerce', label: 'Commerce' },
+    { value: 'industrie', label: 'Industrie' },
+    { value: 'service', label: 'Service' },
+    { value: 'batiment', label: 'Bâtiment' }
+  ];
 
-  // Componentes personalizados para react-select (con imágenes/emojis)
-  const CustomOption = (props) => {
-    const { data, innerRef, innerProps } = props;
-    return (
-      <div ref={innerRef} {...innerProps} style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', cursor: 'pointer' }}>
-        {data.icon ? (
-          <img 
-            src={data.icon} 
-            alt={data.label}
-            style={{ width: 24, height: 24, objectFit: 'cover', borderRadius: 4, marginRight: 8 }}
-          />
-        ) : (
-          <span style={{ fontSize: 20, marginRight: 8 }}>{data.emoji}</span>
-        )}
-        <span>{data.label}</span>
-        {data.postCount ? <span style={{ marginLeft: 'auto', color: '#666', fontSize: 12 }}>({data.postCount})</span> : null}
-      </div>
-    );
-  };
+  const fuelOptions = [
+    { value: 'essence', label: 'Essence' },
+    { value: 'diesel', label: 'Diesel' },
+    { value: 'electrique', label: 'Électrique' },
+    { value: 'hybride', label: 'Hybride' }
+  ];
 
-  const CustomSingleValue = (props) => {
-    const { data } = props;
-    return (
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        {data.icon ? (
-          <img 
-            src={data.icon} 
-            alt={data.label}
-            style={{ width: 20, height: 20, objectFit: 'cover', borderRadius: 3, marginRight: 8 }}
-          />
-        ) : (
-          <span style={{ fontSize: 16, marginRight: 8 }}>{data.emoji}</span>
-        )}
-        <span>{data.label}</span>
-      </div>
-    );
-  };
+  const propertyTypeOptions = [
+    { value: 'appartement', label: 'Appartement' },
+    { value: 'villa', label: 'Villa' },
+    { value: 'terrain', label: 'Terrain' },
+    { value: 'local', label: 'Local commercial' }
+  ];
 
-  const selectStyles = {
-    control: (base) => ({
-      ...base,
-      borderColor: '#e9ecef',
-      borderRadius: '10px',
-      minHeight: '42px',
-      fontSize: '14px',
-      boxShadow: 'none',
-      '&:hover': { borderColor: '#667eea' }
-    }),
-    menu: (base) => ({
-      ...base,
-      zIndex: 1060,
-      borderRadius: '10px',
-      overflow: 'hidden'
-    }),
-    menuPortal: (base) => ({
-      ...base,
-      zIndex: 1060
-    }),
-    option: (base, state) => ({
-      ...base,
-      backgroundColor: state.isSelected ? '#667eea' : state.isFocused ? '#f0f3ff' : 'white',
-      color: state.isSelected ? 'white' : '#333',
-      fontSize: '14px',
-      cursor: 'pointer',
-      padding: 0
-    }),
-    placeholder: (base) => ({ ...base, color: '#adb5bd' }),
-    singleValue: (base) => ({ ...base, display: 'flex', alignItems: 'center' })
-  };
-
-  if (loading) {
-    return (
-      <Offcanvas 
-        show={show} 
-        onHide={onHide} 
-        placement="start" 
-        style={{ 
-          width: isMobile ? 'calc(100% - 20px)' : '400px',
-          maxWidth: '100%',
-          margin: isMobile ? '10px' : '0'
-        }}
-      >
-        <div style={styles.loadingContainer}>
-          <Spinner animation="border" variant="primary" />
-          <p style={styles.loadingText}>Chargement des filtres...</p>
-        </div>
-      </Offcanvas>
-    );
-  }
+  const travelTypeOptions = [
+    { value: 'sejour', label: 'Séjour' },
+    { value: 'circuit', label: 'Circuit' },
+    { value: 'croisiere', label: 'Croisière' },
+    { value: 'hajj', label: 'Hajj & Omra' }
+  ];
 
   return (
     <Offcanvas
       show={show}
       onHide={onHide}
-      placement="start"
       style={{
-        width: isMobile ? 'calc(100% - 20px)' : '400px',
-        maxWidth: '100%',
-        margin: isMobile ? '10px' : '0'
+        width: '320px',
+        maxWidth: '90%',
+        borderLeft: '1px solid #eee',
+        boxShadow: '-2px 0 10px rgba(0,0,0,0.05)'
       }}
     >
-      {/* Header */}
-      <div style={styles.header}>
-        <div style={styles.headerLeft}>
-          <div style={styles.iconCircle}>
-            <Funnel size={18} color="#667eea" />
-          </div>
-          <h6 style={styles.headerTitle}>Filtres</h6>
-          {countActiveFilters() > 0 && (
-            <span style={styles.badge}>{countActiveFilters()}</span>
-          )}
-        </div>
-        
-        <div style={styles.headerRight}>
-          <div style={styles.urlIndicator}>
-            <span style={styles.urlText}>
-              {category}
-              {subSlug && ` › ${subSlug}`}
-              {articleSlug && ` › ${articleSlug}`}
-            </span>
-          </div>
-          
-          <button onClick={resetFilters} style={styles.iconButton} title="Réinitialiser">
-            <ArrowCounterclockwise size={16} color="#666" />
-          </button>
-          
-          <button onClick={onHide} style={styles.iconButton} title="Fermer">
-            <XLg size={16} color="#666" />
-          </button>
-        </div>
-      </div>
+      {/* HEADER */}
+      <Offcanvas.Header closeButton>
+        <Offcanvas.Title style={{ fontSize: '16px', fontWeight: 600 }}>
+          Filtres {isBoutique ? 'Boutiques' : ''}
+        </Offcanvas.Title>
+      </Offcanvas.Header>
 
-      <Offcanvas.Body style={styles.body}>
-        {/* SECCIÓN CATEGORÍAS */}
+      {/* BODY */}
+      <Offcanvas.Body style={{ padding: '14px', paddingBottom: '80px' }}>
+
+        {/* SUBCATEGORY - Siempre visible si hay hijos */}
         {children.length > 0 && (
-          <Accordion defaultActiveKey="0" style={styles.accordion}>
-            <Accordion.Item eventKey="0" style={styles.accordionItem}>
-            
-              <Accordion.Body style={styles.accordionBody}>
-                <Form.Label style={styles.label}>Sous catégorie</Form.Label>
+          <Accordion defaultActiveKey="0" flush>
+            <Accordion.Item eventKey="0">
+              <Accordion.Header>Catégorie</Accordion.Header>
+              <Accordion.Body>
                 <Select
                   options={subCategoryOptions}
                   value={subCategoryOptions.find(opt => opt.value === tempFilters.subCategory) || null}
-                  onChange={(option) => handleFilterChange('subCategory', option?.value || '')}
+                  onChange={(opt) => handleChange('subCategory', opt?.value || '')}
                   isClearable
-                  placeholder="Toutes les sous-catégories"
-                  styles={selectStyles}
-                  components={{ Option: CustomOption, SingleValue: CustomSingleValue }}
-                  menuPortalTarget={document.body}
-                  menuShouldBlockScroll={true}
+                  placeholder="Toutes les catégories"
+                  styles={{
+                    control: (base) => ({ ...base, fontSize: '13px' })
+                  }}
                 />
-
-                {tempFilters.subCategory && articleOptions.length > 0 && (
-                  <>
-                    <Form.Label style={{...styles.label, marginTop: '20px'}}>Article</Form.Label>
-                    <Select
-                      options={articleOptions}
-                      value={articleOptions.find(opt => opt.value === tempFilters.article) || null}
-                      onChange={(option) => handleFilterChange('article', option?.value || '')}
-                      isClearable
-                      placeholder="Tous les articles"
-                      styles={selectStyles}
-                      components={{ Option: CustomOption, SingleValue: CustomSingleValue }}
-                      menuPortalTarget={document.body}
-                      menuShouldBlockScroll={true}
-                    />
-                  </>
-                )}
               </Accordion.Body>
             </Accordion.Item>
           </Accordion>
         )}
 
-        {/* SECCIÓN LOCALISATION CON JSON */}
-        <Accordion defaultActiveKey="1" style={styles.accordion}>
-          <Accordion.Item eventKey="1" style={styles.accordionItem}>
-           
-            <Accordion.Body style={styles.accordionBody}>
-              <Form.Label style={styles.label}>Wilaya</Form.Label>
+        {/* LOCATION - Siempre visible */}
+        <Accordion defaultActiveKey="1" className="mt-2" flush>
+          <Accordion.Item eventKey="1">
+            <Accordion.Header>Localisation</Accordion.Header>
+            <Accordion.Body>
               <Form.Select
                 value={tempFilters.wilaya}
-                onChange={(e) => handleFilterChange('wilaya', e.target.value)}
-                style={styles.select}
+                onChange={(e) => handleChange('wilaya', e.target.value)}
+                style={{ fontSize: '13px', marginBottom: '8px' }}
               >
-                <option value="">Sélectionner une wilaya</option>
-                {wilayasData.map((wilaya, index) => {
-                  const wilayaValue = wilaya.wilaya || wilaya.name || wilaya.code || `Wilaya ${index + 1}`;
-                  const wilayaLabel = wilaya.wilaya || wilaya.name || `Wilaya ${wilaya.code}`;
-                  return (
-                    <option key={index} value={wilayaValue}>
-                      {wilayaLabel}
-                    </option>
-                  );
-                })}
+                <option value="">Toutes les wilayas</option>
+                {wilayasData.map((w, i) => (
+                  <option key={i} value={w.wilaya || w.name}>
+                    {w.wilaya || w.name}
+                  </option>
+                ))}
               </Form.Select>
 
-              {tempFilters.wilaya && communesList.length > 0 && (
-                <>
-                  <Form.Label style={{...styles.label, marginTop: '16px'}}>Commune</Form.Label>
-                  <Form.Select
-                    value={tempFilters.commune}
-                    onChange={(e) => handleFilterChange('commune', e.target.value)}
-                    style={styles.select}
-                  >
-                    <option value="">Sélectionner une commune</option>
-                    {communesList.map((commune, idx) => {
-                      const communeValue = typeof commune === 'string' ? commune : (commune.name || commune.nom || commune);
-                      const communeLabel = typeof commune === 'string' ? commune : (commune.name || commune.nom || commune);
-                      return (
-                        <option key={idx} value={communeValue}>
-                          {communeLabel}
-                        </option>
-                      );
-                    })}
-                  </Form.Select>
-                </>
-              )}
-
-              {tempFilters.wilaya && communesList.length === 0 && (
-                <div style={styles.noCommunesMessage}>
-                  <small>Aucune commune disponible pour cette wilaya</small>
-                </div>
+              {communesList.length > 0 && (
+                <Form.Select
+                  value={tempFilters.commune}
+                  onChange={(e) => handleChange('commune', e.target.value)}
+                  style={{ fontSize: '13px' }}
+                >
+                  <option value="">Toutes les communes</option>
+                  {communesList.map((c, i) => (
+                    <option key={i} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </Form.Select>
               )}
             </Accordion.Body>
           </Accordion.Item>
         </Accordion>
 
-        {/* SECCIÓN PRIX (igual) */}
-        <Accordion defaultActiveKey="2" style={styles.accordion}>
-          <Accordion.Item eventKey="2" style={styles.accordionItem}>
-        
-              <div style={styles.accordionTitle}>
-                <CurrencyEuro size={16} color="#667eea" style={{ marginRight: '8px' }} />
-                <span>Prix</span>
-              </div>
-          
-            <Accordion.Body style={styles.accordionBody}>
-              <div style={styles.priceRangeContainer}>
-                <Slider
-                  range
-                  min={priceRange.min}
-                  max={priceRange.max}
-                  step={1000}
-                  value={[tempFilters.priceMin, tempFilters.priceMax]}
-                  onChange={handlePriceRangeChange}
-                  trackStyle={[{ backgroundColor: '#667eea', height: '4px' }]}
-                  handleStyle={[
-                    { borderColor: '#667eea', backgroundColor: '#667eea', width: '18px', height: '18px', marginTop: '-7px', opacity: 1, boxShadow: '0 2px 4px rgba(102,126,234,0.3)' },
-                    { borderColor: '#667eea', backgroundColor: '#667eea', width: '18px', height: '18px', marginTop: '-7px', opacity: 1, boxShadow: '0 2px 4px rgba(102,126,234,0.3)' }
-                  ]}
-                  railStyle={{ backgroundColor: '#e9ecef', height: '4px' }}
-                />
-                
-                <div style={styles.priceInputs}>
-                  <div style={styles.priceInputGroup}>
-                    <span style={styles.priceLabel}>Min</span>
-                    <div style={styles.priceInputWrapper}>
-                      <span style={styles.priceCurrency}>DA</span>
-                      <input
-                        type="number"
-                        value={tempFilters.priceMin}
-                        onChange={(e) => handleFilterChange('priceMin', e.target.value)}
-                        placeholder={priceRange.min.toString()}
-                        style={styles.priceInput}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div style={styles.priceSeparator}>
-                    <span>−</span>
-                  </div>
-                  
-                  <div style={styles.priceInputGroup}>
-                    <span style={styles.priceLabel}>Max</span>
-                    <div style={styles.priceInputWrapper}>
-                      <span style={styles.priceCurrency}>DA</span>
-                      <input
-                        type="number"
-                        value={tempFilters.priceMax}
-                        onChange={(e) => handleFilterChange('priceMax', e.target.value)}
-                        placeholder={priceRange.max.toString()}
-                        style={styles.priceInput}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Accordion.Body>
-          </Accordion.Item>
-        </Accordion>
-
-        {/* SECCIÓN TRI (igual) */}
-        <Accordion defaultActiveKey="3" style={styles.accordion}>
-          <Accordion.Item eventKey="3" style={styles.accordionItem}>
-            
-              <div style={styles.accordionTitle}>
-                <SortDown size={16} color="#667eea" style={{ marginRight: '8px' }} />
-                <span>Trier par</span>
-              </div>
-           
-            <Accordion.Body style={styles.accordionBody}>
-              <div style={styles.sortOptions}>
-                {sortOptions.map(option => (
-                  <div
-                    key={option.value}
-                    onClick={() => handleFilterChange('sortBy', option.value)}
-                    style={{
-                      ...styles.sortOption,
-                      backgroundColor: tempFilters.sortBy === option.value ? '#f0f3ff' : 'white',
-                      borderColor: tempFilters.sortBy === option.value ? '#667eea' : '#e9ecef'
+        {/* PRIX - Solo para categorías que tienen precio */}
+        {categoryFields.hasPrice && (
+          <Accordion defaultActiveKey="2" className="mt-2" flush>
+            <Accordion.Item eventKey="2">
+              <Accordion.Header>Prix</Accordion.Header>
+              <Accordion.Body>
+                <div style={{ padding: '10px 0' }}>
+                  <Slider
+                    range
+                    min={priceRange.min}
+                    max={priceRange.max}
+                    value={[tempFilters.priceMin, tempFilters.priceMax]}
+                    onChange={(val) => {
+                      setTempFilters(prev => ({
+                        ...prev,
+                        priceMin: val[0],
+                        priceMax: val[1]
+                      }));
                     }}
-                  >
-                    <div style={styles.sortOptionLeft}>
-                      <span style={styles.sortIcon}>{option.icon}</span>
-                      <span style={styles.sortLabel}>{option.label}</span>
-                    </div>
-                    {tempFilters.sortBy === option.value && (
-                      <Check2 size={16} color="#667eea" />
-                    )}
+                    trackStyle={[{ backgroundColor: '#007bff' }]}
+                    handleStyle={[
+                      { borderColor: '#007bff' },
+                      { borderColor: '#007bff' }
+                    ]}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontSize: '12px' }}>
+                    <span>{tempFilters.priceMin?.toLocaleString()} DA</span>
+                    <span>{tempFilters.priceMax?.toLocaleString()} DA</span>
                   </div>
-                ))}
-              </div>
+                </div>
+              </Accordion.Body>
+            </Accordion.Item>
+          </Accordion>
+        )}
+
+        {/* CAMPOS ESPECÍFICOS PARA INMOBILIARIO */}
+        {category === 'immobilier' && (
+          <Accordion defaultActiveKey="3" className="mt-2" flush>
+            <Accordion.Item eventKey="3">
+              <Accordion.Header>Détails immobilier</Accordion.Header>
+              <Accordion.Body>
+                <Form.Select
+                  value={tempFilters.type_immobilier}
+                  onChange={(e) => handleChange('type_immobilier', e.target.value)}
+                  style={{ fontSize: '13px', marginBottom: '8px' }}
+                >
+                  <option value="">Type de bien</option>
+                  {propertyTypeOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </Form.Select>
+
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                  <Form.Control
+                    type="number"
+                    placeholder="Surface min (m²)"
+                    value={tempFilters.surface_min}
+                    onChange={(e) => handleChange('surface_min', e.target.value)}
+                    size="sm"
+                  />
+                  <Form.Control
+                    type="number"
+                    placeholder="Surface max"
+                    value={tempFilters.surface_max}
+                    onChange={(e) => handleChange('surface_max', e.target.value)}
+                    size="sm"
+                  />
+                </div>
+
+                <Form.Select
+                  value={tempFilters.pieces}
+                  onChange={(e) => handleChange('pieces', e.target.value)}
+                  style={{ fontSize: '13px' }}
+                >
+                  <option value="">Nombre de pièces</option>
+                  <option value="1">Studio</option>
+                  <option value="2">F2</option>
+                  <option value="3">F3</option>
+                  <option value="4">F4</option>
+                  <option value="5">F5+</option>
+                </Form.Select>
+              </Accordion.Body>
+            </Accordion.Item>
+          </Accordion>
+        )}
+
+        {/* CAMPOS ESPECÍFICOS PARA EMPLOI */}
+        {category === 'emploi' && (
+          <Accordion defaultActiveKey="3" className="mt-2" flush>
+            <Accordion.Item eventKey="3">
+              <Accordion.Header>Détails emploi</Accordion.Header>
+              <Accordion.Body>
+                <Form.Select
+                  value={tempFilters.type_contrat}
+                  onChange={(e) => handleChange('type_contrat', e.target.value)}
+                  style={{ fontSize: '13px', marginBottom: '8px' }}
+                >
+                  <option value="">Type de contrat</option>
+                  {contractOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </Form.Select>
+
+                <Form.Select
+                  value={tempFilters.secteur}
+                  onChange={(e) => handleChange('secteur', e.target.value)}
+                  style={{ fontSize: '13px', marginBottom: '8px' }}
+                >
+                  <option value="">Secteur d'activité</option>
+                  {sectorOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </Form.Select>
+
+                <Form.Select
+                  value={tempFilters.experience}
+                  onChange={(e) => handleChange('experience', e.target.value)}
+                  style={{ fontSize: '13px', marginBottom: '8px' }}
+                >
+                  <option value="">Expérience</option>
+                  <option value="debutant">Débutant</option>
+                  <option value="1-3">1-3 ans</option>
+                  <option value="3-5">3-5 ans</option>
+                  <option value="5+">5+ ans</option>
+                </Form.Select>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <Form.Control
+                    type="number"
+                    placeholder="Salaire min"
+                    value={tempFilters.salaire_min}
+                    onChange={(e) => handleChange('salaire_min', e.target.value)}
+                    size="sm"
+                  />
+                  <Form.Control
+                    type="number"
+                    placeholder="Salaire max"
+                    value={tempFilters.salaire_max}
+                    onChange={(e) => handleChange('salaire_max', e.target.value)}
+                    size="sm"
+                  />
+                </div>
+              </Accordion.Body>
+            </Accordion.Item>
+          </Accordion>
+        )}
+
+        {/* CAMPOS ESPECÍFICOS PARA VEHICULES */}
+        {category === 'vehicules' && (
+          <Accordion defaultActiveKey="3" className="mt-2" flush>
+            <Accordion.Item eventKey="3">
+              <Accordion.Header>Détails véhicule</Accordion.Header>
+              <Accordion.Body>
+                <Form.Control
+                  type="text"
+                  placeholder="Marque"
+                  value={tempFilters.marque}
+                  onChange={(e) => handleChange('marque', e.target.value)}
+                  size="sm"
+                  className="mb-2"
+                />
+
+                <Form.Control
+                  type="text"
+                  placeholder="Modèle"
+                  value={tempFilters.modele}
+                  onChange={(e) => handleChange('modele', e.target.value)}
+                  size="sm"
+                  className="mb-2"
+                />
+
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                  <Form.Control
+                    type="number"
+                    placeholder="Année min"
+                    value={tempFilters.annee_min}
+                    onChange={(e) => handleChange('annee_min', e.target.value)}
+                    size="sm"
+                  />
+                  <Form.Control
+                    type="number"
+                    placeholder="Année max"
+                    value={tempFilters.annee_max}
+                    onChange={(e) => handleChange('annee_max', e.target.value)}
+                    size="sm"
+                  />
+                </div>
+
+                <Form.Control
+                  type="number"
+                  placeholder="Kilométrage max (km)"
+                  value={tempFilters.kilometrage_max}
+                  onChange={(e) => handleChange('kilometrage_max', e.target.value)}
+                  size="sm"
+                  className="mb-2"
+                />
+
+                <Form.Select
+                  value={tempFilters.carburant}
+                  onChange={(e) => handleChange('carburant', e.target.value)}
+                  style={{ fontSize: '13px' }}
+                >
+                  <option value="">Carburant</option>
+                  {fuelOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </Form.Select>
+              </Accordion.Body>
+            </Accordion.Item>
+          </Accordion>
+        )}
+
+        {/* CAMPOS ESPECÍFICOS PARA VOYAGES */}
+        {category === 'voyages' && (
+          <Accordion defaultActiveKey="3" className="mt-2" flush>
+            <Accordion.Item eventKey="3">
+              <Accordion.Header>Détails voyage</Accordion.Header>
+              <Accordion.Body>
+                <Form.Select
+                  value={tempFilters.type_voyage}
+                  onChange={(e) => handleChange('type_voyage', e.target.value)}
+                  style={{ fontSize: '13px', marginBottom: '8px' }}
+                >
+                  <option value="">Type de voyage</option>
+                  {travelTypeOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </Form.Select>
+
+                <Form.Control
+                  type="text"
+                  placeholder="Destination"
+                  value={tempFilters.destination}
+                  onChange={(e) => handleChange('destination', e.target.value)}
+                  size="sm"
+                  className="mb-2"
+                />
+
+                <Form.Select
+                  value={tempFilters.duree}
+                  onChange={(e) => handleChange('duree', e.target.value)}
+                  style={{ fontSize: '13px' }}
+                >
+                  <option value="">Durée</option>
+                  <option value="weekend">Week-end</option>
+                  <option value="semaine">1 semaine</option>
+                  <option value="2semaines">2 semaines</option>
+                  <option value="mois">1 mois</option>
+                </Form.Select>
+              </Accordion.Body>
+            </Accordion.Item>
+          </Accordion>
+        )}
+
+        {/* SORT BY - Siempre visible */}
+        <Accordion defaultActiveKey="last" className="mt-2" flush>
+          <Accordion.Item eventKey="last">
+            <Accordion.Header>Trier par</Accordion.Header>
+            <Accordion.Body>
+              <Form.Select
+                value={tempFilters.sortBy}
+                onChange={(e) => handleChange('sortBy', e.target.value)}
+                style={{ fontSize: '13px' }}
+              >
+                <option value="recent">Plus récents</option>
+                <option value="price_asc">Prix croissant</option>
+                <option value="price_desc">Prix décroissant</option>
+                {category === 'emploi' && (
+                  <>
+                    <option value="salaire_asc">Salaire croissant</option>
+                    <option value="salaire_desc">Salaire décroissant</option>
+                  </>
+                )}
+                {category === 'vehicules' && (
+                  <>
+                    <option value="annee_desc">Année (récent→ancien)</option>
+                    <option value="annee_asc">Année (ancien→récent)</option>
+                    <option value="kilometrage_asc">Kilométrage croissant</option>
+                  </>
+                )}
+                {category === 'immobilier' && (
+                  <>
+                    <option value="surface_desc">Surface (grand→petit)</option>
+                    <option value="surface_asc">Surface (petit→grand)</option>
+                    <option value="pieces_desc">Pièces (plus→moins)</option>
+                  </>
+                )}
+              </Form.Select>
             </Accordion.Body>
           </Accordion.Item>
         </Accordion>
-      </Offcanvas.Body>
 
-      {/* Footer */}
-      <div style={styles.footer}>
-        <Button variant="outline-secondary" onClick={resetFilters} style={styles.resetButton}>
-          Réinitialiser
-        </Button>
-        <Button variant="primary" onClick={applyFilters} style={styles.applyButton}>
-          Appliquer les filtres
-        </Button>
-      </div>
+        {/* BOTONES */}
+        <div style={{
+          position: 'sticky',
+          bottom: '0',
+          left: '0',
+          right: '0',
+          backgroundColor: 'white',
+          padding: '15px 0',
+          marginTop: '20px',
+          borderTop: '1px solid #eee',
+          display: 'flex',
+          gap: '10px'
+        }}>
+          <Button 
+            variant="outline-secondary" 
+            onClick={resetFilters} 
+            size="sm" 
+            style={{ flex: 1 }}
+          >
+            Réinitialiser
+          </Button>
+
+          <Button 
+            variant="primary" 
+            onClick={applyFilters} 
+            size="sm" 
+            style={{ flex: 1 }}
+          >
+            Appliquer
+          </Button>
+        </div>
+
+      </Offcanvas.Body>
     </Offcanvas>
   );
-};
-
-// Estilos (mantenemos los mismos que en la versión anterior)
-const styles = {
-  loadingContainer: {
-    height: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '20px'
-  },
-  loadingText: {
-    marginTop: '16px',
-    color: '#666',
-    fontSize: '14px'
-  },
-  header: {
-    padding: '12px 16px',
-    borderBottom: '1px solid #e9ecef',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'white'
-  },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px'
-  },
-  iconCircle: {
-    width: '28px',
-    height: '28px',
-    borderRadius: '6px',
-    backgroundColor: '#f0f3ff',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  headerTitle: {
-    margin: 0,
-    fontSize: '15px',
-    fontWeight: '600',
-    color: '#333'
-  },
-  badge: {
-    backgroundColor: '#667eea',
-    color: 'white',
-    fontSize: '10px',
-    fontWeight: '600',
-    padding: '2px 5px',
-    borderRadius: '10px',
-    marginLeft: '4px'
-  },
-  headerRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px'
-  },
-  urlIndicator: {
-    backgroundColor: '#f8f9fa',
-    padding: '4px 8px',
-    borderRadius: '16px',
-    border: '1px solid #e9ecef'
-  },
-  urlText: {
-    fontSize: '11px',
-    color: '#667eea',
-    fontWeight: '500'
-  },
-  iconButton: {
-    width: '28px',
-    height: '28px',
-    borderRadius: '6px',
-    border: '1px solid #e9ecef',
-    backgroundColor: 'white',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    transition: 'all 0.2s'
-  },
-  body: {
-    padding: '12px',
-    backgroundColor: '#f8f9fa',
-    flex: 1,
-    overflowY: 'auto'
-  },
-  accordion: {
-    marginBottom: '10px',
-    borderRadius: '10px',
-    overflow: 'hidden',
-    border: 'none',
-    boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
-  },
-  accordionItem: {
-    border: 'none',
-    backgroundColor: 'white'
-  },
-  accordionTitle: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    fontWeight: '500',
-    color: '#333',
-    fontSize: '14px'
-  },
-  accordionBody: {
-    padding: '12px',
-    backgroundColor: 'white',
-    borderTop: '1px solid #e9ecef'
-  },
-  label: {
-    fontSize: '12px',
-    fontWeight: '500',
-    marginBottom: '4px',
-    color: '#495057',
-    display: 'block'
-  },
-  select: {
-    width: '100%',
-    padding: '8px 10px',
-    borderRadius: '8px',
-    border: '1px solid #e9ecef',
-    fontSize: '13px',
-    outline: 'none',
-    backgroundColor: 'white'
-  },
-  noCommunesMessage: {
-    marginTop: '8px',
-    color: '#dc3545',
-    fontSize: '12px',
-    fontStyle: 'italic'
-  },
-  countBadge: {
-    backgroundColor: '#e9ecef',
-    color: '#666',
-    fontSize: '10px',
-    fontWeight: '600',
-    padding: '2px 5px',
-    borderRadius: '8px',
-    marginLeft: '6px'
-  },
-  priceRangeContainer: {
-    padding: '6px 0'
-  },
-  priceInputs: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    marginTop: '16px'
-  },
-  priceInputGroup: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px'
-  },
-  priceLabel: {
-    fontSize: '11px',
-    color: '#666',
-    marginLeft: '4px'
-  },
-  priceInputWrapper: {
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center'
-  },
-  priceCurrency: {
-    position: 'absolute',
-    left: '8px',
-    fontSize: '11px',
-    color: '#999'
-  },
-  priceInput: {
-    width: '100%',
-    padding: '8px 8px 8px 25px',
-    borderRadius: '6px',
-    border: '1px solid #e9ecef',
-    fontSize: '12px',
-    outline: 'none'
-  },
-  priceSeparator: {
-    color: '#666',
-    fontSize: '16px',
-    marginTop: '14px'
-  },
-  sortOptions: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px'
-  },
-  sortOption: {
-    padding: '10px 14px',
-    border: '1px solid #e9ecef',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  sortOptionLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px'
-  },
-  sortIcon: {
-    fontSize: '15px'
-  },
-  sortLabel: {
-    fontSize: '13px',
-    color: '#333'
-  },
-  footer: {
-    padding: '12px 16px',
-    borderTop: '1px solid #e9ecef',
-    backgroundColor: 'white',
-    display: 'flex',
-    gap: '10px'
-  },
-  resetButton: {
-    flex: 1,
-    padding: '10px',
-    borderRadius: '8px',
-    fontSize: '13px',
-    fontWeight: '500',
-    border: '1px solid #e9ecef',
-    backgroundColor: 'white',
-    color: '#666',
-    cursor: 'pointer'
-  },
-  applyButton: {
-    flex: 1,
-    padding: '10px',
-    borderRadius: '8px',
-    fontSize: '13px',
-    fontWeight: '500',
-    border: 'none',
-    backgroundColor: '#667eea',
-    color: 'white',
-    cursor: 'pointer'
-  }
 };
 
 export default FilterDrawer;

@@ -10,20 +10,14 @@ const postSchema = new mongoose.Schema(
       index: true
     },
 
-    // 🏬 Boutique (si el post pertenece a una)
+    // 🏬 Boutique (relación)
     boutique: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Boutique",
       index: true
     },
 
-    // 🔖 Identificador si viene de una boutique
-    isFromBoutique: {
-      type: Boolean,
-      default: false
-    },
-
-    // 🗂️ CATEGORÍAS (texto plano del cliente)
+    // 🗂️ Categorías
     categorie: {
       type: String,
       required: true,
@@ -44,7 +38,7 @@ const postSchema = new mongoose.Schema(
       index: true
     },
 
-    // 🔑 CATEGORÍA REAL (referencia en MongoDB)
+    // 🔑 Categoría real
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
@@ -52,11 +46,11 @@ const postSchema = new mongoose.Schema(
       index: true
     },
 
-    // ❤️ Likes y comentarios
+    // ❤️ Interacciones
     likes: [{ type: mongoose.Types.ObjectId, ref: "user" }],
     comments: [{ type: mongoose.Types.ObjectId, ref: "comment" }],
 
-    // 🧾 Información del post
+    // 🧾 Info
     title: {
       type: String,
       required: true,
@@ -74,56 +68,64 @@ const postSchema = new mongoose.Schema(
     price: {
       type: Number,
       default: 0,
-      min: 0
+      min: 0,
+      max: 1000000000
     },
 
-    etat: {
-      type: String
-    },
+    etat: String,
 
-    // 📍 LOCALIZACIÓN (opcional si es boutique)
+    // 📍 Localización
     wilaya: {
       type: String,
       index: true
     },
+    commune: String,
+    address: String,
 
-    commune: {
-      type: String
-    },
-
-    address: {
-      type: String,
-      trim: true
-    },
-
-    // 📞 CONTACTO
-    phone: {
-      type: String,
-      trim: true
-    },
-
+    // 📞 Contacto
+    phone: String,
     email: {
       type: String,
-      trim: true,
       lowercase: true
     },
 
-    // 🧩 Datos específicos según categoría
+    // 🧩 Datos dinámicos
     categorySpecificData: {
       type: mongoose.Schema.Types.Mixed,
       default: {}
     },
 
-    // 🖼️ Imágenes
-    images: {
-      type: Array,
-      required: true
-    },
+    // 🖼️ Imágenes (estructura PRO)
+    images: [
+      {
+        url: String,
+        public_id: String
+      }
+    ],
 
-    // 📊 Estadísticas
+    // 📊 Stats
     views: {
       type: Number,
       default: 0
+    },
+
+    score: {
+      type: Number,
+      default: 0,
+      index: true
+    },
+
+    lastInteractionAt: {
+      type: Date,
+      default: Date.now,
+      index: true
+    },
+
+    // 🔗 SEO
+    slug: {
+      type: String,
+      unique: true,
+      index: true
     },
 
     // 🔒 Estado
@@ -138,12 +140,20 @@ const postSchema = new mongoose.Schema(
   }
 );
 
-//
-// 🔍 ÍNDICES (rendimiento en UI y búsquedas)
-//
+// 🧠 MÉTODO SCORE
+postSchema.methods.calculateScore = function () {
+  const views = this.views || 0;
+  const likes = this.likes.length || 0;
+  const freshness = (Date.now() - this.createdAt) / (1000 * 60 * 60 * 24);
+
+  return (likes * 3) + (views * 0.5) - freshness;
+};
+
+// 🔍 ÍNDICES PRO
 postSchema.index({ category: 1, createdAt: -1 });
 postSchema.index({ wilaya: 1, category: 1 });
 postSchema.index({ categorie: 1, subCategory: 1 });
-postSchema.index({ boutique: 1, isFromBoutique: 1 }); // ✅ Nuevo índice útil
+postSchema.index({ boutique: 1, isActive: 1, createdAt: -1 });
+postSchema.index({ score: -1, createdAt: -1 });
 
 module.exports = mongoose.model("Post", postSchema);

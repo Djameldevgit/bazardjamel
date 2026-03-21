@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button, Alert, Spinner, Badge, ProgressBar, Form, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
-import { ChromePicker } from 'react-color'; // 👈 Instalar: npm install react-color
+import { ChromePicker } from 'react-color';
 import ImageUploadBoutique from '../../components/boutique/ImageUploadBoutique';
 import { createBoutique, updateBoutique } from '../../redux/actions/boutiqueAction';
 
@@ -269,14 +269,17 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
       }));
     }
 
-    // Générer le domaine automatiquement
+    // Générer le domaine automatiquement (pero con validación)
     if (name === 'nom_boutique' && !formData.domaine_boutique && !isEdit) {
       const domaine = value
         .toLowerCase()
         .replace(/[^a-z0-9]/g, '-')
         .replace(/-+/g, '-')
         .replace(/^-|-$/g, '');
-      setFormData(prev => ({ ...prev, domaine_boutique: domaine }));
+      
+      // ✅ Asegurar que no quede vacío
+      const finalDomaine = domaine || 'boutique-' + Date.now().toString().slice(-4);
+      setFormData(prev => ({ ...prev, domaine_boutique: finalDomaine }));
     }
   };
 
@@ -379,7 +382,24 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
     setError('');
   };
 
-  // Preparar les données pour l'envoi - ✅ VERSIÓN CORREGIDA CON USER
+  // ✅ FUNCIÓN CORREGIDA PARA GENERAR SLUG ÚNICO
+  const generateUniqueSlug = (base) => {
+    // Limpiar el texto base
+    const cleanBase = base
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+    
+    // Si después de limpiar queda vacío, usar un valor por defecto
+    const finalBase = cleanBase || 'boutique';
+    
+    // Añadir timestamp para unicidad
+    const timestamp = Date.now().toString().slice(-6);
+    return `${finalBase}-${timestamp}`;
+  };
+
+  // Preparar les données pour l'envoi - ✅ VERSIÓN CORREGIDA CON SLUG ÚNICO
   const prepareSubmitData = () => {
     const offreSelectionnee = offres.find(o => o.id === formData.offre);
     const dureeSelectionnee = durees.find(d => d.id === formData.duree);
@@ -411,22 +431,16 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
         .replace(/^-|-$/g, '');
     };
 
-    const generateUniqueDomain = () => {
-      const baseDomain = formData.nom_boutique
-        ? formData.nom_boutique.toLowerCase()
-            .replace(/[^a-z0-9]/g, '-')
-            .replace(/-+/g, '-')
-            .replace(/^-|-$/g, '')
-        : 'boutique';
-      
-      const timestamp = Date.now().toString().slice(-4);
-      return `${baseDomain}-${timestamp}`;
-    };
+    // ✅ Generar slug ÚNICO para la boutique
+    const baseSlug = formData.nom_boutique || 'boutique';
+    const slug = generateUniqueSlug(baseSlug);
 
-    const subCategory = generateSubCategory(formData.categorie);
+    // ✅ También generar domaine_boutique si está vacío
     const domaine_boutique = formData.domaine_boutique?.trim() 
       ? formData.domaine_boutique 
-      : generateUniqueDomain();
+      : slug;
+
+    const subCategory = generateSubCategory(formData.categorie);
 
     // ✅ Asegurar que user es solo el ID (string)
     const userId = typeof formData.user === 'object' 
@@ -437,6 +451,7 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
       // Campos principales
       nom_boutique: formData.nom_boutique,
       domaine_boutique: domaine_boutique,
+      slug: slug, // ✅ Slug único para la URL
       slogan_boutique: formData.slogan_boutique || '',
       description_boutique: formData.description_boutique,
       date_debut: formData.date_debut,
@@ -790,7 +805,7 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
   );
 };
 
-// ============ STEP 1: INFORMATIONS (CON COLOR PICKER) ============
+// ============ STEP 1: INFORMATIONS (sin cambios) ============
 const Step1Informations = ({ 
   formData, 
   handleInputChange, 

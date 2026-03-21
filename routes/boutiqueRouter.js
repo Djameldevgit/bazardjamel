@@ -13,4 +13,10 @@ router.post('/boutique', auth, boutiqueCtrl.createBoutique);
 router.patch('/boutique/:boutiqueId', auth, boutiqueCtrl.updateBoutique);
  
 router.delete('/boutique/:boutiqueId', auth, boutiqueCtrl.deleteBoutique);
+
+router.patch('/boutique/:boutiqueId/headerimages', auth, boutiqueCtrl.updateBoutiqueHeaderImages);
+router.delete('/boutique/:boutiqueId/headerimages/:imageId', auth, boutiqueCtrl.deleteBoutiqueHeaderImage);
+ 
+
+
 module.exports = router;
