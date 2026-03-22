@@ -10,7 +10,7 @@ import {
   FaHeart,
   FaEye
 } from 'react-icons/fa';
-import { incrementBoutiqueView } from '../../redux/actions/boutiqueAction';
+import {   incrementBoutiqueView } from '../../redux/actions/boutiqueAction';
 
 const BoutiqueFooter = ({ boutique }) => {
   const dispatch = useDispatch();

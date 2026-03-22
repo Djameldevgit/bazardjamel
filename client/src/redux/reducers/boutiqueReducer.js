@@ -7,7 +7,7 @@ const initialState = {
   page: 1,
   totalPages: 0,
   homeBoutiques: [],
-  boutiquesByCategory: {}, // { 'category/sub': { boutiques, total, page, totalPages, hasMore, categoryInfo, children } }
+  boutiquesByCategory: {},
   currentBoutique: null,
   boutiqueByDomain: null,
   userBoutiques: [],
@@ -43,12 +43,41 @@ const boutiqueReducer = (state = initialState, action) => {
           b._id === action.payload.boutiqueId
             ? { ...b, stats: action.payload.stats }
             : b
-        )
+        ),
+        currentBoutique: state.currentBoutique?._id === action.payload.boutiqueId
+          ? { ...state.currentBoutique, stats: action.payload.stats }
+          : state.currentBoutique
       };
 
+    // ============ UPDATE BOUTIQUE VIEWS ============
+  // redux/reducers/boutiqueReducer.js
+case 'UPDATE_BOUTIQUE_VIEWS':
+  const { boutiqueId: viewBoutiqueId, views } = action.payload;
+  
+  const updateViewsInList = function(list) {
+    return list.map(function(b) {
+      if (b._id === viewBoutiqueId) {
+        return { ...b, views: views };
+      }
+      return b;
+    });
+  };
+  
+  return {
+    ...state,
+    boutiques: updateViewsInList(state.boutiques),
+    userBoutiques: updateViewsInList(state.userBoutiques),
+    homeBoutiques: updateViewsInList(state.homeBoutiques),
+    currentBoutique: state.currentBoutique && state.currentBoutique._id === viewBoutiqueId
+      ? { ...state.currentBoutique, views: views }
+      : state.currentBoutique,
+    boutiqueByDomain: state.boutiqueByDomain && state.boutiqueByDomain._id === viewBoutiqueId
+      ? { ...state.boutiqueByDomain, views: views }
+      : state.boutiqueByDomain
+  };
     // ============ GET BOUTIQUES BY CATEGORY ============
     case BOUTIQUE_TYPES.GET_BOUTIQUES_BY_CATEGORY:
-      const { 
+      const {
         categoryPath,
         boutiques,
         total,
@@ -136,11 +165,10 @@ const boutiqueReducer = (state = initialState, action) => {
     case BOUTIQUE_TYPES.GET_USER_BOUTIQUES:
       return { ...state, userBoutiques: action.payload || [], error: null };
 
-    // ============ NUEVO: UPDATE BOUTIQUE HEADER IMAGES ============
+    // ============ UPDATE BOUTIQUE HEADER IMAGES ============
     case BOUTIQUE_TYPES.UPDATE_BOUTIQUE_HEADER_IMAGES:
       const { boutiqueId, header_images } = action.payload;
 
-      // Función auxiliar para actualizar header_images en una boutique
       const updateHeaderImagesInBoutique = (boutique) => {
         if (!boutique) return boutique;
         if (boutique._id === boutiqueId) {
@@ -149,12 +177,10 @@ const boutiqueReducer = (state = initialState, action) => {
         return boutique;
       };
 
-      // Actualizar en todos los lugares donde aparece la boutique
       const updatedBoutiques = state.boutiques.map(updateHeaderImagesInBoutique);
       const updatedUserBoutiques = state.userBoutiques.map(updateHeaderImagesInBoutique);
       const updatedHomeBoutiques = state.homeBoutiques.map(updateHeaderImagesInBoutique);
 
-      // Actualizar en boutiquesByCategory
       const updatedBoutiquesByCategory = {};
       Object.keys(state.boutiquesByCategory).forEach(key => {
         const categoryData = state.boutiquesByCategory[key];
@@ -275,6 +301,156 @@ const boutiqueReducer = (state = initialState, action) => {
           [statsBoutiqueId]: stats
         },
         error: null
+      };
+
+    // ============ FOLLOW BOUTIQUE ============
+    case BOUTIQUE_TYPES.FOLLOW_BOUTIQUE:
+      const { boutiqueId: followId, following, followersCount } = action.payload;
+
+      const updateFollowInList = (list) => list.map(b =>
+        b._id === followId
+          ? {
+              ...b,
+              stats: { ...b.stats, followersCount },
+              isFollowing: following
+            }
+          : b
+      );
+
+      return {
+        ...state,
+        boutiques: updateFollowInList(state.boutiques),
+        userBoutiques: updateFollowInList(state.userBoutiques),
+        homeBoutiques: updateFollowInList(state.homeBoutiques),
+        currentBoutique: state.currentBoutique?._id === followId
+          ? {
+              ...state.currentBoutique,
+              stats: { ...state.currentBoutique.stats, followersCount },
+              isFollowing: following
+            }
+          : state.currentBoutique,
+        boutiqueByDomain: state.boutiqueByDomain?._id === followId
+          ? {
+              ...state.boutiqueByDomain,
+              stats: { ...state.boutiqueByDomain.stats, followersCount },
+              isFollowing: following
+            }
+          : state.boutiqueByDomain,
+        boutiquesByCategory: Object.keys(state.boutiquesByCategory).reduce((acc, key) => {
+          acc[key] = {
+            ...state.boutiquesByCategory[key],
+            boutiques: updateFollowInList(state.boutiquesByCategory[key].boutiques)
+          };
+          return acc;
+        }, {})
+      };
+
+    // ============ LIKE BOUTIQUE ============
+    case BOUTIQUE_TYPES.LIKE_BOUTIQUE:
+      const { boutiqueId: likeId, liked, likesCount } = action.payload;
+
+      const updateLikeInList = (list) => list.map(b =>
+        b._id === likeId
+          ? {
+              ...b,
+              stats: { ...b.stats, likesCount },
+              isLiked: liked
+            }
+          : b
+      );
+
+      return {
+        ...state,
+        boutiques: updateLikeInList(state.boutiques),
+        userBoutiques: updateLikeInList(state.userBoutiques),
+        homeBoutiques: updateLikeInList(state.homeBoutiques),
+        currentBoutique: state.currentBoutique?._id === likeId
+          ? {
+              ...state.currentBoutique,
+              stats: { ...state.currentBoutique.stats, likesCount },
+              isLiked: liked
+            }
+          : state.currentBoutique,
+        boutiqueByDomain: state.boutiqueByDomain?._id === likeId
+          ? {
+              ...state.boutiqueByDomain,
+              stats: { ...state.boutiqueByDomain.stats, likesCount },
+              isLiked: liked
+            }
+          : state.boutiqueByDomain,
+        boutiquesByCategory: Object.keys(state.boutiquesByCategory).reduce((acc, key) => {
+          acc[key] = {
+            ...state.boutiquesByCategory[key],
+            boutiques: updateLikeInList(state.boutiquesByCategory[key].boutiques)
+          };
+          return acc;
+        }, {})
+      };
+
+    // ============ GET BOUTIQUE LIKES ============
+    case BOUTIQUE_TYPES.GET_BOUTIQUE_LIKES:
+      const { boutiqueId: likesBoutiqueId, likesCount: newLikesCount, userLiked } = action.payload;
+
+      const updateLikesInList = (list) => list.map(b =>
+        b._id === likesBoutiqueId
+          ? {
+              ...b,
+              stats: { ...b.stats, likesCount: newLikesCount },
+              isLiked: userLiked
+            }
+          : b
+      );
+
+      return {
+        ...state,
+        boutiques: updateLikesInList(state.boutiques),
+        currentBoutique: state.currentBoutique?._id === likesBoutiqueId
+          ? {
+              ...state.currentBoutique,
+              stats: { ...state.currentBoutique.stats, likesCount: newLikesCount },
+              isLiked: userLiked
+            }
+          : state.currentBoutique,
+        boutiqueStats: {
+          ...state.boutiqueStats,
+          [likesBoutiqueId]: {
+            ...state.boutiqueStats[likesBoutiqueId],
+            likesCount: newLikesCount
+          }
+        }
+      };
+
+    // ============ GET BOUTIQUE FOLLOWERS ============
+    case BOUTIQUE_TYPES.GET_BOUTIQUE_FOLLOWERS:
+      const { boutiqueId: followersBoutiqueId, followersCount: newFollowersCount, userFollowing } = action.payload;
+
+      const updateFollowersInList = (list) => list.map(b =>
+        b._id === followersBoutiqueId
+          ? {
+              ...b,
+              stats: { ...b.stats, followersCount: newFollowersCount },
+              isFollowing: userFollowing
+            }
+          : b
+      );
+
+      return {
+        ...state,
+        boutiques: updateFollowersInList(state.boutiques),
+        currentBoutique: state.currentBoutique?._id === followersBoutiqueId
+          ? {
+              ...state.currentBoutique,
+              stats: { ...state.currentBoutique.stats, followersCount: newFollowersCount },
+              isFollowing: userFollowing
+            }
+          : state.currentBoutique,
+        boutiqueStats: {
+          ...state.boutiqueStats,
+          [followersBoutiqueId]: {
+            ...state.boutiqueStats[followersBoutiqueId],
+            followersCount: newFollowersCount
+          }
+        }
       };
 
     // ============ CLEAR OPERATIONS ============

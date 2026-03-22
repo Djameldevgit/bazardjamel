@@ -33,7 +33,20 @@ export const BOUTIQUE_TYPES = {
   // Loading states
   LOADING_BOUTIQUE: 'LOADING_BOUTIQUE',
  
-  LOADING_BOUTIQUES_BY_CATEGORY: 'LOADING_BOUTIQUES_BY_CATEGORY'
+  LOADING_BOUTIQUES_BY_CATEGORY: 'LOADING_BOUTIQUES_BY_CATEGORY',
+
+
+  FOLLOW_BOUTIQUE: 'FOLLOW_BOUTIQUE',
+  UNFOLLOW_BOUTIQUE: 'UNFOLLOW_BOUTIQUE',
+  LIKE_BOUTIQUE: 'LIKE_BOUTIQUE',
+  UNLIKE_BOUTIQUE: 'UNLIKE_BOUTIQUE',
+  GET_BOUTIQUE_FOLLOWERS: 'GET_BOUTIQUE_FOLLOWERS',
+  GET_BOUTIQUE_LIKES: 'GET_BOUTIQUE_LIKES',
+  
+
+
+
+
 };
 // ============ CREATE BOUTIQUE ============
 export const createBoutique = ({ 
@@ -411,28 +424,37 @@ export const resetAllBoutiques = () => ({
 });
 
  
+ 
 export const incrementBoutiqueView = (boutiqueId) => async (dispatch) => {
   try {
-    const res = await axios.patch(`/api/boutique/${boutiqueId}/view`);
-
-    dispatch({
-      type: 'UPDATE_BOUTIQUE_STATS',
-      payload: {
-        boutiqueId,
-        stats: res.data.stats
-      }
-    });
-
+    const sessionKey = `view_sent_${boutiqueId}`;
+    if (sessionStorage.getItem(sessionKey)) {
+      console.log('⏭️ Vista ya enviada en esta sesión');
+      return;
+    }
+    
+    console.log('📤 Llamando a API: PATCH /api/boutique/', boutiqueId, '/view');
+    sessionStorage.setItem(sessionKey, Date.now());
+    
+    const response = await axios.patch(`/api/boutique/${boutiqueId}/view`);
+    console.log('✅ Respuesta del servidor:', response.data);
+    
+    // Actualizar el estado con el nuevo contador
+    if (response.data.views) {
+      dispatch({
+        type: 'UPDATE_BOUTIQUE_VIEWS',
+        payload: {
+          boutiqueId: boutiqueId,
+          views: response.data.views
+        }
+      });
+    }
+    
+    return response.data;
   } catch (err) {
-    console.error('❌ Error incrementando views:', err);
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: {error: err.response?.data?.message || err.message}
-    });
+    console.error('❌ Error adding view:', err.response?.data || err.message);
   }
 };
-// redux/actions/boutiqueAction.js - Verificar esta parte
-
 export const updateBoutiqueHeaderImages = ({ boutiqueId, images, auth }) => async (dispatch) => {
   try {
     console.log('🟡 updateBoutiqueHeaderImages action iniciada');
@@ -553,5 +575,122 @@ export const deleteBoutiqueHeaderImage = ({
     throw err;
   } finally {
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
+  }
+};
+
+// Cambiar de postDataAPI a patchDataAPI
+export const followBoutique = (boutiqueId, auth) => async (dispatch) => {
+  try {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+    
+    // Cambiar postDataAPI por patchDataAPI
+    const res = await patchDataAPI(`boutique/${boutiqueId}/follow`, {}, auth.token);
+    
+    dispatch({
+      type: BOUTIQUE_TYPES.FOLLOW_BOUTIQUE,
+      payload: {
+        boutiqueId,
+        following: res.data.following,
+        followersCount: res.data.followersCount
+      }
+    });
+    
+    return res.data;
+    
+  } catch (err) {
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || err.message }
+    });
+    throw err;
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
+  }
+};
+
+// ============ CHECK IF USER FOLLOWS BOUTIQUE ============
+export const checkFollowBoutique = (boutiqueId, auth) => async (dispatch) => {
+  try {
+    const res = await getDataAPI(`boutique/${boutiqueId}/follow/check`, auth.token);
+    return res.data;
+  } catch (err) {
+    console.error('Error checking follow:', err);
+    return { following: false };
+  }
+};
+
+// ============ LIKE BOUTIQUE ============
+ 
+// ============ GET BOUTIQUE LIKES ============
+ 
+
+// ============ GET BOUTIQUE FOLLOWERS ============
+export const getBoutiqueFollowers = (boutiqueId, auth = null) => async (dispatch) => {
+  try {
+    const res = await getDataAPI(`boutique/${boutiqueId}/followers`, auth?.token);
+    
+    dispatch({
+      type: BOUTIQUE_TYPES.GET_BOUTIQUE_FOLLOWERS,
+      payload: {
+        boutiqueId,
+        followersCount: res.data.followersCount,
+        userFollowing: res.data.userFollowing
+      }
+    });
+    
+    return res.data;
+  } catch (err) {
+    console.error('Error getting followers:', err);
+    return { followersCount: 0, userFollowing: false };
+  }
+};
+
+// ============ LIKE BOUTIQUE ============
+export const likeBoutique = (boutiqueId, auth) => async (dispatch) => {
+  try {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+    
+    const res = await patchDataAPI(`boutique/${boutiqueId}/like`, {}, auth.token);
+    
+    dispatch({
+      type: BOUTIQUE_TYPES.LIKE_BOUTIQUE,
+      payload: {
+        boutiqueId,
+        liked: res.data.liked,
+        likesCount: res.data.likesCount
+      }
+    });
+    
+    return res.data;
+    
+  } catch (err) {
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || err.message }
+    });
+    throw err;
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
+  }
+};
+
+// ============ GET BOUTIQUE LIKES ============
+export const getBoutiqueLikes = (boutiqueId, auth = null) => async (dispatch) => {
+  try {
+    const res = await getDataAPI(`boutique/${boutiqueId}/likes`, auth?.token);
+    
+    dispatch({
+      type: BOUTIQUE_TYPES.GET_BOUTIQUE_LIKES,
+      payload: {
+        boutiqueId,
+        likesCount: res.data.likesCount,
+        userLiked: res.data.userLiked
+      }
+    });
+    
+    return res.data;
+  } catch (err) {
+    console.error('Error getting likes:', err);
+    return { likesCount: 0, userLiked: false };
   }
 };

@@ -1,7 +1,7 @@
 // ctrls/boutiqueCtrl.js
 const Boutique = require('../models/boutiqueModel');
 const Category = require('../models/categoryModel');
-
+ 
 // Función para generar slug único (compatible con Node antiguo)
 const generateUniqueSlug = function(text) {
   // Asegurar que text es string
@@ -324,36 +324,116 @@ const boutiqueCtrl = {
     }
   },
 
-  getBoutique: async function(req, res) {
-    try {
-      var id = req.params.id;
+  // controllers/boutiqueCtrl.js
+// controllers/boutiqueCtrl.js
+getBoutique: async function(req, res) {
+  try {
+    var id = req.params.id;
+    // ✅ Validación segura para req.user (puede ser undefined)
+    var userId = req.user ? req.user._id : null;
 
-      var boutique = await Boutique.findById(id)
-        .populate('user', 'name username avatar email mobile')
-        .lean();
+    console.log('🔍 getBoutique llamado:', { 
+      boutiqueId: id, 
+      userId: userId || 'guest',
+      isAuthenticated: !!userId 
+    });
 
-      if (!boutique) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Boutique non trouvée' 
-        });
-      }
+    var boutique = await Boutique.findById(id)
+      .populate('user', 'name username avatar email mobile')
+      .lean();
 
-      res.json({
-        success: true,
-        boutique: boutique
-      });
-
-    } catch (error) {
-      console.error('❌ Error en getBoutique:', error);
-      res.status(500).json({ 
+    if (!boutique) {
+      return res.status(404).json({ 
         success: false, 
-        message: 'Erreur lors de la récupération de la boutique', 
-        error: error.message 
+        message: 'Boutique non trouvée' 
       });
     }
-  },
 
+    // ✅ Validación segura para arrays y objetos que pueden ser undefined
+    var followersCount = (boutique.followers && boutique.followers.length) ? boutique.followers.length : 0;
+    var likesCount = (boutique.likes && boutique.likes.length) ? boutique.likes.length : 0;
+    var viewsCount = (boutique.views !== undefined && boutique.views !== null) ? boutique.views : 0;
+    
+    // Contadores de stats con validación segura
+    var produitsCount = (boutique.stats && boutique.stats.produits) ? boutique.stats.produits : 0;
+    var notesCount = (boutique.stats && boutique.stats.notes) ? boutique.stats.notes : 0;
+    var avisCount = (boutique.stats && boutique.stats.avis) ? boutique.stats.avis : 0;
+    var vuesCount = (boutique.stats && boutique.stats.vues) ? boutique.stats.vues : 0;
+
+    // ✅ ESTADO DE INTERACCIÓN (solo para usuarios autenticados)
+    var isFollowing = false;
+    var isLiked = false;
+    
+    if (userId) {
+      // Validar que followers y likes existan antes de usar some
+      if (boutique.followers && boutique.followers.length > 0) {
+        isFollowing = boutique.followers.some(function(f) {
+          return f.toString() === userId.toString();
+        });
+      }
+      
+      if (boutique.likes && boutique.likes.length > 0) {
+        isLiked = boutique.likes.some(function(l) {
+          return l.toString() === userId.toString();
+        });
+      }
+      
+      console.log('👤 Usuario autenticado:', { 
+        userId: userId.toString(), 
+        isFollowing: isFollowing, 
+        isLiked: isLiked 
+      });
+    } else {
+      console.log('👤 Usuario invitado - sin estado de interacción');
+    }
+
+    // ✅ CONSTRUIR OBJETO DE RESPUESTA CON TODOS LOS DATOS
+    var boutiqueData = {
+      ...boutique,
+      // Contadores globales (siempre presentes)
+      followersCount: followersCount,
+      likesCount: likesCount,
+      views: viewsCount,
+      // Stats
+      stats: {
+        ...(boutique.stats || {}),
+        produits: produitsCount,
+        notes: notesCount,
+        avis: avisCount,
+        vues: vuesCount,
+        followersCount: followersCount,
+        likesCount: likesCount
+      },
+      // Estado de interacción (false para invitados)
+      isFollowing: isFollowing,
+      isLiked: isLiked
+    };
+
+    console.log('📊 Datos enviados al frontend:', {
+      boutiqueId: boutiqueData._id,
+      nom_boutique: boutiqueData.nom_boutique,
+      views: boutiqueData.views,
+      likesCount: boutiqueData.likesCount,
+      followersCount: boutiqueData.followersCount,
+      isFollowing: boutiqueData.isFollowing,
+      isLiked: boutiqueData.isLiked,
+      isAuthenticated: !!userId
+    });
+
+    res.json({
+      success: true,
+      boutique: boutiqueData
+    });
+
+  } catch (error) {
+    console.error('❌ Error en getBoutique:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur lors de la récupération de la boutique', 
+      error: error.message 
+    });
+  }
+},
   getUserBoutiques: async function(req, res) {
     try {
       var user = req.user;
@@ -636,41 +716,100 @@ const boutiqueCtrl = {
     }
   },
 
-  incrementBoutiqueView: async function(req, res) {
-    try {
-      var boutiqueId = req.params.boutiqueId;
-      var boutique = await Boutique.findById(boutiqueId);
-
-      if (!boutique) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Boutique non trouvée' 
-        });
-      }
-
-      // Incrementar vistas de forma segura
-      var currentVues = boutique.stats && boutique.stats.vues ? boutique.stats.vues : 0;
-      
-      if (!boutique.stats) {
-        boutique.stats = {};
-      }
-      boutique.stats.vues = currentVues + 1;
-      
-      await boutique.save();
-
-      res.json({
-        success: true,
-        stats: boutique.stats
-      });
-    } catch (err) {
-      console.error('❌ Error en incrementBoutiqueView:', err);
-      res.status(500).json({ 
+ // En controllers/boutiqueCtrl.js
+// controllers/boutiqueCtrl.js
+addView: async function(req, res) {
+  try {
+    const boutiqueId = req.params.boutiqueId;
+    const userId = req.user ? req.user._id : null;
+    const ip = req.ip || req.connection.remoteAddress;
+    const sessionId = req.sessionID;
+    
+    // Identificador único para la vista
+    let viewerId = userId ? userId.toString() : (sessionId || ip);
+    
+    console.log('📊 Registrando vista:', { 
+      boutiqueId, 
+      viewerId, 
+      isAuthenticated: !!userId 
+    });
+    
+    const boutique = await Boutique.findById(boutiqueId);
+    
+    if (!boutique) {
+      return res.status(404).json({ 
         success: false, 
-        message: err.message 
+        message: 'Boutique non trouvée' 
       });
     }
-  },
-
+    
+    // Inicializar array de historial de vistas si no existe
+    if (!boutique.viewHistory) {
+      boutique.viewHistory = [];
+    }
+    
+    // Limpiar vistas antiguas (más de 24 horas)
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    boutique.viewHistory = boutique.viewHistory.filter(function(view) {
+      return view.timestamp && view.timestamp > oneDayAgo;
+    });
+    
+    // Verificar si este viewer ya vio en las últimas 24 horas
+    let existingView = null;
+    for (var i = 0; i < boutique.viewHistory.length; i++) {
+      if (boutique.viewHistory[i].viewerId === viewerId) {
+        existingView = boutique.viewHistory[i];
+        break;
+      }
+    }
+    
+    if (!existingView) {
+      // Registrar nueva vista única
+      boutique.viewHistory.push({
+        viewerId: viewerId,
+        timestamp: new Date(),
+        userAgent: req.headers['user-agent'] || 'unknown'
+      });
+      
+      // Incrementar contador total de vistas
+      boutique.views = (boutique.views || 0) + 1;
+      
+      await boutique.save();
+      
+      console.log('✅ Vista única registrada:', {
+        boutiqueId,
+        viewerId,
+        totalViews: boutique.views,
+        uniqueToday: boutique.viewHistory.length
+      });
+      
+      res.json({ 
+        success: true, 
+        views: boutique.views,
+        msg: "view counted" 
+      });
+    } else {
+      console.log('⏭️ Vista duplicada ignorada (menos de 24h):', { 
+        boutiqueId, 
+        viewerId,
+        lastView: existingView.timestamp 
+      });
+      
+      res.json({ 
+        success: true, 
+        views: boutique.views,
+        msg: "view already counted" 
+      });
+    }
+    
+  } catch (err) {
+    console.error('❌ Error en addView:', err);
+    res.status(500).json({ 
+      success: false, 
+      msg: err.message 
+    });
+  }
+},
  // En boutiqueCtrl.js - updateBoutiqueHeaderImages
 // ctrls/boutiqueCtrl.js - Versión mejorada con más logs
 
@@ -886,7 +1025,191 @@ updateBoutiqueHeaderImages: async function(req, res) {
         message: error.message 
       });
     }
+  },
+
+// ============ FOLLOW BOUTIQUE ============
+// ============ FOLLOW BOUTIQUE ============
+followBoutique: async function(req, res) {
+  try {
+    const userId = req.user._id;
+    const boutiqueId = req.params.boutiqueId;
+
+    const boutique = await Boutique.findById(boutiqueId);
+    if (!boutique) {
+      return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+    }
+
+    // Inicializar followers array si no existe
+    if (!boutique.followers) {
+      boutique.followers = [];
+    }
+
+    const alreadyFollowing = boutique.followers.some(id => id.toString() === userId.toString());
+    
+    if (alreadyFollowing) {
+      // Unfollow
+      boutique.followers = boutique.followers.filter(id => id.toString() !== userId.toString());
+      await boutique.save();
+      
+      return res.json({ 
+        success: true, 
+        following: false, 
+        followersCount: boutique.followers.length 
+      });
+    } else {
+      // Follow
+      boutique.followers.push(userId);
+      await boutique.save();
+      
+      return res.json({ 
+        success: true, 
+        following: true, 
+        followersCount: boutique.followers.length 
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error followBoutique:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
+},
+
+// Check if user follows boutique
+checkFollowBoutique: async function(req, res) {
+  try {
+    const userId = req.user._id;
+    const boutiqueId = req.params.boutiqueId;
+
+    const boutique = await Boutique.findById(boutiqueId).select('followers');
+    if (!boutique) {
+      return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+    }
+
+    const following = boutique.followers ? boutique.followers.some(id => id.toString() === userId.toString()) : false;
+    
+    res.json({ success: true, following });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+},
+
+// Get boutique followers count
+getBoutiqueFollowers: async function(req, res) {
+  try {
+    const boutiqueId = req.params.boutiqueId;
+    const boutique = await Boutique.findById(boutiqueId).select('followers');
+    
+    if (!boutique) {
+      return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+    }
+
+    const followersCount = boutique.followers ? boutique.followers.length : 0;
+    let userFollowing = false;
+    
+    if (req.user && req.user._id) {
+      userFollowing = boutique.followers ? boutique.followers.some(id => id.toString() === req.user._id.toString()) : false;
+    }
+    
+    res.json({ 
+      success: true, 
+      followersCount, 
+      userFollowing 
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+},
+
+// ============ LIKE BOUTIQUE ============
+likeBoutique: async function(req, res) {
+  try {
+    const userId = req.user._id;
+    const boutiqueId = req.params.boutiqueId;
+
+    const boutique = await Boutique.findById(boutiqueId);
+    if (!boutique) {
+      return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+    }
+
+    // Inicializar likes array si no existe
+    if (!boutique.likes) {
+      boutique.likes = [];
+    }
+
+    const alreadyLiked = boutique.likes.some(id => id.toString() === userId.toString());
+    
+    if (alreadyLiked) {
+      // Unlike
+      boutique.likes = boutique.likes.filter(id => id.toString() !== userId.toString());
+      await boutique.save();
+      
+      return res.json({ 
+        success: true, 
+        liked: false, 
+        likesCount: boutique.likes.length 
+      });
+    } else {
+      // Like
+      boutique.likes.push(userId);
+      await boutique.save();
+      
+      return res.json({ 
+        success: true, 
+        liked: true, 
+        likesCount: boutique.likes.length 
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error likeBoutique:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+},
+
+// Check if user liked boutique
+checkLikeBoutique: async function(req, res) {
+  try {
+    const userId = req.user._id;
+    const boutiqueId = req.params.boutiqueId;
+
+    const boutique = await Boutique.findById(boutiqueId).select('likes');
+    if (!boutique) {
+      return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+    }
+
+    const liked = boutique.likes ? boutique.likes.some(id => id.toString() === userId.toString()) : false;
+    
+    res.json({ success: true, liked });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+},
+
+// Get boutique likes count
+getBoutiqueLikes: async function(req, res) {
+  try {
+    const boutiqueId = req.params.boutiqueId;
+    const boutique = await Boutique.findById(boutiqueId).select('likes');
+    
+    if (!boutique) {
+      return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+    }
+
+    const likesCount = boutique.likes ? boutique.likes.length : 0;
+    let userLiked = false;
+    
+    if (req.user && req.user._id) {
+      userLiked = boutique.likes ? boutique.likes.some(id => id.toString() === req.user._id.toString()) : false;
+    }
+    
+    res.json({ 
+      success: true, 
+      likesCount, 
+      userLiked 
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+},
+
 };
 
 module.exports = boutiqueCtrl;

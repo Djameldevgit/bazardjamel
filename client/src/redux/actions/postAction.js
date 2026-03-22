@@ -49,6 +49,8 @@ export const POST_TYPES = {
   UNLIKE_POST: 'UNLIKE_POST',
   SAVE_POST: 'SAVE_POST',
   UNSAVE_POST: 'UNSAVE_POST'
+ 
+
 };
 
 export const setPostFilters = (filters) => ({

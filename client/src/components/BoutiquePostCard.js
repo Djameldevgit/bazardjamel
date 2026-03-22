@@ -31,6 +31,7 @@ const BoutiquePostCard = ({ boutique }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const isOwner = auth.user?._id === boutique.user?._id || auth.user?._id === boutique.user;
   const isAdmin = auth.user?.role === 'admin';
@@ -64,6 +65,41 @@ const BoutiquePostCard = ({ boutique }) => {
     }
     return null;
   };
+
+  // Obtener la primera imagen del carousel para el fondo
+  const getHeaderImage = () => {
+    if (boutique.header_images && boutique.header_images.length > 0 && !imageError) {
+      const firstImage = boutique.header_images[0];
+      return firstImage.url || firstImage;
+    }
+    return null;
+  };
+
+  // 🔥 COLORES: prioridad al color elegido por el usuario (couleur_theme)
+  const getUserThemeColor = () => {
+    if (boutique.couleur_theme) {
+      return boutique.couleur_theme;
+    }
+    return null;
+  };
+
+  // Color basado en categoría (fallback)
+  const getCategoryColor = () => {
+    const category = boutique.categorie?.toLowerCase() || '';
+    const colorMap = {
+      'automobiles': '#FF6B6B', 'véhicules': '#FF6B6B',
+      'informatique': '#4ECDC4', 'téléphonie': '#4ECDC4',
+      'maison': '#FFB347', 'meubles': '#FFB347',
+      'mode': '#FF8C94', 'vêtements': '#FF8C94',
+      'santé': '#A8E6CF', 'beauté': '#A8E6CF',
+      'immobilier': '#6C5B7B', 'alimentaire': '#FFA07A',
+      'sport': '#45B7D1', 'services': '#95A5A6'
+    };
+    return colorMap[category] || '#6366F1';
+  };
+
+  // Color principal (prioridad: color del usuario > color por categoría)
+  const mainColor = getUserThemeColor() || getCategoryColor();
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -101,28 +137,17 @@ const BoutiquePostCard = ({ boutique }) => {
     });
   };
 
-  // Obtener color de fondo basado en la categoría
-  const getCategoryColor = () => {
-    const category = boutique.categorie?.toLowerCase() || '';
-    const colorMap = {
-      'automobiles': '#FF6B6B', 'véhicules': '#FF6B6B',
-      'informatique': '#4ECDC4', 'téléphonie': '#4ECDC4',
-      'maison': '#FFB347', 'meubles': '#FFB347',
-      'mode': '#FF8C94', 'vêtements': '#FF8C94',
-      'santé': '#A8E6CF', 'beauté': '#A8E6CF',
-      'immobilier': '#6C5B7B', 'alimentaire': '#FFA07A',
-      'sport': '#45B7D1', 'services': '#95A5A6'
-    };
-    return colorMap[category] || boutique.couleur_theme || '#6366F1';
+  const handleImageError = () => {
+    setImageError(true);
   };
 
   const logoImage = getLogoImage();
-  const categoryColor = getCategoryColor();
+  const headerImage = getHeaderImage();
   const planName = boutique.plan === 'gratuit' ? 'Gratuit' : 
                    boutique.plan === 'basique' ? 'Basique' :
                    boutique.plan === 'premium' ? 'Premium' : 'Pro';
 
-  // Fonction pour afficher les étoiles
+  // Función para mostrar las estrellas
   const renderStars = (rating) => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
@@ -149,17 +174,46 @@ const BoutiquePostCard = ({ boutique }) => {
           boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
         }}
       >
-        {/* Background color (bientôt remplacé par image internet) */}
+        {/* SECCIÓN DE FONDO - CON IMAGEN DEL CAROUSEL O COLOR DEL USUARIO */}
         <div 
           className="position-relative"
           style={{
             height: '120px',
-            background: `linear-gradient(135deg, ${categoryColor} 0%, ${categoryColor}dd 100%)`,
-            position: 'relative'
+            position: 'relative',
+            background: (headerImage && !imageError) ? 'transparent' : `linear-gradient(135deg, ${mainColor} 0%, ${mainColor}dd 100%)`,
+            backgroundImage: (headerImage && !imageError) ? `url(${headerImage})` : 'none',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
           }}
         >
+          {/* Imagen oculta para detectar error de carga */}
+          {headerImage && !imageError && (
+            <img 
+              src={headerImage}
+              alt=""
+              style={{ display: 'none' }}
+              onError={handleImageError}
+            />
+          )}
+          
+          {/* Overlay oscuro si hay imagen válida */}
+          {headerImage && !imageError && (
+            <div 
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 100%)',
+                zIndex: 1
+              }}
+            />
+          )}
+          
           {/* Badges supérieurs */}
-          <div className="position-absolute top-0 start-0 m-3 d-flex gap-1">
+          <div className="position-absolute top-0 start-0 m-3 d-flex gap-1" style={{ zIndex: 2 }}>
             {boutique.isVerified && (
               <Badge 
                 bg="success"
@@ -178,7 +232,7 @@ const BoutiquePostCard = ({ boutique }) => {
             )}
           </div>
 
-          <div className="position-absolute top-0 end-0 m-3">
+          <div className="position-absolute top-0 end-0 m-3" style={{ zIndex: 2 }}>
             <Badge 
               bg={boutique.plan === 'premium' ? 'warning' : 'secondary'}
               style={{ 
@@ -197,7 +251,7 @@ const BoutiquePostCard = ({ boutique }) => {
         </div>
 
         {/* Logo circulaire - Élément distinctif */}
-        <div className="position-relative text-center" style={{ marginTop: '-50px', marginBottom: '10px' }}>
+        <div className="position-relative text-center" style={{ marginTop: '-50px', marginBottom: '10px', zIndex: 3 }}>
           <div 
             className="d-inline-flex align-items-center justify-content-center"
             style={{
@@ -205,7 +259,7 @@ const BoutiquePostCard = ({ boutique }) => {
               height: '100px',
               borderRadius: '50%',
               backgroundColor: 'white',
-              border: `4px solid ${categoryColor}`,
+              border: `4px solid ${mainColor}`,
               boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
               overflow: 'hidden',
               position: 'relative',
@@ -222,9 +276,10 @@ const BoutiquePostCard = ({ boutique }) => {
                   height: '100%',
                   objectFit: 'cover'
                 }}
+                onError={handleImageError}
               />
             ) : (
-              <FaStore size={50} color={categoryColor} />
+              <FaStore size={50} color={mainColor} />
             )}
           </div>
 
@@ -248,10 +303,10 @@ const BoutiquePostCard = ({ boutique }) => {
         </div>
 
         <Card.Body className="d-flex flex-column pt-0 px-3 pb-3">
-          {/* En-tête avec nom et menu */}
+          {/* En-tête con nombre y menu */}
           <div className="d-flex justify-content-between align-items-start mb-2">
             <div className="flex-grow-1 text-center">
-              <h6 className="fw-bold mb-1" style={{ fontSize: '1.1rem', color: categoryColor }}>
+              <h6 className="fw-bold mb-1" style={{ fontSize: '1.1rem', color: mainColor }}>
                 {boutique.nom_boutique}
               </h6>
               {boutique.slogan_boutique && (
@@ -316,8 +371,8 @@ const BoutiquePostCard = ({ boutique }) => {
           <div className="text-center mb-3">
             <span 
               style={{
-                backgroundColor: `${categoryColor}15`,
-                color: categoryColor,
+                backgroundColor: `${mainColor}15`,
+                color: mainColor,
                 padding: '0.25rem 1rem',
                 borderRadius: '30px',
                 fontSize: '0.8rem',
@@ -380,7 +435,7 @@ const BoutiquePostCard = ({ boutique }) => {
         >
           <Badge 
             style={{
-              backgroundColor: categoryColor,
+              backgroundColor: mainColor,
               color: 'white',
               padding: '0.2rem 0.6rem',
               borderRadius: '12px',

@@ -9,7 +9,8 @@ import {
   FaTimes,
   FaSlidersH,
   FaChevronDown,
-  FaChevronUp
+  FaChevronUp,
+  FaBoxOpen
 } from 'react-icons/fa';
 import BoutiquePostCard from './boutiquePost/BoutiquePostCard';
 import { getBoutiquePosts } from '../../redux/actions/boutiquePostAction';
@@ -24,7 +25,6 @@ const BoutiquePostsGrid = ({ boutique }) => {
   const [filterPrice, setFilterPrice] = useState({ min: '', max: '' });
   const [filterEtat, setFilterEtat] = useState([]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(true);
   const [hasMounted, setHasMounted] = useState(false);
@@ -43,21 +43,35 @@ const BoutiquePostsGrid = ({ boutique }) => {
     }
   }, [dispatch, boutique?._id, page, hasMounted]);
 
-  // Si boutique no está disponible, mostrar loading o null
+  // Si boutique no está disponible, mostrar loading
   if (!boutique) {
     return (
       <div className="text-center py-5">
         <Spinner animation="border" variant="primary" />
-        <p className="mt-3">Cargando información de la boutique...</p>
+        <p className="mt-3">Chargement de la boutique...</p>
       </div>
     );
   }
 
   // Obtener posts de esta boutique con validación segura
   const boutiqueData = boutiqueProducts?.[boutique._id] || {};
-  const posts = boutiqueData.products || [];
+  // 🔥 CORREGIDO: usar "posts" en lugar de "products"
+  const posts = boutiqueData.posts || [];
   const total = boutiqueData.total || 0;
-  const hasMore = boutiqueData.hasMore || false;
+  const currentPage = boutiqueData.page || 1;
+  const totalPages = Math.ceil(total / 12);
+  const hasMore = currentPage < totalPages;
+
+  // Debug log
+  console.log('🔍 Estado de posts:', {
+    boutiqueId: boutique._id,
+    boutiqueData,
+    postsCount: posts.length,
+    total,
+    currentPage,
+    totalPages,
+    hasMore
+  });
 
   // Opciones de filtro
   const etatOptions = [
@@ -133,7 +147,9 @@ const BoutiquePostsGrid = ({ boutique }) => {
   ].reduce((a, b) => a + b, 0);
 
   const handleLoadMore = () => {
-    setPage(prev => prev + 1);
+    if (hasMore) {
+      setPage(prev => prev + 1);
+    }
   };
 
   // Componente de filtros (reutilizable)
@@ -266,6 +282,7 @@ const BoutiquePostsGrid = ({ boutique }) => {
               size="sm"
               onClick={() => setViewMode('grid')}
               className="d-flex align-items-center"
+              style={viewMode === 'grid' ? { backgroundColor: boutique?.couleur_theme || '#6366F1', borderColor: boutique?.couleur_theme || '#6366F1' } : {}}
             >
               <FaThLarge />
             </Button>
@@ -274,6 +291,7 @@ const BoutiquePostsGrid = ({ boutique }) => {
               size="sm"
               onClick={() => setViewMode('list')}
               className="d-flex align-items-center"
+              style={viewMode === 'list' ? { backgroundColor: boutique?.couleur_theme || '#6366F1', borderColor: boutique?.couleur_theme || '#6366F1' } : {}}
             >
               <FaList />
             </Button>
@@ -318,14 +336,15 @@ const BoutiquePostsGrid = ({ boutique }) => {
                     {viewMode === 'grid' ? (
                       <BoutiquePostCard post={post} boutique={boutique} />
                     ) : (
-                      <div className="list-view-item border rounded-3 p-3 hover-shadow transition">
+                      <div className="list-view-item border rounded-3 p-3 hover-shadow transition" style={{ cursor: 'pointer' }} onClick={() => window.location.href = `/post/${post._id}`}>
                         <Row className="align-items-center">
                           <Col md={3}>
                             <img
-                              src={post.images?.[0]?.url || post.images?.[0] || '/placeholder.jpg'}
+                              src={post.images?.[0]?.url || post.images?.[0] || '/uploads/placeholder.jpg'}
                               alt={post.title}
                               className="w-100 rounded-3"
                               style={{ height: '120px', objectFit: 'cover' }}
+                              onError={(e) => { e.target.src = '/uploads/placeholder.jpg'; }}
                             />
                           </Col>
                           <Col md={6}>
@@ -340,7 +359,7 @@ const BoutiquePostsGrid = ({ boutique }) => {
                             </div>
                           </Col>
                           <Col md={3} className="text-md-end">
-                            <h4 className="text-primary mb-3">
+                            <h4 className="mb-3" style={{ color: boutique?.couleur_theme || '#6366F1' }}>
                               {post.price?.toLocaleString()} DA
                             </h4>
                             <Button 
@@ -350,7 +369,10 @@ const BoutiquePostsGrid = ({ boutique }) => {
                                 borderColor: boutique?.couleur_theme || '#6366F1',
                                 color: boutique?.couleur_theme || '#6366F1'
                               }}
-                              onClick={() => window.location.href = `/post/${post._id}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.location.href = `/post/${post._id}`;
+                              }}
                             >
                               Voir détails
                             </Button>
@@ -389,10 +411,11 @@ const BoutiquePostsGrid = ({ boutique }) => {
               )}
             </>
           ) : (
-            <Alert variant="info" className="text-center py-5 rounded-3">
-              <h5>Aucun produit disponible</h5>
-              <p className="mb-0">Cette boutique n'a pas encore de produits.</p>
-            </Alert>
+            <div className="text-center py-5">
+              <FaBoxOpen size={48} className="text-muted mb-3" />
+              <h5 className="text-muted">Aucun produit disponible</h5>
+              <p className="text-muted">Cette boutique n'a pas encore de produits.</p>
+            </div>
           )}
         </Col>
       </Row>

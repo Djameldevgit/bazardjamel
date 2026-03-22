@@ -110,13 +110,29 @@ const boutiqueSchema = new mongoose.Schema({
     type: String,
     default: '#2563eb'
   },
-
+  followers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'user',
+    default: []
+  }],
+  
+  likes: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'user',
+    default: []
+  }],
+  views: {
+    type: Number,
+    default: 0
+  },
   stats: {
-    vues: { type: Number, default: 0 },
+  
     produits: { type: Number, default: 0 },
     notes: { type: Number, default: 0 },
-    avis: { type: Number, default: 0 }
+   
   },
+ 
+
   header_images: [
    
       {

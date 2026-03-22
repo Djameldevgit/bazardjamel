@@ -1,5 +1,5 @@
 // components/boutique/BoutiqueHeader.jsx
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { Container, Row, Col, Badge, Button, Dropdown, Image, Modal, Form } from 'react-bootstrap';
 import { useSelector, useDispatch } from 'react-redux';
 import { 
@@ -9,9 +9,17 @@ import {
   FaFacebook, FaTwitter, FaWhatsapp, FaLink,
   FaChevronLeft, FaChevronRight, FaCamera, FaTrash,
   FaUpload, FaTimes, FaPhotoVideo, FaEllipsisV,
-  FaEdit, FaChartLine
+  FaEdit, FaChartLine, FaUserPlus, FaUserCheck
 } from 'react-icons/fa';
-import { incrementBoutiqueView, updateBoutiqueHeaderImages, deleteBoutiqueHeaderImage } from '../../redux/actions/boutiqueAction';
+import { 
+  updateBoutiqueHeaderImages,  
+  deleteBoutiqueHeaderImage, 
+  followBoutique, 
+  getBoutiqueFollowers,
+  likeBoutique,
+  getBoutiqueLikes,
+  incrementBoutiqueView
+} from '../../redux/actions/boutiqueAction';
 import '../../styles/BoutiqueHeader.css';
 
 const RatingStars = React.memo(({ rating = 0 }) => {
@@ -45,15 +53,19 @@ RatingStars.displayName = 'RatingStars';
 const BoutiqueHeader = ({ boutique }) => {
   const dispatch = useDispatch();
   
-  // Estados de autenticación
   const authState = useSelector(state => state.auth);
   const { token, user } = authState || {};
   const isAuthenticated = !!token;
   const isOwner = user?._id === boutique?.user?._id || user?._id === boutique?.user;
-  
-  // Estados del componente
+ 
   const [isFollowing, setIsFollowing] = useState(false);
-  const [followersCount, setFollowersCount] = useState(1247);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [loadingFollow, setLoadingFollow] = useState(false);
+  
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [loadingLike, setLoadingLike] = useState(false);
+  
   const [showShareTooltip, setShowShareTooltip] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
@@ -65,7 +77,7 @@ const BoutiqueHeader = ({ boutique }) => {
   const [imageToDelete, setImageToDelete] = useState(null);
   const [themeColor, setThemeColor] = useState('#2563eb');
 
-  // Definición de clases CSS como strings
+  // Definición de clases CSS
   const headerContainer = "boutique-header-container";
   const heroSection = "boutique-hero-section";
   const overlay = "boutique-overlay";
@@ -109,13 +121,11 @@ const BoutiqueHeader = ({ boutique }) => {
   const shareIconOnly = "boutique-share-icon-only";
   const publishButtonFull = "boutique-publish-button-full";
 
-  // Obtener datos actualizados de Redux
   const reduxBoutique = useSelector(state =>
     state.boutique.boutiques?.find(b => b._id === boutique._id)
   );
   const currentBoutique = reduxBoutique || boutique;
 
-  // Destructurar datos de la boutique
   const {
     _id,
     nom_boutique,
@@ -125,55 +135,70 @@ const BoutiqueHeader = ({ boutique }) => {
     images = [],
     categorie,
     isVerified,
-    stats = { vues: 0, produits: 0, notes: 0, avis: 0 },
+    stats = { vues: 0, produits: 0, notes: 0, avis: 0, followersCount: 0, likesCount: 0 },
     couleur_theme = '#2563eb',
-    createdAt
+    createdAt,
+    views = 0
   } = currentBoutique;
 
   const logoImage = images.length > 0 ? images[0] : null;
 
-  // Manejar follow
-  const handleFollow = () => {
-    if (!isFollowing) {
-      setFollowersCount(prev => prev + 1);
-    } else {
-      setFollowersCount(prev => prev - 1);
+  // Cargar estado de FOLLOW y LIKE
+  useEffect(() => {
+    if (_id && isAuthenticated) {
+      const loadStatus = async () => {
+        try {
+          const followersResult = await dispatch(getBoutiqueFollowers(_id, authState));
+          if (followersResult) {
+            setFollowersCount(followersResult.followersCount || 0);
+            setIsFollowing(followersResult.userFollowing || false);
+          }
+          
+          const likesResult = await dispatch(getBoutiqueLikes(_id, authState));
+          if (likesResult) {
+            setLikesCount(likesResult.likesCount || 0);
+            setIsLiked(likesResult.userLiked || false);
+          }
+        } catch (error) {
+          console.error('Error loading status:', error);
+          setFollowersCount(stats?.followersCount || 0);
+          setLikesCount(stats?.likesCount || 0);
+        }
+      };
+      loadStatus();
+    } else if (!isAuthenticated) {
+      setFollowersCount(stats?.followersCount || 0);
+      setLikesCount(stats?.likesCount || 0);
+      setIsFollowing(false);
+      setIsLiked(false);
     }
-    setIsFollowing(!isFollowing);
-  };
+  }, [_id, isAuthenticated, dispatch, authState, stats?.followersCount, stats?.likesCount]);
 
-  // Actualizar headerImages
   useEffect(() => {
     if (header_images && header_images.length > 0) {
       setHeaderImages(header_images);
     }
   }, [header_images]);
 
-  // Actualizar color de tema
   useEffect(() => {
     setThemeColor(couleur_theme);
     document.documentElement.style.setProperty('--theme-color', couleur_theme);
   }, [couleur_theme]);
 
-  // Auto-play del carousel
   useEffect(() => {
     if (headerImages.length <= 1) return;
-    
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % headerImages.length);
     }, 5000);
-    
     return () => clearInterval(interval);
   }, [headerImages.length]);
 
-  // Incrementar vistas al montar
   useEffect(() => {
     if (_id) {
       dispatch(incrementBoutiqueView(_id));
     }
   }, [_id, dispatch]);
 
-  // Navegación del carousel
   const nextSlide = useCallback(() => {
     setCurrentSlide((prev) => (prev + 1) % headerImages.length);
   }, [headerImages.length]);
@@ -181,6 +206,58 @@ const BoutiqueHeader = ({ boutique }) => {
   const prevSlide = useCallback(() => {
     setCurrentSlide((prev) => (prev - 1 + headerImages.length) % headerImages.length);
   }, [headerImages.length]);
+
+  const handleFollow = async () => {
+    if (!isAuthenticated) {
+      alert('Veuillez vous connecter pour suivre cette boutique');
+      return;
+    }
+    if (loadingFollow) return;
+    setLoadingFollow(true);
+    const wasFollowing = isFollowing;
+    const newFollowing = !wasFollowing;
+    const newCount = wasFollowing ? followersCount - 1 : followersCount + 1;
+    setIsFollowing(newFollowing);
+    setFollowersCount(newCount);
+    try {
+      const result = await dispatch(followBoutique(_id, authState));
+      setIsFollowing(result.following);
+      setFollowersCount(result.followersCount);
+    } catch (error) {
+      console.error('Error following boutique:', error);
+      setIsFollowing(wasFollowing);
+      setFollowersCount(followersCount);
+      alert('Erreur lors de l\'opération. Veuillez réessayer.');
+    } finally {
+      setLoadingFollow(false);
+    }
+  };
+
+  const handleLike = async () => {
+    if (!isAuthenticated) {
+      alert('Veuillez vous connecter pour aimer cette boutique');
+      return;
+    }
+    if (loadingLike) return;
+    setLoadingLike(true);
+    const wasLiked = isLiked;
+    const newLiked = !wasLiked;
+    const newCount = wasLiked ? likesCount - 1 : likesCount + 1;
+    setIsLiked(newLiked);
+    setLikesCount(newCount);
+    try {
+      const result = await dispatch(likeBoutique(_id, authState));
+      setIsLiked(result.liked);
+      setLikesCount(result.likesCount);
+    } catch (error) {
+      console.error('Error liking boutique:', error);
+      setIsLiked(wasLiked);
+      setLikesCount(likesCount);
+      alert('Erreur lors de l\'opération. Veuillez réessayer.');
+    } finally {
+      setLoadingLike(false);
+    }
+  };
 
   // Manejar selección de archivos
   const handleFileSelect = useCallback((e) => {
@@ -223,7 +300,7 @@ const BoutiqueHeader = ({ boutique }) => {
       }));
 
       if (result?.success) {
-        setHeaderImages(result.header_images);
+        setHeaderImages(result.header_images || result.images || []);
         setShowImageModal(false);
         setSelectedFiles([]);
         previewUrls.forEach(url => URL.revokeObjectURL(url));
@@ -261,8 +338,10 @@ const BoutiqueHeader = ({ boutique }) => {
       if (result && result.success) {
         const newImages = headerImages.filter((_, index) => index !== imageToDelete);
         setHeaderImages(newImages);
-        if (currentSlide >= newImages.length) {
-          setCurrentSlide(Math.max(0, newImages.length - 1));
+        if (currentSlide >= newImages.length && newImages.length > 0) {
+          setCurrentSlide(newImages.length - 1);
+        } else if (newImages.length === 0) {
+          setCurrentSlide(0);
         }
         setShowDeleteConfirm(false);
         setImageToDelete(null);
@@ -286,7 +365,6 @@ const BoutiqueHeader = ({ boutique }) => {
     setShowImageModal(false);
   }, [previewUrls]);
 
-  // Renderizar fondo del header
   const headerBackgroundStyle = useMemo(() => {
     if (headerImages.length === 0) {
       return {
@@ -301,7 +379,6 @@ const BoutiqueHeader = ({ boutique }) => {
     };
   }, [headerImages, currentSlide, themeColor]);
 
-  // Compartir en redes sociales
   const shareUrl = useMemo(() => window.location.href, []);
   const shareTitle = `Découvrez ${nom_boutique} sur notre marketplace`;
 
@@ -328,7 +405,6 @@ const BoutiqueHeader = ({ boutique }) => {
     window.open(url, '_blank', 'width=600,height=400');
   }, [shareUrl, shareTitle]);
 
-  // Helper para ajustar color
   function adjustColor(color, percent) {
     const num = parseInt(color.replace('#', ''), 16);
     const amt = Math.round(2.55 * percent);
@@ -338,7 +414,6 @@ const BoutiqueHeader = ({ boutique }) => {
     return `#${(0x1000000 + (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 + (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 + (B < 255 ? (B < 1 ? 0 : B) : 255)).toString(16).slice(1)}`;
   }
 
-  // Formatear números (ej: 1.2k, 1.5M)
   const formatNumber = (num) => {
     if (num >= 1000000) {
       return (num / 1000000).toFixed(1) + 'M';
@@ -351,66 +426,36 @@ const BoutiqueHeader = ({ boutique }) => {
 
   return (
     <div className={headerContainer}>
-      {/* Sección hero con fondo - altura reducida en móvil */}
-      <div 
-        className={heroSection} 
-        style={{ 
-          ...headerBackgroundStyle, 
-          minHeight: '200px'
-        }}
-      >
+      <div className={heroSection} style={{ ...headerBackgroundStyle, minHeight: '200px' }}>
         <div className={overlay} />
         
-        {/* Controles del carousel */}
         {headerImages.length > 1 && (
           <>
-            <button
-              onClick={prevSlide}
-              className={`${carouselControl} ${carouselControlLeft}`}
-              aria-label="Image précédente"
-            >
+            <button onClick={prevSlide} className={`${carouselControl} ${carouselControlLeft}`}>
               <FaChevronLeft size={16} />
             </button>
-            <button
-              onClick={nextSlide}
-              className={`${carouselControl} ${carouselControlRight}`}
-              aria-label="Image suivante"
-            >
+            <button onClick={nextSlide} className={`${carouselControl} ${carouselControlRight}`}>
               <FaChevronRight size={16} />
             </button>
-
             <div className={carouselIndicators}>
               {headerImages.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentSlide(index)}
-                  className={`${indicatorDot} ${index === currentSlide ? indicatorDotActive : ''}`}
-                  aria-label={`Aller à l'image ${index + 1}`}
-                />
+                <button key={index} onClick={() => setCurrentSlide(index)} className={`${indicatorDot} ${index === currentSlide ? indicatorDotActive : ''}`} />
               ))}
             </div>
           </>
         )}
 
-        {/* Logo */}
         {logoImage && (
           <div className={logoCorner}>
-            <img
-              src={logoImage.url || logoImage}
-              alt={nom_boutique}
-              loading="lazy"
-            />
+            <img src={logoImage.url || logoImage} alt={nom_boutique} loading="lazy" />
           </div>
         )}
 
-        {/* Contenido principal */}
         <Container className={headerContent}>
           <Row className="align-items-end">
             <Col xs={12}>
               <div className={boutiqueInfo}>
-                <h1 className={boutiqueTitle}>
-                  {nom_boutique}
-                </h1>
+                <h1 className={boutiqueTitle}>{nom_boutique}</h1>
                 {isVerified && (
                   <Badge className={verifiedBadge}>
                     <FaCheckCircle size={10} /> 
@@ -418,31 +463,20 @@ const BoutiqueHeader = ({ boutique }) => {
                   </Badge>
                 )}
               </div>
-              
-              {slogan_boutique && (
-                <p className={slogan}>
-                  {slogan_boutique}
-                </p>
-              )}
-              
+              {slogan_boutique && <p className={slogan}>{slogan_boutique}</p>}
               {description_boutique && (
                 <p className={description}>
                   {description_boutique.substring(0, 100)}
                   {description_boutique.length > 100 && '...'}
                 </p>
               )}
-
               <div className={quickStats}>
                 <Badge className={categoryBadge}>
-                  <FaStore className="me-1" size={10} /> 
-                  <span>{categorie}</span>
+                  <FaStore className="me-1" size={10} /> <span>{categorie}</span>
                 </Badge>
-                
                 <div className={ratingContainer}>
                   <RatingStars rating={stats.notes} />
-                  <span className={ratingCount}>
-                    ({stats.avis})
-                  </span>
+                  <span className={ratingCount}>({stats.avis})</span>
                 </div>
               </div>
             </Col>
@@ -450,70 +484,58 @@ const BoutiqueHeader = ({ boutique }) => {
         </Container>
       </div>
 
-      {/* BARRA DE ACCIONES - Dos filas en móvil */}
       <div className={actionBarMetrics}>
         <Container>
-          {/* Primera fila: métricas + compartir + tres puntos */}
           <Row className="g-2 mb-2">
             <Col xs={12}>
               <div className="d-flex justify-content-between align-items-center">
-                {/* Grupo de métricas */}
                 <div className="d-flex gap-3 gap-md-4">
-                  {/* Like con contador */}
-                  <button 
-                    className={actionButton}
-                    onClick={handleFollow}
-                  >
+                  <button className={actionButton} onClick={handleLike} disabled={loadingLike}>
                     <span className={actionButtonIcon}>
-                      {isFollowing ? <FaHeart className="text-danger" /> : <FaRegHeart />}
+                      {loadingLike ? (
+                        <span className="spinner-border spinner-border-sm" style={{ width: '12px', height: '12px' }} />
+                      ) : isLiked ? (
+                        <FaHeart className="text-danger" />
+                      ) : (
+                        <FaRegHeart />
+                      )}
                     </span>
-                    <span className={actionButtonLabel}>
-                      {isFollowing ? 'Suivi' : 'Suivre'}
-                    </span>
-                    <span className={actionButtonCount}>
-                      {formatNumber(followersCount)}
-                    </span>
+                    <span className={actionButtonLabel}>{loadingLike ? '...' : (isLiked ? 'Aimé' : 'J\'aime')}</span>
+                    <span className={actionButtonCount}>{formatNumber(likesCount)}</span>
                   </button>
 
-                  {/* Productos con contador */}
-                  <div className={actionButton}>
+                  <button className={actionButton} onClick={handleFollow} disabled={loadingFollow}>
                     <span className={actionButtonIcon}>
-                      <FaBoxOpen />
+                      {loadingFollow ? (
+                        <span className="spinner-border spinner-border-sm" style={{ width: '12px', height: '12px' }} />
+                      ) : isFollowing ? (
+                        <FaUserCheck className="text-primary" />
+                      ) : (
+                        <FaUserPlus />
+                      )}
                     </span>
-                    <span className={actionButtonLabel}>
-                      Produits
-                    </span>
-                    <span className={actionButtonCount}>
-                      {formatNumber(stats.produits || 0)}
-                    </span>
+                    <span className={actionButtonLabel}>{loadingFollow ? '...' : (isFollowing ? 'Suivi' : 'Suivre')}</span>
+                    <span className={actionButtonCount}>{formatNumber(followersCount)}</span>
+                  </button>
+
+                  <div className={actionButton}>
+                    <span className={actionButtonIcon}><FaBoxOpen /></span>
+                    <span className={actionButtonLabel}>Produits</span>
+                    <span className={actionButtonCount}>{formatNumber(stats.produits || 0)}</span>
                   </div>
 
-                  {/* Vistas con contador */}
                   <div className={actionButton}>
-                    <span className={actionButtonIcon}>
-                      <FaEye />
-                    </span>
-                    <span className={actionButtonLabel}>
-                      Vues
-                    </span>
-                    <span className={actionButtonCount}>
-                      {formatNumber(stats.vues || 0)}
-                    </span>
+                    <span className={actionButtonIcon}><FaEye /></span>
+                    <span className={actionButtonLabel}>Vues</span>
+                    <span className={actionButtonCount}>{formatNumber(views || 0)}</span>
                   </div>
                 </div>
 
-                {/* Grupo de acciones: compartir y tres puntos */}
                 <div className="d-flex gap-2">
-                  {/* Botón Compartir - solo icono */}
                   <Dropdown>
-                    <Dropdown.Toggle
-                      variant="light"
-                      size="sm"
-                      className={shareIconOnly}
-                    >
+                    <Dropdown.Toggle variant="light" size="sm" className={shareIconOnly}>
                       <FaShare />
                     </Dropdown.Toggle>
-
                     <Dropdown.Menu className={dropdownMenuCustom} align="end">
                       <Dropdown.Item onClick={() => handleShare('facebook')} className={dropdownItem}>
                         <FaFacebook className="text-primary" size={16} /> Facebook
@@ -526,24 +548,16 @@ const BoutiqueHeader = ({ boutique }) => {
                       </Dropdown.Item>
                       <Dropdown.Item onClick={() => handleShare('copy')} className={dropdownItem}>
                         <FaLink size={16} /> Copier le lien
-                        {showShareTooltip && (
-                          <Badge bg="success" className="ms-2">Copié!</Badge>
-                        )}
+                        {showShareTooltip && <Badge bg="success" className="ms-2">Copié!</Badge>}
                       </Dropdown.Item>
                     </Dropdown.Menu>
                   </Dropdown>
 
-                  {/* Icono de tres puntos con acciones adicionales */}
                   {isOwner && (
                     <Dropdown>
-                      <Dropdown.Toggle
-                        variant="light"
-                        size="sm"
-                        className="boutique-actions-button"
-                      >
+                      <Dropdown.Toggle variant="light" size="sm" className="boutique-actions-button">
                         <FaEllipsisV />
                       </Dropdown.Toggle>
-
                       <Dropdown.Menu className={dropdownMenuCustom} align="end">
                         <Dropdown.Header className={dropdownHeader}>
                           <FaCamera className="me-2" /> Gérer la boutique
@@ -561,15 +575,9 @@ const BoutiqueHeader = ({ boutique }) => {
                         {headerImages.length > 0 && (
                           <>
                             <Dropdown.Divider />
-                            <Dropdown.Header className={dropdownHeader}>
-                              Images actuelles
-                            </Dropdown.Header>
+                            <Dropdown.Header className={dropdownHeader}>Images actuelles</Dropdown.Header>
                             {headerImages.map((img, index) => (
-                              <Dropdown.Item 
-                                key={index}
-                                className={dropdownItem}
-                                onClick={() => confirmDelete(index)}
-                              >
+                              <Dropdown.Item key={index} className={dropdownItem} onClick={() => confirmDelete(index)}>
                                 <Image src={img.url || img} className={imageThumbnail} />
                                 <span className="flex-grow-1">Image {index + 1}</span>
                                 <FaTrash className="text-danger" size={12} />
@@ -585,23 +593,15 @@ const BoutiqueHeader = ({ boutique }) => {
             </Col>
           </Row>
 
-          {/* Segunda fila: botón Publier - ocupa todo el ancho */}
           {isOwner && (
             <Row className="g-2">
               <Col xs={12}>
                 <Dropdown className="w-100">
-                  <Dropdown.Toggle
-                    variant="primary"
-                    className={publishButtonFull}
-                    style={{ backgroundColor: themeColor, borderColor: themeColor }}
-                  >
+                  <Dropdown.Toggle variant="primary" className={publishButtonFull} style={{ backgroundColor: themeColor, borderColor: themeColor }}>
                     <FaPlus className="me-2" /> Publier une annonce
                   </Dropdown.Toggle>
-
                   <Dropdown.Menu className={`${dropdownMenuCustom} w-100`}>
-                    <Dropdown.Header className={dropdownHeader}>
-                      <FaBoxOpen className="me-2" /> Nouvelle annonce
-                    </Dropdown.Header>
+                    <Dropdown.Header className={dropdownHeader}><FaBoxOpen className="me-2" /> Nouvelle annonce</Dropdown.Header>
                     <Dropdown.Divider />
                     <Dropdown.Item href={`/boutique/${_id}/products/new`} className={dropdownItem}>
                       <FaFileAlt className="text-primary" size={14} /> Produit standard
@@ -620,25 +620,29 @@ const BoutiqueHeader = ({ boutique }) => {
         </Container>
       </div>
 
-      {/* Modal para gestionar imágenes */}
+      {/* Modal para gestionar imágenes - MEJORADO */}
       <Modal 
         show={showImageModal} 
         onHide={handleCancel} 
         size="lg" 
-        centered
+        centered 
         className={modalCustom}
       >
         <Modal.Header closeButton className={modalHeader}>
           <Modal.Title>
-            <FaImages className="me-2 text-primary" />
+            <FaImages className="me-2 text-primary" /> 
             Gérer les images de fond
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body className={modalBody}>
+        
+        <Modal.Body className={modalBody} style={{ maxHeight: '70vh', overflowY: 'auto' }}>
           {/* Imágenes actuales */}
           {headerImages.length > 0 && (
             <div className="mb-4">
-              <h6 className="mb-3 fw-bold">Images actuelles ({headerImages.length})</h6>
+              <h6 className="mb-3 fw-bold d-flex align-items-center gap-2">
+                <FaCamera size={14} />
+                Images actuelles ({headerImages.length})
+              </h6>
               <div className={imageGrid}>
                 {headerImages.map((img, index) => (
                   <div key={index} className={imageCard}>
@@ -646,6 +650,7 @@ const BoutiqueHeader = ({ boutique }) => {
                       src={img.url || img}
                       alt={`Image ${index + 1}`}
                       loading="lazy"
+                      style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '8px' }}
                     />
                     <button
                       className={deleteImageBtn}
@@ -667,26 +672,39 @@ const BoutiqueHeader = ({ boutique }) => {
 
           {/* Subir nuevas imágenes */}
           <div>
-            <h6 className="mb-3 fw-bold">Ajouter des images</h6>
-            <Form.Group controlId="formFileMultiple" className="mb-3">
-              <Form.Label>Choisir des images (max 5MB par image)</Form.Label>
+            <h6 className="mb-3 fw-bold d-flex align-items-center gap-2">
+              <FaUpload size={14} />
+              Ajouter des images
+            </h6>
+            
+            {/* Área de upload */}
+            <div 
+              className="border rounded-3 p-4 text-center bg-light mb-3"
+              style={{ cursor: 'pointer', borderStyle: 'dashed', transition: 'all 0.2s' }}
+              onClick={() => document.getElementById('headerFileInput')?.click()}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+            >
+              <FaCamera size={32} className="text-muted mb-2" />
+              <p className="mb-1">Cliquez pour sélectionner des images</p>
+              <small className="text-muted">JPG, PNG, GIF, WEBP (max 5MB par image)</small>
               <Form.Control
+                id="headerFileInput"
                 type="file"
                 multiple
                 accept="image/*"
                 onChange={handleFileSelect}
                 disabled={uploading}
-                className="py-2"
+                style={{ display: 'none' }}
               />
-              <Form.Text className="text-muted">
-                Formats acceptés: JPG, PNG, GIF, WEBP
-              </Form.Text>
-            </Form.Group>
+            </div>
 
             {/* Previsualización */}
             {previewUrls.length > 0 && (
               <div className="mt-3">
-                <p className="mb-2 fw-semibold">Prévisualisation ({previewUrls.length} images)</p>
+                <p className="mb-2 fw-semibold small">
+                  Prévisualisation ({previewUrls.length} image{previewUrls.length > 1 ? 's' : ''})
+                </p>
                 <div className={imageGrid}>
                   {previewUrls.map((url, index) => (
                     <div key={index} className={imageCard}>
@@ -694,6 +712,7 @@ const BoutiqueHeader = ({ boutique }) => {
                         src={url}
                         alt={`Preview ${index + 1}`}
                         loading="lazy"
+                        style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '8px' }}
                       />
                     </div>
                   ))}
@@ -702,15 +721,24 @@ const BoutiqueHeader = ({ boutique }) => {
             )}
           </div>
         </Modal.Body>
-        <Modal.Footer className={modalFooter}>
-          <Button variant="secondary" onClick={handleCancel} disabled={uploading}>
+        
+        <Modal.Footer className={modalFooter} style={{ borderTop: '1px solid #dee2e6' }}>
+          <Button 
+            variant="secondary" 
+            onClick={handleCancel} 
+            disabled={uploading}
+          >
             Annuler
           </Button>
           <Button
             variant="primary"
             onClick={handleUpload}
             disabled={selectedFiles.length === 0 || uploading}
-            style={{ backgroundColor: themeColor, borderColor: themeColor }}
+            style={{ 
+              backgroundColor: themeColor, 
+              borderColor: themeColor,
+              minWidth: '140px'
+            }}
           >
             {uploading ? (
               <>

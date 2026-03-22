@@ -7,7 +7,7 @@ export const BOUTIQUE_POST_TYPES = {
   DELETE_BOUTIQUE_PRODUCT:'DELETE_BOUTIQUE_PRODUCT',
   UPDATE_BOUTIQUE_PRODUCT:'UPDATE_BOUTIQUE_PRODUCT',
  
- 
+  GET_BOUTIQUE_POSTS: 'GET_BOUTIQUE_POSTS',
  
   // Products
   GET_BOUTIQUE_PRODUCTS: 'GET_BOUTIQUE_PRODUCTS',
@@ -84,27 +84,32 @@ export const createBoutiquePost = ({
   }
 };
 
-// ============ GET BOUTIQUE POSTS ============
+// redux/actions/boutiquePostAction.js
 export const getBoutiquePosts = (boutiqueId, page = 1, limit = 12) => async (dispatch) => {
   try {
     console.log('📦 Obteniendo posts de la boutique:', { boutiqueId, page, limit });
     
     dispatch({ type: BOUTIQUE_POST_TYPES.LOADING_BOUTIQUE_PRODUCTS, payload: true });
     
-    const params = { page, limit };
-    const res = await getDataAPI(`boutique/${boutiqueId}/posts`, null, params);
+    const res = await getDataAPI(`boutique/${boutiqueId}/posts?page=${page}&limit=${limit}`);
        
-        console.log('✅ Posts recibidos:', res.data);
+    console.log('✅ Posts recibidos:', res.data);
+    
+    const posts = res.data.posts || [];
+    const total = res.data.total || 0;
+    const currentPage = res.data.page || page;
+    const totalPages = res.data.totalPages || Math.ceil(total / limit);
+    const hasMore = currentPage < totalPages;
     
     dispatch({
-      type: BOUTIQUE_POST_TYPES.GET_BOUTIQUE_PRODUCTS,
+      type: BOUTIQUE_POST_TYPES.GET_BOUTIQUE_POSTS,
       payload: {
         boutiqueId,
-        products: res.data.posts || [],
-        total: res.data.total || 0,
-        page: res.data.page || page,
-        totalPages: res.data.totalPages || 1,
-        hasMore: res.data.hasMore || false
+        posts: posts,
+        total: total,
+        page: currentPage,
+        totalPages: totalPages,
+        hasMore: hasMore
       }
     });
     
@@ -121,7 +126,6 @@ export const getBoutiquePosts = (boutiqueId, page = 1, limit = 12) => async (dis
     dispatch({ type: BOUTIQUE_POST_TYPES.LOADING_BOUTIQUE_PRODUCTS, payload: false });
   }
 };
-
 // ============ UPDATE BOUTIQUE POST ============
 export const updateBoutiquePost = ({ 
   boutiqueId, 
