@@ -1,15 +1,17 @@
 // components/boutique/BoutiqueHeader.jsx
-import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Container, Row, Col, Badge, Button, Dropdown, Image, Modal, Form } from 'react-bootstrap';
 import { useSelector, useDispatch } from 'react-redux';
+import { useHistory } from 'react-router-dom';
 import { 
   FaStore, FaEye, FaBoxOpen, FaStar, FaRegStar, 
   FaPlus, FaImages, FaTags, FaFileAlt,
   FaCheckCircle, FaShare, FaHeart, FaRegHeart,
   FaFacebook, FaTwitter, FaWhatsapp, FaLink,
   FaChevronLeft, FaChevronRight, FaCamera, FaTrash,
-  FaUpload, FaTimes, FaPhotoVideo, FaEllipsisV,
-  FaEdit, FaChartLine, FaUserPlus, FaUserCheck
+  FaUpload, FaTimes, FaEllipsisV,
+  FaEdit, FaChartLine, FaUserPlus, FaUserCheck,
+  FaArchive, FaFlag
 } from 'react-icons/fa';
 import { 
   updateBoutiqueHeaderImages,  
@@ -18,8 +20,11 @@ import {
   getBoutiqueFollowers,
   likeBoutique,
   getBoutiqueLikes,
-  incrementBoutiqueView
+  incrementBoutiqueView,
+  deleteBoutique,
+  updateBoutiqueStatus
 } from '../../redux/actions/boutiqueAction';
+import { GLOBALTYPES } from '../../redux/actions/globalTypes';
 import '../../styles/BoutiqueHeader.css';
 
 const RatingStars = React.memo(({ rating = 0 }) => {
@@ -27,7 +32,6 @@ const RatingStars = React.memo(({ rating = 0 }) => {
     const result = [];
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 >= 0.5;
-
     for (let i = 1; i <= 5; i++) {
       if (i <= fullStars) {
         result.push(<FaStar key={i} className="text-warning" size={12} />);
@@ -44,28 +48,26 @@ const RatingStars = React.memo(({ rating = 0 }) => {
     }
     return result;
   }, [rating]);
-
   return <div className="boutique-rating-stars">{stars}</div>;
 });
-
 RatingStars.displayName = 'RatingStars';
 
 const BoutiqueHeader = ({ boutique }) => {
   const dispatch = useDispatch();
-  
+  const history = useHistory();
   const authState = useSelector(state => state.auth);
   const { token, user } = authState || {};
   const isAuthenticated = !!token;
   const isOwner = user?._id === boutique?.user?._id || user?._id === boutique?.user;
- 
+  const isAdmin = user?.role === 'admin';
+
+  // Estados existentes
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [loadingFollow, setLoadingFollow] = useState(false);
-  
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [loadingLike, setLoadingLike] = useState(false);
-  
   const [showShareTooltip, setShowShareTooltip] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
@@ -76,50 +78,12 @@ const BoutiqueHeader = ({ boutique }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [imageToDelete, setImageToDelete] = useState(null);
   const [themeColor, setThemeColor] = useState('#2563eb');
-
-  // Definición de clases CSS
-  const headerContainer = "boutique-header-container";
-  const heroSection = "boutique-hero-section";
-  const overlay = "boutique-overlay";
-  const carouselControl = "boutique-carousel-control";
-  const carouselControlLeft = "boutique-carousel-control-left";
-  const carouselControlRight = "boutique-carousel-control-right";
-  const carouselIndicators = "boutique-carousel-indicators";
-  const indicatorDot = "boutique-indicator-dot";
-  const indicatorDotActive = "boutique-indicator-dot-active";
-  const logoCorner = "boutique-logo-corner";
-  const actionBarMetrics = "boutique-action-bar-metrics";
-  const actionButton = "boutique-action-button";
-  const actionButtonIcon = "boutique-action-button-icon";
-  const actionButtonLabel = "boutique-action-button-label";
-  const actionButtonCount = "boutique-action-button-count";
-  const dropdownMenuCustom = "boutique-dropdown-menu";
-  const dropdownItem = "boutique-dropdown-item";
-  const dropdownHeader = "boutique-dropdown-header";
-  const headerContent = "boutique-header-content";
-  const boutiqueInfo = "boutique-info";
-  const boutiqueTitle = "boutique-title";
-  const verifiedBadge = "boutique-verified-badge";
-  const slogan = "boutique-slogan";
-  const description = "boutique-description";
-  const quickStats = "boutique-quick-stats";
-  const categoryBadge = "boutique-category-badge";
-  const ratingContainer = "boutique-rating-container";
-  const ratingCount = "boutique-rating-count";
-  const actionBar = "boutique-action-bar";
-  const actionBarContent = "boutique-action-bar-content";
-  const actionButtonBar = "boutique-action-button-bar";
-  const imageThumbnail = "boutique-image-thumbnail";
-  const modalCustom = "boutique-modal";
-  const modalHeader = "boutique-modal-header";
-  const modalBody = "boutique-modal-body";
-  const modalFooter = "boutique-modal-footer";
-  const imageGrid = "boutique-image-grid";
-  const imageCard = "boutique-image-card";
-  const deleteImageBtn = "boutique-delete-image-btn";
-  const activeBadge = "boutique-active-badge";
-  const shareIconOnly = "boutique-share-icon-only";
-  const publishButtonFull = "boutique-publish-button-full";
+  
+  // NUEVOS ESTADOS para gestión de boutique
+  const [showDeleteBoutiqueModal, setShowDeleteBoutiqueModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [isDeletingBoutique, setIsDeletingBoutique] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
 
   const reduxBoutique = useSelector(state =>
     state.boutique.boutiques?.find(b => b._id === boutique._id)
@@ -130,658 +94,655 @@ const BoutiqueHeader = ({ boutique }) => {
     _id,
     nom_boutique,
     slogan_boutique,
-    description_boutique,
     header_images = [],
     images = [],
     categorie,
     isVerified,
+    isActive = true,
     stats = { vues: 0, produits: 0, notes: 0, avis: 0, followersCount: 0, likesCount: 0 },
     couleur_theme = '#2563eb',
-    createdAt,
-    views = 0
+    views = 0,
+    proprietaire
   } = currentBoutique;
 
   const logoImage = images.length > 0 ? images[0] : null;
 
-  // Cargar estado de FOLLOW y LIKE
+  // ── efectos ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (_id && isAuthenticated) {
       const loadStatus = async () => {
         try {
-          const followersResult = await dispatch(getBoutiqueFollowers(_id, authState));
-          if (followersResult) {
-            setFollowersCount(followersResult.followersCount || 0);
-            setIsFollowing(followersResult.userFollowing || false);
-          }
-          
-          const likesResult = await dispatch(getBoutiqueLikes(_id, authState));
-          if (likesResult) {
-            setLikesCount(likesResult.likesCount || 0);
-            setIsLiked(likesResult.userLiked || false);
-          }
-        } catch (error) {
-          console.error('Error loading status:', error);
+          const followRes = await dispatch(getBoutiqueFollowers(_id, authState));
+          if (followRes) { setFollowersCount(followRes.followersCount || 0); setIsFollowing(followRes.userFollowing || false); }
+          const likeRes = await dispatch(getBoutiqueLikes(_id, authState));
+          if (likeRes) { setLikesCount(likeRes.likesCount || 0); setIsLiked(likeRes.userLiked || false); }
+        } catch {
           setFollowersCount(stats?.followersCount || 0);
           setLikesCount(stats?.likesCount || 0);
         }
       };
       loadStatus();
-    } else if (!isAuthenticated) {
+    } else {
       setFollowersCount(stats?.followersCount || 0);
       setLikesCount(stats?.likesCount || 0);
       setIsFollowing(false);
       setIsLiked(false);
     }
-  }, [_id, isAuthenticated, dispatch, authState, stats?.followersCount, stats?.likesCount]);
+  }, [_id, isAuthenticated]);
 
-  useEffect(() => {
-    if (header_images && header_images.length > 0) {
-      setHeaderImages(header_images);
-    }
-  }, [header_images]);
-
+  useEffect(() => { if (header_images?.length > 0) setHeaderImages(header_images); }, [header_images]);
   useEffect(() => {
     setThemeColor(couleur_theme);
     document.documentElement.style.setProperty('--theme-color', couleur_theme);
   }, [couleur_theme]);
-
   useEffect(() => {
     if (headerImages.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % headerImages.length);
-    }, 5000);
-    return () => clearInterval(interval);
+    const id = setInterval(() => setCurrentSlide(p => (p + 1) % headerImages.length), 5000);
+    return () => clearInterval(id);
   }, [headerImages.length]);
+  useEffect(() => { if (_id) dispatch(incrementBoutiqueView(_id)); }, [_id]);
 
-  useEffect(() => {
-    if (_id) {
-      dispatch(incrementBoutiqueView(_id));
-    }
-  }, [_id, dispatch]);
+  // ── carousel ─────────────────────────────────────────────────────────────
+  const nextSlide = useCallback(() => setCurrentSlide(p => (p + 1) % headerImages.length), [headerImages.length]);
+  const prevSlide = useCallback(() => setCurrentSlide(p => (p - 1 + headerImages.length) % headerImages.length), [headerImages.length]);
 
-  const nextSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev + 1) % headerImages.length);
-  }, [headerImages.length]);
-
-  const prevSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev - 1 + headerImages.length) % headerImages.length);
-  }, [headerImages.length]);
-
+  // ── acciones sociales ─────────────────────────────────────────────────────
   const handleFollow = async () => {
-    if (!isAuthenticated) {
-      alert('Veuillez vous connecter pour suivre cette boutique');
-      return;
-    }
+    if (!isAuthenticated) { alert('Veuillez vous connecter pour suivre cette boutique'); return; }
     if (loadingFollow) return;
     setLoadingFollow(true);
-    const wasFollowing = isFollowing;
-    const newFollowing = !wasFollowing;
-    const newCount = wasFollowing ? followersCount - 1 : followersCount + 1;
-    setIsFollowing(newFollowing);
-    setFollowersCount(newCount);
+    const prev = isFollowing;
+    setIsFollowing(!prev);
+    setFollowersCount(c => prev ? c - 1 : c + 1);
     try {
-      const result = await dispatch(followBoutique(_id, authState));
-      setIsFollowing(result.following);
-      setFollowersCount(result.followersCount);
-    } catch (error) {
-      console.error('Error following boutique:', error);
-      setIsFollowing(wasFollowing);
-      setFollowersCount(followersCount);
-      alert('Erreur lors de l\'opération. Veuillez réessayer.');
-    } finally {
-      setLoadingFollow(false);
-    }
+      const r = await dispatch(followBoutique(_id, authState));
+      setIsFollowing(r.following);
+      setFollowersCount(r.followersCount);
+    } catch { setIsFollowing(prev); setFollowersCount(c => prev ? c + 1 : c - 1); }
+    finally { setLoadingFollow(false); }
   };
 
   const handleLike = async () => {
-    if (!isAuthenticated) {
-      alert('Veuillez vous connecter pour aimer cette boutique');
-      return;
-    }
+    if (!isAuthenticated) { alert('Veuillez vous connecter pour aimer cette boutique'); return; }
     if (loadingLike) return;
     setLoadingLike(true);
-    const wasLiked = isLiked;
-    const newLiked = !wasLiked;
-    const newCount = wasLiked ? likesCount - 1 : likesCount + 1;
-    setIsLiked(newLiked);
-    setLikesCount(newCount);
+    const prev = isLiked;
+    setIsLiked(!prev);
+    setLikesCount(c => prev ? c - 1 : c + 1);
     try {
-      const result = await dispatch(likeBoutique(_id, authState));
-      setIsLiked(result.liked);
-      setLikesCount(result.likesCount);
-    } catch (error) {
-      console.error('Error liking boutique:', error);
-      setIsLiked(wasLiked);
-      setLikesCount(likesCount);
-      alert('Erreur lors de l\'opération. Veuillez réessayer.');
-    } finally {
-      setLoadingLike(false);
-    }
+      const r = await dispatch(likeBoutique(_id, authState));
+      setIsLiked(r.liked);
+      setLikesCount(r.likesCount);
+    } catch { setIsLiked(prev); setLikesCount(c => prev ? c + 1 : c - 1); }
+    finally { setLoadingLike(false); }
   };
 
-  // Manejar selección de archivos
-  const handleFileSelect = useCallback((e) => {
-    const files = Array.from(e.target.files);
-    const validFiles = files.filter(file => {
-      const isValidType = file.type.startsWith('image/');
-      const isValidSize = file.size <= 5 * 1024 * 1024;
-      if (!isValidType) alert('Format non supporté');
-      if (!isValidSize) alert('Image trop volumineuse (max 5MB)');
-      return isValidType && isValidSize;
-    });
-
-    setSelectedFiles(validFiles);
-    const urls = validFiles.map(file => URL.createObjectURL(file));
-    setPreviewUrls(urls);
-  }, []);
-
-  // Subir imágenes
-  const handleUpload = useCallback(async () => {
-    if (selectedFiles.length === 0) return;
-
-    if (!token) {
-      alert('❌ Vous devez être connecté pour modifier les images');
+  // ── compartir ─────────────────────────────────────────────────────────────
+  const shareUrl = useMemo(() => window.location.href, []);
+  const shareTitle = `Découvrez ${nom_boutique} sur notre marketplace`;
+  const handleShare = useCallback((platform) => {
+    const urls = {
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
+      twitter:  `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareTitle)}`,
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(shareTitle + ' ' + shareUrl)}`,
+    };
+    if (platform === 'copy') {
+      navigator.clipboard.writeText(shareUrl);
+      setShowShareTooltip(true);
+      setTimeout(() => setShowShareTooltip(false), 2000);
       return;
     }
+    if (urls[platform]) window.open(urls[platform], '_blank', 'width=600,height=400');
+  }, [shareUrl, shareTitle]);
 
+  // ── NUEVAS ACCIONES: gestión de boutique ─────────────────────────────────
+  
+  // Editar boutique
+  const handleEditBoutique = useCallback((e) => {
+    e?.stopPropagation();
+    history.push(`/edit-boutique/${_id}`, { 
+      boutiqueData: currentBoutique,
+      isEdit: true 
+    });
+  }, [_id, currentBoutique, history]);
+
+  // Eliminar boutique
+  const handleDeleteBoutique = useCallback(async () => {
+    setIsDeletingBoutique(true);
+    try {
+      await dispatch(deleteBoutique({ 
+        boutiqueId: _id, 
+        auth: authState 
+      }));
+      setShowDeleteBoutiqueModal(false);
+      // Redirigir al home después de eliminar
+      history.push('/');
+      dispatch({ 
+        type: GLOBALTYPES.ALERT, 
+        payload: { success: 'Boutique supprimée avec succès!' }
+      });
+    } catch (error) {
+      console.error('Error deleting boutique:', error);
+      dispatch({ 
+        type: GLOBALTYPES.ALERT, 
+        payload: { error: 'Erreur lors de la suppression' }
+      });
+    } finally {
+      setIsDeletingBoutique(false);
+    }
+  }, [_id, authState, dispatch, history]);
+
+  // Activar/Desactivar boutique
+  const handleToggleActive = useCallback(async () => {
+    try {
+      await dispatch(updateBoutiqueStatus({ 
+        boutiqueId: _id, 
+        statusData: { isActive: !isActive },
+        auth: authState 
+      }));
+      setShowStatusModal(false);
+      dispatch({ 
+        type: GLOBALTYPES.ALERT, 
+        payload: { success: `Boutique ${!isActive ? 'activée' : 'désactivée'} avec succès!` }
+      });
+    } catch (error) {
+      console.error('Error toggling boutique status:', error);
+      dispatch({ 
+        type: GLOBALTYPES.ALERT, 
+        payload: { error: 'Erreur lors du changement de statut' }
+      });
+    }
+  }, [_id, isActive, authState, dispatch]);
+
+  // Signalement de boutique
+  const handleReportBoutique = useCallback(async () => {
+    setShowReportModal(false);
+    dispatch({ 
+      type: GLOBALTYPES.ALERT, 
+      payload: { success: 'Boutique signalée. Merci de votre aide!' }
+    });
+    // Aquí puedes agregar la lógica de API para reportar
+  }, [dispatch]);
+
+  // ── gestión de imágenes (existente) ───────────────────────────────────────
+  const handleFileSelect = useCallback((e) => {
+    const valid = Array.from(e.target.files).filter(f => {
+      if (!f.type.startsWith('image/')) { alert('Format non supporté'); return false; }
+      if (f.size > 5 * 1024 * 1024) { alert('Image trop volumineuse (max 5MB)'); return false; }
+      return true;
+    });
+    setSelectedFiles(valid);
+    setPreviewUrls(valid.map(f => URL.createObjectURL(f)));
+  }, []);
+
+  const handleUpload = useCallback(async () => {
+    if (!selectedFiles.length || !token) return;
     setUploading(true);
     try {
-      const imagesToUpload = selectedFiles.map(file => ({
-        url: URL.createObjectURL(file),
-        name: file.name,
-        isExisting: false,
-        file: file
-      }));
-      
       const result = await dispatch(updateBoutiqueHeaderImages({
         boutiqueId: _id,
-        images: imagesToUpload,
+        images: selectedFiles.map(f => ({ url: URL.createObjectURL(f), name: f.name, isExisting: false, file: f })),
         auth: authState
       }));
-
       if (result?.success) {
         setHeaderImages(result.header_images || result.images || []);
         setShowImageModal(false);
         setSelectedFiles([]);
-        previewUrls.forEach(url => URL.revokeObjectURL(url));
+        previewUrls.forEach(u => URL.revokeObjectURL(u));
         setPreviewUrls([]);
         alert('✅ Images téléchargées avec succès!');
-      } else {
-        throw new Error(result?.error || 'Erreur lors du téléchargement');
-      }
-    } catch (error) {
-      console.error('Error uploading:', error);
-      alert('❌ Erreur: ' + error.message);
-    } finally {
-      setUploading(false);
-    }
+      } else throw new Error(result?.error || 'Erreur');
+    } catch (e) { alert('❌ ' + e.message); }
+    finally { setUploading(false); }
   }, [selectedFiles, token, _id, authState, dispatch, previewUrls]);
 
-  // Eliminar imagen
   const handleDeleteImage = useCallback(async () => {
-    if (imageToDelete === null) return;
-    
-    if (!token) {
-      alert('❌ Vous devez être connecté pour supprimer des images');
-      return;
-    }
-  
+    if (imageToDelete === null || !token) return;
     try {
       const imageId = headerImages[imageToDelete]._id || headerImages[imageToDelete].public_id;
-      
-      const result = await dispatch(deleteBoutiqueHeaderImage({
-        boutiqueId: _id,
-        imageId: imageId,
-        auth: authState
-      }));
-  
-      if (result && result.success) {
-        const newImages = headerImages.filter((_, index) => index !== imageToDelete);
-        setHeaderImages(newImages);
-        if (currentSlide >= newImages.length && newImages.length > 0) {
-          setCurrentSlide(newImages.length - 1);
-        } else if (newImages.length === 0) {
-          setCurrentSlide(0);
-        }
+      const result = await dispatch(deleteBoutiqueHeaderImage({ boutiqueId: _id, imageId, auth: authState }));
+      if (result?.success) {
+        const next = headerImages.filter((_, i) => i !== imageToDelete);
+        setHeaderImages(next);
+        if (currentSlide >= next.length && next.length > 0) setCurrentSlide(next.length - 1);
+        else if (!next.length) setCurrentSlide(0);
         setShowDeleteConfirm(false);
         setImageToDelete(null);
-        alert('✅ Image supprimée avec succès');
+        alert('✅ Image supprimée');
       }
-    } catch (error) {
-      console.error('Error deleting image:', error);
-      alert('Erreur lors de la suppression de l\'image');
-    }
+    } catch { alert('Erreur lors de la suppression'); }
   }, [imageToDelete, token, _id, headerImages, currentSlide, authState, dispatch]);
 
-  const confirmDelete = useCallback((index) => {
-    setImageToDelete(index);
-    setShowDeleteConfirm(true);
-  }, []);
-
+  const confirmDelete = useCallback((i) => { setImageToDelete(i); setShowDeleteConfirm(true); }, []);
   const handleCancel = useCallback(() => {
-    previewUrls.forEach(url => URL.revokeObjectURL(url));
-    setSelectedFiles([]);
-    setPreviewUrls([]);
-    setShowImageModal(false);
+    previewUrls.forEach(u => URL.revokeObjectURL(u));
+    setSelectedFiles([]); setPreviewUrls([]); setShowImageModal(false);
   }, [previewUrls]);
 
-  const headerBackgroundStyle = useMemo(() => {
-    if (headerImages.length === 0) {
-      return {
-        background: `linear-gradient(135deg, ${themeColor} 0%, ${adjustColor(themeColor, 30)} 100%)`
-      };
-    }
-    return {
-      backgroundImage: `url(${headerImages[currentSlide]?.url || headerImages[currentSlide]})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      transition: 'background-image 0.5s ease-in-out'
-    };
-  }, [headerImages, currentSlide, themeColor]);
+  // ── estilos dinámicos ─────────────────────────────────────────────────────
+  const heroStyle = useMemo(() => headerImages.length === 0
+    ? { background: `linear-gradient(135deg, ${themeColor} 0%, ${adjustColor(themeColor, 30)} 100%)` }
+    : { backgroundImage: `url(${headerImages[currentSlide]?.url || headerImages[currentSlide]})`, backgroundSize: 'cover', backgroundPosition: 'center', transition: 'background-image 0.5s ease-in-out' }
+  , [headerImages, currentSlide, themeColor]);
 
-  const shareUrl = useMemo(() => window.location.href, []);
-  const shareTitle = `Découvrez ${nom_boutique} sur notre marketplace`;
-
-  const handleShare = useCallback((platform) => {
-    let url = '';
-    switch(platform) {
-      case 'facebook':
-        url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
-        break;
-      case 'twitter':
-        url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareTitle)}`;
-        break;
-      case 'whatsapp':
-        url = `https://wa.me/?text=${encodeURIComponent(shareTitle + ' ' + shareUrl)}`;
-        break;
-      case 'copy':
-        navigator.clipboard.writeText(shareUrl);
-        setShowShareTooltip(true);
-        setTimeout(() => setShowShareTooltip(false), 2000);
-        return;
-      default:
-        return;
-    }
-    window.open(url, '_blank', 'width=600,height=400');
-  }, [shareUrl, shareTitle]);
-
-  function adjustColor(color, percent) {
-    const num = parseInt(color.replace('#', ''), 16);
-    const amt = Math.round(2.55 * percent);
-    const R = (num >> 16) + amt;
-    const G = ((num >> 8) & 0x00FF) + amt;
-    const B = (num & 0x0000FF) + amt;
-    return `#${(0x1000000 + (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 + (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 + (B < 255 ? (B < 1 ? 0 : B) : 255)).toString(16).slice(1)}`;
+  function adjustColor(color, pct) {
+    const n = parseInt(color.replace('#', ''), 16), a = Math.round(2.55 * pct);
+    const R = Math.min(255, Math.max(0, (n >> 16) + a));
+    const G = Math.min(255, Math.max(0, ((n >> 8) & 0xFF) + a));
+    const B = Math.min(255, Math.max(0, (n & 0xFF) + a));
+    return `#${(0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)}`;
   }
 
-  const formatNumber = (num) => {
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + 'M';
-    }
-    if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'k';
-    }
-    return num.toString();
-  };
+  const fmt = (n) => n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? (n/1e3).toFixed(1)+'k' : String(n);
 
+  // ── render ────────────────────────────────────────────────────────────────
   return (
-    <div className={headerContainer}>
-      <div className={heroSection} style={{ ...headerBackgroundStyle, minHeight: '200px' }}>
-        <div className={overlay} />
-        
+    <div className="bh-container">
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          SECCIÓN HERO (CAROUSEL) — contiene las 4 primeras filas
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className={`bh-hero ${!isActive ? 'bh-hero--inactive' : ''}`} style={heroStyle}>
+        <div className="bh-overlay" />
+
+        {/* Controles del carousel */}
         {headerImages.length > 1 && (
           <>
-            <button onClick={prevSlide} className={`${carouselControl} ${carouselControlLeft}`}>
-              <FaChevronLeft size={16} />
+            <button onClick={prevSlide} className="bh-carousel-btn bh-carousel-btn--left" aria-label="Anterior">
+              <FaChevronLeft size={14} />
             </button>
-            <button onClick={nextSlide} className={`${carouselControl} ${carouselControlRight}`}>
-              <FaChevronRight size={16} />
+            <button onClick={nextSlide} className="bh-carousel-btn bh-carousel-btn--right" aria-label="Siguiente">
+              <FaChevronRight size={14} />
             </button>
-            <div className={carouselIndicators}>
-              {headerImages.map((_, index) => (
-                <button key={index} onClick={() => setCurrentSlide(index)} className={`${indicatorDot} ${index === currentSlide ? indicatorDotActive : ''}`} />
+            <div className="bh-indicators">
+              {headerImages.map((_, i) => (
+                <button key={i} onClick={() => setCurrentSlide(i)}
+                  className={`bh-dot ${i === currentSlide ? 'bh-dot--active' : ''}`} />
               ))}
             </div>
           </>
         )}
 
-        {logoImage && (
-          <div className={logoCorner}>
-            <img src={logoImage.url || logoImage} alt={nom_boutique} loading="lazy" />
-          </div>
-        )}
+        {/* Contenido interno del hero — 4 filas */}
+        <div className="bh-hero-body">
 
-        <Container className={headerContent}>
-          <Row className="align-items-end">
-            <Col xs={12}>
-              <div className={boutiqueInfo}>
-                <h1 className={boutiqueTitle}>{nom_boutique}</h1>
-                {isVerified && (
-                  <Badge className={verifiedBadge}>
-                    <FaCheckCircle size={10} /> 
-                    <span className="d-none d-sm-inline">Vérifiée</span>
-                  </Badge>
-                )}
+          {/* ── FILA 1: Logo + Nombre de la boutique ── */}
+          <div className="bh-row bh-row--name">
+            {logoImage && (
+              <div className="bh-logo">
+                <img src={logoImage.url || logoImage} alt={nom_boutique} loading="lazy" />
               </div>
-              {slogan_boutique && <p className={slogan}>{slogan_boutique}</p>}
-              {description_boutique && (
-                <p className={description}>
-                  {description_boutique.substring(0, 100)}
-                  {description_boutique.length > 100 && '...'}
-                </p>
-              )}
-              <div className={quickStats}>
-                <Badge className={categoryBadge}>
-                  <FaStore className="me-1" size={10} /> <span>{categorie}</span>
+            )}
+            <div className="bh-name-block">
+              <h1 className="bh-title">{nom_boutique}</h1>
+              {isVerified && (
+                <Badge className="bh-verified">
+                  <FaCheckCircle size={10} />
+                  <span className="d-none d-sm-inline ms-1">Vérifiée</span>
                 </Badge>
-                <div className={ratingContainer}>
-                  <RatingStars rating={stats.notes} />
-                  <span className={ratingCount}>({stats.avis})</span>
-                </div>
+              )}
+              {!isActive && (
+                <Badge className="bh-inactive-badge">
+                  <FaArchive size={10} />
+                  <span className="d-none d-sm-inline ms-1">Inactive</span>
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* ── FILA 2: Slogan ── */}
+          {slogan_boutique && (
+            <div className="bh-row bh-row--slogan">
+              <p className="bh-slogan">{slogan_boutique}</p>
+            </div>
+          )}
+
+          {/* ── FILA 3: Categoría + rating ── */}
+          <div className="bh-row bh-row--category">
+            <Badge className="bh-category-badge">
+              <FaStore size={10} className="me-1" />{categorie}
+            </Badge>
+            <div className="bh-rating">
+              <RatingStars rating={stats.notes} />
+              <span className="bh-rating-count">({stats.avis})</span>
+            </div>
+          </div>
+
+          {/* ── FILA 4: Productos · Seguir · Compartir · ⋯ (imágenes) ── */}
+          <div className="bh-row bh-row--actions">
+            {/* Izquierda: contador de productos + botón seguir */}
+            <div className="bh-row-left">
+              {/* Contador de productos */}
+              <div className="bh-stat-pill">
+                <FaBoxOpen size={13} />
+                <span className="bh-stat-value">{fmt(stats.produits || 0)}</span>
+                <span className="bh-stat-label">produits</span>
               </div>
-            </Col>
-          </Row>
-        </Container>
-      </div>
 
-      <div className={actionBarMetrics}>
-        <Container>
-          <Row className="g-2 mb-2">
-            <Col xs={12}>
-              <div className="d-flex justify-content-between align-items-center">
-                <div className="d-flex gap-3 gap-md-4">
-                  <button className={actionButton} onClick={handleLike} disabled={loadingLike}>
-                    <span className={actionButtonIcon}>
-                      {loadingLike ? (
-                        <span className="spinner-border spinner-border-sm" style={{ width: '12px', height: '12px' }} />
-                      ) : isLiked ? (
-                        <FaHeart className="text-danger" />
-                      ) : (
-                        <FaRegHeart />
-                      )}
-                    </span>
-                    <span className={actionButtonLabel}>{loadingLike ? '...' : (isLiked ? 'Aimé' : 'J\'aime')}</span>
-                    <span className={actionButtonCount}>{formatNumber(likesCount)}</span>
-                  </button>
+              {/* Botón Seguir */}
+              <button
+                className={`bh-btn-follow ${isFollowing ? 'bh-btn-follow--active' : ''}`}
+                onClick={handleFollow}
+                disabled={loadingFollow}
+              >
+                {loadingFollow
+                  ? <span className="spinner-border spinner-border-sm" style={{ width: 12, height: 12 }} />
+                  : isFollowing ? <FaUserCheck size={13} /> : <FaUserPlus size={13} />
+                }
+                <span>{loadingFollow ? '...' : isFollowing ? 'Suivi' : 'Suivre'}</span>
+                <span className="bh-btn-count">{fmt(followersCount)}</span>
+              </button>
+            </div>
 
-                  <button className={actionButton} onClick={handleFollow} disabled={loadingFollow}>
-                    <span className={actionButtonIcon}>
-                      {loadingFollow ? (
-                        <span className="spinner-border spinner-border-sm" style={{ width: '12px', height: '12px' }} />
-                      ) : isFollowing ? (
-                        <FaUserCheck className="text-primary" />
-                      ) : (
-                        <FaUserPlus />
-                      )}
-                    </span>
-                    <span className={actionButtonLabel}>{loadingFollow ? '...' : (isFollowing ? 'Suivi' : 'Suivre')}</span>
-                    <span className={actionButtonCount}>{formatNumber(followersCount)}</span>
-                  </button>
+            {/* Derecha: Compartir + ⋯ */}
+            <div className="bh-row-right">
+              {/* Dropdown compartir */}
+              <Dropdown>
+                <Dropdown.Toggle as="button" className="bh-icon-btn" aria-label="Partager">
+                  <FaShare size={14} />
+                </Dropdown.Toggle>
+                <Dropdown.Menu className="bh-dropdown" align="end">
+                  <Dropdown.Item className="bh-dropdown-item" onClick={() => handleShare('facebook')}>
+                    <FaFacebook className="text-primary" size={15} /> Facebook
+                  </Dropdown.Item>
+                  <Dropdown.Item className="bh-dropdown-item" onClick={() => handleShare('twitter')}>
+                    <FaTwitter className="text-info" size={15} /> Twitter
+                  </Dropdown.Item>
+                  <Dropdown.Item className="bh-dropdown-item" onClick={() => handleShare('whatsapp')}>
+                    <FaWhatsapp className="text-success" size={15} /> WhatsApp
+                  </Dropdown.Item>
+                  <Dropdown.Item className="bh-dropdown-item" onClick={() => handleShare('copy')}>
+                    <FaLink size={15} /> Copier le lien
+                    {showShareTooltip && <Badge bg="success" className="ms-2 py-1">Copié!</Badge>}
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown>
 
-                  <div className={actionButton}>
-                    <span className={actionButtonIcon}><FaBoxOpen /></span>
-                    <span className={actionButtonLabel}>Produits</span>
-                    <span className={actionButtonCount}>{formatNumber(stats.produits || 0)}</span>
-                  </div>
-
-                  <div className={actionButton}>
-                    <span className={actionButtonIcon}><FaEye /></span>
-                    <span className={actionButtonLabel}>Vues</span>
-                    <span className={actionButtonCount}>{formatNumber(views || 0)}</span>
-                  </div>
-                </div>
-
-                <div className="d-flex gap-2">
-                  <Dropdown>
-                    <Dropdown.Toggle variant="light" size="sm" className={shareIconOnly}>
-                      <FaShare />
-                    </Dropdown.Toggle>
-                    <Dropdown.Menu className={dropdownMenuCustom} align="end">
-                      <Dropdown.Item onClick={() => handleShare('facebook')} className={dropdownItem}>
-                        <FaFacebook className="text-primary" size={16} /> Facebook
-                      </Dropdown.Item>
-                      <Dropdown.Item onClick={() => handleShare('twitter')} className={dropdownItem}>
-                        <FaTwitter className="text-info" size={16} /> Twitter
-                      </Dropdown.Item>
-                      <Dropdown.Item onClick={() => handleShare('whatsapp')} className={dropdownItem}>
-                        <FaWhatsapp className="text-success" size={16} /> WhatsApp
-                      </Dropdown.Item>
-                      <Dropdown.Item onClick={() => handleShare('copy')} className={dropdownItem}>
-                        <FaLink size={16} /> Copier le lien
-                        {showShareTooltip && <Badge bg="success" className="ms-2">Copié!</Badge>}
-                      </Dropdown.Item>
-                    </Dropdown.Menu>
-                  </Dropdown>
-
-                  {isOwner && (
-                    <Dropdown>
-                      <Dropdown.Toggle variant="light" size="sm" className="boutique-actions-button">
-                        <FaEllipsisV />
-                      </Dropdown.Toggle>
-                      <Dropdown.Menu className={dropdownMenuCustom} align="end">
-                        <Dropdown.Header className={dropdownHeader}>
-                          <FaCamera className="me-2" /> Gérer la boutique
-                        </Dropdown.Header>
-                        <Dropdown.Divider />
-                        <Dropdown.Item onClick={() => setShowImageModal(true)} className={dropdownItem}>
-                          <FaUpload className="text-primary" size={14} /> Changer l'image de fond
-                        </Dropdown.Item>
-                        <Dropdown.Item href={`/boutique/${_id}/edit`} className={dropdownItem}>
-                          <FaEdit className="text-warning" size={14} /> Modifier les infos
-                        </Dropdown.Item>
-                        <Dropdown.Item href={`/boutique/${_id}/dashboard`} className={dropdownItem}>
-                          <FaChartLine className="text-info" size={14} /> Tableau de bord
-                        </Dropdown.Item>
-                        {headerImages.length > 0 && (
-                          <>
-                            <Dropdown.Divider />
-                            <Dropdown.Header className={dropdownHeader}>Images actuelles</Dropdown.Header>
-                            {headerImages.map((img, index) => (
-                              <Dropdown.Item key={index} className={dropdownItem} onClick={() => confirmDelete(index)}>
-                                <Image src={img.url || img} className={imageThumbnail} />
-                                <span className="flex-grow-1">Image {index + 1}</span>
-                                <FaTrash className="text-danger" size={12} />
-                              </Dropdown.Item>
-                            ))}
-                          </>
-                        )}
-                      </Dropdown.Menu>
-                    </Dropdown>
-                  )}
-                </div>
-              </div>
-            </Col>
-          </Row>
-
-          {isOwner && (
-            <Row className="g-2">
-              <Col xs={12}>
-                <Dropdown className="w-100">
-                  <Dropdown.Toggle variant="primary" className={publishButtonFull} style={{ backgroundColor: themeColor, borderColor: themeColor }}>
-                    <FaPlus className="me-2" /> Publier une annonce
+              {/* ⋯ para gestionar imágenes de fondo (solo owner) */}
+              {isOwner && (
+                <Dropdown>
+                  <Dropdown.Toggle as="button" className="bh-icon-btn" aria-label="Options image">
+                    <FaEllipsisV size={14} />
                   </Dropdown.Toggle>
-                  <Dropdown.Menu className={`${dropdownMenuCustom} w-100`}>
-                    <Dropdown.Header className={dropdownHeader}><FaBoxOpen className="me-2" /> Nouvelle annonce</Dropdown.Header>
+                  <Dropdown.Menu className="bh-dropdown" align="end">
+                    <Dropdown.Header className="bh-dropdown-header">
+                      <FaCamera size={12} className="me-2" />Fond de l'image
+                    </Dropdown.Header>
                     <Dropdown.Divider />
-                    <Dropdown.Item href={`/boutique/${_id}/products/new`} className={dropdownItem}>
-                      <FaFileAlt className="text-primary" size={14} /> Produit standard
+                    <Dropdown.Item className="bh-dropdown-item" onClick={() => setShowImageModal(true)}>
+                      <FaUpload className="text-primary" size={13} /> Ajouter des images
                     </Dropdown.Item>
-                    <Dropdown.Item href={`/boutique/${_id}/products/new?type=promo`} className={dropdownItem}>
-                      <FaTags className="text-success" size={14} /> Promotion
-                    </Dropdown.Item>
-                    <Dropdown.Item href={`/boutique/${_id}/gallery/new`} className={dropdownItem}>
-                      <FaImages className="text-warning" size={14} /> Album photo
-                    </Dropdown.Item>
+                    {headerImages.length > 0 && (
+                      <>
+                        <Dropdown.Divider />
+                        <Dropdown.Header className="bh-dropdown-header">Images actuelles</Dropdown.Header>
+                        {headerImages.map((img, i) => (
+                          <Dropdown.Item key={i} className="bh-dropdown-item bh-dropdown-item--img" onClick={() => confirmDelete(i)}>
+                            <img src={img.url || img} className="bh-thumb" alt={`img ${i+1}`} />
+                            <span className="flex-grow-1">Image {i + 1}</span>
+                            <FaTrash className="text-danger" size={11} />
+                          </Dropdown.Item>
+                        ))}
+                      </>
+                    )}
                   </Dropdown.Menu>
                 </Dropdown>
-              </Col>
-            </Row>
+              )}
+            </div>
+          </div>
+
+        </div>{/* /bh-hero-body */}
+      </div>{/* /bh-hero */}
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          FILA 5 — fuera del carousel: Vistas · Likes · ⋯ acciones owner
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="bh-bar">
+        <Container fluid className="bh-bar-inner">
+
+          {/* Métricas: Vistas + Likes */}
+          <div className="bh-bar-metrics">
+            {/* Vistas */}
+            <div className="bh-metric">
+              <FaEye size={15} className="bh-metric-icon" />
+              <span className="bh-metric-value">{fmt(views || 0)}</span>
+              <span className="bh-metric-label">vues</span>
+            </div>
+
+            {/* Likes */}
+            <button
+              className={`bh-metric bh-metric--btn ${isLiked ? 'bh-metric--liked' : ''}`}
+              onClick={handleLike}
+              disabled={loadingLike}
+            >
+              {loadingLike
+                ? <span className="spinner-border spinner-border-sm bh-metric-icon" style={{ width: 13, height: 13 }} />
+                : isLiked
+                  ? <FaHeart size={15} className="bh-metric-icon" />
+                  : <FaRegHeart size={15} className="bh-metric-icon" />
+              }
+              <span className="bh-metric-value">{fmt(likesCount)}</span>
+              <span className="bh-metric-label">{isLiked ? 'aimé' : "j'aime"}</span>
+            </button>
+          </div>
+
+          {/* Acciones del owner o admin */}
+          {(isOwner || isAdmin) ? (
+            <div className="bh-bar-actions">
+              {/* Botón publicar */}
+              <Dropdown>
+                <Dropdown.Toggle
+                  className="bh-btn-publish"
+                  style={{ backgroundColor: themeColor, borderColor: themeColor }}
+                >
+                  <FaPlus size={13} className="me-2" />
+                  <span>Publier</span>
+                </Dropdown.Toggle>
+                <Dropdown.Menu className="bh-dropdown" align="end">
+                  <Dropdown.Header className="bh-dropdown-header">
+                    <FaBoxOpen size={12} className="me-2" />Nouvelle annonce
+                  </Dropdown.Header>
+                  <Dropdown.Divider />
+                  <Dropdown.Item href={`/boutique/${_id}/products/new`} className="bh-dropdown-item">
+                    <FaFileAlt className="text-primary" size={13} /> Produit standard
+                  </Dropdown.Item>
+                  <Dropdown.Item href={`/boutique/${_id}/products/new?type=promo`} className="bh-dropdown-item">
+                    <FaTags className="text-success" size={13} /> Promotion
+                  </Dropdown.Item>
+                  <Dropdown.Item href={`/boutique/${_id}/gallery/new`} className="bh-dropdown-item">
+                    <FaImages className="text-warning" size={13} /> Album photo
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown>
+
+              {/* ⋯ Acciones de gestión de la boutique */}
+              <Dropdown>
+                <Dropdown.Toggle as="button" className="bh-icon-btn bh-icon-btn--dark" aria-label="Plus d'actions">
+                  <FaEllipsisV size={14} />
+                </Dropdown.Toggle>
+                <Dropdown.Menu className="bh-dropdown" align="end">
+                  <Dropdown.Header className="bh-dropdown-header">Gérer la boutique</Dropdown.Header>
+                  <Dropdown.Divider />
+                  <Dropdown.Item onClick={handleEditBoutique} className="bh-dropdown-item">
+                    <FaEdit className="text-warning" size={13} /> Modifier les infos
+                  </Dropdown.Item>
+                  <Dropdown.Item href={`/boutique/${_id}/dashboard`} className="bh-dropdown-item">
+                    <FaChartLine className="text-info" size={13} /> Tableau de bord
+                  </Dropdown.Item>
+                  {(isOwner || isAdmin) && (
+                    <Dropdown.Item onClick={() => setShowStatusModal(true)} className="bh-dropdown-item">
+                      <FaArchive className="text-secondary" size={13} /> 
+                      {isActive ? 'Désactiver la boutique' : 'Activer la boutique'}
+                    </Dropdown.Item>
+                  )}
+                  {(isOwner || isAdmin) && (
+                    <Dropdown.Divider />
+                  )}
+                  {(isOwner || isAdmin) && (
+                    <Dropdown.Item 
+                      onClick={() => setShowDeleteBoutiqueModal(true)} 
+                      className="bh-dropdown-item text-danger"
+                    >
+                      <FaTrash size={13} /> Supprimer la boutique
+                    </Dropdown.Item>
+                  )}
+                </Dropdown.Menu>
+              </Dropdown>
+            </div>
+          ) : (
+            // Botón de reporte para usuarios que no son owner
+            <div className="bh-bar-actions">
+              <Button
+                variant="link"
+                className="bh-report-btn"
+                onClick={() => setShowReportModal(true)}
+              >
+                <FaFlag size={16} />
+                <span className="ms-2 d-none d-sm-inline">Signaler</span>
+              </Button>
+            </div>
           )}
+
         </Container>
       </div>
 
-      {/* Modal para gestionar imágenes - MEJORADO */}
-      <Modal 
-        show={showImageModal} 
-        onHide={handleCancel} 
-        size="lg" 
-        centered 
-        className={modalCustom}
-      >
-        <Modal.Header closeButton className={modalHeader}>
-          <Modal.Title>
-            <FaImages className="me-2 text-primary" /> 
-            Gérer les images de fond
-          </Modal.Title>
+      {/* ═══ MODALES ═══ */}
+
+      {/* Modal gestión de imágenes */}
+      <Modal show={showImageModal} onHide={handleCancel} size="lg" centered className="bh-modal">
+        <Modal.Header closeButton className="bh-modal-header">
+          <Modal.Title><FaImages className="me-2 text-primary" />Gérer les images de fond</Modal.Title>
         </Modal.Header>
-        
-        <Modal.Body className={modalBody} style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-          {/* Imágenes actuales */}
+        <Modal.Body className="bh-modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
           {headerImages.length > 0 && (
             <div className="mb-4">
-              <h6 className="mb-3 fw-bold d-flex align-items-center gap-2">
-                <FaCamera size={14} />
-                Images actuelles ({headerImages.length})
-              </h6>
-              <div className={imageGrid}>
-                {headerImages.map((img, index) => (
-                  <div key={index} className={imageCard}>
-                    <img
-                      src={img.url || img}
-                      alt={`Image ${index + 1}`}
-                      loading="lazy"
-                      style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '8px' }}
-                    />
-                    <button
-                      className={deleteImageBtn}
-                      onClick={() => confirmDelete(index)}
-                      aria-label="Supprimer"
-                    >
-                      <FaTimes size={12} />
-                    </button>
-                    {index === currentSlide && (
-                      <span className={activeBadge}>
-                        Active
-                      </span>
-                    )}
+              <h6 className="mb-3 fw-bold"><FaCamera size={13} className="me-2" />Images actuelles ({headerImages.length})</h6>
+              <div className="bh-image-grid">
+                {headerImages.map((img, i) => (
+                  <div key={i} className="bh-image-card">
+                    <img src={img.url || img} alt={`img ${i+1}`} loading="lazy" />
+                    <button className="bh-delete-btn" onClick={() => confirmDelete(i)}><FaTimes size={11} /></button>
+                    {i === currentSlide && <span className="bh-active-badge">Active</span>}
                   </div>
                 ))}
               </div>
             </div>
           )}
-
-          {/* Subir nuevas imágenes */}
           <div>
-            <h6 className="mb-3 fw-bold d-flex align-items-center gap-2">
-              <FaUpload size={14} />
-              Ajouter des images
-            </h6>
-            
-            {/* Área de upload */}
-            <div 
-              className="border rounded-3 p-4 text-center bg-light mb-3"
-              style={{ cursor: 'pointer', borderStyle: 'dashed', transition: 'all 0.2s' }}
-              onClick={() => document.getElementById('headerFileInput')?.click()}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-            >
-              <FaCamera size={32} className="text-muted mb-2" />
-              <p className="mb-1">Cliquez pour sélectionner des images</p>
-              <small className="text-muted">JPG, PNG, GIF, WEBP (max 5MB par image)</small>
-              <Form.Control
-                id="headerFileInput"
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handleFileSelect}
-                disabled={uploading}
-                style={{ display: 'none' }}
-              />
+            <h6 className="mb-3 fw-bold"><FaUpload size={13} className="me-2" />Ajouter des images</h6>
+            <div className="bh-upload-zone" onClick={() => document.getElementById('bhFileInput')?.click()}>
+              <FaCamera size={28} className="text-muted mb-2" />
+              <p className="mb-1 small">Cliquez pour sélectionner</p>
+              <small className="text-muted">JPG, PNG, GIF, WEBP — max 5 MB</small>
+              <Form.Control id="bhFileInput" type="file" multiple accept="image/*" onChange={handleFileSelect} disabled={uploading} style={{ display: 'none' }} />
             </div>
-
-            {/* Previsualización */}
             {previewUrls.length > 0 && (
               <div className="mt-3">
-                <p className="mb-2 fw-semibold small">
-                  Prévisualisation ({previewUrls.length} image{previewUrls.length > 1 ? 's' : ''})
-                </p>
-                <div className={imageGrid}>
-                  {previewUrls.map((url, index) => (
-                    <div key={index} className={imageCard}>
-                      <img
-                        src={url}
-                        alt={`Preview ${index + 1}`}
-                        loading="lazy"
-                        style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '8px' }}
-                      />
-                    </div>
+                <p className="mb-2 small fw-semibold">Prévisualisation ({previewUrls.length})</p>
+                <div className="bh-image-grid">
+                  {previewUrls.map((u, i) => (
+                    <div key={i} className="bh-image-card"><img src={u} alt={`preview ${i+1}`} loading="lazy" /></div>
                   ))}
                 </div>
               </div>
             )}
           </div>
         </Modal.Body>
-        
-        <Modal.Footer className={modalFooter} style={{ borderTop: '1px solid #dee2e6' }}>
-          <Button 
-            variant="secondary" 
-            onClick={handleCancel} 
-            disabled={uploading}
-          >
-            Annuler
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleUpload}
-            disabled={selectedFiles.length === 0 || uploading}
-            style={{ 
-              backgroundColor: themeColor, 
-              borderColor: themeColor,
-              minWidth: '140px'
-            }}
-          >
-            {uploading ? (
-              <>
-                <span className="spinner-border spinner-border-sm me-2" />
-                Téléchargement...
-              </>
-            ) : (
-              <>
-                <FaUpload className="me-2" />
-                Télécharger {selectedFiles.length > 0 ? `(${selectedFiles.length})` : ''}
-              </>
-            )}
+        <Modal.Footer className="bh-modal-footer">
+          <Button variant="secondary" onClick={handleCancel} disabled={uploading}>Annuler</Button>
+          <Button variant="primary" onClick={handleUpload} disabled={!selectedFiles.length || uploading}
+            style={{ backgroundColor: themeColor, borderColor: themeColor, minWidth: 140 }}>
+            {uploading
+              ? <><span className="spinner-border spinner-border-sm me-2" />Téléchargement...</>
+              : <><FaUpload className="me-2" />Télécharger {selectedFiles.length > 0 && `(${selectedFiles.length})`}</>
+            }
           </Button>
         </Modal.Footer>
       </Modal>
 
-      {/* Modal de confirmación para eliminar */}
-      <Modal 
-        show={showDeleteConfirm} 
-        onHide={() => setShowDeleteConfirm(false)} 
-        centered 
-        size="sm"
-        className={modalCustom}
-      >
-        <Modal.Header closeButton className={modalHeader}>
-          <Modal.Title className="text-danger">
-            <FaTrash className="me-2" />
-            Confirmer la suppression
-          </Modal.Title>
+      {/* Modal confirmar eliminación de imagen */}
+      <Modal show={showDeleteConfirm} onHide={() => setShowDeleteConfirm(false)} centered size="sm" className="bh-modal">
+        <Modal.Header closeButton className="bh-modal-header">
+          <Modal.Title className="text-danger"><FaTrash className="me-2" />Confirmer la suppression</Modal.Title>
         </Modal.Header>
-        <Modal.Body className={modalBody}>
+        <Modal.Body className="bh-modal-body">
           <p>Voulez-vous vraiment supprimer cette image ?</p>
           <p className="text-muted small mb-0">Cette action est irréversible.</p>
         </Modal.Body>
-        <Modal.Footer className={modalFooter}>
-          <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(false)}>
-            Annuler
-          </Button>
-          <Button variant="danger" size="sm" onClick={handleDeleteImage}>
-            Supprimer
+        <Modal.Footer className="bh-modal-footer">
+          <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(false)}>Annuler</Button>
+          <Button variant="danger" size="sm" onClick={handleDeleteImage}>Supprimer</Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* NUEVO MODAL: Confirmar eliminación de boutique */}
+      <Modal show={showDeleteBoutiqueModal} onHide={() => setShowDeleteBoutiqueModal(false)} centered className="bh-modal">
+        <Modal.Header closeButton className="bh-modal-header">
+          <Modal.Title className="text-danger"><FaTrash className="me-2" />Supprimer la boutique</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="bh-modal-body">
+          <p>Êtes-vous sûr de vouloir supprimer la boutique <strong>{nom_boutique}</strong> ?</p>
+          <p className="text-danger small">Cette action est irréversible et supprimera tous les produits associés.</p>
+        </Modal.Body>
+        <Modal.Footer className="bh-modal-footer">
+          <Button variant="secondary" onClick={() => setShowDeleteBoutiqueModal(false)}>Annuler</Button>
+          <Button 
+            variant="danger" 
+            onClick={handleDeleteBoutique}
+            disabled={isDeletingBoutique}
+          >
+            {isDeletingBoutique ? 'Suppression...' : 'Supprimer'}
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* NUEVO MODAL: Confirmar cambio de estado (activar/desactivar) */}
+      <Modal show={showStatusModal} onHide={() => setShowStatusModal(false)} centered className="bh-modal">
+        <Modal.Header closeButton className="bh-modal-header">
+          <Modal.Title><FaArchive className="me-2" />{isActive ? 'Désactiver' : 'Activer'} la boutique</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="bh-modal-body">
+          <p>Êtes-vous sûr de vouloir {isActive ? 'désactiver' : 'activer'} la boutique <strong>{nom_boutique}</strong> ?</p>
+          {isActive ? (
+            <p className="text-warning small">La boutique ne sera plus visible par les utilisateurs.</p>
+          ) : (
+            <p className="text-success small">La boutique sera à nouveau visible par les utilisateurs.</p>
+          )}
+        </Modal.Body>
+        <Modal.Footer className="bh-modal-footer">
+          <Button variant="secondary" onClick={() => setShowStatusModal(false)}>Annuler</Button>
+          <Button 
+            variant={isActive ? 'warning' : 'success'} 
+            onClick={handleToggleActive}
+          >
+            {isActive ? 'Désactiver' : 'Activer'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* NUEVO MODAL: Signalement de boutique */}
+      <Modal show={showReportModal} onHide={() => setShowReportModal(false)} centered className="bh-modal">
+        <Modal.Header closeButton className="bh-modal-header">
+          <Modal.Title><FaFlag className="me-2" />Signaler cette boutique</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="bh-modal-body">
+          <p>Voulez-vous signaler la boutique <strong>{nom_boutique}</strong> ?</p>
+          <Form.Group>
+            <Form.Label>Raison du signalement</Form.Label>
+            <Form.Select id="reportReason">
+              <option>Contenu inapproprié</option>
+              <option>Boutique frauduleuse</option>
+              <option>Spam ou publicité</option>
+              <option>Autre raison</option>
+            </Form.Select>
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer className="bh-modal-footer">
+          <Button variant="secondary" onClick={() => setShowReportModal(false)}>Annuler</Button>
+          <Button variant="warning" onClick={handleReportBoutique}>Signaler</Button>
+        </Modal.Footer>
+      </Modal>
+
     </div>
   );
 };
