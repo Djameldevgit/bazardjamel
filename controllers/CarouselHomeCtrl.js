@@ -1,5 +1,5 @@
 const CarouselImage = require('../models/CarouselImageModel');
-
+ 
 // ================= HELPERS =================
 
 // Manejo de errores centralizado

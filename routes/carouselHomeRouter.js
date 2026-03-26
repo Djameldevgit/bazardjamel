@@ -1,5 +1,6 @@
  
 const router = require('express').Router()
+ 
 const carouselHomeCtrl = require('../controllers/carouselHomeCtrl');
 const auth = require('../middleware/auth')
 // Rutas públicas
