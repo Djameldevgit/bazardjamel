@@ -1,9 +1,11 @@
  
 const router = require('express').Router()
  
+ 
 const carouselHomeCtrl = require('../controllers/carouselHomeCtrl');
-const auth = require('../middleware/auth')
-// Rutas públicas
+const auth = require('../middleware/auth');
+
+// El resto del código igual...
 router.get('/carousel/home', carouselHomeCtrl.getHomeCarousel);
 
 // Rutas protegidas (solo admin)
