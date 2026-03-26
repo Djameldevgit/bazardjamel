@@ -13,12 +13,6 @@ const path = require('path')
 const cloudinary = require('cloudinary').v2;
 
  
-cloudinary.config({
-    cloud_name: 'dfjipgj2o',
-    api_key: '213981915435275',
-    api_secret: 'wv_IiCM9zzhdiWDNXXo8HZi7wX4'
-});
-console.log('☁️ Cloudinary configurado correctamente');
 
 const app = express()
 app.use(express.json())
