@@ -63,7 +63,8 @@ app.use('/api/forms', require('./routes/formRouter'));
 app.use('/api', require('./routes/privacysettingsRouter'));
 app.use("/api", require("./routes/settingsRouter"));
 app.use('/api', require('./routes/boutiqueRouter'));
-app.use('/api', require('./routes/boutiquePostRouter'));
+app.use('/api', require('./routes/boutiqueProductRouter'));
+app.use('/api', require('./routes/carouselHomeRouter'));
 //setInterval(autoUnblockUsers, 5 * 60 * 1000);
 
 const URI = process.env.MONGODB_URI;

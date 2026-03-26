@@ -1,31 +1,32 @@
 // src/pages/boutique/CreateBoutiqueProductPage.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useHistory, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Container, Row, Col, Card, Button, Alert, Spinner, Form } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaStore, FaArrowLeft,  FaMapMarkerAlt, FaPhone, FaEnvelope, FaInfoCircle, FaEdit } from 'react-icons/fa';
+import { FaStore, FaArrowLeft, FaMapMarkerAlt, FaPhone, FaEnvelope, FaEdit } from 'react-icons/fa';
 
 import { getBoutique } from '../../redux/actions/boutiqueAction';
-import { createBoutiquePost, updateBoutiquePost } from '../../redux/actions/boutiquePostAction';
+import { createBoutiqueProduct, updateBoutiqueProduct } from '../../redux/actions/boutiqueProductAction';
 import { getCategoryTree } from '../../redux/actions/categoryAction';
 
-// Componentes auxiliares
 import BoutiqueCategoryDisplay from '../../components/CATEGORIES/BoutiqueCategoryDisplay';
-import ImagesStep from '../../components/CATEGORIES/camposComun/ImagesStep';
+import ImagesStep from './ImagesStep';
 
 const CreateBoutiqueProductPage = () => {
-  const { boutiqueId, postId } = useParams();
+  const { boutiqueId, productId } = useParams();
   const history = useHistory();
   const location = useLocation();
   const dispatch = useDispatch();
-  const { auth } = useSelector(state => state);
-  const { currentBoutique, loading } = useSelector(state => state.boutique);
-  const { categoryTree, loading: categoryLoading } = useSelector(state => state.category);
+  
+  // 🔥 FORMA CORRECTA Y SIMPLE
+  const auth = useSelector(state => state.auth);
+  const { currentBoutique, loading } = useSelector(state => state.boutique || {});
+  const { categoryTree, loading: categoryLoading } = useSelector(state => state.category || {});
 
-  // Detectar si es modo edición
-  const isEdit = location.state?.isEdit || false;
-  const postToEdit = location.state?.postData || null;
+  const isEdit = location.state?.isEdit === true || !!productId;
+  const productToEdit = location.state?.productData || location.state?.postData || null;
 
   // Estados del formulario
   const [currentStep, setCurrentStep] = useState(1);
@@ -52,45 +53,52 @@ const CreateBoutiqueProductPage = () => {
 
   // Log para depuración
   useEffect(() => {
-    console.log('📝 Mode:', isEdit ? 'Édition' : 'Création');
-    if (isEdit) {
-      console.log('📦 Post à éditer:', postToEdit);
-    }
-  }, [isEdit, postToEdit]);
+    console.log('📝 CreateBoutiqueProductPage - Debug:', {
+      isEdit,
+      productId,
+      boutiqueId,
+      hasProductToEdit: !!productToEdit,
+      hasAuth: !!auth,
+      hasToken: !!auth?.token,
+      userId: auth?.user?._id,
+      locationState: location.state
+    });
+  }, [isEdit, productId, boutiqueId, productToEdit, auth, location]);
 
-  // Cargar datos de la boutique y árbol de categorías
+  // Cargar datos
   useEffect(() => {
     if (boutiqueId) {
+      console.log('🔄 Cargando boutique:', boutiqueId);
       dispatch(getBoutique(boutiqueId));
     }
+    console.log('🔄 Cargando árbol de categorías');
     dispatch(getCategoryTree());
   }, [dispatch, boutiqueId]);
 
-  // Cargar datos del post en modo edición
+  // Cargar datos del producto en modo edición
   useEffect(() => {
-    if (isEdit && postToEdit) {
-      console.log('🔄 Chargement des données du post en édition');
+    if (isEdit && productToEdit) {
+      console.log('✅ Cargando producto para edición:', productToEdit);
       
       setFormData({
-        title: postToEdit.title || '',
-        description: postToEdit.description || '',
-        price: postToEdit.price || '',
-        etat: postToEdit.etat || 'neuf',
-        wilaya: postToEdit.wilaya || '',
-        commune: postToEdit.commune || '',
-        address: postToEdit.address || '',
-        phone: postToEdit.phone || '',
-        email: postToEdit.email || '',
-        categorie: postToEdit.categorie || '',
-        subCategory: postToEdit.subCategory || '',
-        articleType: postToEdit.articleType || ''
+        title: productToEdit.title || '',
+        description: productToEdit.description || '',
+        price: productToEdit.price || '',
+        etat: productToEdit.etat || 'neuf',
+        wilaya: productToEdit.wilaya || '',
+        commune: productToEdit.commune || '',
+        address: productToEdit.address || '',
+        phone: productToEdit.phone || '',
+        email: productToEdit.email || '',
+        categorie: productToEdit.categorie || '',
+        subCategory: productToEdit.subCategory || '',
+        articleType: productToEdit.articleType || ''
       });
 
-      setSpecificData(postToEdit.categorySpecificData || {});
+      setSpecificData(productToEdit.categorySpecificData || {});
 
-      // Cargar imágenes existentes
-      if (postToEdit.images && postToEdit.images.length > 0) {
-        const existingImages = postToEdit.images.map((img, index) => ({
+      if (productToEdit.images && productToEdit.images.length > 0) {
+        const existingImages = productToEdit.images.map((img, index) => ({
           url: img.url || img,
           public_id: img.public_id || `existing_${index}`,
           isExisting: true
@@ -98,14 +106,14 @@ const CreateBoutiqueProductPage = () => {
         setImages(existingImages);
       }
 
-      // Avanzar al paso 2 después de cargar datos
       setCurrentStep(2);
     }
-  }, [isEdit, postToEdit]);
+  }, [isEdit, productToEdit]);
 
-  // Cuando se carga la boutique, precargar sus categorías y datos de contacto
+  // Precargar datos de la boutique para creación
   useEffect(() => {
-    if (currentBoutique && !isEdit) {
+    if (currentBoutique && !isEdit && !formData.categorie) {
+      console.log('🏪 Precargando datos de la boutique:', currentBoutique);
       setFormData(prev => ({
         ...prev,
         categorie: currentBoutique.categorie || '',
@@ -120,7 +128,7 @@ const CreateBoutiqueProductPage = () => {
     }
   }, [currentBoutique, isEdit]);
 
-  // Función para buscar campos dinámicos según articleType
+  // Función para campos dinámicos
   const loadDynamicFieldsForArticle = (articleSlug) => {
     if (!categoryTree || categoryTree.length === 0) return;
 
@@ -142,17 +150,17 @@ const CreateBoutiqueProductPage = () => {
     };
 
     const fields = findArticleFields(categoryTree);
+    console.log('📋 Campos dinámicos cargados:', fields);
     setDynamicFields(fields);
   };
 
-  // Cuando cambia articleType, cargar campos dinámicos
   useEffect(() => {
     if (formData.articleType) {
       loadDynamicFieldsForArticle(formData.articleType);
     }
   }, [formData.articleType, categoryTree]);
 
-  // Obtener tipos de artículo disponibles para la subcategoría
+  // Obtener tipos de artículo
   useEffect(() => {
     if (formData.subCategory && categoryTree) {
       const findArticleTypes = () => {
@@ -172,15 +180,15 @@ const CreateBoutiqueProductPage = () => {
         return [];
       };
       
-      setArticleTypes(findArticleTypes());
+      const types = findArticleTypes();
+      console.log('🏷️ Tipos de artículo disponibles:', types);
+      setArticleTypes(types);
     }
   }, [formData.subCategory, categoryTree]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    const val = type === 'checkbox' ? checked : value;
-
-    setFormData(prev => ({ ...prev, [name]: val }));
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const handleSpecificFieldChange = (e) => {
@@ -215,9 +223,22 @@ const CreateBoutiqueProductPage = () => {
     }
   };
 
+  // 🔥 HANDLE SUBMIT SIMPLIFICADO
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    e.stopPropagation();
+    
+    console.log('🚀 handleSubmit ejecutado');
+    console.log('🔑 Auth disponible:', !!auth?.token);
+    console.log('👤 User ID:', auth?.user?._id);
+    
+    // Verificar autenticación
+    if (!auth || !auth.token) {
+      console.error('❌ No hay token de autenticación');
+      showAlertMessage('Veuillez vous reconnecter pour ajouter/modifier un produit', 'danger');
+      return;
+    }
+    
     if (!validateStep()) {
       return showAlertMessage("Veuillez remplir tous les champs requis.", "warning");
     }
@@ -225,38 +246,44 @@ const CreateBoutiqueProductPage = () => {
     setIsSubmitting(true);
 
     try {
-      const postContent = {
+      const productContent = {
         ...formData,
         categorySpecificData: specificData
       };
 
-      if (isEdit && postId) {
-        // Mode édition
-        console.log('📝 Mise à jour du produit:', postId);
-        await dispatch(updateBoutiquePost({
+      console.log('📦 Enviando producto...', productContent);
+
+      if (isEdit && productId) {
+        console.log('📝 Mise à jour du produit:', productId);
+        await dispatch(updateBoutiqueProduct({
           boutiqueId,
-          postId,
-          postData: postContent,
+          productId: productId,
+          productData: productContent,
           images,
-          auth
+          auth  // 🔥 PASAR AUTH DIRECTAMENTE
         }));
         showAlertMessage("✅ Produit mis à jour avec succès!", "success");
       } else {
-        // Mode création
         console.log('➕ Création d\'un nouveau produit');
-        await dispatch(createBoutiquePost({
+        const result = await dispatch(createBoutiqueProduct({
           boutiqueId,
-          postData: postContent,
+          productData: productContent,
           images,
-          auth
+          auth  // 🔥 PASAR AUTH DIRECTAMENTE
         }));
+        console.log('✅ Producto creado exitosamente:', result);
         showAlertMessage("✅ Produit ajouté à la boutique avec succès!", "success");
       }
       
-      setTimeout(() => history.push(`/boutique/${boutiqueId}`), 1500);
+      setTimeout(() => {
+        console.log('⏳ Redirigiendo a:', `/boutique/${boutiqueId}`);
+        history.push(`/boutique/${boutiqueId}`);
+      }, 1500);
 
     } catch (err) {
-      showAlertMessage(err.response?.data?.message || err.message, "danger");
+      console.error('❌ Error en submit:', err);
+      console.error('❌ Detalles:', err.response?.data);
+      showAlertMessage(err.response?.data?.message || err.message || "Erreur lors de l'opération", "danger");
     } finally {
       setIsSubmitting(false);
     }
@@ -266,11 +293,7 @@ const CreateBoutiqueProductPage = () => {
     switch(currentStep) {
       case 1:
         return (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-          >
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <h5 className="text-center mb-4">Catégorie du produit</h5>
             
             <BoutiqueCategoryDisplay 
@@ -292,7 +315,6 @@ const CreateBoutiqueProductPage = () => {
                       variant={formData.articleType === type.value ? "primary" : "outline-primary"}
                       size="sm"
                       onClick={() => setFormData(prev => ({ ...prev, articleType: type.value }))}
-                      className="d-flex align-items-center"
                     >
                       {type.icon && <span className="me-1">{type.icon}</span>}
                       {type.label}
@@ -306,11 +328,7 @@ const CreateBoutiqueProductPage = () => {
 
       case 2:
         return (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-          >
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <h5 className="text-center mb-4">Détails du produit</h5>
             
             <Form.Group className="mb-3">
@@ -320,7 +338,6 @@ const CreateBoutiqueProductPage = () => {
                 name="title"
                 value={formData.title}
                 onChange={handleInputChange}
-                placeholder="Ex: iPhone 12 Pro Max 256GB"
                 required
               />
             </Form.Group>
@@ -333,7 +350,6 @@ const CreateBoutiqueProductPage = () => {
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                placeholder="Décrivez votre produit en détail..."
                 required
               />
             </Form.Group>
@@ -345,17 +361,12 @@ const CreateBoutiqueProductPage = () => {
                 name="price"
                 value={formData.price}
                 onChange={handleInputChange}
-                placeholder="0"
               />
             </Form.Group>
 
             <Form.Group className="mb-3">
               <Form.Label>État</Form.Label>
-              <Form.Select
-                name="etat"
-                value={formData.etat}
-                onChange={handleInputChange}
-              >
+              <Form.Select name="etat" value={formData.etat} onChange={handleInputChange}>
                 <option value="neuf">Neuf</option>
                 <option value="comme-neuf">Comme neuf</option>
                 <option value="bon-etat">Bon état</option>
@@ -367,11 +378,7 @@ const CreateBoutiqueProductPage = () => {
 
       case 3:
         return (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-          >
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <h5 className="text-center mb-4">Caractéristiques spécifiques</h5>
             
             {dynamicFields.length > 0 ? (
@@ -396,7 +403,6 @@ const CreateBoutiqueProductPage = () => {
                       name={field.name}
                       value={specificData[field.name] || ''}
                       onChange={handleSpecificFieldChange}
-                      placeholder={field.placeholder}
                     />
                   ) : (
                     <Form.Control
@@ -404,7 +410,6 @@ const CreateBoutiqueProductPage = () => {
                       name={field.name}
                       value={specificData[field.name] || ''}
                       onChange={handleSpecificFieldChange}
-                      placeholder={field.placeholder}
                     />
                   )}
                 </Form.Group>
@@ -419,78 +424,32 @@ const CreateBoutiqueProductPage = () => {
 
       case 4:
         return (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-          >
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <h5 className="text-center mb-4">Contact et localisation</h5>
             
             <Form.Group className="mb-3">
-              <Form.Label>
-                <FaMapMarkerAlt className="me-2 text-danger" />
-                Wilaya *
-              </Form.Label>
-              <Form.Control
-                type="text"
-                name="wilaya"
-                value={formData.wilaya}
-                onChange={handleInputChange}
-                placeholder="Ex: Alger"
-                required
-              />
+              <Form.Label><FaMapMarkerAlt className="me-2 text-danger" />Wilaya *</Form.Label>
+              <Form.Control type="text" name="wilaya" value={formData.wilaya} onChange={handleInputChange} required />
             </Form.Group>
 
             <Form.Group className="mb-3">
               <Form.Label>Commune *</Form.Label>
-              <Form.Control
-                type="text"
-                name="commune"
-                value={formData.commune}
-                onChange={handleInputChange}
-                placeholder="Ex: Hydra"
-                required
-              />
+              <Form.Control type="text" name="commune" value={formData.commune} onChange={handleInputChange} required />
             </Form.Group>
 
             <Form.Group className="mb-3">
               <Form.Label>Adresse complète</Form.Label>
-              <Form.Control
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleInputChange}
-                placeholder="Ex: 15 Rue Didouche Mourad"
-              />
+              <Form.Control type="text" name="address" value={formData.address} onChange={handleInputChange} />
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>
-                <FaPhone className="me-2 text-primary" />
-                Téléphone *
-              </Form.Label>
-              <Form.Control
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                placeholder="Ex: 0555123456"
-                required
-              />
+              <Form.Label><FaPhone className="me-2 text-primary" />Téléphone *</Form.Label>
+              <Form.Control type="tel" name="phone" value={formData.phone} onChange={handleInputChange} required />
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>
-                <FaEnvelope className="me-2 text-danger" />
-                Email
-              </Form.Label>
-              <Form.Control
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                placeholder="Ex: contact@boutique.com"
-              />
+              <Form.Label><FaEnvelope className="me-2 text-danger" />Email</Form.Label>
+              <Form.Control type="email" name="email" value={formData.email} onChange={handleInputChange} />
             </Form.Group>
           </motion.div>
         );
@@ -521,15 +480,13 @@ const CreateBoutiqueProductPage = () => {
     );
   }
 
-  if (!currentBoutique) {
+  if (!currentBoutique && !loading) {
     return (
       <Container className="py-5">
         <Alert variant="danger">
           <Alert.Heading>Boutique non trouvée</Alert.Heading>
           <p>La boutique que vous recherchez n'existe pas.</p>
-          <Button variant="danger" onClick={() => history.goBack()}>
-            Retour
-          </Button>
+          <Button variant="danger" onClick={() => history.goBack()}>Retour</Button>
         </Alert>
       </Container>
     );
@@ -539,45 +496,24 @@ const CreateBoutiqueProductPage = () => {
 
   return (
     <Container className="py-4" style={{ maxWidth: '800px' }}>
-      {/* Header */}
       <div className="d-flex align-items-center mb-4">
-        <Button 
-          variant="link" 
-          className="p-0 me-3 text-dark"
-          onClick={() => history.goBack()}
-        >
+        <Button variant="link" className="p-0 me-3 text-dark" onClick={() => history.goBack()}>
           <FaArrowLeft size={20} />
         </Button>
         <div>
           <h4 className="mb-1 fw-bold">
-            {isEdit ? (
-              <>
-                <FaEdit className="me-2 text-primary" />
-                Modifier le produit
-              </>
-            ) : (
-              'Ajouter un produit'
-            )}
+            {isEdit ? <><FaEdit className="me-2 text-primary" />Modifier le produit</> : 'Ajouter un produit'}
           </h4>
           <div className="d-flex align-items-center text-muted">
             <FaStore className="me-1" />
-            <span>{currentBoutique.nom_boutique}</span>
-            {currentBoutique.isVerified && (
-              <small className="text-success ms-2">✓ Vérifié</small>
-            )}
+            <span>{currentBoutique?.nom_boutique || 'Boutique'}</span>
           </div>
         </div>
       </div>
 
-      {/* Alert messages */}
       <AnimatePresence>
         {alert.show && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="mb-4"
-          >
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="mb-4">
             <Alert variant={alert.variant} dismissible onClose={() => setAlert({...alert, show: false})}>
               {alert.message}
             </Alert>
@@ -585,51 +521,33 @@ const CreateBoutiqueProductPage = () => {
         )}
       </AnimatePresence>
 
-      {/* Progress indicator */}
       <div className="mb-4">
         <div className="d-flex justify-content-between">
           {[1,2,3,4,5].map(step => (
-            <div
-              key={step}
-              style={{
-                width: '18%',
-                height: '4px',
-                backgroundColor: currentStep >= step ? '#6366F1' : '#e9ecef',
-                borderRadius: '2px',
-                transition: 'all 0.3s'
-              }}
-            />
+            <div key={step} style={{ width: '18%', height: '4px', backgroundColor: currentStep >= step ? '#6366F1' : '#e9ecef', borderRadius: '2px' }} />
           ))}
         </div>
         <div className="d-flex justify-content-between mt-2 small text-muted">
-          <span>Catégorie</span>
-          <span>Détails</span>
-          <span>Caract.</span>
-          <span>Contact</span>
-          <span>Photos</span>
+          <span>Catégorie</span><span>Détails</span><span>Caract.</span><span>Contact</span><span>Photos</span>
         </div>
       </div>
 
-      {/* Main content */}
       <Card className="border-0 shadow-sm">
         <Card.Body className="p-4">
           <Form onSubmit={handleSubmit}>
-            <AnimatePresence mode="wait">
-              {renderStepContent()}
-            </AnimatePresence>
+            <AnimatePresence mode="wait">{renderStepContent()}</AnimatePresence>
           </Form>
         </Card.Body>
       </Card>
 
-      {/* Navigation buttons */}
       <div className="mt-4">
         <Row>
           <Col xs={6}>
-            <Button
-              variant="outline-secondary"
-              size="lg"
-              onClick={() => handleStepChange(currentStep - 1)}
-              disabled={currentStep === 1 || isSubmitting}
+            <Button 
+              variant="outline-secondary" 
+              size="lg" 
+              onClick={() => handleStepChange(currentStep - 1)} 
+              disabled={currentStep === 1 || isSubmitting} 
               className="w-100"
             >
               ← Retour
@@ -637,21 +555,21 @@ const CreateBoutiqueProductPage = () => {
           </Col>
           <Col xs={6}>
             {currentStep < 5 ? (
-              <Button
-                variant="primary"
-                size="lg"
-                onClick={() => handleStepChange(currentStep + 1)}
-                disabled={!isStepValid || isSubmitting}
+              <Button 
+                variant="primary" 
+                size="lg" 
+                onClick={() => handleStepChange(currentStep + 1)} 
+                disabled={!isStepValid || isSubmitting} 
                 className="w-100"
               >
                 Suivant →
               </Button>
             ) : (
-              <Button
-                variant={isEdit ? "warning" : "success"}
-                size="lg"
-                onClick={handleSubmit}
-                disabled={!isStepValid || isSubmitting || images.length === 0}
+              <Button 
+                variant={isEdit ? "warning" : "success"} 
+                size="lg" 
+                onClick={handleSubmit} 
+                disabled={!isStepValid || isSubmitting || images.length === 0} 
                 className="w-100"
               >
                 {isSubmitting ? (
@@ -667,21 +585,6 @@ const CreateBoutiqueProductPage = () => {
           </Col>
         </Row>
       </div>
-
-      {/* Boutique info card */}
-      <Card className="border-0 bg-light mt-4">
-        <Card.Body className="p-3">
-          <div className="d-flex align-items-center">
-            <FaInfoCircle className="text-primary me-2" size={18} />
-            <small className="text-muted">
-              {isEdit 
-                ? `Vous modifiez ce produit dans votre boutique ${currentBoutique.nom_boutique}.`
-                : `Vous publiez ce produit dans votre boutique ${currentBoutique.nom_boutique}. Les informations de contact seront automatiquement visibles.`
-              }
-            </small>
-          </div>
-        </Card.Body>
-      </Card>
     </Container>
   );
 };

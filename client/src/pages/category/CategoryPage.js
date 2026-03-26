@@ -3,7 +3,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { useParams, useHistory, useLocation } from "react-router-dom";
 import { Container, Spinner, Row, Col, Button } from "react-bootstrap";
 import PostCard from "../../components/post-card/PostCard";
-import BoutiqueCard from "../../components/BoutiquePostCard";
+import BoutiqueCard from "../../components/boutique/BoutiquePostCard";
+ 
 import PaginationComponent from "../../components/PaginationComponent";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { Funnel } from 'react-bootstrap-icons';

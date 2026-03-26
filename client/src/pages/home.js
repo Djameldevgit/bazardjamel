@@ -14,10 +14,11 @@ import {
 } from 'react-bootstrap';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import MainCategorySlider from '../components/SlidersCategories/CategorySlider';
-import Header from '../components/SlidersCategories/HeaderCarousel';
+import CarouselHome from '../components/carousel/CarouselHome';
 import PostCard from '../components/post-card/PostCard';
-import BoutiqueCard from '../components/BoutiquePostCard';
-import { ArrowRight, ChevronLeft, ChevronRight, Store } from 'react-bootstrap-icons';
+import BoutiqueCard from '../components/boutique/BoutiquePostCard';
+  
+import { ArrowRight, ChevronLeft, ChevronRight } from 'react-bootstrap-icons';
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -165,7 +166,7 @@ const Home = () => {
   if (loading && categories.length === 0 && !initialLoadDone) {
     return (
       <div className={`min-vh-100 d-flex flex-column ${theme === 'dark' ? 'bg-dark' : 'bg-gradient-light'}`}>
-        <Header />
+        
         <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
           <div className="text-center">
             <Spinner animation="border" variant="primary" size="lg" />
@@ -179,7 +180,7 @@ const Home = () => {
   if (error && categories.length === 0 && initialLoadDone) {
     return (
       <div className={`min-vh-100 d-flex flex-column ${theme === 'dark' ? 'bg-dark' : ''}`}>
-        <Header />
+        
         <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
           <Alert variant="danger" className="shadow-lg border-0 text-center">
             <i className="fas fa-exclamation-circle fa-3x text-danger mb-3"></i>
@@ -205,8 +206,8 @@ const Home = () => {
 
   return (
     <div className={`min-vh-100 d-flex flex-column ${theme === 'dark' ? 'bg-dark text-light' : 'bg-light'}`}>
-      <Header />
       
+      <CarouselHome />
       <main className="flex-grow-1">
         <section>
           <Container>

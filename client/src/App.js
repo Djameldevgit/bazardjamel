@@ -29,58 +29,23 @@ import UserBoutiquesPage from './pages/boutique/UserBoutiquesPage';
 import MesAnnoces from './pages/users/MesAnnoces';
 import ProfileSettings from './pages/users/ProfileSettings';
 import ProfileSaved from './pages/users/ProfileSaved';
-import CreateBoutiqueProductPage from './pages/boutiquePost/CreateBoutiqueProductPage';
+import CreateBoutiqueProductPage from './pages/boutiqueProduct/CreateBoutiqueProductPage';
+import CreateImageHomeCarousel from './pages/carousel/CreateImageHomeCarousel';
  
 function App() {
   const { auth } = useSelector(state => state)
   const dispatch = useDispatch()
 
 
-  const [socket, setSocket] = useState(null)
+ 
 
-  // 🔥 CORREGIDO: Un solo useEffect para inicializar Socket.IO
   useEffect(() => {
-    // Inicializar autenticación
     dispatch(refreshToken())
 
-    // Inicializar Socket.IO solo si no está ya inicializado
-    if (!socket) {
-      // Asegúrate de que la URL del backend sea correcta
-      const socketServer = process.env.REACT_APP_SOCKET_SERVER || 'http://localhost:5000'
-      const socketInstance = io(socketServer, {
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000
-      })
-
-      // Verificar que la instancia sea válida
-      if (socketInstance && typeof socketInstance.on === 'function') {
-        setSocket(socketInstance)
-        dispatch({ type: GLOBALTYPES.SOCKET, payload: socketInstance })
-
-        // Manejar eventos de conexión
-        socketInstance.on('connect', () => {
-          console.log('✅ Socket.IO conectado:', socketInstance.id)
-        })
-
-        socketInstance.on('connect_error', (error) => {
-          console.error('❌ Error de conexión Socket.IO:', error)
-        })
-      } else {
-        console.error('❌ No se pudo crear la instancia de Socket.IO')
-      }
-    }
-
-    // Cleanup
-    return () => {
-      if (socket) {
-        socket.close()
-        setSocket(null)
-      }
-    }
-  }, [dispatch])
-
+    const socket = io()
+    dispatch({type: GLOBALTYPES.SOCKET, payload: socket})
+    return () => socket.close()
+  },[dispatch])
 
 
   return (
@@ -92,46 +57,55 @@ function App() {
    
       <div id="google_translate_element" style={{ display: 'none' }}></div>
   
-      <Switch>
-          {/* ============ RUTAS PÚBLICAS ============ */}
-          <Route exact path="/" component={Home} />
-          <Route exact path="/register" component={Register} />
-          <Route exact path="/login" component={Login} />
+     
+<Switch>
+  {/* ============ RUTAS PÚBLICAS ============ */}
+  <Route exact path="/" component={Home} />
+  <Route exact path="/register" component={Register} />
+  <Route exact path="/login" component={Login} />
 
-          {/* ============ RUTAS DE BOUTIQUES ============ */}
-          <Route exact path="/create-boutique" component={CreateBoutiquePage} />
-          <Route exact path="/edit-boutique/:id" component={CreateBoutiquePage} />
-          <Route exact path="/mes-boutiques" component={UserBoutiquesPage} />
-          <Route exact path="/boutique/:id" component={BoutiqueDetailPage} />
-          
-          {/* ✅ NUEVA RUTA ESPECÍFICA PARA PRODUCTOS DE BOUTIQUE */}
-          <Route exact path="/boutique/:boutiqueId/products/new" component={CreateBoutiqueProductPage} />
-          <Route exact path="/boutique/:boutiqueId/products/edit/:postId" component={CreateBoutiqueProductPage} />
-          {/* ============ RUTAS DE ANUNCIOS NORMALES ============ */}
-          <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
-          <Route exact path="/edit-post/:id" component={CreateAnnoncePage} />
-          
-          {/* ❌ ELIMINAR ESTA RUTA AMBIGUA */}
-          {/* <Route exact path="/boutique/:boutiqueId/new-post" component={CreateAnnoncePage} /> */}
+  {/* ============ RUTAS DE BOUTIQUES - PRIMERO LAS MÁS ESPECÍFICAS ============ */}
+  {/* 🔥 IMPORTANTE: Las rutas con más segmentos van PRIMERO */}
+  <Route exact path="/boutique/:boutiqueId/products/new" component={CreateBoutiqueProductPage} />
+  <Route exact path="/boutique/:boutiqueId/products/edit/:postId" component={CreateBoutiqueProductPage} />
+  
 
-          <Route exact path="/post/:id" component={PostId} />
+  <Route path="/admin/carousel" exact component={CreateImageHomeCarousel} />
+<Route path="/admin/carousel/create" exact component={CreateImageHomeCarousel} />
+<Route path="/admin/carousel/edit/:id" exact component={CreateImageHomeCarousel} />
 
-          {/* ============ USER DASHBOARD ============ */}
-          <Route exact path="/mes-annonces" component={MesAnnoces} />
-          <Route exact path="/profile/settings" component={ProfileSettings} />
-          <Route exact path="/profile/:id/saved" component={ProfileSaved} />
-          <Route exact path="/users/dashboard" component={DashboardPage} />
-          <Route exact path="/profile/:id" component={profile} />
-          <Route exact path="/users/roles" component={roles} />
 
-          {/* ============ RUTAS DE CATEGORÍAS ============ */}
-          <Route exact path="/:slug/:page?" component={CategoryPage} />
-          <Route exact path="/:slug/:subSlug/:page?" component={CategoryPage} />
-          <Route exact path="/:slug/:subSlug/:articleSlug/:page?" component={CategoryPage} />
+  {/* Ruta de creación/edición de boutique */}
+  <Route exact path="/create-boutique" component={CreateBoutiquePage} />
+  <Route exact path="/edit-boutique/:id" component={CreateBoutiquePage} />
+  <Route exact path="/mes-boutiques" component={UserBoutiquesPage} />
+  
+  {/* ⚠️ Ruta genérica de boutique - DEBE IR DESPUÉS de las rutas específicas */}
+  <Route exact path="/boutique/:id" component={BoutiqueDetailPage} />
 
-          {/* ============ RUTA 404 ============ */}
-          <Route component={NotFound} />
-        </Switch>
+  {/* ============ RUTAS DE ANUNCIOS NORMALES ============ */}
+  <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
+  <Route exact path="/edit-post/:id" component={CreateAnnoncePage} />
+
+  {/* Ruta de detalle de post */}
+  <Route exact path="/post/:id" component={PostId} />
+
+  {/* ============ USER DASHBOARD ============ */}
+  <Route exact path="/mes-annonces" component={MesAnnoces} />
+  <Route exact path="/profile/settings" component={ProfileSettings} />
+  <Route exact path="/profile/:id/saved" component={ProfileSaved} />
+  <Route exact path="/users/dashboard" component={DashboardPage} />
+  <Route exact path="/profile/:id" component={profile} />
+  <Route exact path="/users/roles" component={roles} />
+
+  {/* ============ RUTAS DE CATEGORÍAS ============ */}
+  <Route exact path="/:slug/:page?" component={CategoryPage} />
+  <Route exact path="/:slug/:subSlug/:page?" component={CategoryPage} />
+  <Route exact path="/:slug/:subSlug/:articleSlug/:page?" component={CategoryPage} />
+
+  {/* ============ RUTA 404 ============ */}
+  <Route component={NotFound} />
+</Switch>
     </div>
   </Router>
   );

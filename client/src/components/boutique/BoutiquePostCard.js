@@ -20,8 +20,8 @@ import {
   FaStar,
   FaRegStar
 } from 'react-icons/fa';
-import { deleteBoutique, updateBoutiqueStatus } from '../redux/actions/boutiqueAction';
-import { GLOBALTYPES } from '../redux/actions/globalTypes';
+import { deleteBoutique, updateBoutiqueStatus } from '../../redux/actions/boutiqueAction';
+import { GLOBALTYPES } from '../../redux/actions/globalTypes';
 
 const BoutiquePostCard = ({ boutique }) => {
   const history = useHistory();
