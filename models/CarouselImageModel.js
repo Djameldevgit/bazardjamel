@@ -1,10 +1,9 @@
-// backend/models/CarouselImage.js
 const mongoose = require('mongoose');
 
 const carouselImageSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: true,
+    required: [true, 'El título es requerido'],
     trim: true
   },
   description: {
@@ -24,11 +23,11 @@ const carouselImageSchema = new mongoose.Schema({
   image: {
     url: {
       type: String,
-      required: true
+      required: [true, 'La URL de la imagen es requerida']
     },
     public_id: {
       type: String,
-      required: true
+      required: [true, 'El public_id de la imagen es requerido']
     }
   },
   isActive: {

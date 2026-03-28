@@ -60,7 +60,7 @@ const categoriesData = [
     ]
   },
 
-  // ==================== 2. VETEMENTS ====================
+
   {
     name: 'Vetements',
     slug: 'vetements',
@@ -1334,7 +1334,7 @@ const categoriesData = [
     ]
   },
 
-  // ==================== 16. BOUTIQUES ====================
+ 
   {
     name: 'Boutiques',
     slug: 'boutiques',
@@ -1393,7 +1393,7 @@ const categoriesData = [
       { name: 'Couture & Confection', slug: 'couture-et-confection', level: 2, icon: '/categories/boutiques/couture-et-confection.png', order: 49, children: [] },
       { name: 'Réparation Electronique & Electroménager', slug: 'reparation-electronique-electromenager', level: 2, icon: '/categories/boutiques/reparation-electronique-electromenager.png', order: 50, children: [] }
     ]
-  },
+  }, 
   // ==================== 17. TÉLÉPHONE ====================
   {
     name: 'Téléphone',

@@ -11,7 +11,7 @@ import { getBoutique } from '../../redux/actions/boutiqueAction';
 import { createBoutiqueProduct, updateBoutiqueProduct } from '../../redux/actions/boutiqueProductAction';
 import { getCategoryTree } from '../../redux/actions/categoryAction';
 
-import BoutiqueCategoryDisplay from '../../components/CATEGORIES/BoutiqueCategoryDisplay';
+import BoutiqueCategoryDisplay from '../../components/boutique/BoutiqueCategoryDisplay';
 import ImagesStep from './ImagesStep';
 
 const CreateBoutiqueProductPage = () => {

@@ -1,11 +1,12 @@
-// 📂 controllers/postController.js
 const Post = require('../models/postModel');
 const Category = require('../models/categoryModel');
 const Users = require('../models/userModel');
-const Boutique = require('../models/boutiqueModel');
+ 
 const Comments = require('../models/commentModel');
 const mongoose = require('mongoose');
-const buildTitleByCategory = require('../utils/titleCategory');
+// ❌ ELIMINAR esta importación
+// const buildTitleByCategory = require('../utils/titleCategory');
+
 class APIfeatures {
   constructor(query, queryString) {
     this.query = query;
@@ -19,6 +20,7 @@ class APIfeatures {
     return this;
   }
 }
+
 const cloudinary = require('cloudinary').v2;
 
 // Configurar Cloudinary
@@ -27,56 +29,38 @@ cloudinary.config({
   api_key: '213981915435275',
   api_secret: 'wv_IiCM9zzhdiWDNXXo8HZi7wX4'
 });
+
 const postCtrl = {
-  // 📂 controllers/postController.js
-  // 📂 controllers/postCtrl.js
+  // 📂 createPost - Versión simplificada
   createPost: async (req, res) => {
     try {
-  
       const userId = req.user._id;
-  
+
       const {
         categorie,
         subCategory,
         articleType,
-        title,
+        title,        // ✅ EL TÍTULO YA VIENE DEL CLIENTE (generado)
         wilaya,
         commune,
         images,
         categorySpecificData
       } = req.body;
-  
-  
+
       // 🔎 Validación mínima
       if (!categorie || !subCategory || !wilaya || !commune || !images) {
         return res.status(400).json({
           msg: "Champs requis manquants"
         });
       }
-  
-  
-      // 🧠 GENERADOR AUTOMÁTICO DE TITLE
-      let finalTitle = title;
-  
+
+      // ✅ VALIDAR QUE EL TÍTULO EXISTA (ya viene del cliente)
       if (!title || title.trim() === "") {
-  
-        finalTitle = buildTitleByCategory(
-          categorie,
-          subCategory,
-          articleType,
-          categorySpecificData,
-          wilaya,
-          commune
-        );
-  
-        if (!finalTitle) {
-          return res.status(400).json({
-            msg: "Impossible de générer le titre"
-          });
-        }
+        return res.status(400).json({
+          msg: "Le titre est requis"
+        });
       }
-  
-  
+
       // 🔎 Buscar categoría real
       const category = await Category.findOne({
         $or: [
@@ -85,66 +69,43 @@ const postCtrl = {
         ],
         isActive: true
       }).select('_id').lean();
-  
-  
+
       if (!category) {
         return res.status(404).json({
           msg: "Catégorie non trouvée"
         });
       }
-  
-  
+
       // 🧾 Construcción del post
       const postData = {
-  
         user: userId,
-  
         categorie: categorie.trim(),
-  
         subCategory: subCategory.trim(),
-  
         articleType: (articleType || "").trim(),
-  
         category: category._id,
-  
-        title: finalTitle.trim(),
-  
+        title: title.trim(),  // ✅ Usar el título que viene del cliente
         description: (req.body.description || "").trim(),
-  
         price: parseFloat(req.body.price) || 0,
-  
         etat: req.body.etat || "occasion",
-  
         wilaya: wilaya.toString().trim(),
-  
         commune: commune.toString().trim(),
-  
         phone: (req.body.phone || "").trim(),
-  
         email: (req.body.email || "").trim().toLowerCase(),
-  
         address: (req.body.address || "").trim(),
-  
         images: images,
-  
         categorySpecificData: categorySpecificData || {}
-  
       };
-  
-  
+
       // 💾 Guardar post
       const newPost = new Post(postData);
-  
       await newPost.save();
-  
-  
+
       // 📊 actualizar contador categoría
       Category.findByIdAndUpdate(
         category._id,
         { $inc: { postCount: 1 } }
       ).catch(() => {});
-  
-  
+
       // 🚀 respuesta rápida
       res.status(201).json({
         success: true,
@@ -159,15 +120,12 @@ const postCtrl = {
           }
         }
       });
-  
+
     } catch (err) {
-  
       console.error("❌ createPost error:", err.message);
-  
       res.status(500).json({
         msg: "Erreur serveur"
       });
-  
     }
   },
 

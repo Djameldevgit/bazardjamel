@@ -8,7 +8,7 @@ import Register from './pages/register'
 import { refreshToken } from './redux/actions/authAction'
 import io from 'socket.io-client'
 import { GLOBALTYPES } from './redux/actions/globalTypes'
- 
+import SocketClient from './SocketClient'
 import Home from './pages/home';
 
 import NotFound from './pages/NotFound';
@@ -57,7 +57,7 @@ function App() {
    
       <div id="google_translate_element" style={{ display: 'none' }}></div>
   
-     
+      {auth.token && <SocketClient />}
 <Switch>
   {/* ============ RUTAS PÚBLICAS ============ */}
   <Route exact path="/" component={Home} />

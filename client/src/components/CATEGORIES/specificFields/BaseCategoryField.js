@@ -1,4 +1,4 @@
-// src/components/CATEGORIES/specificFields/BaseCategoryField.js
+// 📂 components/CATEGORIES/specificFields/BaseCategoryField.js
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -13,9 +13,7 @@ import TypeOffreField from '../camposComun/TypeOffreField';
 import EchangeField from '../camposComun/EchangeField';
 import GrossDetailField from '../camposComun/GrossDetailField';
 import WilayaField from '../camposComun/WilayaCommuneField';
- 
 import TelephoneField from '../camposComun/PhoneField';
- 
 import EtatField from '../camposComun/EtatField';
 
 // Importar configuración
@@ -29,32 +27,48 @@ const BaseCategoryField = ({
   postData, 
   handleChangeInput,
   isRTL,
-  step,
-  // Prop para campos adicionales específicos
+  step,  // ← ESTE ES EL STEP ACTUAL (2, 3 o 4)
   additionalFields = {},
-  // Prop para sobrescribir campos base
   overrideFields = {}
 }) => {
   const { t } = useTranslation();
   
-  // 1. Obtener configuración de campos desde FieldConfig
-  const categoryConfig = getFieldsForCategory(mainCategory, subCategory);
-  
-  // 2. Combinar campos base + específicos + sobrescritos
-  const getStepFields = (stepName) => {
-    const baseStepFields = categoryConfig[stepName] || [];
-    const additionalStepFields = additionalFields[stepName] || [];
-    const overrideStepFields = overrideFields[stepName] || [];
+  // 1. Obtener configuración de campos desde FieldConfig para el STEP ACTUAL
+  const getStepFields = () => {
+    // Obtener campos base de FieldConfig para este step
+    const baseStepFields = getFieldsForCategory(mainCategory, subCategory, step) || [];
     
-    // Combinar, dando prioridad a los campos sobrescritos
-    return [...baseStepFields, ...additionalStepFields].filter(field => 
-      !overrideStepFields.includes(`!${field}`) // Exclusión con "!"
-    ).concat(overrideStepFields.filter(f => !f.startsWith('!')));
+    // Obtener campos adicionales específicos para este step
+    const additionalStepFields = additionalFields[`step${step}`] || [];
+    
+    // Obtener campos sobrescritos
+    const overrideStepFields = overrideFields[`step${step}`] || [];
+    
+    // Combinar campos base + adicionales
+    let combined = [...baseStepFields, ...additionalStepFields];
+    
+    // Eliminar campos excluidos (con prefijo '!')
+    combined = combined.filter(field => 
+      !overrideStepFields.includes(`!${field}`)
+    );
+    
+    // Agregar campos sobrescritos (sin '!')
+    const newFields = overrideStepFields.filter(f => !f.startsWith('!'));
+    
+    const finalFields = [...combined, ...newFields];
+    
+    console.log(`🔧 BaseCategoryField - Step ${step}:`, {
+      base: baseStepFields,
+      additional: additionalStepFields,
+      final: finalFields
+    });
+    
+    return finalFields;
   };
   
   // 3. Mapeo de TODOS los componentes de campo
   const fieldComponents = {
-    // === CAMPOS BASE (COMUNES A TODAS) ===
+    // === CAMPOS BASE ===
     'title': (
       <TitleField
         key="title"
@@ -185,8 +199,6 @@ const BaseCategoryField = ({
       />
     ),
     
- 
-    
     'telephone': (
       <TelephoneField
         key="telephone"
@@ -199,7 +211,6 @@ const BaseCategoryField = ({
         t={t}
       />
     ),
- 
     
     'etat': (
       <EtatField
@@ -214,62 +225,77 @@ const BaseCategoryField = ({
       />
     ),
     
-    // Puedes agregar más campos base aquí...
-    
-    // === CAMPOS ESPECÍFICOS (se añaden en los componentes hijos) ===
-    ...additionalFields.components // Componentes específicos inyectados
+    // === CAMPOS ESPECÍFICOS (inyectados desde los hijos) ===
+    ...additionalFields.components
   };
   
-  // 4. Lógica de renderizado
-  const renderStep = (stepName) => {
-    const stepFields = getStepFields(stepName);
+  // 4. Renderizar SOLO el step actual
+  const renderCurrentStep = () => {
+    const stepFields = getStepFields();
     
-    return stepFields.map((fieldKey) => {
-      if (fieldKey.startsWith('custom:')) {
-        // Campo personalizado inyectado
-        const customKey = fieldKey.replace('custom:', '');
-        return additionalFields.customComponents?.[customKey] || null;
-      }
-      
-      return fieldComponents[fieldKey] || (
-        <div key={fieldKey} className="alert alert-warning mt-2">
-          {t('components.fieldNotAvailable', { field: fieldKey })}
+    if (!step || step < 2 || step > 4) {
+      return null;
+    }
+    
+    if (stepFields.length === 0) {
+      return (
+        <div className="alert alert-info text-center py-3">
+          <i className="fas fa-info-circle me-2"></i>
+          Aucun champ à remplir pour cette étape.
         </div>
       );
-    });
+    }
+    
+    return (
+      <div className="row g-3">
+        {stepFields.map((fieldKey) => {
+          // Saltar 'modele' si ya está siendo manejado por 'marque'
+          if (fieldKey === 'modele' && fieldComponents['marque']) {
+            return null;
+          }
+          
+          const FieldComponent = fieldComponents[fieldKey];
+          
+          if (!FieldComponent) {
+            return (
+              <div key={fieldKey} className="col-12 col-md-6">
+                <div className="alert alert-warning p-2 small">
+                  <i className="fas fa-exclamation-triangle me-1"></i>
+                  Champ non configuré: {fieldKey}
+                </div>
+              </div>
+            );
+          }
+          
+          return (
+            <div key={fieldKey} className="col-12 col-md-6">
+              <div className="field-wrapper p-3 border rounded bg-light h-100">
+                {FieldComponent}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
   
   // 5. Renderizar según el modo
   if (step) {
-    // Modo: mostrar solo un step específico
-    return <div className="step-fields">{renderStep(step)}</div>;
+    // 🔥 SOLO RENDERIZAR EL STEP ACTUAL
+    return (
+      <div className="step-fields">
+        {renderCurrentStep()}
+      </div>
+    );
   }
   
   if (fieldName) {
-    // Modo: mostrar solo un campo específico
     return fieldComponents[fieldName] || null;
   }
   
-  // Modo: mostrar todos los steps (para compatibilidad)
-  const allSteps = ['step2', 'step3', 'step4', 'step5'];
-  
-  return (
-    <div className="all-steps">
-      {allSteps.map((stepName) => (
-        <div key={stepName} className={`step-section mb-2 ${stepName}`}>
-          <h5 className="border-bottom pb-2 mb-3">
-            {t(`steps.${stepName}`)}
-          </h5>
-          <div className="step-content">
-            {renderStep(stepName)}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  return null;
 };
 
-// Propiedades por defecto
 BaseCategoryField.defaultProps = {
   additionalFields: {},
   overrideFields: {}

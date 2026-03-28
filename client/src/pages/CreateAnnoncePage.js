@@ -10,6 +10,7 @@ import { getCategoriesForAccordion } from '../redux/actions/categoryAction';
 import CategoryAccordion from '../components/CATEGORIES/CategoryAccordion';
 import DynamicFieldManager from '../components/CATEGORIES/DynamicFieldManager';
 import ImagesStep from '../components/CATEGORIES/camposComun/ImagesStep';
+import { generateTitle, getTitlePreview } from '../components/CATEGORIES/GeneracionTitulo';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { BASE_URL } from '../utils/config';
@@ -47,6 +48,9 @@ const CreateAnnoncePage = () => {
   const [isLoadingEditData, setIsLoadingEditData] = useState(true);
   const [hasManuallyGoneBack, setHasManuallyGoneBack] = useState(false);
   const [editDataLoaded, setEditDataLoaded] = useState(false);
+  
+  // Estado para el título generado (para mostrar preview)
+  const [generatedTitle, setGeneratedTitle] = useState('');
 
   // ============ EFECTOS ============
 
@@ -57,7 +61,15 @@ const CreateAnnoncePage = () => {
     }
   }, [dispatch, categoryState.accordionCategories, categoryState.accordionLoading]);
 
-  // 📥 Cargar datos de edición - AHORA SIEMPRE EN STEP 1
+  // 🎯 Actualizar título generado cuando cambian los datos
+  useEffect(() => {
+    if (categoryData.categorie) {
+      const newTitle = generateTitle(categoryData, specificData, commonData);
+      setGeneratedTitle(newTitle);
+    }
+  }, [categoryData, specificData, commonData]);
+
+  // 📥 Cargar datos de edición
   useEffect(() => {
     const loadEditData = async () => {
       if (!isEdit) {
@@ -82,28 +94,24 @@ const CreateAnnoncePage = () => {
             articleType: postDataToLoad.articleType
           });
 
-          // ===== CORRECCIÓN: Reconstruir slugs correctos si están mal guardados =====
+          // Reconstruir slugs correctos si están mal guardados
           let loadedCategoryData = {
             categorie: postDataToLoad.categorie || '',
             subCategory: postDataToLoad.subCategory || '',
             articleType: postDataToLoad.articleType || ''
           };
 
-          // Si subCategory parece ser un artículo (nivel 3) y articleType está vacío,
-          // intentamos reconstruir usando la jerarquía de categorías
           if (loadedCategoryData.subCategory && !loadedCategoryData.articleType) {
             const categories = categoryState.accordionCategories || [];
             const mainCat = categories.find(c => 
               c.slug === loadedCategoryData.categorie || c.name === loadedCategoryData.categorie
             );
             if (mainCat) {
-              // Buscar si subCategory coincide con algún artículo (nivel 3)
               for (const level1 of mainCat.children || []) {
                 const level2 = level1.children?.find(ch => 
                   ch.slug === loadedCategoryData.subCategory || ch.name === loadedCategoryData.subCategory
                 );
                 if (level2) {
-                  // Encontramos: el verdadero nivel2 es level1.slug, y el artículo es level2.slug
                   loadedCategoryData = {
                     categorie: mainCat.slug,
                     subCategory: level1.slug,
@@ -114,8 +122,6 @@ const CreateAnnoncePage = () => {
               }
             }
           }
-
-          console.log('📦 postDataToLoad corregido:', loadedCategoryData);
 
           // Cargar datos comunes
           const excludeFromCommon = [
@@ -217,7 +223,7 @@ const CreateAnnoncePage = () => {
         }
         return newData;
       });
-    } else if (['wilaya', 'commune', 'price', 'description', 'title', 'telephone', 'phone', 'email', 'address', 'etat'].includes(name)) {
+    } else if (['wilaya', 'commune', 'price', 'description', 'telephone', 'phone', 'email', 'address', 'etat'].includes(name)) {
       setCommonData(prev => ({ ...prev, [name]: val }));
     } else {
       setSpecificData(prev => {
@@ -258,33 +264,52 @@ const CreateAnnoncePage = () => {
     setTimeout(() => setAlert({ show: false, message: '', variant: 'info' }), duration);
   }, []);
 
+  // 🔥 VALIDACIÓN ACTUALIZADA - Título ya no es obligatorio
   const canProceedToNextStep = () => {
     switch (currentStep) {
       case 1: return categoryData.categorie && categoryData.subCategory;
-      case 2: return commonData.title && commonData.title.trim() !== '' && commonData.description && commonData.description.trim() !== '';
+      case 2: 
+        // Solo description es obligatoria (el título se genera automáticamente)
+        return commonData.description && commonData.description.trim() !== '';
       case 3: return commonData.price && commonData.price.toString().trim() !== '';
-      case 4: return commonData.wilaya && commonData.wilaya.toString().trim() !== '' && commonData.commune && commonData.commune.toString().trim() !== '';
+      case 4: return commonData.wilaya && commonData.wilaya.toString().trim() !== '' && 
+                     commonData.commune && commonData.commune.toString().trim() !== '';
       case 5: return images.length > 0;
       default: return true;
     }
   };
 
+  // 🔥 HANDLE SUBMIT ACTUALIZADO - Usa título generado
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validaciones básicas
     if (images.length === 0) return showAlertMessage("Ajoutez des photos.", "danger");
-    if (!categoryData.categorie || !categoryData.subCategory || !commonData.title || !commonData.wilaya || !commonData.commune) {
-      return showAlertMessage("Remplissez les champs requis.", "warning");
+    if (!categoryData.categorie || !categoryData.subCategory) {
+      return showAlertMessage("Sélectionnez une catégorie.", "warning");
+    }
+    if (!commonData.description) {
+      return showAlertMessage("Ajoutez une description.", "warning");
+    }
+    if (!commonData.wilaya || !commonData.commune) {
+      return showAlertMessage("Renseignez la wilaya et la commune.", "warning");
     }
 
     setIsSubmitting(true);
 
     try {
+      // 🎯 GENERAR TÍTULO AUTOMÁTICAMENTE
+      const autoTitle = generateTitle(categoryData, specificData, commonData);
+      
+      console.log('🎯 Título generado automáticamente:', autoTitle);
+      console.log('📊 Datos específicos:', specificData);
+      console.log('📋 Datos comunes:', commonData);
+
       const postContent = {
         categorie: categoryData.categorie,
         subCategory: categoryData.subCategory,
         articleType: categoryData.articleType || '',
-        title: commonData.title,
+        title: autoTitle, // ← Usar título generado
         description: commonData.description || '',
         price: commonData.price || 0,
         etat: commonData.etat || 'occasion',
@@ -313,7 +338,7 @@ const CreateAnnoncePage = () => {
     }
   };
 
-  // 🆕 Función para obtener nombres de categoría a partir de slugs
+  // Función para obtener nombres de categoría
   const getCategoryPathNames = useCallback(() => {
     const { categorie, subCategory, articleType } = categoryData;
     const categories = categoryState.accordionCategories || [];
@@ -449,6 +474,21 @@ const CreateAnnoncePage = () => {
                     <div className="d-flex align-items-center">
                       <i className="fas fa-edit me-1 text-warning"></i>
                       <span><strong>Édition:</strong> "{commonData.title}"</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 🎯 VISTA PREVIA DEL TÍTULO GENERADO */}
+                {currentStep === 2 && categoryData.categorie && (
+                  <div className="alert alert-info mb-3 py-2">
+                    <div className="d-flex align-items-center">
+                      <i className="fas fa-magic me-2 text-info"></i>
+                      <div>
+                        <small className="fw-bold d-block">Titre généré automatiquement:</small>
+                        <small className="text-muted">
+                          {generatedTitle || 'En attente des informations...'}
+                        </small>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -656,7 +696,7 @@ const CreateAnnoncePage = () => {
                     let message = '';
                     switch (currentStep) {
                       case 1: message = "Sélectionnez une catégorie et sous-catégorie"; break;
-                      case 2: message = "Complétez le titre et la description"; break;
+                      case 2: message = "Ajoutez une description"; break;
                       case 3: message = "Indiquez un prix valide"; break;
                       case 4: message = "Renseignez la wilaya et la commune"; break;
                     }

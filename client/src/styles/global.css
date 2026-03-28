@@ -162,6 +162,8 @@ url("./header.css"); */
 @import url("./categorypage.css");
 @import url("./cardFooterCategory.css");
 @import url("./BoutiquePostCard.css");
+
+ 
 .rtl {
   direction: rtl;
   text-align: right;

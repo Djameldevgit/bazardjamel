@@ -1,0 +1,384 @@
+// src/components/CATEGORIES/FieldRendererUnified.js
+import React from 'react';
+
+// Importar componentes de campos
+import TitleField from './camposComun/TitleField';
+import DescriptionField from './camposComun/DescriptionField';
+import PriceField from './camposComun/PriceField';
+import WilayaCommuneField from './camposComun/WilayaCommuneField';
+import PhoneField from './camposComun/PhoneField';
+import EtatField from './camposComun/EtatField';
+import TypeOffreField from './camposComun/TypeOffreField';
+import ReferenceField from './camposComun/ReferenceField';
+import LivraisonField from './camposComun/LivraisonFileld';
+import UniteField from './camposComun/UniteField';
+import EchangeField from './camposComun/EchangeField';
+
+// Mapa de campos a componentes
+const FIELD_COMPONENTS = {
+  // ========== CAMPOS COMUNES ==========
+  'title': TitleField,
+  'description': DescriptionField,
+  'price': PriceField,
+  'wilaya': WilayaCommuneField,
+  'commune': WilayaCommuneField,
+  'telephone': PhoneField,
+  'etat': EtatField,
+  'typeOffre': TypeOffreField,
+  'reference': ReferenceField,
+  'livraison': LivraisonField,
+  'unite': UniteField,
+  'echange': EchangeField,
+  
+  // ========== CAMPOS ESPECÍFICOS ==========
+  // Vehículos
+  'marque': (props) => <InputField {...props} label="Marque" type="text" />,
+  'modele': (props) => <InputField {...props} label="Modèle" type="text" />,
+  'annee': (props) => <InputField {...props} label="Année" type="number" />,
+  'kilometrage': (props) => <InputField {...props} label="Kilométrage" type="number" />,
+  'carburant': (props) => <SelectField {...props} label="Carburant" options={['Essence', 'Diesel', 'Électrique', 'Hybride']} />,
+  'boiteVitesse': (props) => <SelectField {...props} label="Boîte de vitesse" options={['Manuelle', 'Automatique']} />,
+  'couleur': (props) => <InputField {...props} label="Couleur" type="text" />,
+  'options': (props) => <TextareaField {...props} label="Options" />,
+  'cylindree': (props) => <InputField {...props} label="Cylindrée (cc)" type="number" />,
+  'puissance': (props) => <InputField {...props} label="Puissance (ch)" type="number" />,
+  'optionduvoiture': (props) => <TextareaField {...props} label="Options supplémentaires" />,
+  'marqueVehicules': (props) => <InputField {...props} label="Marque" type="text" />,
+  'modeleVehicules': (props) => <InputField {...props} label="Modèle" type="text" />,
+  
+  // Inmobiliario
+  'typeImmobilier': (props) => <SelectField {...props} label="Type de bien" options={['Appartement', 'Villa', 'Maison', 'Terrain', 'Local commercial']} />,
+  'operationType': (props) => <SelectField {...props} label="Type d'opération" options={['Vente', 'Location', 'Échange']} />,
+  'surface': (props) => <InputField {...props} label="Surface (m²)" type="number" />,
+  'chambres': (props) => <InputField {...props} label="Chambres" type="number" />,
+  'sallesBain': (props) => <InputField {...props} label="Salles de bain" type="number" />,
+  'etage': (props) => <InputField {...props} label="Étage" type="number" />,
+  'ascenseur': (props) => <SelectField {...props} label="Ascenseur" options={['Oui', 'Non']} />,
+  'meuble': (props) => <SelectField {...props} label="Meublé" options={['Oui', 'Non']} />,
+  'jardin': (props) => <SelectField {...props} label="Jardin" options={['Oui', 'Non']} />,
+  'piscine': (props) => <SelectField {...props} label="Piscine" options={['Oui', 'Non']} />,
+  'garage': (props) => <SelectField {...props} label="Garage" options={['Oui', 'Non']} />,
+  'charges': (props) => <InputField {...props} label="Charges (mensuelles)" type="number" />,
+  'quartier': (props) => <InputField {...props} label="Quartier" type="text" />,
+  'loyer': (props) => <InputField {...props} label="Loyer (DA)" type="number" />,
+  'proximiteTransport': (props) => <InputField {...props} label="Proximité transport" type="text" />,
+  'parking': (props) => <SelectField {...props} label="Parking" options={['Oui', 'Non']} />,
+  'typeTerrain': (props) => <SelectField {...props} label="Type de terrain" options={['Constructible', 'Agricole', 'Industriel']} />,
+  'typeLocal': (props) => <InputField {...props} label="Type de local" type="text" />,
+  'viabilise': (props) => <SelectField {...props} label="Viabilisé" options={['Oui', 'Non']} />,
+  
+  // Teléfonos
+  'capaciteStockage': (props) => <InputField {...props} label="Capacité de stockage" type="text" />,
+  'ram': (props) => <InputField {...props} label="RAM" type="text" />,
+  'garantie': (props) => <InputField {...props} label="Garantie" type="text" />,
+  'camera': (props) => <InputField {...props} label="Appareil photo" type="text" />,
+  'systemeExploitation': (props) => <SelectField {...props} label="Système d'exploitation" options={['Android', 'iOS', 'Windows', 'Autre']} />,
+  'reseau': (props) => <SelectField {...props} label="Réseau" options={['4G', '5G', 'WiFi uniquement']} />,
+  'batterie': (props) => <InputField {...props} label="Batterie (mAh)" type="number" />,
+  'ecran': (props) => <InputField {...props} label="Taille écran (pouces)" type="text" />,
+  'tailleEcran': (props) => <InputField {...props} label="Taille écran" type="text" />,
+  'typeFix': (props) => <SelectField {...props} label="Type de fixe" options={['Sans fil', 'Avec fil', 'Visio']} />,
+  'typeProtection': (props) => <InputField {...props} label="Type de protection" type="text" />,
+  'compatibilite': (props) => <InputField {...props} label="Compatibilité" type="text" />,
+  'typeEcouteurs': (props) => <SelectField {...props} label="Type d'écouteurs" options={['Intra-auriculaires', 'Casque', 'Bluetooth']} />,
+  'connectivite': (props) => <SelectField {...props} label="Connectivité" options={['Bluetooth', 'WiFi', 'USB', 'Jack']} />,
+  'typeAccessoire': (props) => <InputField {...props} label="Type d'accessoire" type="text" />,
+  'quantite': (props) => <InputField {...props} label="Quantité" type="number" />,
+  'typeSupport': (props) => <InputField {...props} label="Type de support" type="text" />,
+  'typeManette': (props) => <InputField {...props} label="Type de manette" type="text" />,
+  'resolution': (props) => <InputField {...props} label="Résolution" type="text" />,
+  'capacite': (props) => <InputField {...props} label="Capacité" type="text" />,
+  'nombrePorts': (props) => <InputField {...props} label="Nombre de ports" type="number" />,
+  'typeStylet': (props) => <InputField {...props} label="Type de stylet" type="text" />,
+  'vitesse': (props) => <InputField {...props} label="Vitesse" type="text" />,
+  'typePiece': (props) => <InputField {...props} label="Type de pièce" type="text" />,
+  'operateur': (props) => <InputField {...props} label="Opérateur" type="text" />,
+  'duree': (props) => <InputField {...props} label="Durée" type="text" />,
+  'data': (props) => <InputField {...props} label="Data (Go)" type="text" />,
+  'appels': (props) => <InputField {...props} label="Appels" type="text" />,
+  
+  // Informática
+  'typeProduit': (props) => <InputField {...props} label="Type de produit" type="text" />,
+  'processeur': (props) => <InputField {...props} label="Processeur" type="text" />,
+  'carteGraphique': (props) => <InputField {...props} label="Carte graphique" type="text" />,
+  'stockage': (props) => <InputField {...props} label="Stockage" type="text" />,
+  'typeServeur': (props) => <InputField {...props} label="Type de serveur" type="text" />,
+  'typeEcran': (props) => <SelectField {...props} label="Type d'écran" options={['LED', 'LCD', 'OLED', 'Curved']} />,
+  'refreshRate': (props) => <InputField {...props} label="Taux de rafraîchissement (Hz)" type="number" />,
+  'typeComposant': (props) => <InputField {...props} label="Type de composant" type="text" />,
+  'specifications': (props) => <TextareaField {...props} label="Spécifications" />,
+  'typeImprimante': (props) => <SelectField {...props} label="Type d'imprimante" options={['Laser', 'Jet d\'encre', 'Thermique', '3D']} />,
+  'fonctions': (props) => <InputField {...props} label="Fonctions" type="text" />,
+  'typeReseau': (props) => <SelectField {...props} label="Type de réseau" options={['WiFi', 'Ethernet', 'Fibre', 'Switch']} />,
+  'ports': (props) => <InputField {...props} label="Ports" type="text" />,
+  'typeStockage': (props) => <SelectField {...props} label="Type de stockage" options={['HDD', 'SSD', 'NAS', 'Cloud']} />,
+  'typeProtection': (props) => <SelectField {...props} label="Type de protection" options={['Onduleur', 'Stabilisateur', 'Parafoudre']} />,
+  'typeClavier': (props) => <SelectField {...props} label="Type de clavier" options={['Mécanique', 'Membrane', 'Sans fil']} />,
+  'ergonomie': (props) => <SelectField {...props} label="Ergonomie" options={['Standard', 'Ergonomique', 'Gaming']} />,
+  'typeCasque': (props) => <SelectField {...props} label="Type de casque" options={['Over-ear', 'On-ear', 'In-ear', 'Gaming']} />,
+  'microphone': (props) => <SelectField {...props} label="Microphone" options={['Intégré', 'Externe', 'Sans']} />,
+  'luminosite': (props) => <InputField {...props} label="Luminosité (lumens)" type="number" />,
+  'typeCable': (props) => <InputField {...props} label="Type de câble" type="text" />,
+  'longueur': (props) => <InputField {...props} label="Longueur (m)" type="number" />,
+  
+  // Vestimenta
+  'taille': (props) => <InputField {...props} label="Taille" type="text" />,
+  'matiere': (props) => <InputField {...props} label="Matière" type="text" />,
+  'pointure': (props) => <InputField {...props} label="Pointure" type="text" />,
+  'typeVetement': (props) => <InputField {...props} label="Type de vêtement" type="text" />,
+  'typeChaussure': (props) => <InputField {...props} label="Type de chaussure" type="text" />,
+  'occasion': (props) => <SelectField {...props} label="Occasion" options={['Neuf', 'Très bon état', 'Bon état', 'État correct']} />,
+  'ageRecommandé': (props) => <InputField {...props} label="Âge recommandé" type="text" />,
+  'typeSac': (props) => <InputField {...props} label="Type de sac" type="text" />,
+  'typeMontre': (props) => <SelectField {...props} label="Type de montre" options={['Bracelet', 'Poche', 'Connectée', 'Sport']} />,
+  'materiauBracelet': (props) => <InputField {...props} label="Matériau du bracelet" type="text" />,
+  'typeLunettes': (props) => <SelectField {...props} label="Type de lunettes" options={['Soleil', 'Vue', 'Sécurité', 'Sport']} />,
+  'correction': (props) => <SelectField {...props} label="Correction" options={['Oui', 'Non']} />,
+  'typeBijou': (props) => <InputField {...props} label="Type de bijou" type="text" />,
+  'pierres': (props) => <InputField {...props} label="Pierres" type="text" />,
+  
+  // Electroménager
+  'typeAppareil': (props) => <InputField {...props} label="Type d'appareil" type="text" />,
+  'classeEnergetique': (props) => <SelectField {...props} label="Classe énergétique" options={['A+++', 'A++', 'A+', 'A', 'B', 'C', 'D']} />,
+  'anneeFabrication': (props) => <InputField {...props} label="Année de fabrication" type="number" />,
+  'consommation': (props) => <InputField {...props} label="Consommation (kWh)" type="number" />,
+  'smartTV': (props) => <SelectField {...props} label="Smart TV" options={['Oui', 'Non']} />,
+  'typeParabole': (props) => <InputField {...props} label="Type de parabole" type="text" />,
+  'canaux': (props) => <InputField {...props} label="Canaux" type="text" />,
+  'typeCamera': (props) => <SelectField {...props} label="Type de caméra" options={['Surveillance', 'Sport', 'Professionnelle']} />,
+  'typeAudio': (props) => <SelectField {...props} label="Type audio" options={['Enceinte', 'Barre de son', 'Amplificateur', 'Home cinéma']} />,
+  'programmes': (props) => <InputField {...props} label="Programmes" type="text" />,
+  'typeFour': (props) => <SelectField {...props} label="Type de four" options={['Électrique', 'Gaz', 'Micro-ondes', 'Combiné']} />,
+  'typeClimatisation': (props) => <SelectField {...props} label="Type de climatisation" options={['Mobile', 'Fix', 'Réversible', 'Sans conduit']} />,
+  'typeAspirateur': (props) => <SelectField {...props} label="Type d'aspirateur" options={['Traîneau', 'Balai', 'Robot', 'Central']} />,
+  'typeRepassage': (props) => <SelectField {...props} label="Type de repassage" options={['Fer', 'Centrale vapeur', 'Défroisseur']} />,
+  'typeMachine': (props) => <SelectField {...props} label="Type de machine" options={['Mécanique', 'Électronique', 'Informatique']} />,
+  'typeSecurite': (props) => <InputField {...props} label="Type de sécurité" type="text" />,
+  
+  // Alimentaires
+  'grossdtail': (props) => <SelectField {...props} label="Vente" options={['En gros', 'En détail', 'Les deux']} />,
+  
+  // Servicios
+  'typeService': (props) => <InputField {...props} label="Type de service" type="text" />,
+  'disponibilite': (props) => <InputField {...props} label="Disponibilité" type="text" />,
+  'typeTravaux': (props) => <InputField {...props} label="Type de travaux" type="text" />,
+  'typeFormation': (props) => <InputField {...props} label="Type de formation" type="text" />,
+  'niveau': (props) => <InputField {...props} label="Niveau" type="text" />,
+  'certification': (props) => <SelectField {...props} label="Certification" options={['Oui', 'Non']} />,
+  'typeIndustrie': (props) => <InputField {...props} label="Type d'industrie" type="text" />,
+  'capacite': (props) => <InputField {...props} label="Capacité" type="text" />,
+  'delai': (props) => <InputField {...props} label="Délai" type="text" />,
+  'typeTransport': (props) => <InputField {...props} label="Type de transport" type="text" />,
+  'distance': (props) => <InputField {...props} label="Distance" type="text" />,
+  'volume': (props) => <InputField {...props} label="Volume" type="text" />,
+  'vehicule': (props) => <InputField {...props} label="Véhicule" type="text" />,
+  'typeDecoration': (props) => <InputField {...props} label="Type de décoration" type="text" />,
+  'style': (props) => <InputField {...props} label="Style" type="text" />,
+  'typePublicite': (props) => <InputField {...props} label="Type de publicité" type="text" />,
+  'support': (props) => <InputField {...props} label="Support" type="text" />,
+  'portee': (props) => <InputField {...props} label="Portée" type="text" />,
+  'frequence': (props) => <InputField {...props} label="Fréquence" type="text" />,
+  'equipements': (props) => <TextareaField {...props} label="Équipements" />,
+  'typeTraiteur': (props) => <InputField {...props} label="Type de traiteur" type="text" />,
+  'nombrePersonnes': (props) => <InputField {...props} label="Nombre de personnes" type="number" />,
+  'menu': (props) => <TextareaField {...props} label="Menu" />,
+  'specialite': (props) => <InputField {...props} label="Spécialité" type="text" />,
+  'typeReparation': (props) => <InputField {...props} label="Type de réparation" type="text" />,
+  'probleme': (props) => <InputField {...props} label="Problème" type="text" />,
+  'typeSysteme': (props) => <InputField {...props} label="Type de système" type="text" />,
+  'monitoring': (props) => <SelectField {...props} label="Monitoring" options={['Oui', 'Non']} />,
+  'typeProjet': (props) => <InputField {...props} label="Type de projet" type="text" />,
+  'domaine': (props) => <InputField {...props} label="Domaine" type="text" />,
+  'complexite': (props) => <SelectField {...props} label="Complexité" options={['Faible', 'Moyenne', 'Élevée']} />,
+  'debit': (props) => <InputField {...props} label="Débit (Mbps)" type="number" />,
+  'typeVehicule': (props) => <InputField {...props} label="Type de véhicule" type="text" />,
+  'assurance': (props) => <SelectField {...props} label="Assurance" options={['Incluse', 'Non incluse']} />,
+  'typeMenuiserie': (props) => <InputField {...props} label="Type de menuiserie" type="text" />,
+  'design': (props) => <InputField {...props} label="Design" type="text" />,
+  'typeImpression': (props) => <InputField {...props} label="Type d'impression" type="text" />,
+  'format': (props) => <InputField {...props} label="Format" type="text" />,
+  'services': (props) => <TextareaField {...props} label="Services inclus" />,
+  'produits': (props) => <TextareaField {...props} label="Produits utilisés" />,
+  'typeComptabilite': (props) => <SelectField {...props} label="Type de comptabilité" options={['Générale', 'Analytique', 'Fiscale']} />,
+  'logiciels': (props) => <InputField {...props} label="Logiciels" type="text" />,
+  'typeCouture': (props) => <InputField {...props} label="Type de couture" type="text" />,
+  'tissu': (props) => <InputField {...props} label="Tissu" type="text" />,
+  'typeMaintenance': (props) => <InputField {...props} label="Type de maintenance" type="text" />,
+  'typeEquipement': (props) => <InputField {...props} label="Type d'équipement" type="text" />,
+  'urgence': (props) => <SelectField {...props} label="Urgence" options={['Normale', 'Urgent', 'Très urgent']} />,
+  'typeEvenement': (props) => <InputField {...props} label="Type d'événement" type="text" />,
+  'animations': (props) => <TextareaField {...props} label="Animations" />,
+  'typeInstallation': (props) => <InputField {...props} label="Type d'installation" type="text" />,
+  'typeTelephone': (props) => <InputField {...props} label="Type de téléphone" type="text" />,
+  'typeConsole': (props) => <InputField {...props} label="Type de console" type="text" />,
+  'jeux': (props) => <TextareaField {...props} label="Jeux" />,
+  
+  // Otros
+  'typeMateriau': (props) => <InputField {...props} label="Type de matériau" type="text" />,
+  'dimensions': (props) => <InputField {...props} label="Dimensions" type="text" />,
+  'resistance': (props) => <InputField {...props} label="Résistance" type="text" />,
+  'typeMatiere': (props) => <InputField {...props} label="Type de matière" type="text" />,
+  'purete': (props) => <InputField {...props} label="Pureté" type="text" />,
+  'typeProduit': (props) => <InputField {...props} label="Type de produit" type="text" />,
+  'datePeremption': (props) => <InputField {...props} label="Date de péremption" type="date" />,
+  'typeLoisir': (props) => <InputField {...props} label="Type de loisir" type="text" />,
+  'typeJouet': (props) => <InputField {...props} label="Type de jouet" type="text" />,
+  'typeEquipement': (props) => <InputField {...props} label="Type d'équipement" type="text" />,
+  'typeOutil': (props) => <InputField {...props} label="Type d'outil" type="text" />,
+  'typeBarbecue': (props) => <SelectField {...props} label="Type de barbecue" options={['Charbon', 'Gaz', 'Électrique', 'Plancha']} />,
+  'typeSport': (props) => <InputField {...props} label="Type de sport" type="text" />,
+  'poids': (props) => <InputField {...props} label="Poids (kg)" type="number" />,
+  'tailleRoue': (props) => <InputField {...props} label="Taille de roue (pouces)" type="text" />,
+  'vitesses': (props) => <InputField {...props} label="Vitesses" type="text" />,
+  'tension': (props) => <InputField {...props} label="Tension (kg)" type="text" />,
+  'flottabilite': (props) => <SelectField {...props} label="Flottabilité" options={['Oui', 'Non']} />,
+  'typeVoyage': (props) => <InputField {...props} label="Type de voyage" type="text" />,
+  'inclusions': (props) => <TextareaField {...props} label="Inclusions" />,
+  'destination': (props) => <InputField {...props} label="Destination" type="text" />,
+  'transport': (props) => <InputField {...props} label="Transport" type="text" />,
+  'hotel': (props) => <InputField {...props} label="Hôtel" type="text" />,
+  'repas': (props) => <SelectField {...props} label="Repas" options={['Inclus', 'Non inclus', 'Demi-pension']} />,
+  'typeLogement': (props) => <SelectField {...props} label="Type de logement" options={['Appartement', 'Maison', 'Villa', 'Studio']} />,
+  'typePelerinage': (props) => <SelectField {...props} label="Type de pèlerinage" options={['Hajj', 'Omra']} />,
+  'guide': (props) => <SelectField {...props} label="Guide" options={['Oui', 'Non']} />,
+  'typeVisa': (props) => <InputField {...props} label="Type de visa" type="text" />,
+  'documents': (props) => <TextareaField {...props} label="Documents requis" />,
+  'typeSejour': (props) => <SelectField {...props} label="Type de séjour" options={['Balnéaire', 'Montagne', 'Culturel', 'Aventure']} />,
+  'activites': (props) => <TextareaField {...props} label="Activités" />,
+  'navire': (props) => <InputField {...props} label="Navire" type="text" />,
+  'cabine': (props) => <InputField {...props} label="Type de cabine" type="text" />,
+  
+  // Empleo
+  'typeEmploi': (props) => <SelectField {...props} label="Type d'emploi" options={['CDI', 'CDD', 'Stage', 'Freelance', 'Temps partiel']} />,
+  'secteur': (props) => <InputField {...props} label="Secteur" type="text" />,
+  'experience': (props) => <InputField {...props} label="Expérience requise" type="text" />,
+  'salaire': (props) => <InputField {...props} label="Salaire" type="number" />,
+  'typeContrat': (props) => <InputField {...props} label="Type de contrat" type="text" />,
+  'localisation': (props) => <InputField {...props} label="Localisation" type="text" />,
+  'teletravail': (props) => <SelectField {...props} label="Télétravail" options={['Oui', 'Non', 'Partiel']} />,
+  'avantages': (props) => <TextareaField {...props} label="Avantages" />,
+  'nomSociete': (props) => <InputField {...props} label="Nom de la société" type="text" />,
+  'poste': (props) => <InputField {...props} label="Poste" type="text" />,
+  'experienceRequise': (props) => <InputField {...props} label="Expérience requise" type="text" />,
+  'posteRecherche': (props) => <InputField {...props} label="Poste recherché" type="text" />,
+  'salaireSouhaite': (props) => <InputField {...props} label="Salaire souhaité" type="number" />,
+  'mobilite': (props) => <SelectField {...props} label="Mobilité" options={['Oui', 'Non']} />,
+  'competences': (props) => <TextareaField {...props} label="Compétences" />
+};
+
+// Componente base para inputs
+const InputField = ({ fieldName, postData, handleChangeInput, label, type = "text", isRTL }) => {
+  const value = postData[fieldName] || '';
+  
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-semibold">
+        {label}
+        {value && <span className="text-success ms-1">✓</span>}
+      </label>
+      <input
+        type={type}
+        className="form-control"
+        name={fieldName}
+        value={value}
+        onChange={handleChangeInput}
+        dir={isRTL ? 'rtl' : 'ltr'}
+        placeholder={`Entrez ${label.toLowerCase()}`}
+      />
+    </div>
+  );
+};
+
+// Componente base para selects
+const SelectField = ({ fieldName, postData, handleChangeInput, label, options, isRTL }) => {
+  const value = postData[fieldName] || '';
+  
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-semibold">
+        {label}
+        {value && <span className="text-success ms-1">✓</span>}
+      </label>
+      <select
+        className="form-select"
+        name={fieldName}
+        value={value}
+        onChange={handleChangeInput}
+        dir={isRTL ? 'rtl' : 'ltr'}
+      >
+        <option value="">Sélectionnez {label.toLowerCase()}</option>
+        {options.map(opt => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
+// Componente base para textarea
+const TextareaField = ({ fieldName, postData, handleChangeInput, label, isRTL }) => {
+  const value = postData[fieldName] || '';
+  
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-semibold">
+        {label}
+        {value && <span className="text-success ms-1">✓</span>}
+      </label>
+      <textarea
+        className="form-control"
+        name={fieldName}
+        value={value}
+        onChange={handleChangeInput}
+        rows="3"
+        dir={isRTL ? 'rtl' : 'ltr'}
+        placeholder={`Décrivez ${label.toLowerCase()}`}
+      />
+    </div>
+  );
+};
+
+/**
+ * Renderizador unificado de campos
+ * Este componente maneja TODOS los campos de forma centralizada
+ */
+const FieldRendererUnified = ({
+  fieldName,
+  mainCategory,
+  subCategory,
+  postData,
+  handleChangeInput,
+  isRTL,
+  t
+}) => {
+  // Buscar componente para este campo
+  const Component = FIELD_COMPONENTS[fieldName];
+  
+  if (!Component) {
+    // Si no hay componente específico, usar InputField genérico
+    console.log(`📝 Usando campo genérico para: ${fieldName}`);
+    return (
+      <InputField
+        fieldName={fieldName}
+        postData={postData}
+        handleChangeInput={handleChangeInput}
+        label={fieldName.charAt(0).toUpperCase() + fieldName.slice(1).replace(/([A-Z])/g, ' $1')}
+        type="text"
+        isRTL={isRTL}
+      />
+    );
+  }
+
+  // Renderizar con props estándar
+  return (
+    <Component
+      fieldName={fieldName}
+      postData={postData}
+      handleChangeInput={handleChangeInput}
+      isRTL={isRTL}
+      t={t}
+    />
+  );
+};
+
+export default FieldRendererUnified;

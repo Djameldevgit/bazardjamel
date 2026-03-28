@@ -1,6 +1,6 @@
 // components/boutique/BoutiqueCard.jsx
 import React, { useState } from 'react';
-import { Card, Form, Badge, Dropdown, Modal, Button } from 'react-bootstrap';
+import { Card, Badge, Button, Modal, Form } from 'react-bootstrap';
 import { useHistory } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
@@ -12,32 +12,34 @@ import {
   FaBoxes,
   FaClock,
   FaCrown,
-  FaEllipsisV,
-  FaEdit,
-  FaTrash,
-  FaArchive,
   FaFlag,
   FaStar,
-  FaRegStar
+  FaRegStar,
+  FaHeart,
+  FaRegHeart,
+  FaShare,
+  FaBookmark,
+  FaRegBookmark
 } from 'react-icons/fa';
-import { deleteBoutique, updateBoutiqueStatus } from '../../redux/actions/boutiqueAction';
 import { GLOBALTYPES } from '../../redux/actions/globalTypes';
 
-const BoutiquePostCard = ({ boutique }) => {
+const BoutiquePostCard = ({ boutique, showActions = true }) => {
   const history = useHistory();
   const dispatch = useDispatch();
   const { auth } = useSelector(state => state);
   
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [showShareTooltip, setShowShareTooltip] = useState(false);
 
   const isOwner = auth.user?._id === boutique.user?._id || auth.user?._id === boutique.user;
   const isAdmin = auth.user?.role === 'admin';
 
   const handleClick = (e) => {
-    if (e.target.closest('.dropdown-toggle') || e.target.closest('.dropdown-menu') || e.target.closest('.report-btn')) {
+    // Usar clases únicas para evitar conflictos
+    if (e.target.closest('.boutique-action-btn') || e.target.closest('.boutique-report-btn')) {
       return;
     }
     history.push(`/boutique/${boutique._id}`);
@@ -57,33 +59,47 @@ const BoutiquePostCard = ({ boutique }) => {
     });
   };
 
-  // Obtener la primera imagen para el logo
+  const handleLike = (e) => {
+    e.stopPropagation();
+    setIsLiked(!isLiked);
+  };
+
+  const handleSave = (e) => {
+    e.stopPropagation();
+    setIsSaved(!isSaved);
+  };
+
+  const handleShare = (e) => {
+    e.stopPropagation();
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
+    setShowShareTooltip(true);
+    setTimeout(() => setShowShareTooltip(false), 2000);
+  };
+
   const getLogoImage = () => {
-    if (boutique.images && boutique.images.length > 0) {
+    if (boutique.images && Array.isArray(boutique.images) && boutique.images.length > 0) {
       const firstImage = boutique.images[0];
       return firstImage.url || firstImage;
     }
     return null;
   };
 
-  // Obtener la primera imagen del carousel para el fondo
   const getHeaderImage = () => {
-    if (boutique.header_images && boutique.header_images.length > 0 && !imageError) {
+    if (boutique.header_images && Array.isArray(boutique.header_images) && boutique.header_images.length > 0 && !imageError) {
       const firstImage = boutique.header_images[0];
       return firstImage.url || firstImage;
     }
     return null;
   };
 
-  // 🔥 COLORES: prioridad al color elegido por el usuario (couleur_theme)
   const getUserThemeColor = () => {
-    if (boutique.couleur_theme) {
+    if (boutique.couleur_theme && typeof boutique.couleur_theme === 'string') {
       return boutique.couleur_theme;
     }
     return null;
   };
 
-  // Color basado en categoría (fallback)
   const getCategoryColor = () => {
     const category = boutique.categorie?.toLowerCase() || '';
     const colorMap = {
@@ -98,43 +114,20 @@ const BoutiquePostCard = ({ boutique }) => {
     return colorMap[category] || '#6366F1';
   };
 
-  // Color principal (prioridad: color del usuario > color por categoría)
   const mainColor = getUserThemeColor() || getCategoryColor();
 
-  const handleDelete = async () => {
-    setIsDeleting(true);
+  const adjustColor = (color, percent) => {
+    if (!color || color === '#6366F1') return color;
     try {
-      await dispatch(deleteBoutique({ 
-        boutiqueId: boutique._id, 
-        auth 
-      }));
-      setShowDeleteModal(false);
-    } catch (error) {
-      // Error ya manejado en la acción
-    } finally {
-      setIsDeleting(false);
+      const num = parseInt(color.replace('#', ''), 16);
+      const amt = Math.round(2.55 * percent);
+      const R = Math.min(255, Math.max(0, (num >> 16) + amt));
+      const G = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amt));
+      const B = Math.min(255, Math.max(0, (num & 0x0000FF) + amt));
+      return `#${(0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)}`;
+    } catch {
+      return color;
     }
-  };
-  
-  const handleToggleActive = async (e) => {
-    e.stopPropagation();
-    try {
-      await dispatch(updateBoutiqueStatus({ 
-        boutiqueId: boutique._id, 
-        statusData: { isActive: !boutique.isActive },
-        auth 
-      }));
-    } catch (error) {
-      // Error ya manejado en la acción
-    }
-  };
-  
-  const handleEdit = (e) => {
-    e.stopPropagation();
-    history.push(`/edit-boutique/${boutique._id}`, { 
-      boutiqueData: boutique,
-      isEdit: true 
-    });
   };
 
   const handleImageError = () => {
@@ -143,16 +136,25 @@ const BoutiquePostCard = ({ boutique }) => {
 
   const logoImage = getLogoImage();
   const headerImage = getHeaderImage();
+  const hasImage = headerImage && !imageError;
+  
   const planName = boutique.plan === 'gratuit' ? 'Gratuit' : 
                    boutique.plan === 'basique' ? 'Basique' :
                    boutique.plan === 'premium' ? 'Premium' : 'Pro';
 
-  // Función para mostrar las estrellas
   const renderStars = (rating) => {
     const stars = [];
+    const roundedRating = Math.round(rating * 2) / 2;
     for (let i = 1; i <= 5; i++) {
-      if (i <= Math.round(rating)) {
+      if (i <= Math.floor(roundedRating)) {
         stars.push(<FaStar key={i} className="text-warning" size={12} />);
+      } else if (i === Math.ceil(roundedRating) && roundedRating % 1 !== 0) {
+        stars.push(
+          <div key={i} className="position-relative d-inline-block">
+            <FaRegStar className="text-secondary" size={12} style={{ opacity: 0.5 }} />
+            <FaStar className="text-warning position-absolute top-0 start-0" style={{ clipPath: 'inset(0 50% 0 0)' }} size={12} />
+          </div>
+        );
       } else {
         stars.push(<FaRegStar key={i} className="text-secondary" size={12} style={{ opacity: 0.5 }} />);
       }
@@ -171,23 +173,29 @@ const BoutiquePostCard = ({ boutique }) => {
           borderRadius: '16px',
           overflow: 'hidden',
           position: 'relative',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+          width: '100%',
+          maxWidth: '100%',
         }}
       >
-        {/* SECCIÓN DE FONDO - CON IMAGEN DEL CAROUSEL O COLOR DEL USUARIO */}
+        {/* ========== SECCIÓN DE FONDO ========== */}
         <div 
           className="position-relative"
           style={{
             height: '120px',
             position: 'relative',
-            background: (headerImage && !imageError) ? 'transparent' : `linear-gradient(135deg, ${mainColor} 0%, ${mainColor}dd 100%)`,
-            backgroundImage: (headerImage && !imageError) ? `url(${headerImage})` : 'none',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat'
+            backgroundColor: mainColor,
+            ...(hasImage && {
+              backgroundImage: `url(${headerImage})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+            }),
+            ...(!hasImage && {
+              background: `linear-gradient(135deg, ${mainColor} 0%, ${adjustColor(mainColor, 30)} 100%)`,
+            }),
           }}
         >
-          {/* Imagen oculta para detectar error de carga */}
           {headerImage && !imageError && (
             <img 
               src={headerImage}
@@ -197,8 +205,7 @@ const BoutiquePostCard = ({ boutique }) => {
             />
           )}
           
-          {/* Overlay oscuro si hay imagen válida */}
-          {headerImage && !imageError && (
+          {hasImage && (
             <div 
               style={{
                 position: 'absolute',
@@ -212,7 +219,7 @@ const BoutiquePostCard = ({ boutique }) => {
             />
           )}
           
-          {/* Badges supérieurs */}
+          {/* Badges superiores */}
           <div className="position-absolute top-0 start-0 m-3 d-flex gap-1" style={{ zIndex: 2 }}>
             {boutique.isVerified && (
               <Badge 
@@ -234,23 +241,45 @@ const BoutiquePostCard = ({ boutique }) => {
 
           <div className="position-absolute top-0 end-0 m-3" style={{ zIndex: 2 }}>
             <Badge 
-              bg={boutique.plan === 'premium' ? 'warning' : 'secondary'}
+              bg={boutique.plan === 'premium' ? 'warning' : boutique.plan === 'basique' ? 'info' : 'secondary'}
               style={{ 
                 padding: '0.3rem 0.6rem',
                 borderRadius: '20px',
                 fontSize: '0.7rem',
                 fontWeight: 'bold',
-                backgroundColor: boutique.plan === 'premium' ? 'rgba(255, 193, 7, 0.95)' : 'rgba(108, 117, 125, 0.95)',
+                backgroundColor: boutique.plan === 'premium' ? 'rgba(255, 193, 7, 0.95)' : 
+                                boutique.plan === 'basique' ? 'rgba(23, 162, 184, 0.95)' : 
+                                'rgba(108, 117, 125, 0.95)',
                 border: '1px solid rgba(255,255,255,0.3)'
               }}
             >
-              <FaCrown size={10} className="me-1" />
+              {boutique.plan === 'premium' && <FaCrown size={10} className="me-1" />}
               {planName}
+            </Badge>
+          </div>
+
+          {/* Indicador de personalización */}
+          <div 
+            className="position-absolute bottom-0 end-0 m-2"
+            style={{ zIndex: 2 }}
+          >
+            <Badge 
+              style={{
+                backgroundColor: 'rgba(0,0,0,0.6)',
+                backdropFilter: 'blur(4px)',
+                padding: '0.2rem 0.5rem',
+                borderRadius: '12px',
+                fontSize: '0.6rem',
+                fontWeight: 'normal',
+                color: 'white'
+              }}
+            >
+              {hasImage ? '📷 Image' : '🎨 Couleur'}
             </Badge>
           </div>
         </div>
 
-        {/* Logo circulaire - Élément distinctif */}
+        {/* ========== LOGO CIRCULAR ========== */}
         <div className="position-relative text-center" style={{ marginTop: '-50px', marginBottom: '10px', zIndex: 3 }}>
           <div 
             className="d-inline-flex align-items-center justify-content-center"
@@ -276,14 +305,15 @@ const BoutiquePostCard = ({ boutique }) => {
                   height: '100%',
                   objectFit: 'cover'
                 }}
-                onError={handleImageError}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                }}
               />
             ) : (
               <FaStore size={50} color={mainColor} />
             )}
           </div>
 
-          {/* Indicateur de statut */}
           {!boutique.isActive && (
             <div 
               className="position-absolute"
@@ -295,79 +325,28 @@ const BoutiquePostCard = ({ boutique }) => {
                 border: '2px solid white',
                 bottom: '5px',
                 left: '55%',
-                transform: 'translateX(-50%)'
+                transform: 'translateX(-50%)',
+                zIndex: 3
               }}
               title="Boutique inactive"
             />
           )}
         </div>
 
-        <Card.Body className="d-flex flex-column pt-0 px-3 pb-3">
-          {/* En-tête con nombre y menu */}
-          <div className="d-flex justify-content-between align-items-start mb-2">
-            <div className="flex-grow-1 text-center">
-              <h6 className="fw-bold mb-1" style={{ fontSize: '1.1rem', color: mainColor }}>
-                {boutique.nom_boutique}
-              </h6>
-              {boutique.slogan_boutique && (
-                <small className="text-muted d-block" style={{ fontStyle: 'italic', fontSize: '0.8rem' }}>
-                  "{boutique.slogan_boutique}"
-                </small>
-              )}
-            </div>
-            
-            {/* Dropdown d'actions */}
-            {(isOwner || isAdmin) && (
-              <Dropdown align="end" onClick={(e) => e.stopPropagation()}>
-                <Dropdown.Toggle 
-                  variant="link" 
-                  className="p-0 text-dark"
-                  style={{ textDecoration: 'none', boxShadow: 'none' }}
-                >
-                  <FaEllipsisV size={16} />
-                </Dropdown.Toggle>
-
-                <Dropdown.Menu>
-                  <Dropdown.Item onClick={handleEdit}>
-                    <FaEdit size={14} className="me-2" />
-                    Modifier
-                  </Dropdown.Item>
-                  
-                  {(isOwner || isAdmin) && (
-                    <Dropdown.Item onClick={handleToggleActive}>
-                      <FaArchive size={14} className="me-2" />
-                      {boutique.isActive ? 'Désactiver' : 'Activer'}
-                    </Dropdown.Item>
-                  )}
-                  
-                  {(isOwner || isAdmin) && (
-                    <Dropdown.Item 
-                      onClick={() => setShowDeleteModal(true)}
-                      className="text-danger"
-                    >
-                      <FaTrash size={14} className="me-2" />
-                      Supprimer
-                    </Dropdown.Item>
-                  )}
-                </Dropdown.Menu>
-              </Dropdown>
-            )}
-
-            {/* Bouton de signalement */}
-            {!isOwner && !isAdmin && (
-              <Button
-                variant="link"
-                className="p-0 text-muted report-btn"
-                onClick={handleReport}
-                style={{ textDecoration: 'none' }}
-                size="sm"
-              >
-                <FaFlag size={16} />
-              </Button>
+        {/* ========== CONTENIDO PRINCIPAL ========== */}
+        <Card.Body className="d-flex flex-column pt-0 px-3 pb-2">
+          {/* Nombre y categoría */}
+          <div className="text-center mb-2">
+            <h6 className="fw-bold mb-1" style={{ fontSize: '1.1rem', color: mainColor }}>
+              {boutique.nom_boutique}
+            </h6>
+            {boutique.slogan_boutique && (
+              <small className="text-muted d-block" style={{ fontStyle: 'italic', fontSize: '0.75rem' }}>
+                "{boutique.slogan_boutique}"
+              </small>
             )}
           </div>
 
-          {/* Catégorie */}
           <div className="text-center mb-3">
             <span 
               style={{
@@ -375,103 +354,63 @@ const BoutiquePostCard = ({ boutique }) => {
                 color: mainColor,
                 padding: '0.25rem 1rem',
                 borderRadius: '30px',
-                fontSize: '0.8rem',
+                fontSize: '0.75rem',
                 fontWeight: '500',
                 display: 'inline-block'
               }}
             >
-              <FaTag size={12} className="me-1" />
+              <FaTag size={10} className="me-1" />
               {boutique.categorie || 'Boutique'}
             </span>
           </div>
+        </Card.Body>
 
-          {/* Informations en ligne */}
-          <div className="d-flex flex-wrap justify-content-between align-items-center mb-2">
-            {/* Localisation */}
-            {boutique.proprietaire?.wilaya && (
-              <div className="d-flex align-items-center text-muted small me-2">
-                <FaMapMarkerAlt size={12} className="text-danger me-1" />
-                <span>{boutique.proprietaire.wilaya}</span>
-              </div>
-            )}
-
-            {/* Produits */}
-            <div className="d-flex align-items-center text-muted small me-2">
-              <FaBoxes size={12} className="text-primary me-1" />
-              <span>{boutique.stats?.produits || 0}</span>
+        {/* ========== FOOTER TIPO POST - CON CLASES ÚNICAS ========== */}
+        <div className="boutique-post-footer-unique">
+          {/* Información de la boutique */}
+          <div className="boutique-footer-info-unique">
+            <div className="boutique-info-item-unique">
+              <FaMapMarkerAlt size={12} className="text-danger" />
+              <span className="boutique-info-text-unique">
+                {boutique.proprietaire?.wilaya || 'Algérie'}
+              </span>
             </div>
-
-            {/* Vues */}
-            <div className="d-flex align-items-center text-muted small">
-              <FaEye size={12} className="text-info me-1" />
-              <span>{boutique.stats?.vues || 0}</span>
+            
+            <div className="boutique-info-item-unique">
+              <FaBoxes size={12} className="text-primary" />
+              <span className="boutique-info-text-unique">
+                {boutique.stats?.produits || 0} produits
+              </span>
             </div>
-          </div>
-
-          {/* Date et note */}
-          <div className="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-            <div className="d-flex align-items-center text-muted small">
-              <FaClock size={12} className="me-1" />
-              <span>
+            
+            <div className="boutique-info-item-unique">
+              <FaEye size={12} className="text-info" />
+              <span className="boutique-info-text-unique">
+                {boutique.stats?.vues || 0} vues
+              </span>
+            </div>
+            
+            <div className="boutique-info-item-unique">
+              <FaClock size={12} className="text-secondary" />
+              <span className="boutique-info-text-unique">
                 {new Date(boutique.createdAt).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })}
               </span>
             </div>
             
             {boutique.stats?.notes > 0 && (
-              <div className="d-flex align-items-center">
+              <div className="boutique-info-item-unique boutique-rating-unique">
                 {renderStars(boutique.stats.notes)}
-                <small className="text-muted ms-1">
+                <span className="boutique-info-text-unique ms-1">
                   ({boutique.stats.avis || 0})
-                </small>
+                </span>
               </div>
             )}
           </div>
-        </Card.Body>
-
-        {/* Badge "Boutique" distinctif */}
-        <div 
-          className="position-absolute top-0 end-0 m-2"
-          style={{ zIndex: 3 }}
-        >
-          <Badge 
-            style={{
-              backgroundColor: mainColor,
-              color: 'white',
-              padding: '0.2rem 0.6rem',
-              borderRadius: '12px',
-              fontSize: '0.65rem',
-              fontWeight: 'normal',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}
-          >
-            <FaStore size={8} className="me-1" />
-            Boutique
-          </Badge>
+ 
         </div>
-      </Card>
 
-      {/* Modal de confirmation de suppression */}
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirmer la suppression</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>Êtes-vous sûr de vouloir supprimer la boutique <strong>{boutique.nom_boutique}</strong> ?</p>
-          <p className="text-danger small">Cette action est irréversible.</p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-            Annuler
-          </Button>
-          <Button 
-            variant="danger" 
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            {isDeleting ? 'Suppression...' : 'Supprimer'}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        
+      </Card>
 
       {/* Modal de signalement */}
       <Modal show={showReportModal} onHide={() => setShowReportModal(false)} centered>
@@ -479,10 +418,10 @@ const BoutiquePostCard = ({ boutique }) => {
           <Modal.Title>Signaler cette boutique</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p>Voulez-vous signaler cette boutique ?</p>
+          <p>Voulez-vous signaler la boutique <strong>{boutique.nom_boutique}</strong> ?</p>
           <Form.Group>
             <Form.Label>Raison du signalement</Form.Label>
-            <Form.Select>
+            <Form.Select id="reportReason">
               <option>Contenu inapproprié</option>
               <option>Boutique frauduleuse</option>
               <option>Spam ou publicité</option>
@@ -501,6 +440,7 @@ const BoutiquePostCard = ({ boutique }) => {
       </Modal>
 
       <style jsx="true">{`
+        /* ========== ESTILOS CON CLASES ÚNICAS ========== */
         .boutique-card:hover {
           transform: translateY(-5px);
           box-shadow: 0 12px 24px rgba(0,0,0,0.12) !important;
@@ -509,39 +449,113 @@ const BoutiquePostCard = ({ boutique }) => {
         .boutique-card:hover .d-inline-flex {
           transform: scale(1.05);
         }
-        
-        .dropdown-toggle::after {
-          display: none;
-        }
 
-        .dropdown-toggle:focus {
-          box-shadow: none;
-        }
-
-        .dropdown-menu {
-          min-width: 180px;
-          border-radius: 12px;
-          box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-          border: none;
-          padding: 0.5rem 0;
-        }
-
-        .dropdown-item {
-          padding: 0.6rem 1rem;
-          font-size: 0.9rem;
-        }
-
-        .dropdown-item:hover {
+        /* Footer único */
+        .boutique-post-footer-unique {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 16px;
+          border-top: 1px solid #e9ecef;
           background-color: #f8f9fa;
+          gap: 12px;
+          flex-wrap: wrap;
         }
 
-        .dropdown-item.text-danger:hover {
-          background-color: #dc3545;
-          color: white !important;
+        .boutique-footer-info-unique {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          flex: 1;
         }
 
-        .report-btn:hover {
+        .boutique-info-item-unique {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.7rem;
+          color: #6c757d;
+        }
+
+        .boutique-info-item-unique.boutique-rating-unique {
+          display: flex;
+          align-items: center;
+          gap: 2px;
+        }
+
+        .boutique-info-text-unique {
+          font-size: 0.7rem;
+          font-weight: 500;
+        }
+
+        .boutique-footer-actions-unique {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .boutique-action-btn-unique {
+          background: none;
+          border: none;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          color: #6c757d;
+          padding: 4px 8px;
+          border-radius: 20px;
+          transition: all 0.2s ease;
+          cursor: pointer;
+          font-size: 0.75rem;
+        }
+
+        .boutique-action-btn-unique:hover {
+          background-color: #e9ecef;
+        }
+
+        .boutique-report-btn-unique:hover {
           color: #dc3545 !important;
+        }
+
+        .boutique-share-tooltip-unique {
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          margin-bottom: 8px;
+          background-color: #28a745;
+          color: white;
+          padding: 4px 8px;
+          border-radius: 6px;
+          font-size: 0.7rem;
+          white-space: nowrap;
+          z-index: 10;
+          animation: boutiqueFadeOutUnique 2s ease forwards;
+        }
+
+        @keyframes boutiqueFadeOutUnique {
+          0% { opacity: 1; }
+          70% { opacity: 1; }
+          100% { opacity: 0; visibility: hidden; }
+        }
+
+        /* Responsive */
+        @media (max-width: 576px) {
+          .boutique-post-footer-unique {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+          }
+          
+          .boutique-footer-info-unique {
+            justify-content: space-between;
+            gap: 8px;
+          }
+          
+          .boutique-footer-actions-unique {
+            justify-content: space-around;
+            border-top: 1px solid #e9ecef;
+            padding-top: 8px;
+          }
         }
       `}</style>
     </>

@@ -1,58 +1,63 @@
-// src/components/CATEGORIES/specificFields/AlimentairesField.js
+// 📂 components/CATEGORIES/specificFields/TelephonesField.js
 import React from 'react';
 import BaseCategoryField from './BaseCategoryField';
 
-// Campos específicos para alimentaires (si los hay)
-import MarqueField from '../camposComun/MarqueField';
-import ModeleField from '../camposComun/ModeleField';
+// Importar campos específicos
+import MarcaModeloField from '../camposComun/MarcaModeloField';
+ 
+import CameraField from '../camposComun/CameraFields';
 
-const TelephonesFields= (props) => {
-  // Campos adicionales específicos para alimentaires
+const TelephonesField = (props) => {
+  const { step, mainCategory, subCategory, postData, handleChangeInput, isRTL, t } = props;
+  
+  // 🔥 CAMPOS ADICIONALES ESPECÍFICOS PARA TELÉFONOS
   const additionalFields = {
-    // Componentes personalizados
+    // Componentes personalizados (mapeo nombre → componente)
     components: {
       'marque': (
-        <MarqueField
+        <MarcaModeloField
           key="marque"
-          mainCategory={props.mainCategory}
-          subCategory={props.subCategory}
-          fieldName="marque"
-          postData={props.postData}
-          handleChangeInput={props.handleChangeInput}
-          isRTL={props.isRTL}
-          t={props.t}
+          mainCategory={mainCategory}
+          subCategory={subCategory}
+          postData={postData}
+          handleChangeInput={handleChangeInput}
+          isRTL={isRTL}
+          t={t}
+          brandField="marque"
+          modelField="modele"
         />
       ),
-      'modele': (
-        <ModeleField
-          key="modele"
-          mainCategory={props.mainCategory}
-          subCategory={props.subCategory}
-          fieldName="modele"
-          postData={props.postData}
-          handleChangeInput={props.handleChangeInput}
-          isRTL={props.isRTL}
-          t={props.t}
+    
+      'camera': (
+        <CameraField
+          key="camera"
+          mainCategory={mainCategory}
+          subCategory={subCategory}
+          postData={postData}
+          handleChangeInput={handleChangeInput}
+          isRTL={isRTL}
+          t={t}
         />
       )
     },
     
-    // Campos adicionales por step (opcional)
-    step2: ['marque', 'modele'],
-    
-    // Campos personalizados con prefijo "custom:"
-    customComponents: {
-      // Para campos muy específicos
-    }
+    // Campos adicionales por step (se AGREGAN a los de FieldConfig)
+    step2: ['marque'],      // Agregar 'marque' al step2
+    step3: ['capaciteStockage', 'ram', 'garantie'],  // Agregar al step3
+    step4: []               // No agregar nada al step4
   };
   
-  return (
-    <BaseCategoryField
-      {...props}
-      additionalFields={additionalFields}
-    />
-  );
+  if (step) {
+    return (
+      <BaseCategoryField
+        {...props}
+        step={step}
+        additionalFields={additionalFields}
+      />
+    );
+  }
+  
+  return null;
 };
- 
 
-export default TelephonesFields;
+export default TelephonesField;

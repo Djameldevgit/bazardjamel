@@ -610,9 +610,7 @@ const BoutiqueHeader = ({ boutique }) => {
 
       {/* Modal gestión de imágenes */}
       <Modal show={showImageModal} onHide={handleCancel} size="lg" centered className="bh-modal">
-        <Modal.Header closeButton className="bh-modal-header">
-          <Modal.Title><FaImages className="me-2 text-primary" />Gérer les images de fond</Modal.Title>
-        </Modal.Header>
+       
         <Modal.Body className="bh-modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
           {headerImages.length > 0 && (
             <div className="mb-4">

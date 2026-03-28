@@ -1,0 +1,417 @@
+// src/components/CATEGORIES/GeneracionTitulo.js
+
+/**
+ * 📝 GENERADOR AUTOMÁTICO DE TÍTULOS POR CATEGORÍA
+ * 
+ * Este archivo se encarga de generar títulos descriptivos y consistentes
+ * para cada tipo de anuncio según los campos específicos de la categoría.
+ * 
+ * Uso: generateTitle(categoryData, specificData, commonData)
+ */
+
+/**
+ * Genera título automático según la categoría y los datos del anuncio
+ * 
+ * @param {Object} categoryData - { categorie, subCategory, articleType }
+ * @param {Object} specificData - Datos específicos de la categoría
+ * @param {Object} commonData - Datos comunes (description, etc.)
+ * @returns {string} Título generado automáticamente
+ */
+ export const generateTitle = (categoryData, specificData, commonData) => {
+    const { categorie, subCategory, articleType } = categoryData;
+    
+    // ============ VEHÍCULOS ============
+    if (categorie === 'vehicules') {
+      const marca = specificData.marque || commonData.marque || '';
+      const modelo = specificData.modele || commonData.modele || '';
+      const anio = specificData.annee || commonData.annee || '';
+      const couleur = specificData.couleur || commonData.couleur || '';
+      const kilometrage = specificData.kilometrage || commonData.kilometrage || '';
+      
+      // Título base: Marca + Modelo
+      let title = '';
+      if (marca && modelo) {
+        title = `${marca} ${modelo}`;
+      } else if (marca) {
+        title = `${marca}`;
+      } else if (modelo) {
+        title = `${modelo}`;
+      } else {
+        title = 'Véhicule';
+      }
+      
+      // Agregar año si existe
+      if (anio) title += ` ${anio}`;
+      
+      // Agregar color si existe
+      if (couleur) title += ` ${couleur}`;
+      
+      // Agregar kilometraje si existe (opcional, para dar más info)
+      if (kilometrage && kilometrage > 0) {
+        title += ` - ${kilometrage.toLocaleString()} km`;
+      }
+      
+      return title.trim();
+    }
+    
+    // ============ IMMOBILIER ============
+    if (categorie === 'immobilier') {
+      const typeBien = specificData.typeImmobilier || '';
+      const surface = specificData.surface || '';
+      const chambres = specificData.chambres || '';
+      const operationType = specificData.operationType || '';
+      const quartier = specificData.quartier || '';
+      
+      let title = '';
+      
+      // Tipo de operación (Vente/Location)
+      if (operationType) title += operationType;
+      
+      // Tipo de bien
+      if (typeBien) {
+        title += title ? ` ${typeBien}` : typeBien;
+      } else {
+        title += title ? ' bien immobilier' : 'Bien immobilier';
+      }
+      
+      // Superficie
+      if (surface && surface > 0) title += ` ${surface}m²`;
+      
+      // Número de chambres
+      if (chambres && chambres > 0) {
+        title += ` - ${chambres} chambre${chambres > 1 ? 's' : ''}`;
+      }
+      
+      // Quartier
+      if (quartier) title += ` à ${quartier}`;
+      
+      return title.trim();
+    }
+    
+    // ============ TELÉPHONES ============
+    if (categorie === 'telephones') {
+      const marca = specificData.marque || '';
+      const modelo = specificData.modele || '';
+      const capacidad = specificData.capaciteStockage || '';
+      const couleur = specificData.couleur || '';
+      
+      let title = '';
+      
+      if (marca && modelo) {
+        title = `${marca} ${modelo}`;
+      } else if (marca) {
+        title = `${marca}`;
+      } else if (modelo) {
+        title = `${modelo}`;
+      } else {
+        title = 'Téléphone';
+      }
+      
+      if (capacidad) title += ` ${capacidad}`;
+      if (couleur) title += ` ${couleur}`;
+      
+      return title.trim();
+    }
+    
+    // ============ VÊTEMENTS ============
+    if (categorie === 'vetements') {
+      const typeVetement = specificData.typeVetement || '';
+      const taille = specificData.taille || '';
+      const couleur = specificData.couleur || '';
+      const marque = specificData.marque || '';
+      
+      let title = typeVetement || 'Vêtement';
+      
+      if (marque) title += ` ${marque}`;
+      if (taille) title += ` taille ${taille}`;
+      if (couleur) title += ` ${couleur}`;
+      
+      return title.trim();
+    }
+    
+    // ============ CHAUSSURES ============
+    if (subCategory === 'chaussures_homme' || subCategory === 'chaussures_femme') {
+      const typeChaussure = specificData.typeChaussure || '';
+      const pointure = specificData.pointure || '';
+      const couleur = specificData.couleur || '';
+      const marque = specificData.marque || '';
+      
+      let title = typeChaussure || 'Chaussures';
+      
+      if (marque) title += ` ${marque}`;
+      if (pointure) title += ` pointure ${pointure}`;
+      if (couleur) title += ` ${couleur}`;
+      
+      return title.trim();
+    }
+    
+    // ============ ÉLECTROMÉNAGER ============
+    if (categorie === 'electromenager') {
+      const typeAppareil = specificData.typeAppareil || '';
+      const marca = specificData.marque || '';
+      const modelo = specificData.modele || '';
+      const classeEnergetique = specificData.classeEnergetique || '';
+      
+      let title = typeAppareil || 'Appareil électroménager';
+      
+      if (marca) title += ` ${marca}`;
+      if (modelo) title += ` ${modelo}`;
+      if (classeEnergetique) title += ` - Classe ${classeEnergetique}`;
+      
+      return title.trim();
+    }
+    
+    // ============ INFORMATIQUE ============
+    if (categorie === 'informatique') {
+      const typeProduit = specificData.typeProduit || '';
+      const marca = specificData.marque || '';
+      const modelo = specificData.modele || '';
+      const processeur = specificData.processeur || '';
+      const ram = specificData.ram || '';
+      
+      let title = typeProduit || 'Matériel informatique';
+      
+      if (marca) title += ` ${marca}`;
+      if (modelo) title += ` ${modelo}`;
+      if (processeur) title += ` - ${processeur}`;
+      if (ram) title += ` / ${ram}`;
+      
+      return title.trim();
+    }
+    
+    // ============ LOISIRS & DIVERTISSEMENT ============
+    if (categorie === 'loisirs') {
+      const typeLoisir = specificData.typeLoisir || '';
+      const marca = specificData.marque || '';
+      const modelo = specificData.modele || '';
+      
+      let title = typeLoisir || 'Loisir';
+      
+      if (marca) title += ` ${marca}`;
+      if (modelo) title += ` ${modelo}`;
+      
+      return title.trim();
+    }
+    
+    // ============ JEUX VIDÉO ============
+    if (subCategory === 'jeux_video') {
+      const typeConsole = specificData.typeConsole || '';
+      const jeuxInclus = specificData.jeuxInclus || '';
+      
+      let title = 'Console de jeu';
+      if (typeConsole) title += ` ${typeConsole}`;
+      if (jeuxInclus) title += ` avec jeux inclus`;
+      
+      return title;
+    }
+    
+    // ============ INSTRUMENTS DE MUSIQUE ============
+    if (subCategory === 'instruments_musique') {
+      const typeInstrument = specificData.typeInstrument || '';
+      const marca = specificData.marque || '';
+      const modelo = specificData.modele || '';
+      
+      let title = typeInstrument || 'Instrument de musique';
+      if (marca) title += ` ${marca}`;
+      if (modelo) title += ` ${modelo}`;
+      
+      return title;
+    }
+    
+    // ============ LIVRES ============
+    if (subCategory === 'livres') {
+      const titre = specificData.titre || '';
+      const auteur = specificData.auteur || '';
+      
+      if (titre && auteur) return `${titre} - ${auteur}`;
+      if (titre) return titre;
+      if (auteur) return `Livre de ${auteur}`;
+      return 'Livre';
+    }
+    
+    // ============ ALIMENTAIRES ============
+    if (categorie === 'alimentaires') {
+      const typeAliment = specificData.typeAliment || '';
+      const marca = specificData.marque || '';
+      const quantite = specificData.quantite || '';
+      
+      let title = typeAliment || 'Produit alimentaire';
+      
+      if (marca) title += ` ${marca}`;
+      if (quantite) title += ` - ${quantite}`;
+      
+      return title.trim();
+    }
+    
+    // ============ SERVICES ============
+    if (categorie === 'services') {
+      const typeService = specificData.typeService || '';
+      const duree = specificData.duree || '';
+      
+      let title = typeService || 'Service';
+      if (duree) title += ` (${duree})`;
+      
+      return title;
+    }
+    
+    // ============ SANTÉ & BEAUTÉ ============
+    if (categorie === 'santebeaute') {
+      const typeProduit = specificData.typeProduit || '';
+      const marca = specificData.marque || '';
+      
+      let title = typeProduit || 'Produit de beauté';
+      if (marca) title += ` ${marca}`;
+      
+      return title;
+    }
+    
+    // ============ MEUBLES ============
+    if (categorie === 'meubles') {
+      const typeMeuble = specificData.typeMeuble || '';
+      const matiere = specificData.matiere || '';
+      const dimensions = specificData.dimensions || '';
+      
+      let title = typeMeuble || 'Meuble';
+      if (matiere) title += ` en ${matiere}`;
+      if (dimensions) title += ` ${dimensions}`;
+      
+      return title;
+    }
+    
+    // ============ MATÉRIAUX ============
+    if (categorie === 'materiaux') {
+      const typeMateriau = specificData.typeMateriau || '';
+      const quantite = specificData.quantite || '';
+      
+      let title = typeMateriau || 'Matériau';
+      if (quantite) title += ` - ${quantite}`;
+      
+      return title;
+    }
+    
+    // ============ SPORT ============
+    if (categorie === 'sport') {
+      const typeSport = specificData.typeSport || '';
+      const typeEquipement = specificData.typeEquipement || '';
+      const marca = specificData.marque || '';
+      const taille = specificData.taille || '';
+      
+      let title = typeEquipement || typeSport || 'Article de sport';
+      if (marca) title += ` ${marca}`;
+      if (taille) title += ` taille ${taille}`;
+      
+      return title;
+    }
+    
+    // ============ VÉLOS ============
+    if (subCategory === 'velo') {
+      const marca = specificData.marque || '';
+      const modelo = specificData.modele || '';
+      const tailleRoue = specificData.tailleRoue || '';
+      
+      let title = 'Vélo';
+      if (marca) title += ` ${marca}`;
+      if (modelo) title += ` ${modelo}`;
+      if (tailleRoue) title += ` ${tailleRoue}"`;
+      
+      return title;
+    }
+    
+    // ============ VOYAGES ============
+    if (categorie === 'voyages') {
+      const destination = specificData.destination || '';
+      const duree = specificData.duree || '';
+      const typeVoyage = specificData.typeVoyage || '';
+      
+      let title = typeVoyage || 'Voyage';
+      if (destination) title += ` à ${destination}`;
+      if (duree) title += ` - ${duree}`;
+      
+      return title;
+    }
+    
+    // ============ HAJJ & OMRA ============
+    if (subCategory === 'hajj_omra') {
+      const typePelerinage = specificData.typePelerinage || '';
+      const duree = specificData.duree || '';
+      
+      let title = typePelerinage || 'Pèlerinage';
+      if (duree) title += ` - ${duree}`;
+      
+      return title;
+    }
+    
+    // ============ EMPLOI ============
+    if (categorie === 'emploi') {
+      const poste = specificData.poste || specificData.posteRecherche || '';
+      const secteur = specificData.secteur || '';
+      const typeContrat = specificData.typeContrat || '';
+      
+      let title = '';
+      
+      if (subCategory === 'offres') {
+        title = 'Offre d\'emploi';
+      } else if (subCategory === 'demandes') {
+        title = 'Demande d\'emploi';
+      } else {
+        title = 'Emploi';
+      }
+      
+      if (poste) title += ` : ${poste}`;
+      if (secteur) title += ` dans ${secteur}`;
+      if (typeContrat) title += ` (${typeContrat})`;
+      
+      return title;
+    }
+    
+    // ============ PIÈCES DÉTACHÉES ============
+    if (categorie === 'piecesDetachees') {
+      const typePiece = specificData.typePiece || '';
+      const marca = specificData.marque || '';
+      const modelo = specificData.modele || '';
+      
+      let title = typePiece || 'Pièce détachée';
+      if (marca) title += ` ${marca}`;
+      if (modelo) title += ` ${modelo}`;
+      
+      return title;
+    }
+    
+    // ============ DEFAULT (FALLBACK) ============
+    // Si no hay categoría específica, usar descripción truncada
+    const description = commonData.description || '';
+    if (description) {
+      return description.length > 60 ? description.substring(0, 60) + '...' : description;
+    }
+    
+    // Último recurso
+    return 'Annonce sans titre';
+  };
+  
+  /**
+   * Genera una versión SEO-friendly del título (URL amigable)
+   * @param {string} title - Título original
+   * @returns {string} Slug URL-friendly
+   */
+  export const generateSlug = (title) => {
+    return title
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Eliminar acentos
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+  
+  /**
+   * Obtener vista previa del título para mostrar en UI
+   * @param {Object} categoryData - Datos de categoría
+   * @param {Object} specificData - Datos específicos
+   * @param {Object} commonData - Datos comunes
+   * @returns {string} Vista previa del título
+   */
+  export const getTitlePreview = (categoryData, specificData, commonData) => {
+    const title = generateTitle(categoryData, specificData, commonData);
+    return title;
+  };
+  
+  export default generateTitle;

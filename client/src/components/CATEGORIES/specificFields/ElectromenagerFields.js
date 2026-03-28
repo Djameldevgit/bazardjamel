@@ -1,61 +1,50 @@
-// src/components/CATEGORIES/specificFields/AlimentairesField.js
+// 📂 components/CATEGORIES/specificFields/ElectromenagerField.js
 import React from 'react';
 import BaseCategoryField from './BaseCategoryField';
 
-// Campos específicos para alimentaires (si los hay)
-import MarqueField from '../camposComun/MarqueField';
-import ModeleField from '../camposComun/ModeleField';
+// Importar campo específico
+import MarcaModeloField from '../camposComun/MarcaModeloField';
 
-const ElectromenagerFields= (props) => {
-  // Campos adicionales específicos para alimentaires
+const ElectromenagerField = (props) => {
+  const { step, mainCategory, subCategory, postData, handleChangeInput, isRTL, t } = props;
+  
+  console.log(`🔌 ElectromenagerField - Step: ${step}`);
+  
+  // 🔥 CAMPOS ADICIONALES ESPECÍFICOS
   const additionalFields = {
-    // Componentes personalizados
     components: {
       'marque': (
-        <MarqueField
+        <MarcaModeloField
           key="marque"
-          mainCategory={props.mainCategory}
-          subCategory={props.subCategory}
-          fieldName="marque"
-          postData={props.postData}
-          handleChangeInput={props.handleChangeInput}
-          isRTL={props.isRTL}
-          t={props.t}
-        />
-      ),
-      'modele': (
-        <ModeleField
-          key="modele"
-          mainCategory={props.mainCategory}
-          subCategory={props.subCategory}
-          fieldName="modele"
-          postData={props.postData}
-          handleChangeInput={props.handleChangeInput}
-          isRTL={props.isRTL}
-          t={props.t}
+          mainCategory={mainCategory}
+          subCategory={subCategory}
+          postData={postData}
+          handleChangeInput={handleChangeInput}
+          isRTL={isRTL}
+          t={t}
+          brandField="marque"
+          modelField="modele"
         />
       )
     },
     
-    // Campos adicionales por step (opcional)
-    step2: ['marque', 'modele'],
-    
-    // Campos personalizados con prefijo "custom:"
-    customComponents: {
-      // Para campos muy específicos
-    }
+    // Agregar 'marque' al step2
+    step2: ['marque'],
+    step3: [],
+    step4: []
   };
   
-  return (
-    <BaseCategoryField
-      {...props}
-      additionalFields={additionalFields}
-    />
-  );
+  if (step) {
+    return (
+      <BaseCategoryField
+        {...props}
+        step={step}
+        additionalFields={additionalFields}
+      />
+    );
+  }
+  
+  return null;
 };
- 
 
- 
- 
- 
-export default ElectromenagerFields;
+export default ElectromenagerField;

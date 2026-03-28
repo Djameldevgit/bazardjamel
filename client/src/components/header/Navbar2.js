@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../redux/actions/authAction';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useHistory } from 'react-router-dom'; // 🔥 Cambio: useHistory en lugar de useNavigate
 import Avatar from '../Avatar';
 import Card from 'react-bootstrap/Card';
 import {
@@ -40,34 +40,41 @@ const Navbar2 = () => {
   const dispatch = useDispatch();
   const { languageReducer } = useSelector(state => state);
   const { t } = useTranslation('navbar2');
+  const history = useHistory(); // 🔥 Cambio: useHistory en lugar de useNavigate
 
-  // 🔥 ELIMINADO: Estados de traducción
   const [isPWAInstalled, setIsPWAInstalled] = useState(false);
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [userRole, setUserRole] = useState(auth.user?.role);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showDeactivatedModal, setShowDeactivatedModal] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 700);
   const [showFeaturesModal, setShowFeaturesModal] = useState(false);
-  const notifyDropdownRef = useRef(null);
   const [showDrawer, setShowDrawer] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  
+  const notifyDropdownRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   // Funciones para manejar el drawer
   const handleDrawerOpen = () => setShowDrawer(true);
   const handleDrawerClose = () => setShowDrawer(false);
 
-  // 🔥 DETECCIÓN MEJORADA DE TAMAÑO DE PANTALLA
+  // 🔥 DETECCIÓN MEJORADA DE TAMAÑO DE PANTALLA CON DEBOUNCE
   useEffect(() => {
+    let timeoutId;
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 700);
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setIsMobile(window.innerWidth < 700);
+      }, 100);
     };
 
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timeoutId);
+    };
   }, []);
-
-  // 🔥 ELIMINADO: Todo el código relacionado con Google Translate
 
   // Detección PWA
   useEffect(() => {
@@ -101,18 +108,6 @@ const Navbar2 = () => {
       return () => clearTimeout(timer);
     }
   }, [showInstallButton, isPWAInstalled]);
-
-  // Efectos de usuario
-  useEffect(() => {
-    if (auth.user?.role && auth.user.role !== userRole) {
-      setUserRole(auth.user.role);
-    }
-  }, [auth.user?.role, userRole]);
-
-  // Handlers
-  const handleLogout = () => {
-    dispatch(logout());
-  };
 
   // Verificación PWA mejorada
   useEffect(() => {
@@ -171,11 +166,35 @@ const Navbar2 = () => {
     }
   };
 
+  // Handlers de autenticación con useHistory
+// En Navbar2.js
+const handleLogout = () => {
+  setDropdownOpen(false);
+  
+  // Realizar logout
+  dispatch(logout());
+  
+  // Redirigir después de un pequeño delay
+  setTimeout(() => {
+      window.location.href = '/login';
+  }, 100);
+};
+
+  const handleLogin = () => {
+    setDropdownOpen(false);
+    history.push('/login'); // 🔥 Cambio: history.push en lugar de navigate
+  };
+
+  const handleRegister = () => {
+    setDropdownOpen(false);
+    history.push('/register'); // 🔥 Cambio: history.push en lugar de navigate
+  };
+
   // Verificación de settings
   if (!settings || Object.keys(settings).length === 0) {
     return (
       <nav className="navbar navbar-light bg-light" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1030 }}>
-        <span className="navbar-brand">{t('loading')}</span>
+        <span className="navbar-brand">{t('loading') || 'Cargando...'}</span>
       </nav>
     );
   }
@@ -184,34 +203,48 @@ const Navbar2 = () => {
     ? cart.items.reduce((acc, item) => acc + (item?.quantity || 0), 0)
     : 0;
 
-  const unreadNotifications = notify.data.filter(n => !n.isRead).length;
+  const unreadNotifications = notify?.data ? notify.data.filter(n => !n.isRead).length : 0;
 
-  // MenuItem component (simplificado)
-  const MenuItem = ({ icon: Icon, iconColor, to, onClick, children, danger = false }) => (
-    <NavDropdown.Item
-      as={to ? Link : 'button'}
-      to={to}
-      onClick={onClick}
-      className={`custom-menu-item ${danger ? 'text-danger' : ''}`}
-      style={{
-        padding: '12px 16px',
-        transition: 'all 0.2s ease',
-        borderRadius: '8px',
-        margin: '4px 8px',
-        display: 'flex',
-        alignItems: 'center',
-        fontWeight: '500',
-        width: 'calc(100% - 16px)',
-        boxSizing: 'border-box',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis'
-      }}
-    >
-      <Icon className="me-2" style={{ color: iconColor, fontSize: '1rem', flexShrink: 0 }} />
-      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{children}</span>
-    </NavDropdown.Item>
-  );
+  // 🔥 MenuItem component con history.push
+  const MenuItem = ({ icon: Icon, iconColor, to, onClick, children, danger = false }) => {
+    const handleClick = (e) => {
+      if (onClick) {
+        onClick(e);
+      }
+      setDropdownOpen(false);
+      if (to) {
+        history.push(to); // 🔥 Cambio: history.push en lugar de navigate
+      }
+    };
+
+    return (
+      <NavDropdown.Item
+        as="button"
+        onClick={handleClick}
+        className={`custom-menu-item ${danger ? 'text-danger' : ''}`}
+        style={{
+          padding: '12px 16px',
+          transition: 'all 0.2s ease',
+          borderRadius: '8px',
+          margin: '4px 8px',
+          display: 'flex',
+          alignItems: 'center',
+          fontWeight: '500',
+          width: 'calc(100% - 16px)',
+          boxSizing: 'border-box',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer'
+        }}
+      >
+        <Icon className="me-2" style={{ color: iconColor, fontSize: '1rem', flexShrink: 0 }} />
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{children}</span>
+      </NavDropdown.Item>
+    );
+  };
 
   return (
     <>
@@ -320,7 +353,7 @@ const Navbar2 = () => {
                       alignItems: 'center'
                     }}
                   >
-                    {t('appName')}
+                    {t('appName') || 'MarketPlace'}
                   </Card.Title>
                 </Navbar.Brand>
               </Link>
@@ -355,7 +388,7 @@ const Navbar2 = () => {
               <FaSearch
                 size={isMobile ? 16 : 18}
                 style={{ color: '#667eea' }}
-                title={t('search')}
+                title={t('search') || 'Buscar'}
               />
             </Link>
 
@@ -377,7 +410,7 @@ const Navbar2 = () => {
                   animation: 'pulse 2s infinite',
                   cursor: 'pointer'
                 }}
-                title={t('installPWA')}
+                title={t('installPWA') || 'Instalar App'}
               >
                 <FaDownload
                   size={isMobile ? 16 : 18}
@@ -386,8 +419,8 @@ const Navbar2 = () => {
               </button>
             )}
 
-            {/* Botón Agregar Post */}
-            {(userRole === "Super-utilisateur" || userRole === "admin"|| userRole === "user") && (
+            {/* Botón Agregar Post - Solo para usuarios autenticados */}
+            {auth.user && (auth.user.role === "Super-utilisateur" || auth.user.role === "admin" || auth.user.role === "user") && (
               <Link
                 to="/creer-annonce"
                 className="icon-button"
@@ -403,7 +436,7 @@ const Navbar2 = () => {
                   boxShadow: '0 4px 12px rgba(102, 126, 234, 0.25)',
                   textDecoration: 'none'
                 }}
-                title={t('addPost')}
+                title={t('addPost') || 'Crear anuncio'}
               >
                 <FaPlus
                   size={isMobile ? 14 : 16}
@@ -412,7 +445,7 @@ const Navbar2 = () => {
               </Link>
             )}
 
-            {/* Notificaciones */}
+            {/* Notificaciones - Solo para usuarios autenticados */}
             {auth.user && (
               <div
                 className="position-relative icon-button"
@@ -460,11 +493,21 @@ const Navbar2 = () => {
               </div>
             )}
 
-            {/* 🔥 DROPDOWN DE USUARIO SIN SELECTOR DE IDIOMAS */}
+            {/* 🔥 DROPDOWN DE USUARIO MEJORADO PARA PC */}
             <NavDropdown
               align="end"
+              show={dropdownOpen}
+              onToggle={(isOpen) => setDropdownOpen(isOpen)}
               title={
-                <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+                <div 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    position: 'relative',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                >
                   {auth.user ? (
                     <div
                       style={{
@@ -521,13 +564,13 @@ const Navbar2 = () => {
                         </div>
                         <div className="flex-grow-1">
                           <div className="fw-bold text-white user-name">
-                            {auth.user.username}
+                            {auth.user.username || auth.user.name || 'Usuario'}
                           </div>
                           <div className="user-role-badge">
-                            {userRole === 'admin' ? `👑 ${t('admin')}` :
-                              userRole === 'Moderateur' ? `🛡️ ${t('moderator')}` :
-                                userRole === 'Super-utilisateur' ? `⭐ ${t('superUser')}` :
-                                  `👤 ${t('user')}`}
+                            {auth.user.role === 'admin' ? `👑 ${t('admin') || 'Admin'}` :
+                              auth.user.role === 'Moderateur' ? `🛡️ ${t('moderator') || 'Moderador'}` :
+                                auth.user.role === 'Super-utilisateur' ? `⭐ ${t('superUser') || 'Super Usuario'}` :
+                                  `👤 ${t('user') || 'Usuario'}`}
                           </div>
                         </div>
                       </div>
@@ -536,74 +579,78 @@ const Navbar2 = () => {
                     <NavDropdown.Divider />
 
                     <MenuItem icon={FaUserCircle} iconColor="#667eea" to={`/profile/${auth.user._id}`}>
-                      {t('profile')}
+                      {t('profile') || 'Mi Perfil'}
                     </MenuItem>
 
                     <MenuItem icon={FaInfoCircle} iconColor="#6c757d" to="/infoaplicacionn">
-                      {t('appInfo')}
+                      {t('appInfo') || 'Información'}
                     </MenuItem>
 
                     <MenuItem icon={FaTools} iconColor="#6c757d" to="/users/roles">
-                      {t('roles')}
+                      {t('roles') || 'Roles'}
                     </MenuItem>
 
                     <MenuItem icon={FaShareAlt} iconColor="#ffc107" onClick={() => setShowShareModal(true)}>
-                      {t('shareApp')}
+                      {t('shareApp') || 'Compartir App'}
                     </MenuItem>
 
                     {/* Panel de Admin */}
-                    {userRole === "admin" && (
+                    {auth.user.role === "admin" && (
                       <>
                         <NavDropdown.Divider />
                         <div className="admin-panel-header">
                           <FaShieldAlt className="me-2" size={16} />
-                          {t('adminPanel')}
+                          {t('adminPanel') || 'Panel Admin'}
                         </div>
 
                         {/* Sección de Tiendas */}
                         <div className="stores-section mb-3">
-                          <div className="d-flex align-items-center mb-2">
+                          <div className="d-flex align-items-center mb-2 px-3">
                             <FaStore className="me-2 text-warning" size={14} />
-                            <span className="text-muted small fw-bold">MES BOUTIQUES</span>
+                            <span className="text-muted small fw-bold">{t('myStores') || 'MIS TIENDAS'}</span>
                           </div>
                           
-                          {/* Crear nueva tienda */}
                           <MenuItem 
                             icon={FaPlusCircle} 
                             iconColor="#28a745"
                             to="/create-boutique"
-                            className="mb-2 create-store-item"
                           >
-                            <div className="d-flex align-items-center justify-content-between">
-                              <span>Créer une boutique</span>
-                              <Badge pill bg="success" className="ms-2">
-                                <FaPlus size={10} />
-                              </Badge>
-                            </div>
+                            {t('createStore') || 'Crear tienda'}
                           </MenuItem>
                           
-                          {/* Ver todas las tiendas */}
-                          <MenuItem icon={FaUserCircle} iconColor="#667eea" to={`/boutique/${auth.user._id}`}>
-                            <div className="d-flex align-items-center justify-content-between"></div>
+                          {auth.user && (
+                            <MenuItem 
+                              icon={FaStore} 
+                              iconColor="#667eea" 
+                              to={`/boutique/${auth.user._id}`}
+                            >
+                              {t('myStore') || 'Mi tienda'}
+                            </MenuItem>
+                          )}
+                          
+                          <MenuItem 
+                            icon={FaStore} 
+                            iconColor="#ffc107" 
+                            to="/boutiques"
+                          >
+                            {t('allStores') || 'Todas las tiendas'}
                           </MenuItem>
-   
-                          <MenuItem icon={FaUserCircle} iconColor="#667eea" to='/boutiques'>
-                            <div className="d-flex align-items-center justify-content-between">Boutiques page</div>
+                          
+                          <MenuItem 
+                            icon={FaStore} 
+                            iconColor="#28a745" 
+                            to="/mes-boutiques"
+                          >
+                            {t('myStoresList') || 'Mis tiendas'}
                           </MenuItem>
-                          <MenuItem icon={FaUserCircle} iconColor="#667eea" to='/mes-boutiques'>
-                            <div className="d-flex align-items-center justify-content-between">mes-boutiques</div>
-                          </MenuItem>
-
-                           
-
                         </div>
 
                         <MenuItem icon={FaUsers} iconColor="#28a745" to="/users">
-                          {t('users')}
+                          {t('users') || 'Usuarios'}
                         </MenuItem>
 
                         <MenuItem icon={FaUserCog} iconColor="#667eea" to="/usersactionn">
-                          {t('userActions')}
+                          {t('userActions') || 'Acciones de usuario'}
                         </MenuItem>
                       </>
                     )}
@@ -616,30 +663,32 @@ const Navbar2 = () => {
                       onClick={handleLogout}
                       danger
                     >
-                      <span className="fw-bold">{t('logout')}</span>
+                      <span className="fw-bold">{t('logout') || 'Cerrar Sesión'}</span>
                     </MenuItem>
                   </>
                 ) : (
                   <>
-                    <MenuItem icon={FaSignInAlt} iconColor="#28a745" to="/login">
-                      {t('login')}
+                    <MenuItem icon={FaSignInAlt} iconColor="#28a745" onClick={handleLogin}>
+                      {t('login') || 'Iniciar Sesión'}
                     </MenuItem>
 
-                    <MenuItem icon={FaUserPlus} iconColor="#667eea" to="/register">
-                      {t('register')}
+                    <MenuItem icon={FaUserPlus} iconColor="#667eea" onClick={handleRegister}>
+                      {t('register') || 'Registrarse'}
                     </MenuItem>
+                    
                     <MenuItem icon={FaInfoCircle} iconColor="#6c757d" to="/infoaplicacionn">
-                      {t('appInfo')}
+                      {t('appInfo') || 'Información'}
                     </MenuItem>
 
                     <MenuItem icon={FaShareAlt} iconColor="#ffc107" onClick={() => setShowShareModal(true)}>
-                      {t('shareApp')}
+                      {t('shareApp') || 'Compartir App'}
                     </MenuItem>
                   </>
                 )}
               </div>
             </NavDropdown>
 
+            {/* Botón de menú móvil */}
             <button
               onClick={handleDrawerOpen}
               className="icon-button"
@@ -654,7 +703,7 @@ const Navbar2 = () => {
                 border: 'none',
                 transition: 'all 0.3s ease',
                 cursor: 'pointer',
-                marginLeft: isMobile ? '4px'  : '6px'
+                marginLeft: isMobile ? '4px' : '6px'
               }}
               title={t('menu') || "Menú"}
             >
@@ -675,7 +724,7 @@ const Navbar2 = () => {
         minHeight: isMobile ? '56px' : '64px'
       }} />
 
-      {/* 🔥 ESTILOS CSS SIMPLIFICADOS */}
+      {/* 🔥 ESTILOS CSS COMPLETOS */}
       <style>{`
         /* Animación PWA */
         @keyframes pulse {
@@ -701,16 +750,17 @@ const Navbar2 = () => {
           color: ${settings.style ? '#ffffff' : '#333333'} !important;
           cursor: pointer;
           -webkit-tap-highlight-color: transparent;
+          background: transparent !important;
         }
 
         .custom-menu-item:hover,
-        .custom-menu-item:active {
+        .custom-menu-item:focus {
           background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%) !important;
           transform: translateX(4px);
         }
 
         .custom-menu-item.text-danger:hover,
-        .custom-menu-item.text-danger:active {
+        .custom-menu-item.text-danger:focus {
           background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(245, 87, 108, 0.1) 100%) !important;
         }
 
@@ -786,7 +836,7 @@ const Navbar2 = () => {
           box-shadow: 0 4px 12px rgba(255, 107, 107, 0.25);
         }
 
-        /* Dropdown posicionamiento */
+        /* Dropdown posicionamiento MEJORADO PARA PC */
         #nav-user-dropdown + .dropdown-menu {
           position: absolute !important;
           right: 0 !important;
@@ -803,6 +853,7 @@ const Navbar2 = () => {
           background: ${settings.style ? '#2d3748' : '#ffffff'} !important;
           padding: 0 !important;
           overflow: hidden !important;
+          z-index: 1050 !important;
         }
 
         /* Divider */
@@ -848,6 +899,17 @@ const Navbar2 = () => {
             padding: 8px 14px;
             margin: 4px 10px 6px 10px;
             font-size: 0.8rem;
+          }
+        }
+
+        /* Optimización para PC (hover effects) */
+        @media (min-width: 701px) {
+          .custom-menu-item:hover {
+            transform: translateX(4px);
+          }
+          
+          .icon-button:hover {
+            transform: translateY(-2px);
           }
         }
 
@@ -897,11 +959,13 @@ const Navbar2 = () => {
         show={showShareModal}
         onClose={() => setShowShareModal(false)}
       />
+      
       <Drawer
         show={showDrawer}
         onHide={handleDrawerClose}
         position="start"
         title={t('menu') || "Menú"}
+        user={auth.user}
       />
     </>
   );

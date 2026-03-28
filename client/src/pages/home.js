@@ -16,7 +16,7 @@ import InfiniteScroll from 'react-infinite-scroll-component';
 import MainCategorySlider from '../components/SlidersCategories/CategorySlider';
 import CarouselHome from '../components/carousel/CarouselHome';
 import PostCard from '../components/post-card/PostCard';
-import BoutiqueCard from '../components/boutique/BoutiquePostCard';
+import BoutiquePostCard from '../components/boutique/BoutiquePostCard';
   
 import { ArrowRight, ChevronLeft, ChevronRight } from 'react-bootstrap-icons';
 
@@ -225,11 +225,9 @@ const Home = () => {
               <div className="d-flex justify-content-between align-items-center mb-2">
                 <div>
                   <div className="d-flex align-items-center gap-3 mb-2">
-                    <div className="category-icon bg-purple bg-opacity-10 rounded-3 p-3">
-                      <p className="text-purple" size={20} />
-                    </div>
+                   
                     <div>
-                      <h3 className="h4 fw-bold mb-0">Boutiques {homeBoutiques.length} </h3>
+                      <h5 className="h4 fw-bold mb-0">Boutiques {homeBoutiques.length} </h5>
                      
                          
                        
@@ -298,7 +296,7 @@ const Home = () => {
                       style={{ minWidth: '280px', maxWidth: '280px' }}
                       onClick={() => handleBoutiqueClick(boutique._id)}
                     >
-                      <BoutiqueCard boutique={boutique} />
+                      <BoutiquePostCard boutique={boutique} />
                     </div>
                   ))}
                 </div>
@@ -360,7 +358,7 @@ const Home = () => {
                   {normalPosts.length > 0 ? (
                     <Row>
                       {normalPosts.slice(0, 6).map((post) => (
-                        <Col key={post._id} xs={6} md={4} lg={2} className="mb-4">
+                        <Col key={post._id} xs={6} md={4} lg={2} className="mb-2">
                           <PostCard post={post} />
                         </Col>
                       ))}

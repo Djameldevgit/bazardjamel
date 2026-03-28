@@ -33,7 +33,7 @@ import { accordionReducer } from './accordionReducer'
 import boutiqueProduct  from './boutiqueProductReducer'
  import boutique from './boutiqueReducer'
 import   filter   from './filterReducer.'
-import carousel from './carouselHomeReducer'
+import carousel from './carouselReducer'
  
  
  

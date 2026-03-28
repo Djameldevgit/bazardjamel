@@ -1,12 +1,10 @@
-// frontend/src/redux/actions/carouselAction.js
 import { getDataAPI, postDataAPI, patchDataAPI, deleteDataAPI } from '../../utils/fetchData';
 import { GLOBALTYPES } from './globalTypes';
 import { imageUpload } from '../../utils/imageUpload';
 
-// ============ CONSTANTES DE TIPOS ============
 export const CAROUSEL_TYPES = {
   GET_CAROUSEL_IMAGES: 'GET_CAROUSEL_IMAGES',
-  GET_HOME_CAROUSEL: 'GET_HOME_CAROUSEL',  // ✅ Agregado
+  GET_HOME_CAROUSEL: 'GET_HOME_CAROUSEL',
   GET_ALL_CAROUSEL_IMAGES: 'GET_ALL_CAROUSEL_IMAGES',
   CREATE_CAROUSEL_IMAGE: 'CREATE_CAROUSEL_IMAGE',
   UPDATE_CAROUSEL_IMAGE: 'UPDATE_CAROUSEL_IMAGE',
@@ -16,107 +14,74 @@ export const CAROUSEL_TYPES = {
   CAROUSEL_ERROR: 'CAROUSEL_ERROR'
 };
 
-// ============ OBTENER IMÁGENES ACTIVAS PARA EL HOME (PÚBLICO) ============
-export const getCarouselImages = () => async (dispatch) => {
+// ============ HOME (PÚBLICO) ============
+export const getHomeCarousel = () => async (dispatch) => {
   try {
     dispatch({ type: CAROUSEL_TYPES.CAROUSEL_LOADING, payload: true });
-    
-    const res = await getDataAPI('carousel');
-    
-    dispatch({
-      type: CAROUSEL_TYPES.GET_CAROUSEL_IMAGES,
-      payload: res.data.data
-    });
-    
+    const res = await getDataAPI('carousel/home');
+    dispatch({ type: CAROUSEL_TYPES.GET_HOME_CAROUSEL, payload: res.data.data });
     return res.data;
-    
   } catch (err) {
-    console.error('❌ Error getCarouselImages:', err);
-    dispatch({
-      type: CAROUSEL_TYPES.CAROUSEL_ERROR,
-      payload: err.response?.data?.message || err.message
-    });
+    console.error('❌ Error getHomeCarousel:', err);
+    dispatch({ type: CAROUSEL_TYPES.CAROUSEL_ERROR, payload: err.response?.data?.message || err.message });
   } finally {
     dispatch({ type: CAROUSEL_TYPES.CAROUSEL_LOADING, payload: false });
   }
 };
 
-// ============ OBTENER TODAS LAS IMÁGENES (ADMIN) ============
-export const getAllCarouselImages = (pageType, categoryId) => async (dispatch, getState) => {
+// ============ TODAS LAS IMÁGENES (ADMIN) ============
+export const getAllCarouselImages = () => async (dispatch, getState) => {
   try {
     dispatch({ type: CAROUSEL_TYPES.CAROUSEL_LOADING, payload: true });
-    
     const { auth } = getState();
-    let url = 'carousel/admin/all';
-    const params = [];
-    if (pageType) params.push(`pageType=${pageType}`);
-    if (categoryId) params.push(`categoryId=${categoryId}`);
-    if (params.length) url += `?${params.join('&')}`;
-    
-    const res = await getDataAPI(url, auth.token);
-    
-    dispatch({
-      type: CAROUSEL_TYPES.GET_ALL_CAROUSEL_IMAGES,
-      payload: res.data.data
-    });
-    
+    const token = auth?.token || auth?.auth?.token;
+    const res = await getDataAPI('carousel/admin/all', token);
+    dispatch({ type: CAROUSEL_TYPES.GET_ALL_CAROUSEL_IMAGES, payload: res.data.data });
     return res.data;
-    
   } catch (err) {
     console.error('❌ Error getAllCarouselImages:', err);
-    dispatch({
-      type: CAROUSEL_TYPES.CAROUSEL_ERROR,
-      payload: err.response?.data?.message || err.message
-    });
+    dispatch({ type: CAROUSEL_TYPES.CAROUSEL_ERROR, payload: err.response?.data?.message || err.message });
   } finally {
     dispatch({ type: CAROUSEL_TYPES.CAROUSEL_LOADING, payload: false });
   }
 };
 
-// ============ CREAR NUEVA IMAGEN ============
+// ============ CREAR IMAGEN ============
 export const createCarouselImage = (formData, auth) => async (dispatch) => {
   try {
     dispatch({ type: CAROUSEL_TYPES.CAROUSEL_LOADING, payload: true });
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
-    
-    // Validaciones
-    if (!formData.title) {
-      throw new Error('El título es requerido');
-    }
-    
-    if (!formData.imageFile) {
-      throw new Error('Debes seleccionar una imagen');
-    }
-    
-    // Subir imagen a Cloudinary
-    let imagesToUpload = [];
-    
+
+    if (!formData.title?.trim()) throw new Error('El título es requerido');
+    if (!formData.imageFile) throw new Error('Debes seleccionar una imagen');
+
+    let imageData;
+
+    // BUG 2 FIX: imageUpload espera un array de objetos { file } o ya subidos { url, public_id }
     if (formData.imageFile.isExisting) {
-      imagesToUpload = [{
+      // Imagen ya en Cloudinary — usar directamente sin re-subir
+      imageData = {
         url: formData.imageFile.url,
-        public_id: formData.imageFile.public_id,
-        isExisting: true
-      }];
+        public_id: formData.imageFile.public_id
+      };
     } else {
-      imagesToUpload = [{
-        file: formData.imageFile.file,
-        url: formData.imageFile.url,
-        name: formData.imageFile.file?.name || 'image.jpg',
-        isExisting: false
-      }];
+      // Imagen nueva — imageUpload necesita el File nativo, no el objeto wrapper
+      const file = formData.imageFile.file;
+      if (!file) throw new Error('Archivo de imagen no válido');
+
+      console.log('📤 Subiendo imagen a Cloudinary...');
+      // imageUpload recibe array de Files o de objetos con .file
+      const uploaded = await imageUpload([formData.imageFile]);
+
+      if (!uploaded || uploaded.length === 0) throw new Error('Error al subir la imagen');
+      imageData = uploaded[0];
     }
-    
-    console.log('📤 Subiendo imagen a Cloudinary...');
-    const uploadedImages = await imageUpload(imagesToUpload);
-    
-    if (!uploadedImages || uploadedImages.length === 0) {
-      throw new Error('Error al subir la imagen');
+
+    // Verificar que imageData tenga url y public_id
+    if (!imageData?.url || !imageData?.public_id) {
+      throw new Error('La imagen subida no devolvió url o public_id');
     }
-    
-    const imageData = uploadedImages[0];
-    console.log('✅ Imagen subida:', imageData);
-    
-    // Datos para el backend
+
     const dataToSend = {
       title: formData.title.trim(),
       description: formData.description?.trim() || '',
@@ -124,29 +89,18 @@ export const createCarouselImage = (formData, auth) => async (dispatch) => {
       linkType: formData.linkType || 'none',
       image: imageData
     };
-    
-    console.log('📦 Enviando al backend:', dataToSend);
-    
+
     const res = await postDataAPI('carousel', dataToSend, auth.token);
-    
-    dispatch({
-      type: CAROUSEL_TYPES.CREATE_CAROUSEL_IMAGE,
-      payload: res.data.data
-    });
-    
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { success: '✅ Imagen creada exitosamente' }
-    });
-    
+
+    dispatch({ type: CAROUSEL_TYPES.CREATE_CAROUSEL_IMAGE, payload: res.data.data });
+    dispatch(getHomeCarousel());
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { success: '✅ Imagen creada exitosamente' } });
+
     return { success: true, data: res.data.data };
-    
+
   } catch (err) {
     console.error('❌ Error createCarouselImage:', err);
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { error: err.response?.data?.message || err.message }
-    });
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { error: err.response?.data?.message || err.message } });
     return { success: false, error: err.message };
   } finally {
     dispatch({ type: CAROUSEL_TYPES.CAROUSEL_LOADING, payload: false });
@@ -159,58 +113,49 @@ export const updateCarouselImage = (id, formData, auth) => async (dispatch) => {
   try {
     dispatch({ type: CAROUSEL_TYPES.CAROUSEL_LOADING, payload: true });
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
-    
-    // Preparar datos para actualizar
+
     const dataToSend = {
       title: formData.title?.trim(),
-      description: formData.description?.trim(),
-      link: formData.link?.trim(),
+      description: formData.description?.trim() ?? '',
+      link: formData.link?.trim() ?? '',
       linkType: formData.linkType
     };
-    
-    // Limpiar campos undefined
+
+    // Limpiar undefined
     Object.keys(dataToSend).forEach(key => {
       if (dataToSend[key] === undefined) delete dataToSend[key];
     });
-    
-    // Si hay nueva imagen, subir a Cloudinary
-    if (formData.imageFile && !formData.imageFile.isExisting) {
-      console.log('📤 Subiendo nueva imagen...');
-      const uploaded = await imageUpload([{
-        file: formData.imageFile.file,
-        url: formData.imageFile.url,
-        name: formData.imageFile.file?.name || 'image.jpg',
-        isExisting: false
-      }]);
-      
-      if (uploaded.length > 0) {
-        dataToSend.image = uploaded[0];
-        console.log('✅ Nueva imagen subida:', dataToSend.image);
+
+    // BUG 3 FIX: manejar los tres casos posibles de imagen en edición
+    if (formData.imageFile) {
+      if (formData.imageFile.isExisting) {
+        // La imagen no cambió — enviar los datos existentes tal cual
+        dataToSend.image = {
+          url: formData.imageFile.url,
+          public_id: formData.imageFile.public_id
+        };
+      } else if (formData.imageFile.file) {
+        // Imagen nueva seleccionada — subir a Cloudinary
+        console.log('📤 Subiendo nueva imagen en edición...');
+        const uploaded = await imageUpload([formData.imageFile]);
+        if (uploaded && uploaded.length > 0) {
+          dataToSend.image = uploaded[0];
+        }
       }
+      // Si imageFile existe pero no tiene ni isExisting ni file, no hacer nada
     }
-    
-    console.log('📦 Actualizando en backend:', dataToSend);
-    
+
     const res = await patchDataAPI(`carousel/${id}`, dataToSend, auth.token);
-    
-    dispatch({
-      type: CAROUSEL_TYPES.UPDATE_CAROUSEL_IMAGE,
-      payload: res.data.data
-    });
-    
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { success: '✅ Imagen actualizada' }
-    });
-    
+
+    dispatch({ type: CAROUSEL_TYPES.UPDATE_CAROUSEL_IMAGE, payload: res.data.data });
+    dispatch(getHomeCarousel());
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { success: '✅ Imagen actualizada' } });
+
     return { success: true, data: res.data.data };
-    
+
   } catch (err) {
     console.error('❌ Error updateCarouselImage:', err);
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { error: err.response?.data?.message || err.message }
-    });
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { error: err.response?.data?.message || err.message } });
     return { success: false, error: err.message };
   } finally {
     dispatch({ type: CAROUSEL_TYPES.CAROUSEL_LOADING, payload: false });
@@ -223,94 +168,21 @@ export const deleteCarouselImage = (id, auth) => async (dispatch) => {
   try {
     dispatch({ type: CAROUSEL_TYPES.CAROUSEL_LOADING, payload: true });
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
-    
-    console.log('🗑️ Eliminando imagen:', id);
-    
+
     await deleteDataAPI(`carousel/${id}`, auth.token);
-    
-    dispatch({
-      type: CAROUSEL_TYPES.DELETE_CAROUSEL_IMAGE,
-      payload: id
-    });
-    
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { success: '✅ Imagen eliminada' }
-    });
-    
+
+    dispatch({ type: CAROUSEL_TYPES.DELETE_CAROUSEL_IMAGE, payload: id });
+    dispatch(getHomeCarousel());
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { success: '✅ Imagen eliminada' } });
+
     return { success: true };
-    
+
   } catch (err) {
     console.error('❌ Error deleteCarouselImage:', err);
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { error: err.response?.data?.message || err.message }
-    });
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { error: err.response?.data?.message || err.message } });
     return { success: false, error: err.message };
   } finally {
     dispatch({ type: CAROUSEL_TYPES.CAROUSEL_LOADING, payload: false });
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
-  }
-};
-
-// ============ REORDENAR IMÁGENES ============
-export const reorderCarouselImages = (images, auth) => async (dispatch) => {
-  try {
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
-    
-    const dataToSend = { images };
-    await patchDataAPI('carousel/reorder', dataToSend, auth.token);
-    
-    dispatch({
-      type: CAROUSEL_TYPES.REORDER_CAROUSEL_IMAGES,
-      payload: images
-    });
-    
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { success: '✅ Orden actualizado' }
-    });
-    
-    return { success: true };
-    
-  } catch (err) {
-    console.error('❌ Error reorderCarouselImages:', err);
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { error: err.response?.data?.message || err.message }
-    });
-    return { success: false, error: err.message };
-  } finally {
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
-  }
-};
-
-// frontend/src/redux/actions/carouselHomeAction.js
-// Agrega esta función al final del archivo
-
-// ============ OBTENER CARRUSEL PARA EL HOME ============
-export const getHomeCarousel = () => async (dispatch) => {
-  try {
-    dispatch({ type: CAROUSEL_TYPES.CAROUSEL_LOADING, payload: true });
-    
-    const res = await getDataAPI('carousel/home');
-    
-    console.log('📸 [getHomeCarousel] Respuesta:', res.data);
-    
-    dispatch({
-      type: CAROUSEL_TYPES.GET_HOME_CAROUSEL,
-      payload: res.data.data
-    });
-    
-    return res.data;
-    
-  } catch (err) {
-    console.error('❌ Error getHomeCarousel:', err);
-    dispatch({
-      type: CAROUSEL_TYPES.CAROUSEL_ERROR,
-      payload: err.response?.data?.message || err.message
-    });
-  } finally {
-    dispatch({ type: CAROUSEL_TYPES.CAROUSEL_LOADING, payload: false });
   }
 };

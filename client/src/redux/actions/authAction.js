@@ -239,21 +239,16 @@ export const register = (data, t, lang) => async (dispatch) => {
 
 
 export const logout = () => async (dispatch) => {
-    try {
-        localStorage.removeItem('firstLogin')
-        await postDataAPI('logout')
-        window.location.href = "/"
-    } catch (err) {
-        dispatch({
-            type: GLOBALTYPES.ALERT,
-            payload: {
-                error: err.response.data.msg
-            }
-        })
-    }
+  try {
+      localStorage.removeItem('firstLogin')
+      await postDataAPI('logout')
+      window.location.href = "/"
+  } catch (err) {
+      dispatch({ 
+          type: GLOBALTYPES.ALERT, 
+          payload: {
+              error: err.response.data.msg
+          } 
+      })
+  }
 }
-
-export const changePassword = ( ) => ({
-  
- 
-});
