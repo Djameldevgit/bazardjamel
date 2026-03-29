@@ -31,6 +31,7 @@ import ProfileSettings from './pages/users/ProfileSettings';
 import ProfileSaved from './pages/users/ProfileSaved';
 import CreateBoutiqueProductPage from './pages/boutiqueProduct/CreateBoutiqueProductPage';
 import CreateImageHomeCarousel from './pages/carousel/CreateImageHomeCarousel';
+import MesProduitsBoutiquePage from './pages/boutiqueProduct/MesProduitsBoutiqueDashborad';
  
 function App() {
   const { auth } = useSelector(state => state)
@@ -58,36 +59,35 @@ function App() {
       <div id="google_translate_element" style={{ display: 'none' }}></div>
   
       {auth.token && <SocketClient />}
-<Switch>
+      <Switch>
   {/* ============ RUTAS PÚBLICAS ============ */}
   <Route exact path="/" component={Home} />
   <Route exact path="/register" component={Register} />
   <Route exact path="/login" component={Login} />
 
   {/* ============ RUTAS DE BOUTIQUES - PRIMERO LAS MÁS ESPECÍFICAS ============ */}
-  {/* 🔥 IMPORTANTE: Las rutas con más segmentos van PRIMERO */}
   <Route exact path="/boutique/:boutiqueId/products/new" component={CreateBoutiqueProductPage} />
   <Route exact path="/boutique/:boutiqueId/products/edit/:postId" component={CreateBoutiqueProductPage} />
   
-
-  <Route path="/admin/carousel" exact component={CreateImageHomeCarousel} />
-<Route path="/admin/carousel/create" exact component={CreateImageHomeCarousel} />
-<Route path="/admin/carousel/edit/:id" exact component={CreateImageHomeCarousel} />
-
-
-  {/* Ruta de creación/edición de boutique */}
+  {/* ✅ NUEVAS RUTAS PARA DASHBOARD - GESTIÓN DE BOUTIQUES */}
   <Route exact path="/create-boutique" component={CreateBoutiquePage} />
   <Route exact path="/edit-boutique/:id" component={CreateBoutiquePage} />
   <Route exact path="/mes-boutiques" component={UserBoutiquesPage} />
-  
-  {/* ⚠️ Ruta genérica de boutique - DEBE IR DESPUÉS de las rutas específicas */}
+   <Route exact path="/mes-produits-boutique/:boutiqueId" component={MesProduitsBoutiquePage} />
+  {/* ✅ NUEVAS RUTAS PARA DASHBOARD - GESTIÓN DE PRODUCTOS DE BOUTIQUE */}
+ 
+   
+  {/* Ruta genérica de boutique - PARA VISTA PÚBLICA */}
   <Route exact path="/boutique/:id" component={BoutiqueDetailPage} />
+
+  {/* ============ RUTAS DE ADMIN ============ */}
+  <Route path="/admin/carousel" exact component={CreateImageHomeCarousel} />
+  <Route path="/admin/carousel/create" exact component={CreateImageHomeCarousel} />
+  <Route path="/admin/carousel/edit/:id" exact component={CreateImageHomeCarousel} />
 
   {/* ============ RUTAS DE ANUNCIOS NORMALES ============ */}
   <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
   <Route exact path="/edit-post/:id" component={CreateAnnoncePage} />
-
-  {/* Ruta de detalle de post */}
   <Route exact path="/post/:id" component={PostId} />
 
   {/* ============ USER DASHBOARD ============ */}
