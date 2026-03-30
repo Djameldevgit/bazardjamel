@@ -8,35 +8,42 @@ let cacheCategoriasPrincipales = null;
 let cacheCategoriasPrincipalesEn = 0;
 let cacheEstadisticas = null;
 let cacheEstadisticasEn = 0;
+
 const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
   const incluirPosts = req.query.posts === 'true';
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 2;
+  const skip = (page - 1) * limit;
+
   const ahora = Date.now();
 
-  // 🔹 Cache con posts (1 min)
-  if (
-    incluirPosts &&
-    cacheCategoriasPrincipales &&
-    ahora - cacheCategoriasPrincipalesEn < 60 * 1000
-  ) {
-    return res.json(cacheCategoriasPrincipales);
+  // 🚫 IMPORTANTE: desactivar cache con paginación (o hacer cache por page)
+  if (!page || page === 1) {
+    if (
+      incluirPosts &&
+      cacheCategoriasPrincipales &&
+      ahora - cacheCategoriasPrincipalesEn < 60 * 1000
+    ) {
+      return res.json(cacheCategoriasPrincipales);
+    }
   }
 
-  // 🔹 Cache sin posts (5 min)
-  if (
-    !incluirPosts &&
-    cacheCategoriasPrincipales &&
-    ahora - cacheCategoriasPrincipalesEn < 5 * 60 * 1000
-  ) {
-    return res.json(cacheCategoriasPrincipales);
-  }
+  // 1️⃣ Total de categorías nivel 1
+  const totalCategories = await Category.countDocuments({
+    level: 1,
+    isActive: true,
+  });
 
-  // 1️⃣ Cargar categorías
-  const [nivel1, nivel2, nivel3] = await Promise.all([
-    Category.find({ level: 1, isActive: true })
-      .select('_id name slug icon emoji order hasChildren postCount')
-      .sort({ order: 1 })
-      .lean(),
+  // 2️⃣ Categorías paginadas 🔥
+  const nivel1 = await Category.find({ level: 1, isActive: true })
+    .select('_id name slug icon emoji order hasChildren postCount')
+    .sort({ order: 1 })
+    .skip(skip)
+    .limit(limit)
+    .lean();
 
+  // 3️⃣ Cargar TODAS las de nivel 2 y 3 (para mantener tu lógica)
+  const [nivel2, nivel3] = await Promise.all([
     Category.find({ level: 2, isActive: true })
       .select('_id name slug parent emoji order hasChildren isLeaf')
       .sort({ order: 1 })
@@ -48,7 +55,8 @@ const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
       .lean(),
   ]);
 
-  // 2️⃣ Relacionar nivel 3 → nivel 2
+  // ================= TU LÓGICA ORIGINAL (SIN CAMBIOS) =================
+
   const nivel3PorPadre = {};
   for (let i = 0; i < nivel3.length; i++) {
     const cat = nivel3[i];
@@ -68,7 +76,6 @@ const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
     subcat.hasChildren = subcat.children.length > 0;
   }
 
-  // 3️⃣ Relacionar nivel 2 → nivel 1
   const nivel2PorPadre = {};
   for (let i = 0; i < nivel2.length; i++) {
     const subcat = nivel2[i];
@@ -88,7 +95,8 @@ const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
     cat.hasChildren = cat.children.length > 0;
   }
 
-  // 4️⃣ Posts (misma lógica)
+  // ================= POSTS =================
+
   if (incluirPosts) {
     const todosIds = []
       .concat(nivel1.map(c => c._id))
@@ -119,19 +127,17 @@ const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
       }
     }
 
-    // nivel 3
     for (let i = 0; i < nivel3.length; i++) {
       const cat = nivel3[i];
       cat.posts = postsMap[String(cat._id)] || [];
     }
 
-    // nivel 2
     for (let i = 0; i < nivel2.length; i++) {
       const cat = nivel2[i];
       const hijosPosts = [];
 
       for (let j = 0; j < cat.children.length; j++) {
-        hijosPosts.push.apply(hijosPosts, cat.children[j].posts || []);
+        hijosPosts.push(...(cat.children[j].posts || []));
       }
 
       cat.posts = (postsMap[String(cat._id)] || [])
@@ -139,13 +145,12 @@ const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
         .slice(0, 8);
     }
 
-    // nivel 1
     for (let i = 0; i < nivel1.length; i++) {
       const cat = nivel1[i];
       const hijosPosts = [];
 
       for (let j = 0; j < cat.children.length; j++) {
-        hijosPosts.push.apply(hijosPosts, cat.children[j].posts || []);
+        hijosPosts.push(...(cat.children[j].posts || []));
       }
 
       cat.posts = (postsMap[String(cat._id)] || [])
@@ -154,42 +159,363 @@ const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
     }
   }
 
-  const respuesta = { success: true, categories: nivel1 };
+  // ================= RESPUESTA CON PAGINACIÓN 🔥 =================
 
-  // 🧠 Guardar cache
-  cacheCategoriasPrincipales = respuesta;
-  cacheCategoriasPrincipalesEn = ahora;
+  const totalPages = Math.ceil(totalCategories / limit);
+
+  const respuesta = {
+    success: true,
+    categories: nivel1,
+    pagination: {
+      currentPage: page,
+      totalPages,
+      totalCategories,
+      hasMore: page < totalPages,
+    },
+  };
 
   return res.json(respuesta);
 });
  
-const getPostsByCategoryIds = async (categoryIds, limitPerCategory = 8, page = 1) => {
-  const skip = (page - 1) * limitPerCategory;
-  const posts = await Post.find({ category: { $in: categoryIds }, status: 'active' })
-  .populate('cateogry', 'categorie subCategory articleType name')
-    .populate('user', 'username avatar')
-    .populate('category', 'name slug level')
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limitPerCategory)
-    .lean();
 
-  const total = await Post.countDocuments({ category: { $in: categoryIds }, status: 'active' });
-  const hasMore = page * limitPerCategory < total;
+const obtenerCategoriasParaSlider = asyncHandler(async (req, res) => {
+  try {
+    console.log('🎠 Obteniendo categorías para slider...');
+    
+    // Obtener TODAS las categorías nivel 1 (sin paginación)
+    const categoriasSlider = await Category.find({ level: 1, isActive: true })
+      .select('_id name slug icon emoji order')
+      .sort({ order: 1 })
+      .lean();
+    
+    console.log(`🎠 Slider: ${categoriasSlider.length} categorías encontradas`);
+    
+    res.json({
+      success: true,
+      categories: categoriasSlider,
+      total: categoriasSlider.length
+    });
+    
+  } catch (error) {
+    console.error('❌ Error en obtenerCategoriasParaSlider:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al cargar categorías para slider',
+      error: error.message
+    });
+  }
+});
 
-  return { posts, total, hasMore, currentPage: page };
-};
- 
-const mapPostsToCategories = (categories, postsMap, limit = 8) => {
-  categories.forEach(cat => {
-    const childrenPosts = (cat.children || []).flatMap(c => postsMap[String(c._id)] || []);
-    cat.posts = [...(postsMap[String(cat._id)] || []), ...childrenPosts].slice(0, limit);
+ // 📂 controllers/categoryController.js
 
-    if (cat.children && cat.children.length > 0) {
-      mapPostsToCategories(cat.children, postsMap, limit); // recursivo para hijos
+// 📂 controllers/categoryController.js
+
+const getPostsByCategory = asyncHandler(async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
+
+    // ============ PARÁMETROS ============
+    const {
+      sub: subSlug,
+      article: articleSlug,
+      wilaya,
+      commune,
+      minPrice,
+      maxPrice,
+      sortBy = 'recent'
+    } = req.query;
+
+    const { slug } = req.params;
+
+    console.log('🔍 getPostsByCategory - Parámetros:', {
+      slug,
+      subSlug,
+      articleSlug,
+      page,
+      limit,
+      wilaya,
+      commune,
+      minPrice,
+      maxPrice,
+      sortBy
+    });
+
+    if (!slug) {
+      return res.json({
+        success: true,
+        posts: [],
+        total: 0,
+        page,
+        hasMore: false,
+        message: 'Se requiere categoría'
+      });
     }
-  });
-};
+
+    // 1. Buscar la categoría (puede ser nivel 1, 2 o 3)
+    let categoryDoc = await Category.findOne({
+      slug: slug,
+      isActive: true
+    }).lean();
+
+    if (!categoryDoc) {
+      console.log(`❌ Categoría no encontrada: ${slug}`);
+      return res.json({
+        success: true,
+        posts: [],
+        total: 0,
+        page,
+        hasMore: false,
+        message: 'Categoría no encontrada'
+      });
+    }
+
+    console.log(`✅ Categoría encontrada: ${categoryDoc.name} (level: ${categoryDoc.level})`);
+
+    // 2. Obtener la categoría nivel 1 (para el filtro base)
+    let level1Category = categoryDoc;
+    if (categoryDoc.level !== 1) {
+      // Buscar la categoría raíz
+      let parent = categoryDoc.parent;
+      while (parent) {
+        const parentCat = await Category.findById(parent).lean();
+        if (parentCat.level === 1) {
+          level1Category = parentCat;
+          break;
+        }
+        parent = parentCat.parent;
+      }
+    }
+
+    // 3. Obtener todas las subcategorías y artículos
+    const [allSubCategories, allArticles] = await Promise.all([
+      Category.find({ parent: level1Category._id, level: 2, isActive: true }).lean(),
+      Category.find({ level: 3, isActive: true }).lean()
+    ]);
+
+    // 4. FILTRO BASE
+    let filter = {
+      isActive: true,
+      $and: [
+        {
+          $or: [
+            { isFromBoutique: { $ne: true } },
+            { isFromBoutique: { $exists: false } }
+          ]
+        },
+        {
+          $or: [
+            { category: level1Category._id },
+            { categorie: { $regex: new RegExp(level1Category.name, 'i') } }
+          ]
+        }
+      ]
+    };
+
+    let andConditions = [];
+
+    // ============ FILTROS DE NAVEGACIÓN (slider) ============
+    // Si hay subSlug, filtrar por esa subcategoría
+    if (subSlug) {
+      const subCategoryDoc = allSubCategories.find(
+        sub => sub.slug === subSlug || sub.name.toLowerCase() === subSlug.toLowerCase()
+      );
+
+      if (subCategoryDoc) {
+        const articlesOfSub = allArticles.filter(
+          article => String(article.parent) === String(subCategoryDoc._id)
+        );
+
+        const searchSlugs = [
+          subCategoryDoc.slug,
+          ...articlesOfSub.map(a => a.slug)
+        ];
+
+        andConditions.push({
+          $or: [
+            { subCategory: { $in: searchSlugs } },
+            { articleType: { $in: searchSlugs } }
+          ]
+        });
+      } else {
+        // Si no se encuentra, buscar por slug directamente
+        andConditions.push({
+          $or: [
+            { subCategory: subSlug },
+            { articleType: subSlug }
+          ]
+        });
+      }
+    }
+
+    // Si hay articleSlug, filtrar por ese artículo
+    if (articleSlug) {
+      const articleDoc = allArticles.find(
+        article => article.slug === articleSlug || article.name.toLowerCase() === articleSlug.toLowerCase()
+      );
+
+      if (articleDoc) {
+        andConditions.push({
+          $or: [
+            { subCategory: articleDoc.slug },
+            { articleType: articleDoc.slug }
+          ]
+        });
+      } else {
+        andConditions.push({
+          $or: [
+            { subCategory: articleSlug },
+            { articleType: articleSlug }
+          ]
+        });
+      }
+    }
+
+    // ============ FILTROS DE UBICACIÓN ============
+    if (wilaya && wilaya !== '') {
+      andConditions.push({
+        $or: [
+          { 'location.wilaya': wilaya },
+          { wilaya: wilaya }
+        ]
+      });
+    }
+
+    if (commune && commune !== '') {
+      andConditions.push({
+        $or: [
+          { 'location.commune': new RegExp(commune, 'i') },
+          { commune: new RegExp(commune, 'i') }
+        ]
+      });
+    }
+
+    // ============ FILTROS DE PRECIO ============
+    if (minPrice !== undefined && minPrice !== null && minPrice !== '') {
+      andConditions.push({ price: { $gte: Number(minPrice) } });
+    }
+    if (maxPrice !== undefined && maxPrice !== null && maxPrice !== '') {
+      andConditions.push({ price: { $lte: Number(maxPrice) } });
+    }
+
+    // Combinar condiciones
+    if (andConditions.length > 0) {
+      filter.$and = [...filter.$and, ...andConditions];
+    }
+
+    // ============ ORDENAMIENTO ============
+    let sort = {};
+    switch (sortBy) {
+      case 'price_asc':
+        sort = { price: 1 };
+        break;
+      case 'price_desc':
+        sort = { price: -1 };
+        break;
+      case 'annee_desc':
+        sort = { annee: -1 };
+        break;
+      case 'annee_asc':
+        sort = { annee: 1 };
+        break;
+      case 'kilometrage_asc':
+        sort = { kilometrage: 1 };
+        break;
+      case 'score':
+        sort = { score: -1, createdAt: -1 };
+        break;
+      case 'recent':
+      default:
+        sort = { createdAt: -1 };
+        break;
+    }
+
+    console.log('📡 Filtro final:', JSON.stringify(filter, null, 2));
+
+    // 5. Ejecutar consulta
+    const [posts, total] = await Promise.all([
+      Post.find(filter)
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .select('_id title price images createdAt wilaya commune description etat views categorie subCategory articleType category location score')
+        .populate('user', 'username avatar')
+        .lean(),
+      Post.countDocuments(filter)
+    ]);
+
+    const hasMore = page * limit < total;
+    const totalPages = Math.ceil(total / limit);
+
+    console.log(`✅ Posts encontrados: ${posts.length}, total: ${total}, hasMore: ${hasMore}, página: ${page}/${totalPages}`);
+
+    // 6. Preparar slider con subcategorías y artículos
+    const childrenWithArticles = allSubCategories.map(child => ({
+      _id: child._id,
+      name: child.name,
+      slug: child.slug,
+      level: child.level,
+      icon: child.icon || '📦',
+      iconType: child.iconType || 'emoji',
+      iconColor: child.iconColor || '#667eea',
+      bgColor: child.bgColor || '#f0f3ff',
+      postCount: child.postCount || 0,
+      articles: allArticles
+        .filter(a => String(a.parent) === String(child._id))
+        .map(article => ({
+          _id: article._id,
+          name: article.name,
+          slug: article.slug,
+          level: article.level,
+          icon: article.icon || '📄',
+          iconType: article.iconType || 'emoji',
+          iconColor: article.iconColor || '#667eea',
+          bgColor: article.bgColor || '#f0f3ff',
+          postCount: article.postCount || 0
+        })),
+      isLeaf: false
+    }));
+
+    // 7. Respuesta
+    res.json({
+      success: true,
+      posts,
+      total,
+      page,
+      limit,
+      hasMore,
+      totalPages,
+      categoryInfo: {
+        _id: categoryDoc._id,
+        name: categoryDoc.name,
+        slug: categoryDoc.slug,
+        level: categoryDoc.level,
+        emoji: categoryDoc.emoji || ''
+      },
+      children: childrenWithArticles,
+      filterMetadata: {
+        appliedFilters: {
+          sub: subSlug || null,
+          article: articleSlug || null,
+          wilaya: wilaya || null,
+          commune: commune || null,
+          minPrice: minPrice || null,
+          maxPrice: maxPrice || null,
+          sortBy
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error en getPostsByCategory:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener los posts',
+      error: error.message
+    });
+  }
+});
 
  
 const obtenerCategoriaPorId = asyncHandler(async (req, res) => {
@@ -390,12 +716,13 @@ const obtenerEstadisticasDeCategorias = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  obtenerCategoriasParaSlider,
   obtenerCategoriasPrincipales,
   obtenerCategoriaPorId,
   obtenerArbolDeCategorias,
   buscarCategorias,
   obtenerEstadisticasDeCategorias,
-  getCategoriesForAccordion
-
+  getCategoriesForAccordion,
+  getPostsByCategory
 
 };

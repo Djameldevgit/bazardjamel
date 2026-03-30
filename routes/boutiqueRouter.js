@@ -28,5 +28,7 @@ router.patch('/boutique/:boutiqueId/like', auth, boutiqueCtrl.likeBoutique);
 router.post('/boutique/:boutiqueId/like', auth, boutiqueCtrl.likeBoutique);
 router.get('/boutique/:boutiqueId/like/check', auth, boutiqueCtrl.checkLikeBoutique);
 router.get('/boutique/:boutiqueId/likes', boutiqueCtrl.getBoutiqueLikes);
-
+router.get('/boutique/:boutiqueId/viewers', boutiqueCtrl.getViewersList);
+router.get('/boutique/:boutiqueId/followers/list', boutiqueCtrl.getFollowersList);
+router.get('/boutique/:boutiqueId/likes/list', boutiqueCtrl.getLikesList);
 module.exports = router;

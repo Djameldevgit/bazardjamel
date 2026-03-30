@@ -1209,7 +1209,82 @@ getBoutiqueLikes: async function(req, res) {
     res.status(500).json({ success: false, message: error.message });
   }
 },
+// ============ GET VIEWERS LIST ============
+getViewersList: async function(req, res) {
+  try {
+    const boutiqueId = req.params.boutiqueId;
+    const boutique = await Boutique.findById(boutiqueId).select('viewHistory');
+    
+    if (!boutique) {
+      return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+    }
+    
+    // Obtener los IDs de los viewers únicos de las últimas 24 horas
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentViews = (boutique.viewHistory || []).filter(view => view.timestamp > oneDayAgo);
+    
+    // Obtener IDs únicos
+    const viewerIds = [...new Set(recentViews.map(view => view.viewerId))];
+    
+    // Obtener información de los usuarios
+    const User = require('../models/userModel');
+    const viewers = await User.find(
+      { _id: { $in: viewerIds } },
+      'name username avatar'
+    ).lean();
+    
+    res.json({
+      success: true,
+      viewers: viewers
+    });
+    
+  } catch (error) {
+    console.error('❌ Error getViewersList:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+},
 
+// ============ GET FOLLOWERS LIST ============
+getFollowersList: async function(req, res) {
+  try {
+    const boutiqueId = req.params.boutiqueId;
+    const boutique = await Boutique.findById(boutiqueId).select('followers').populate('followers', 'name username avatar');
+    
+    if (!boutique) {
+      return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+    }
+    
+    res.json({
+      success: true,
+      followers: boutique.followers || []
+    });
+    
+  } catch (error) {
+    console.error('❌ Error getFollowersList:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+},
+
+// ============ GET LIKES LIST ============
+getLikesList: async function(req, res) {
+  try {
+    const boutiqueId = req.params.boutiqueId;
+    const boutique = await Boutique.findById(boutiqueId).select('likes').populate('likes', 'name username avatar');
+    
+    if (!boutique) {
+      return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+    }
+    
+    res.json({
+      success: true,
+      likes: boutique.likes || []
+    });
+    
+  } catch (error) {
+    console.error('❌ Error getLikesList:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+},
 };
 
 module.exports = boutiqueCtrl;

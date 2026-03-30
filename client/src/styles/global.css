@@ -162,7 +162,7 @@ url("./header.css"); */
 @import url("./categorypage.css");
 @import url("./cardFooterCategory.css");
 @import url("./BoutiquePostCard.css");
-
+@import url("./BoutiqueModal.css");
  
 .rtl {
   direction: rtl;

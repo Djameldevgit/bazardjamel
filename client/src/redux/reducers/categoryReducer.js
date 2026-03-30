@@ -1,11 +1,22 @@
 // 📂 redux/reducers/categoryReducer.js
+
+import * as types from '../constants/categoryConstants';
+
 const initialState = {
+
+  sliderCategories: [],
+  sliderLoading: false,
+  sliderError: null,
+
+
   // ==================== PARA HOME ====================
   categories: [],
   loading: false,
   error: null,
   currentPage: 1,
   hasMoreCategories: true,
+  totalCategories: 0,
+  totalPages: 1,
   
   // ==================== PARA CATEGORY PAGE ====================
   activeCategory: null,
@@ -20,38 +31,58 @@ const initialState = {
   hasMorePosts: false,
   postsTotal: 0,
   
-  // ==================== NUEVO: PARA CATEGORY ACCORDION ====================
-  accordionCategories: [],      // Estructura jerárquica para accordion
+  // ==================== PARA CATEGORY ACCORDION ====================
+  accordionCategories: [],
   accordionLoading: false,
-  accordionError: null
+  accordionError: null,
+  
+  // ==================== PARA FILTROS ====================
+  filterOptions: null
 };
 
 export const categoryReducer = (state = initialState, action) => {
   switch (action.type) {
-    // ==================== HOME ====================
-    case 'LOADING':
+    case types.GET_SLIDER_CATEGORIES:
+      return { ...state, sliderLoading: true, sliderError: null };
+      
+    case types.GET_SLIDER_CATEGORIES_SUCCESS:
+      console.log('🎠 Reducer slider - categorías:', action.payload?.length || 0);
+      return {
+        ...state,
+        sliderCategories: action.payload || [],
+        sliderLoading: false,
+        sliderError: null
+      };
+      
+    case types.GET_SLIDER_CATEGORIES_FAIL:
+      return {
+        ...state,
+        sliderLoading: false,
+        sliderError: action.payload
+      };
+    
+    case types.LOADING:
       return { ...state, loading: action.payload };
       
-    case 'GET_ALL_CATEGORIES_WITHOUT_POSTS_SUCCESS':
-      return { ...state, categories: action.payload, loading: false, error: null };
+    case types.LOADING_HOME:
+      return { ...state, loading: action.payload };
       
-    case 'GET_ALL_CATEGORIES_WITHOUT_POSTS_FAIL':
-      return { ...state, loading: false, error: action.payload, categories: [] };
-      
-    case 'GET_ALL_CATEGORIES_WITH_POSTS':
+    case types.GET_ALL_CATEGORIES_WITH_POSTS:
       return { ...state, loading: true, error: null };
       
-    case 'GET_ALL_CATEGORIES_WITH_POSTS_SUCCESS':
+    case types.GET_ALL_CATEGORIES_WITH_POSTS_SUCCESS:
       return {
         ...state,
         loading: false,
         categories: action.payload.categories || [],
         currentPage: action.payload.currentPage || 1,
-        hasMoreCategories: action.payload.hasMore || false,
+        hasMoreCategories: action.payload.hasMoreCategories || false,
+        totalCategories: action.payload.totalCategories || 0,
+        totalPages: action.payload.totalPages || 1,
         error: null
       };
       
-    case 'GET_ALL_CATEGORIES_WITH_POSTS_FAIL':
+    case types.GET_ALL_CATEGORIES_WITH_POSTS_FAIL:
       return {
         ...state,
         loading: false,
@@ -59,11 +90,33 @@ export const categoryReducer = (state = initialState, action) => {
         categories: []
       };
       
+    case types.LOAD_MORE_CATEGORIES:
+      return { ...state, loading: true };
+      
+    // ==================== ACCORDION ====================
+    case types.LOADING_CATEGORIES_ACCORDION:
+      return { ...state, accordionLoading: action.payload };
+      
+    case types.GET_CATEGORIES_FOR_ACCORDION_SUCCESS:
+      return {
+        ...state,
+        accordionCategories: action.payload || [],
+        accordionLoading: false,
+        accordionError: null
+      };
+      
+    case types.GET_CATEGORIES_FOR_ACCORDION_FAIL:
+      return {
+        ...state,
+        accordionLoading: false,
+        accordionError: action.payload
+      };
+      
     // ==================== CATEGORY PAGE ====================
-    case 'GET_CATEGORY_POSTS':
+    case types.GET_CATEGORY_POSTS:
       return { ...state, postsLoading: true, postsError: null };
       
-    case 'GET_CATEGORY_POSTS_SUCCESS':
+    case types.GET_CATEGORY_POSTS_SUCCESS:
       const isFirstPage = (action.payload.currentPage || 1) === 1;
       
       return {
@@ -84,40 +137,36 @@ export const categoryReducer = (state = initialState, action) => {
         postsTotal: action.payload.totalPosts || action.payload.total || 0
       };
       
-    case 'GET_CATEGORY_POSTS_FAIL':
+    case types.GET_CATEGORY_POSTS_FAIL:
       return {
         ...state,
         postsLoading: false,
         postsError: action.payload
       };
       
-    case 'LOAD_MORE_POSTS':
+    case types.LOAD_MORE_POSTS:
       return { ...state, postsLoading: true };
       
-    // ==================== NUEVO: PARA CATEGORY ACCORDION ====================
-    case 'LOADING_CATEGORIES_ACCORDION':
+    // ==================== CATEGORY TREE ====================
+    case types.GET_CATEGORY_TREE:
+      return { ...state, loading: true };
+      
+    case types.GET_CATEGORY_TREE_SUCCESS:
       return {
         ...state,
-        accordionLoading: action.payload
+        loading: false,
+        categoryTree: action.payload
       };
       
-    case 'GET_CATEGORIES_FOR_ACCORDION_SUCCESS':
+    case types.GET_CATEGORY_TREE_FAIL:
       return {
         ...state,
-        accordionCategories: action.payload || [],
-        accordionLoading: false,
-        accordionError: null
-      };
-      
-    case 'GET_CATEGORIES_FOR_ACCORDION_FAIL':
-      return {
-        ...state,
-        accordionLoading: false,
-        accordionError: action.payload
+        loading: false,
+        error: action.payload
       };
       
     // ==================== NAVEGACIÓN ====================
-    case 'SET_ACTIVE_CATEGORY':
+    case types.SET_ACTIVE_CATEGORY:
       return {
         ...state,
         activeCategory: action.payload,
@@ -132,14 +181,14 @@ export const categoryReducer = (state = initialState, action) => {
         postsError: null
       };
       
-      case 'SET_ACTIVE_SUBCATEGORY':
-        return {
-          ...state,
-          activeSubcategory: action.payload,
-          activeArticle: null
-        };
+    case types.SET_ACTIVE_SUBCATEGORY:
+      return {
+        ...state,
+        activeSubcategory: action.payload,
+        activeArticle: null
+      };
       
-    case 'SET_ACTIVE_ARTICLE':
+    case types.SET_ACTIVE_ARTICLE:
       return {
         ...state,
         activeArticle: action.payload,
@@ -150,7 +199,26 @@ export const categoryReducer = (state = initialState, action) => {
         postsError: null
       };
       
-    case 'RESET_CATEGORY_STATE':
+    // ==================== FILTROS ====================
+    case types.GET_FILTER_OPTIONS:
+      return { ...state, loading: true };
+      
+    case types.GET_FILTER_OPTIONS_SUCCESS:
+      return {
+        ...state,
+        loading: false,
+        filterOptions: action.payload
+      };
+      
+    case types.GET_FILTER_OPTIONS_FAIL:
+      return {
+        ...state,
+        loading: false,
+        error: action.payload
+      };
+      
+    // ==================== LIMPIEZA ====================
+    case types.RESET_CATEGORY_STATE:
       return {
         ...state,
         categoryInfo: {},
@@ -162,20 +230,22 @@ export const categoryReducer = (state = initialState, action) => {
         postsError: null
       };
       
-    case 'CLEAR_ERRORS':
+    case types.CLEAR_ERRORS:
       return {
         ...state,
         error: null,
         postsError: null,
         accordionError: null
       };
-      case "CATEGORY_RESET_POSTS":
-  return {
-    ...state,
-    posts: [],
-    hasMorePosts: true,
-    postsLoading: false,
-  };
+      
+    case types.CATEGORY_RESET_POSTS:
+      return {
+        ...state,
+        posts: [],
+        hasMorePosts: true,
+        postsLoading: false,
+      };
+      
     default:
       return state;
   }

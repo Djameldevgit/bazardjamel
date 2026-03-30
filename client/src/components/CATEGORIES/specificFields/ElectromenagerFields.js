@@ -3,7 +3,7 @@ import React from 'react';
 import BaseCategoryField from './BaseCategoryField';
 
 // Importar campo específico
-import MarcaModeloField from '../camposComun/MarcaModeloField';
+import MarcaModeloField from '../camposComun/MarqueModelVehicule';
 
 const ElectromenagerField = (props) => {
   const { step, mainCategory, subCategory, postData, handleChangeInput, isRTL, t } = props;

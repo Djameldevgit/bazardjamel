@@ -28,19 +28,19 @@ const CATEGORY_COMPONENTS = {
   'alimentaires': AlimentairesField,
   'vehicules': VehiculesField,
   'immobilier': ImmobiliersField,
-  'telephones': TelephonesField,
+  'telephone': TelephonesField,        // ← Cambiado: 'telephones' → 'telephone'
   'vetements': VetementsField,
   'electromenager': ElectromenagerField,
   'informatique': InformatiqueField,
   'loisirs': LoisirsField,
   'services': ServicesField,
-  'santebeaute': SanteBeauteField,
+  'santebeaute': SanteBeauteField,     // ← Correcto: 'santebeaute'
   'meubles': MeublesField,
   'materiaux': MateriauxField,
   'sport': SportField,
   'voyages': VoyagesField,
   'emploi': EmploiField,
-  'piecesDetachees': PiecesDetacheesField
+  'pieces-detachees': PiecesDetacheesField  // ← Cambiado: 'piecesDetachees' → 'pieces-detachees'
 };
 
 // Función para formatear un string a ID

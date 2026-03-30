@@ -3,7 +3,7 @@ import React from 'react';
 import BaseCategoryField from './BaseCategoryField';
 
 // Importar campos específicos
-import MarcaModeloField from '../camposComun/MarcaModeloField';
+import MarcaModeloField from '../camposComun/MarqueModelVehicule';
 
 const VehiculesField = (props) => {
   const { step, mainCategory, subCategory, postData, handleChangeInput, isRTL, t } = props;

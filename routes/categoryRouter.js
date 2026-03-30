@@ -1,35 +1,31 @@
-// 📂 routes/categoryRoutes.js - VERSIÓN CORREGIDA
+// 📂 routes/categoryRoutes.js - CORREGIDO
+
 const express = require('express');
 const router = express.Router();
 
 const {
+  obtenerCategoriasParaSlider,
   obtenerCategoriasPrincipales,
   obtenerCategoriaPorId,
   obtenerArbolDeCategorias,
   buscarCategorias,
   obtenerEstadisticasDeCategorias,
-  getCategoriesForAccordion
+  getCategoriesForAccordion,
+  getPostsByCategory
 } = require('../controllers/categoryCtrl');
 
-// ============ RUTAS CORREGIDAS (SIN PREFIJO /categories) ============
+// ============ RUTAS ============
 
-// ✅ Ahora será: /api/categories/accordion
+// 🔥 CORREGIDO: Quitar "categories/" porque ya está en la base URL
+router.get('/posts/:slug', getPostsByCategory);
+
+// Resto de rutas
+router.get('/slider', obtenerCategoriasParaSlider);
 router.get('/accordion', getCategoriesForAccordion);
-
-// ✅ Otras rutas específicas
 router.get('/main', obtenerCategoriasPrincipales);
 router.get('/tree', obtenerArbolDeCategorias);
 router.get('/stats', obtenerEstadisticasDeCategorias);
-
-// ✅ Ruta con parámetro (va después de las específicas)
 router.get('/search/:query', buscarCategorias);
-
-// ✅ Ruta genérica con parámetro (DEBE IR AL FINAL)
 router.get('/:identifier', obtenerCategoriaPorId);
-
-module.exports = router;
- 
- 
-router.get('/:identifier', obtenerCategoriaPorId);  // ⭐ ÚLTIMA
 
 module.exports = router;

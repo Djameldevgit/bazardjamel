@@ -1,58 +1,52 @@
-// src/components/CATEGORIES/specificFields/AlimentairesField.js
+// 📂 components/CATEGORIES/specificFields/VehiculesField.js
 import React from 'react';
 import BaseCategoryField from './BaseCategoryField';
 
-// Campos específicos para alimentaires (si los hay)
-import MarqueField from '../camposComun/MarqueField';
-import ModeleField from '../camposComun/ModeleField';
+// Importar campos específicos
+import MarcaModeloField from '../camposComun/MarqueModelVehicule';
 
 const PiecesDetacheesFields= (props) => {
-  // Campos adicionales específicos para alimentaires
+  const { step, mainCategory, subCategory, postData, handleChangeInput, isRTL, t } = props;
+  
+  console.log(`🚗 VehiculesField - Step: ${step}, SubCategory: ${subCategory}`);
+  
+  // 🔥 CAMPOS ADICIONALES ESPECÍFICOS PARA VEHÍCULOS
   const additionalFields = {
-    // Componentes personalizados
     components: {
       'marque': (
-        <MarqueField
+        <MarcaModeloField
           key="marque"
-          mainCategory={props.mainCategory}
-          subCategory={props.subCategory}
-          fieldName="marque"
-          postData={props.postData}
-          handleChangeInput={props.handleChangeInput}
-          isRTL={props.isRTL}
-          t={props.t}
-        />
-      ),
-      'modele': (
-        <ModeleField
-          key="modele"
-          mainCategory={props.mainCategory}
-          subCategory={props.subCategory}
-          fieldName="modele"
-          postData={props.postData}
-          handleChangeInput={props.handleChangeInput}
-          isRTL={props.isRTL}
-          t={props.t}
+          mainCategory={mainCategory}
+          subCategory={subCategory}
+          postData={postData}
+          handleChangeInput={handleChangeInput}
+          isRTL={isRTL}
+          t={t}
+          brandField="marque"
+          modelField="modele"
         />
       )
     },
     
-    // Campos adicionales por step (opcional)
-    step2: ['marque', 'modele'],
-    
-    // Campos personalizados con prefijo "custom:"
-    customComponents: {
-      // Para campos muy específicos
-    }
+    // Campos adicionales por step
+    step2: ['marque'],  // 'marque' se añade al step2
+    step3: [],          // No añadir nada al step3
+    step4: []           // No añadir nada al step4
   };
   
-  return (
-    <BaseCategoryField
-      {...props}
-      additionalFields={additionalFields}
-    />
-  );
+  if (step) {
+    return (
+      <BaseCategoryField
+        {...props}
+        step={step}
+        additionalFields={additionalFields}
+      />
+    );
+  }
+  
+  return null;
 };
+
  
 
  

@@ -1,4 +1,4 @@
-// 📂 components/common/Drawer.js - VERSIÓN CON COLORES MEJORADOS
+// 📂 components/common/Drawer.js - VERSIÓN CON RECUPERACIÓN DE IMÁGENES
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useLocation, useHistory } from 'react-router-dom';
@@ -8,7 +8,7 @@ import { getCategoriesForAccordion } from '../../redux/actions/categoryAction';
 import { getUserBoutiques } from '../../redux/actions/boutiqueAction';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaChevronDown } from 'react-icons/fa';
 
 const Drawer = ({ 
   show, 
@@ -56,6 +56,47 @@ const Drawer = ({
     }
   }, [dispatch, auth]);
 
+  // 🔥 MAPA DE ICONOS POR DEFECTO PARA CADA CATEGORÍA (fallback cuando no hay imagen)
+  const defaultCategoryIcons = useMemo(() => ({
+    // Categorías principales
+    'vehicules': '🚗',
+    'immobilier': '🏠',
+    'telephones': '📱',
+    'vetements': '👕',
+    'electromenager': '🔌',
+    'informatique': '💻',
+    'loisirs': '🎮',
+    'meubles': '🛋️',
+    'sport': '⚽',
+    'alimentaires': '🍎',
+    'santebeaute': '💄',
+    'services': '🛠️',
+    'materiaux': '🧱',
+    'emploi': '💼',
+    'voyages': '✈️',
+    'pieces-detachees': '⚙️',
+    'boutiques': '🏪',
+    
+    // Subcategorías comunes
+    'voitures': '🚙',
+    'motos': '🏍️',
+    'smartphones': '📱',
+    'tablettes': '📟',
+    'ordinateurs': '💻',
+    'consoles': '🎮',
+    'vetements-homme': '👔',
+    'vetements-femme': '👗',
+    'chaussures': '👟',
+    'bijoux': '💍',
+    'montres': '⌚',
+    'appartement': '🏢',
+    'villa': '🏡',
+    'terrain': '🌾',
+    
+    // Default
+    'default': '📁'
+  }), []);
+
   // Paleta de colores
   const colorPalette = useMemo(() => [
     '#4361ee', '#3a0ca3', '#4cc9f0', '#f72585', '#b5179e',
@@ -76,11 +117,66 @@ const Drawer = ({
     return colorPalette[index];
   }, [colorPalette]);
 
+  // 🔥 FUNCIÓN PARA OBTENER LA URL COMPLETA DE LA IMAGEN
+  const getFullImageUrl = useCallback((iconPath) => {
+    if (!iconPath) return null;
+    
+    // Si ya es una URL completa
+    if (iconPath.startsWith('http://') || iconPath.startsWith('https://')) {
+      return iconPath;
+    }
+    
+    // Si es una ruta relativa que empieza con /categories
+    if (iconPath.startsWith('/categories')) {
+      // Obtener la URL base (podría ser desde variables de entorno)
+      const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      return `${baseUrl}${iconPath}`;
+    }
+    
+    // Si es solo el nombre del archivo
+    if (iconPath.includes('.png') || iconPath.includes('.jpg') || iconPath.includes('.svg')) {
+      const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      return `${baseUrl}/categories/${iconPath}`;
+    }
+    
+    return null;
+  }, []);
+
+  // 🔥 FUNCIÓN PARA OBTENER EL ICONO A MOSTRAR
+  const getCategoryIcon = useCallback((category, color) => {
+    const categorySlug = category.slug;
+    const hasError = imageErrors[categorySlug];
+    
+    // Si hay error de imagen, usar emoji por defecto
+    if (hasError) {
+      return {
+        type: 'emoji',
+        value: defaultCategoryIcons[categorySlug] || defaultCategoryIcons.default
+      };
+    }
+    
+    // Si tiene icono (ruta de imagen)
+    if (category.icon) {
+      const fullUrl = getFullImageUrl(category.icon);
+      if (fullUrl) {
+        return {
+          type: 'image',
+          value: fullUrl,
+          alt: category.name
+        };
+      }
+    }
+    
+    // Si no tiene icono, usar emoji por defecto
+    return {
+      type: 'emoji',
+      value: defaultCategoryIcons[categorySlug] || defaultCategoryIcons.default
+    };
+  }, [imageErrors, getFullImageUrl, defaultCategoryIcons]);
+
   const categoryItems = useMemo(() => {
     return accordionCategories.map(cat => ({
-      name: cat.name,
-      icon: cat.icon,
-      slug: cat.slug,
+      ...cat,
       color: generateColorFromName(cat.name),
       isStore: cat.slug === 'boutiques'
     }));
@@ -117,9 +213,9 @@ const Drawer = ({
     transaction: '💰', credit: '💳'
   };
 
-  const handleImageError = (itemId) => {
-    setImageErrors(prev => ({ ...prev, [itemId]: true }));
-  };
+  const handleImageError = useCallback((categorySlug) => {
+    setImageErrors(prev => ({ ...prev, [categorySlug]: true }));
+  }, []);
 
   const getCategoryPath = (categorySlug) => {
     if (categorySlug === 'boutiques') return '/boutiques';
@@ -176,7 +272,48 @@ const Drawer = ({
     mesTransactions: { primary: '#10B981', light: '#ECFDF5' }
   };
 
-  // Componente DropdownItem con colores mejorados
+  // 🔥 COMPONENTE CATEGORY ICON RENDERIZADO
+  const CategoryIcon = ({ category, color, isActive }) => {
+    const iconData = getCategoryIcon(category, color);
+    const style = {
+      width: '32px',
+      height: '32px',
+      borderRadius: '10px',
+      backgroundColor: isActive ? `${color}15` : '#f3f4f6',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+      flexShrink: 0
+    };
+
+    if (iconData.type === 'image') {
+      return (
+        <div style={style}>
+          <img 
+            src={iconData.value}
+            alt={iconData.alt || category.name}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
+            }}
+            onError={() => handleImageError(category.slug)}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div style={style}>
+        <span style={{ fontSize: '1rem', color: isActive ? color : '#6b7280' }}>
+          {iconData.value}
+        </span>
+      </div>
+    );
+  };
+
+  // Componente DropdownItem
   const DropdownItem = ({ icon, emoji, name, path, onClick, color = '#667eea', badge = null, disabled = false }) => {
     const isActive = location.pathname === path;
     const finalColor = color;
@@ -250,7 +387,7 @@ const Drawer = ({
     return content;
   };
 
-  // Componente DropdownHeader con colores mejorados
+  // Componente DropdownHeader
   const DropdownHeader = ({ title, emoji, icon, dropdownName, color = '#667eea', children }) => {
     const isOpen = openDropdowns[dropdownName];
     const sectionColor = sectionColors[dropdownName]?.primary || color;
@@ -305,15 +442,19 @@ const Drawer = ({
     );
   };
 
-  // Componente LinkItem con colores mejorados
+  // 🔥 COMPONENTE LINKITEM ACTUALIZADO CON SOPORTE PARA IMÁGENES
   const LinkItem = ({ emoji, icon, name, path, onClick, color = '#8b5cf6', badge = null, isDashboardLink = false, isBackButton = false }) => {
     const isActive = location.pathname === path || (isDashboardLink && location.pathname.startsWith('/dashboard'));
     const hasImageError = icon && imageErrors[name];
+    const finalColor = color;
     
     const handleClick = (e) => {
       if (onClick) onClick(e);
       if (path && !onClick) onHide();
     };
+    
+    // Si es una categoría con icono de imagen
+    const isCategoryItem = icon && typeof icon === 'string' && (icon.startsWith('http') || icon.startsWith('/categories'));
     
     const content = (
       <div
@@ -326,13 +467,13 @@ const Drawer = ({
           alignItems: 'center',
           justifyContent: 'space-between',
           cursor: 'pointer',
-          backgroundColor: isActive ? `${color}12` : 'transparent',
-          borderLeft: isActive ? `3px solid ${color}` : 'none',
+          backgroundColor: isActive ? `${finalColor}12` : 'transparent',
+          borderLeft: isActive ? `3px solid ${finalColor}` : 'none',
           transition: 'all 0.2s ease'
         }}
         onMouseEnter={(e) => {
           if (!isActive) {
-            e.currentTarget.style.backgroundColor = `${color}06`;
+            e.currentTarget.style.backgroundColor = `${finalColor}06`;
           }
         }}
         onMouseLeave={(e) => {
@@ -356,50 +497,46 @@ const Drawer = ({
             }}>
               ←
             </div>
-          ) : icon && !hasImageError ? (
+          ) : isCategoryItem && !hasImageError ? (
             <div style={{
               width: '32px',
               height: '32px',
               borderRadius: '10px',
-              backgroundColor: isActive ? `${color}15` : '#f3f4f6',
+              backgroundColor: isActive ? `${finalColor}15` : '#f3f4f6',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               overflow: 'hidden'
             }}>
-              {typeof icon === 'string' && icon.startsWith('http') ? (
-                <img 
-                  src={icon}
-                  alt={name}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover'
-                  }}
-                  onError={() => handleImageError(name)}
-                />
-              ) : (
-                <span style={{ fontSize: '1rem', color: isActive ? color : '#6b7280' }}>{icon || emoji || '📁'}</span>
-              )}
+              <img 
+                src={icon}
+                alt={name}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+                onError={() => handleImageError(name)}
+              />
             </div>
           ) : (
             <div style={{
               width: '32px',
               height: '32px',
               borderRadius: '10px',
-              backgroundColor: isActive ? `${color}15` : '#f3f4f6',
+              backgroundColor: isActive ? `${finalColor}15` : '#f3f4f6',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '1rem'
             }}>
-              {emoji || (icon && hasImageError ? name.charAt(0).toUpperCase() : '📁')}
+              {emoji || (icon && hasImageError ? name?.charAt(0).toUpperCase() : '📁')}
             </div>
           )}
           <span style={{
             fontSize: '0.9rem',
             fontWeight: isActive ? '600' : '500',
-            color: isActive ? color : '#374151'
+            color: isActive ? finalColor : '#374151'
           }}>
             {name}
           </span>
@@ -503,14 +640,14 @@ const Drawer = ({
 
       {/* DROPDOWN: Mes Annonces */}
       <DropdownHeader 
-        title="Mes Annonces" 
+        title="Annonces" 
         emoji={emojis.annonce} 
         dropdownName="mesAnnonces"
         color="#3B82F6"
       >
         <DropdownItem 
           icon="📋" 
-          name="Toutes mes annonces" 
+          name="Mes annonces" 
           path="/mes-annonces" 
           color="#3B82F6" 
         />
@@ -542,14 +679,14 @@ const Drawer = ({
 
       {/* DROPDOWN: Mes Boutiques */}
       <DropdownHeader 
-        title="Mes Boutiques" 
+        title="Boutiques" 
         icon="🏪" 
         dropdownName="mesBoutiques"
         color="#EC4899"
       >
         <DropdownItem 
           icon="🏪" 
-          name="Toutes mes boutiques" 
+          name="Mes boutiques" 
           path="/mes-boutiques" 
           color="#EC4899" 
         />
@@ -560,22 +697,7 @@ const Drawer = ({
           color="#8b5cf6" 
         />
         
-        {hasBoutiques && firstBoutiqueId && (
-          <>
-            <DropdownItem 
-              icon="📦" 
-              name="Mes produits" 
-              path={`/mes-produits-boutique/${firstBoutiqueId}`} 
-              color="#f97316" 
-            />
-            <DropdownItem 
-              icon="➕" 
-              name="Ajouter un produit" 
-              path={`/ajouter-produit-boutique/${firstBoutiqueId}`} 
-              color="#10b981" 
-            />
-          </>
-        )}
+       
         
         {boutiqueLoading && (
           <div style={{ 
@@ -703,6 +825,80 @@ const Drawer = ({
     </>
   );
 
+  // 🔥 RENDERIZAR CATEGORÍAS CON SOPORTE PARA IMÁGENES
+  const renderCategories = () => (
+    <>
+      <div style={{ margin: '20px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
+        {emojis.categories} Catégories
+      </div>
+      
+      {categoryItems.map((category, index) => {
+        const iconData = getCategoryIcon(category, category.color);
+        
+        return (
+          <div
+            key={index}
+            onClick={() => handleCategoryClick(category)}
+            style={{
+              padding: '10px 16px',
+              margin: '2px 0',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = `${category.color}06`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            {/* Icono con soporte para imágenes */}
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '10px',
+              backgroundColor: '#f3f4f6',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              flexShrink: 0
+            }}>
+              {iconData.type === 'image' ? (
+                <img 
+                  src={iconData.value}
+                  alt={category.name}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }}
+                  onError={() => handleImageError(category.slug)}
+                />
+              ) : (
+                <span style={{ fontSize: '1rem', color: '#6b7280' }}>
+                  {iconData.value}
+                </span>
+              )}
+            </div>
+            
+            <span style={{
+              fontSize: '0.9rem',
+              fontWeight: '500',
+              color: '#374151'
+            }}>
+              {category.name}
+            </span>
+          </div>
+        );
+      })}
+    </>
+  );
+
   // Renderizar contenido principal
   const renderMainContent = () => {
     if (isDashboardPage && auth.user) {
@@ -713,20 +909,7 @@ const Drawer = ({
       return (
         <>
           {renderGuestContent()}
-          
-          <div style={{ margin: '20px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
-            {emojis.categories} Catégories
-          </div>
-          
-          {categoryItems.map((category, index) => (
-            <LinkItem 
-              key={index} 
-              icon={category.icon}
-              name={category.name} 
-              onClick={() => handleCategoryClick(category)} 
-              color={category.color} 
-            />
-          ))}
+          {renderCategories()}
         </>
       );
     }
@@ -734,20 +917,7 @@ const Drawer = ({
     return (
       <>
         {renderLoggedInContent()}
-        
-        <div style={{ margin: '20px 0 5px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
-          {emojis.categories} Catégories
-        </div>
-        
-        {categoryItems.map((category, index) => (
-          <LinkItem 
-            key={index} 
-            icon={category.icon}
-            name={category.name} 
-            onClick={() => handleCategoryClick(category)} 
-            color={category.color} 
-          />
-        ))}
+        {renderCategories()}
       </>
     );
   };

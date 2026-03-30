@@ -238,7 +238,157 @@ export const getPost = (id) => async (dispatch) => {
     })
   }
 }
+// 📂 redux/actions/postAction.js - AGREGAR ESTA ACCIÓN
 
+// 🎯 ACCIÓN PARA FILTRAR POSTS CON PAGINACIÓN
+export const filterPosts = (
+  categorySlug,
+  subSlug = null,
+  articleSlug = null,
+  page = 1,
+  limit = 12,
+  wilaya = null,
+  commune = null,
+  minPrice = null,
+  maxPrice = null,
+  sortBy = 'recent'
+) => async (dispatch) => {
+  try {
+    dispatch({ type: POST_TYPES.LOADING_POST, payload: true });
+    
+    console.log('📡 filterPosts - Llamada con parámetros:', {
+      categorySlug,
+      subSlug,
+      articleSlug,
+      page,
+      limit,
+      wilaya,
+      commune,
+      minPrice,
+      maxPrice,
+      sortBy
+    });
+
+    const params = {
+      category: categorySlug,
+      page,
+      limit,
+      sortBy
+    };
+    
+    if (subSlug) params.sub = subSlug;
+    if (articleSlug) params.article = articleSlug;
+    if (wilaya) params.wilaya = wilaya;
+    if (commune) params.commune = commune;
+    if (minPrice) params.minPrice = minPrice;
+    if (maxPrice) params.maxPrice = maxPrice;
+    
+    const { data } = await axios.get(`${BASE_URL}/api/posts/filter`, { params });
+    
+    console.log(`✅ Posts recibidos: ${data.posts?.length || 0}, total: ${data.total || 0}, página: ${data.page || page}`);
+    
+    // 🔥 Si es página 1, reemplazar; si no, concatenar
+    if (page === 1) {
+      dispatch({
+        type: POST_TYPES.GET_CATEGORY_POSTS_SUCCESS,
+        payload: {
+          posts: data.posts || [],
+          total: data.total || 0,
+          page: data.page || page,
+          totalPages: data.totalPages || 1,
+          hasMore: data.hasMore || false,
+          categoryInfo: data.categoryInfo || {},
+          children: data.children || [],
+          filterMetadata: data.filterMetadata || {}
+        }
+      });
+    } else {
+      dispatch({
+        type: POST_TYPES.LOAD_MORE_POSTS_SUCCESS,
+        payload: {
+          posts: data.posts || [],
+          pagination: {
+            currentPage: data.page || page,
+            totalPages: data.totalPages || 1,
+            totalPosts: data.total || 0,
+            hasMore: data.hasMore || false,
+            limit
+          }
+        }
+      });
+    }
+    
+    dispatch({ type: POST_TYPES.LOADING_POST, payload: false });
+    
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error en filterPosts:', error);
+    dispatch({
+      type: POST_TYPES.ERROR_POST,
+      payload: error.response?.data?.message || error.message
+    });
+    dispatch({ type: POST_TYPES.LOADING_POST, payload: false });
+    return { success: false, posts: [] };
+  }
+};
+
+// 🎯 ACCIÓN PARA CARGAR MÁS POSTS (SCROLL INFINITO)
+export const loadMoreFilteredPosts = () => async (dispatch, getState) => {
+  try {
+    const state = getState();
+    const { filters, pagination, posts } = state.post;
+    
+    const nextPage = (pagination?.currentPage || 1) + 1;
+    
+    // Verificar si hay más posts
+    if (!pagination?.hasMore) {
+      console.log('⏸️ No hay más posts para cargar');
+      return;
+    }
+    
+    console.log('📡 loadMoreFilteredPosts - Cargando página:', nextPage);
+    
+    dispatch({ type: POST_TYPES.LOADING_MORE_POSTS });
+    
+    const params = {
+      category: filters.categorySlug,
+      page: nextPage,
+      limit: pagination.limit || 12,
+      sortBy: filters.sortBy || 'recent'
+    };
+    
+    if (filters.subSlug) params.sub = filters.subSlug;
+    if (filters.articleSlug) params.article = filters.articleSlug;
+    if (filters.wilaya) params.wilaya = filters.wilaya;
+    if (filters.commune) params.commune = filters.commune;
+    if (filters.minPrice) params.minPrice = filters.minPrice;
+    if (filters.maxPrice) params.maxPrice = filters.maxPrice;
+    
+    const { data } = await axios.get(`${BASE_URL}/api/posts/filter`, { params });
+    
+    dispatch({
+      type: POST_TYPES.LOAD_MORE_POSTS_SUCCESS,
+      payload: {
+        posts: data.posts || [],
+        pagination: {
+          currentPage: data.page || nextPage,
+          totalPages: data.totalPages || 1,
+          totalPosts: data.total || 0,
+          hasMore: data.hasMore || false,
+          limit: pagination.limit
+        }
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error en loadMoreFilteredPosts:', error);
+    dispatch({
+      type: POST_TYPES.LOAD_MORE_POSTS_FAIL,
+      payload: error.response?.data?.message || error.message
+    });
+  }
+};
 export const addView = (id) => async () => {
   try {
 
