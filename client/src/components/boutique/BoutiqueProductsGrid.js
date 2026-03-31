@@ -2,16 +2,17 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Row, Col, Form, Button, Spinner, Offcanvas, Badge, Accordion } from 'react-bootstrap';
+import { Row, Col, Form, Button, Spinner, Offcanvas, Badge } from 'react-bootstrap';
 import { 
   FaFilter, FaThLarge, FaList, FaTimes, FaSlidersH, FaChevronDown, FaChevronUp,
   FaBoxOpen, FaStore, FaBuilding, FaCar, FaTshirt, FaTv, FaMobile, FaCouch,
-  FaUtensils, FaTools, FaSearch, FaTag, FaCheck, FaMapMarkerAlt, FaMoneyBillWave, FaStar
+  FaUtensils, FaTools, FaTag, FaMapMarkerAlt, FaMoneyBillWave
 } from 'react-icons/fa';
 
 import BoutiqueProductCard from './BoutiqueProductCard';
 import { getBoutiqueProducts, resetBoutiqueProducts } from '../../redux/actions/boutiqueProductAction';
 
+// Iconos por categoría
 const getCategoryIcon = (categorySlug) => {
   const icons = {
     'agences-immobilieres': FaBuilding,
@@ -28,41 +29,53 @@ const getCategoryIcon = (categorySlug) => {
   return icons[categorySlug] || FaStore;
 };
 
+// Opciones estáticas
+const ETAT_OPTIONS = [
+  { value: 'neuf', label: 'Neuf' },
+  { value: 'comme-neuf', label: 'Comme neuf' },
+  { value: 'bon-etat', label: 'Bon état' },
+  { value: 'correct', label: 'Correct' }
+];
+
+const WILAYAS = [
+  'Adrar', 'Chlef', 'Laghouat', 'Oum El Bouaghi', 'Batna', 'Béjaïa', 'Biskra', 'Béchar',
+  'Blida', 'Bouira', 'Tamanrasset', 'Tébessa', 'Tlemcen', 'Tiaret', 'Tizi Ouzou', 'Alger',
+  'Djelfa', 'Jijel', 'Sétif', 'Saïda', 'Skikda', 'Sidi Bel Abbès', 'Annaba', 'Guelma',
+  'Constantine', 'Médéa', 'Mostaganem', 'M\'Sila', 'Mascara', 'Ouargla', 'Oran', 'El Bayadh',
+  'Illizi', 'Bordj Bou Arréridj', 'Boumerdès', 'El Tarf', 'Tindouf', 'Tissemsilt', 'El Oued',
+  'Khenchela', 'Souk Ahras', 'Tipaza', 'Mila', 'Aïn Defla', 'Naâma', 'Aïn Témouchent',
+  'Ghardaïa', 'Relizane'
+];
+
 const BoutiqueProductsGrid = ({ boutique }) => {
   const dispatch = useDispatch();
   
-  // 🔥 LOG 1: Verificar boutique recibida
-  console.log('🏪 [GRID] Boutique recibida:', {
-    id: boutique?._id,
-    nom: boutique?.nom_boutique,
-    stats: boutique?.stats
-  });
-  
-  // 🔥 CORREGIDO: Usar state.boutiqueProduct
-  const { products: boutiqueProducts, loadingProducts } = useSelector(state => {
-    console.log('📦 [GRID] Estado Redux boutiqueProduct:', state.boutiqueProduct);
-    return state.boutiqueProduct || {};
-  });
-  
+  // Redux
+  const boutiqueProductState = useSelector(state => state.boutiqueProduct);
   const { categories: allCategories = [] } = useSelector(state => state.categories || {});
   
-  // 🔥 LOG 2: Verificar datos de la boutique en Redux
-  useEffect(() => {
-    console.log('📦 [GRID] boutiqueProducts completo:', boutiqueProducts);
-    if (boutique?._id) {
-      console.log('📦 [GRID] Datos para boutique:', boutique._id, boutiqueProducts?.[boutique._id]);
-    }
-  }, [boutiqueProducts, boutique]);
+  // Datos de la boutique
+  const boutiqueData = boutiqueProductState?.products?.[boutique?._id] || {
+    products: [],
+    total: 0,
+    page: 1,
+    hasMore: true
+  };
+  
+  const products = boutiqueData.products || [];
+  const total = boutiqueData.total || 0;
+  const hasMore = boutiqueData.hasMore;
+  const currentPage = boutiqueData.page || 1;
+  const loadingProducts = boutiqueProductState?.loadingProducts || false;
   
   // Estados UI
   const [viewMode, setViewMode] = useState('grid');
   const [sortBy, setSortBy] = useState('recent');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [isFilterOpen, setIsFilterOpen] = useState(true);
-  const [initialLoadDone, setInitialLoadDone] = useState(false);
-  const [isFetching, setIsFetching] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   
-  // FILTROS
+  // Filtros
   const [filters, setFilters] = useState({
     search: '',
     categories: [],
@@ -73,75 +86,37 @@ const BoutiqueProductsGrid = ({ boutique }) => {
     etat: [],
     wilaya: ''
   });
-  const [dynamicFilters, setDynamicFilters] = useState({});
   
   const loaderRef = useRef(null);
-  const filtersRef = useRef({ ...filters, dynamicFilters });
+  const filtersRef = useRef(filters);
   const sortByRef = useRef(sortBy);
   
-  useEffect(() => {
-    filtersRef.current = { ...filters, dynamicFilters };
-  }, [filters, dynamicFilters]);
+  // Actualizar refs
+  useEffect(() => { filtersRef.current = filters; }, [filters]);
+  useEffect(() => { sortByRef.current = sortBy; }, [sortBy]);
   
-  useEffect(() => {
-    sortByRef.current = sortBy;
-  }, [sortBy]);
-  
-  // 🔥 CORREGIDO: Leer "products" del estado
-  const boutiqueData = boutiqueProducts?.[boutique?._id] || {};
-  const products = boutiqueData.products || [];  // 👈 DEBE SER "products"
-  const total = boutiqueData.total || 0;
-  const hasMore = boutiqueData.hasMore !== undefined ? boutiqueData.hasMore : true;
-  const currentPage = boutiqueData.page || 1;
-  
-  // 🔥 LOG 3: Verificar datos extraídos
-  console.log('🎯 [GRID] Datos extraídos:', {
-    boutiqueData,
-    productsLength: products.length,
-    total,
-    hasMore,
-    currentPage
-  });
-  
-  const availableDynamicFields = boutiqueData.availableFields || [];
-  const dynamicFieldValues = boutiqueData.fieldValues || {};
-  
-  // Detectar categoría de la boutique
+  // Categoría de la boutique
   const boutiqueCategory = useMemo(() => {
     if (!boutique?.categorie) return null;
-    let category = allCategories.find(cat => cat.slug === boutique.categorie);
-    if (!category) category = allCategories.find(cat => cat._id === boutique.categorie);
-    if (!category) {
-      category = {
-        _id: boutique.categorie,
-        slug: boutique.categorie,
-        name: boutique.categorieName || boutique.categorie,
-        icon: boutique.categorieIcon || 'fa-store',
-        parent: null
-      };
-    }
-    return category;
+    return allCategories.find(cat => cat.slug === boutique.categorie || cat._id === boutique.categorie) || {
+      _id: boutique.categorie,
+      slug: boutique.categorie,
+      name: boutique.categorieName || boutique.categorie
+    };
   }, [boutique?.categorie, allCategories]);
   
-  // Obtener subcategorías disponibles
+  // Subcategorías disponibles
   const availableSubCategories = useMemo(() => {
     if (!boutiqueCategory) return [];
-    return allCategories.filter(cat => {
-      const parentId = cat.parentId || cat.parent;
-      const categoryId = boutiqueCategory._id || boutiqueCategory.slug;
-      return parentId === categoryId;
-    });
+    return allCategories.filter(cat => 
+      (cat.parentId || cat.parent) === (boutiqueCategory._id || boutiqueCategory.slug)
+    );
   }, [boutiqueCategory, allCategories]);
   
-  // Tipos de artículo disponibles
-  const availableArticleTypes = useMemo(() => {
+  // Tipos de artículo
+  const articleTypes = useMemo(() => {
     if (boutique?.articleType && boutique.articleType !== 'mixed') {
-      const typeMap = {
-        'product': { value: 'product', label: '📦 Produit physique' },
-        'service': { value: 'service', label: '⚙️ Service' },
-        'digital': { value: 'digital', label: '💻 Produit digital' }
-      };
-      return [typeMap[boutique.articleType]].filter(Boolean);
+      return [{ value: boutique.articleType, label: getArticleTypeLabel(boutique.articleType) }];
     }
     return [
       { value: 'product', label: '📦 Produit physique' },
@@ -150,109 +125,75 @@ const BoutiqueProductsGrid = ({ boutique }) => {
     ];
   }, [boutique?.articleType]);
   
-  // Preseleccionar categoría
+  const getArticleTypeLabel = (type) => {
+    const labels = { product: '📦 Produit physique', service: '⚙️ Service', digital: '💻 Produit digital' };
+    return labels[type] || '📦 Produit';
+  };
+  
+  // Cargar productos
+  const loadProducts = useCallback(async (page, reset = false) => {
+    if (!boutique?._id || (isLoading && !reset)) return;
+    
+    setIsLoading(true);
+    
+    try {
+      await dispatch(getBoutiqueProducts(boutique._id, {
+        ...filtersRef.current,
+        sort: sortByRef.current,
+        page,
+        limit: 12
+      }, reset));
+    } catch (error) {
+      console.error('Error loading products:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [dispatch, boutique?._id, isLoading]);
+  
+  // Carga inicial
   useEffect(() => {
-    if (boutiqueCategory && filters.categories.length === 0) {
+    if (!boutique?._id) return;
+    
+    const hasCategory = boutiqueCategory && filters.categories.length === 0;
+    if (hasCategory) {
       setFilters(prev => ({
         ...prev,
         categories: [boutiqueCategory.slug || boutiqueCategory._id]
       }));
     }
-  }, [boutiqueCategory]);
-  
-  // Cargar productos
-  const loadProducts = useCallback(async (pageNum, reset = false) => {
-    if (!boutique?._id) return;
-    if (isFetching && !reset) return;
     
-    setIsFetching(true);
-    
-    try {
-      const allFilters = {
-        ...filtersRef.current,
-        sort: sortByRef.current,
-        page: pageNum,
-        limit: 12
-      };
-      
-      console.log(`📦 [GRID] Cargando página ${pageNum} - Reset: ${reset}`, allFilters);
-      
-      await dispatch(getBoutiqueProducts(boutique._id, allFilters, reset));
-    } catch (error) {
-      console.error('❌ Error loading products:', error);
-    } finally {
-      setIsFetching(false);
-    }
-  }, [dispatch, boutique?._id, isFetching]);
-  
-  // Cargar productos iniciales
-  useEffect(() => {
-    if (!boutique?._id) return;
-    
-    const filtersString = JSON.stringify({ ...filters, dynamicFilters });
-    const prevFiltersString = localStorage.getItem(`filters_${boutique._id}`);
-    const filtersReallyChanged = filtersString !== prevFiltersString;
-    
-    if (filtersReallyChanged || !initialLoadDone) {
-      console.log('🔄 [GRID] Filtros cambiados o carga inicial, reiniciando...');
-      localStorage.setItem(`filters_${boutique._id}`, filtersString);
-      dispatch(resetBoutiqueProducts(boutique._id));
-      setInitialLoadDone(true);
-      loadProducts(1, true);
-    }
-  }, [boutique?._id, filters, dynamicFilters, initialLoadDone, dispatch, loadProducts]);
+    loadProducts(1, true);
+  }, [boutique?._id]);
   
   // Scroll infinito
   useEffect(() => {
-    if (!loaderRef.current || !hasMore || loadingProducts || isFetching) return;
+    if (!loaderRef.current || !hasMore || loadingProducts || isLoading) return;
     
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingProducts && !isFetching) {
-          const nextPage = currentPage + 1;
-          console.log('📜 [GRID] Scroll infinito: cargando página', nextPage);
-          loadProducts(nextPage, false);
+        if (entries[0].isIntersecting && hasMore && !loadingProducts && !isLoading) {
+          loadProducts(currentPage + 1, false);
         }
       },
-      { root: null, rootMargin: '200px', threshold: 0.1 }
+      { threshold: 0.1 }
     );
     
     observer.observe(loaderRef.current);
-    return () => {
-      if (loaderRef.current) observer.unobserve(loaderRef.current);
-    };
-  }, [loaderRef.current, hasMore, loadingProducts, isFetching, currentPage, loadProducts]);
+    return () => observer.disconnect();
+  }, [hasMore, loadingProducts, isLoading, currentPage, loadProducts]);
   
-  // Handlers de filtros (simplificados)
-  const handleFilterChange = (filterType, value) => {
-    setFilters(prev => {
-      switch(filterType) {
-        case 'categories':
-          return { ...prev, categories: prev.categories.includes(value) ? prev.categories.filter(c => c !== value) : [...prev.categories, value], subCategories: [] };
-        case 'subCategories':
-          return { ...prev, subCategories: prev.subCategories.includes(value) ? prev.subCategories.filter(s => s !== value) : [...prev.subCategories, value] };
-        case 'articleType':
-          return { ...prev, articleType: value };
-        case 'price':
-          return { ...prev, ...value };
-        case 'etat':
-          return { ...prev, etat: prev.etat.includes(value) ? prev.etat.filter(e => e !== value) : [...prev.etat, value] };
-        case 'search':
-          return { ...prev, search: value };
-        case 'wilaya':
-          return { ...prev, wilaya: value };
-        default:
-          return prev;
-      }
-    });
+  // Handlers
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
   };
   
-  const handleDynamicFilterChange = (fieldName, value) => {
-    setDynamicFilters(prev => {
-      const currentValues = prev[fieldName] || [];
-      const newValues = currentValues.includes(value) ? currentValues.filter(v => v !== value) : [...currentValues, value];
-      return { ...prev, [fieldName]: newValues.length > 0 ? newValues : undefined };
-    });
+  const handleArrayFilter = (key, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: prev[key].includes(value) 
+        ? prev[key].filter(v => v !== value) 
+        : [...prev[key], value]
+    }));
   };
   
   const clearFilters = () => {
@@ -266,80 +207,21 @@ const BoutiqueProductsGrid = ({ boutique }) => {
       etat: [],
       wilaya: ''
     });
-    setDynamicFilters({});
   };
   
   const activeFiltersCount = () => {
     let count = 0;
     if (filters.search) count++;
     if (filters.categories.length > (boutiqueCategory ? 1 : 0)) count++;
-    if (filters.subCategories.length > 0) count++;
+    if (filters.subCategories.length) count++;
     if (filters.articleType !== 'all') count++;
     if (filters.minPrice || filters.maxPrice) count++;
-    if (filters.etat.length > 0) count++;
+    if (filters.etat.length) count++;
     if (filters.wilaya) count++;
-    Object.values(dynamicFilters).forEach(values => { if (values?.length > 0) count++; });
     return count;
   };
   
-  const etatOptions = [
-    { value: 'neuf', label: 'Neuf' },
-    { value: 'comme-neuf', label: 'Comme neuf' },
-    { value: 'bon-etat', label: 'Bon état' },
-    { value: 'correct', label: 'Correct' }
-  ];
-  
-  const wilayas = [
-    'Adrar', 'Chlef', 'Laghouat', 'Oum El Bouaghi', 'Batna', 'Béjaïa', 'Biskra', 'Béchar',
-    'Blida', 'Bouira', 'Tamanrasset', 'Tébessa', 'Tlemcen', 'Tiaret', 'Tizi Ouzou', 'Alger',
-    'Djelfa', 'Jijel', 'Sétif', 'Saïda', 'Skikda', 'Sidi Bel Abbès', 'Annaba', 'Guelma',
-    'Constantine', 'Médéa', 'Mostaganem', 'M\'Sila', 'Mascara', 'Ouargla', 'Oran', 'El Bayadh',
-    'Illizi', 'Bordj Bou Arréridj', 'Boumerdès', 'El Tarf', 'Tindouf', 'Tissemsilt', 'El Oued',
-    'Khenchela', 'Souk Ahras', 'Tipaza', 'Mila', 'Aïn Defla', 'Naâma', 'Aïn Témouchent',
-    'Ghardaïa', 'Relizane'
-  ];
-  
-  // Componente de filtros (simplificado)
-  const FiltersContent = () => {
-    const CategoryIcon = boutiqueCategory ? getCategoryIcon(boutiqueCategory.slug) : FaStore;
-    
-    return (
-      <div className="filters-content">
-        <div className="filter-section mb-4">
-          <Form.Control
-            type="text"
-            placeholder={`🔍 Rechercher dans ${boutique?.nom_boutique || 'la boutique'}...`}
-            value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-            className="border rounded-pill py-2 px-3"
-          />
-        </div>
-        
-        {boutiqueCategory && (
-          <div className="filter-section mb-4">
-            <h6 className="fw-bold mb-3"><FaStore className="me-2" size={14} />Catégorie</h6>
-            <div className="p-3 rounded-3" style={{ backgroundColor: `${boutique?.couleur_theme || '#6366F1'}10`, borderLeft: `3px solid ${boutique?.couleur_theme || '#6366F1'}` }}>
-              <div className="d-flex align-items-center">
-                <div className="me-3 d-flex align-items-center justify-content-center" style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: boutique?.couleur_theme || '#6366F1', color: 'white' }}>
-                  <CategoryIcon size={24} />
-                </div>
-                <div><strong className="d-block">{boutiqueCategory.name}</strong></div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* ... resto de filtros (subcategorías, tipo artículo, etc.) ... */}
-        
-        {activeFiltersCount() > 0 && (
-          <Button variant="link" onClick={clearFilters} className="p-0 text-decoration-none mt-2" style={{ color: boutique?.couleur_theme || '#6366F1' }}>
-            <FaTimes className="me-1" />Effacer tous les filtres ({activeFiltersCount()})
-          </Button>
-        )}
-      </div>
-    );
-  };
-  
+  // Renderizado condicional
   if (!boutique) {
     return (
       <div className="text-center py-5">
@@ -349,7 +231,7 @@ const BoutiqueProductsGrid = ({ boutique }) => {
     );
   }
   
-  if (loadingProducts && products.length === 0 && !initialLoadDone) {
+  if (loadingProducts && products.length === 0) {
     return (
       <div className="text-center py-5">
         <Spinner animation="border" variant="primary" />
@@ -358,82 +240,204 @@ const BoutiqueProductsGrid = ({ boutique }) => {
     );
   }
   
-  // 🔥 LOG FINAL antes de renderizar
-  console.log('🎨 [GRID] Renderizando con:', {
-    productsCount: products.length,
-    total,
-    hasMore
-  });
+  // Componente de filtros
+  const FiltersPanel = () => {
+    const CategoryIcon = boutiqueCategory ? getCategoryIcon(boutiqueCategory.slug) : FaStore;
+    const themeColor = boutique?.couleur_theme || '#6366F1';
+    
+    return (
+      <div className="filters-content">
+        {/* Buscador */}
+        <div className="mb-4">
+          <Form.Control
+            type="text"
+            placeholder={`🔍 Rechercher dans ${boutique?.nom_boutique || 'la boutique'}...`}
+            value={filters.search}
+            onChange={(e) => handleFilterChange('search', e.target.value)}
+            className="rounded-pill"
+          />
+        </div>
+        
+        {/* Categoría */}
+        {boutiqueCategory && (
+          <div className="mb-4">
+            <h6 className="fw-bold mb-3"><FaStore className="me-2" />Catégorie</h6>
+            <div className="p-3 rounded-3" style={{ backgroundColor: `${themeColor}10`, borderLeft: `3px solid ${themeColor}` }}>
+              <div className="d-flex align-items-center">
+                <div className="me-3 d-flex align-items-center justify-content-center" style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: themeColor, color: 'white' }}>
+                  <CategoryIcon size={24} />
+                </div>
+                <div><strong>{boutiqueCategory.name}</strong></div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Subcategorías */}
+        {availableSubCategories.length > 0 && (
+          <div className="mb-4">
+            <h6 className="fw-bold mb-3"><FaTag className="me-2" />Sous-catégories</h6>
+            <div className="d-flex flex-wrap gap-2">
+              {availableSubCategories.map(sub => (
+                <Badge
+                  key={sub._id}
+                  pill
+                  bg={filters.subCategories.includes(sub.slug || sub._id) ? 'primary' : 'light'}
+                  text={filters.subCategories.includes(sub.slug || sub._id) ? 'white' : 'dark'}
+                  className="px-3 py-2 cursor-pointer"
+                  style={{ cursor: 'pointer', backgroundColor: filters.subCategories.includes(sub.slug || sub._id) ? themeColor : undefined }}
+                  onClick={() => handleArrayFilter('subCategories', sub.slug || sub._id)}
+                >
+                  {sub.name}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Tipo de artículo */}
+        {articleTypes.length > 1 && (
+          <div className="mb-4">
+            <h6 className="fw-bold mb-3">Type d'article</h6>
+            <div className="d-flex flex-wrap gap-2">
+              <Badge
+                pill
+                bg={filters.articleType === 'all' ? 'primary' : 'light'}
+                className="px-3 py-2 cursor-pointer"
+                style={{ cursor: 'pointer', backgroundColor: filters.articleType === 'all' ? themeColor : undefined }}
+                onClick={() => handleFilterChange('articleType', 'all')}
+              >
+                Tous
+              </Badge>
+              {articleTypes.map(type => (
+                <Badge
+                  key={type.value}
+                  pill
+                  bg={filters.articleType === type.value ? 'primary' : 'light'}
+                  className="px-3 py-2 cursor-pointer"
+                  style={{ cursor: 'pointer', backgroundColor: filters.articleType === type.value ? themeColor : undefined }}
+                  onClick={() => handleFilterChange('articleType', type.value)}
+                >
+                  {type.label}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Precio */}
+        <div className="mb-4">
+          <h6 className="fw-bold mb-3"><FaMoneyBillWave className="me-2" />Prix</h6>
+          <div className="d-flex gap-2">
+            <Form.Control type="number" placeholder="Min" value={filters.minPrice} onChange={(e) => handleFilterChange('minPrice', e.target.value)} />
+            <Form.Control type="number" placeholder="Max" value={filters.maxPrice} onChange={(e) => handleFilterChange('maxPrice', e.target.value)} />
+          </div>
+        </div>
+        
+        {/* Estado */}
+        <div className="mb-4">
+          <h6 className="fw-bold mb-3">État</h6>
+          <div className="d-flex flex-wrap gap-2">
+            {ETAT_OPTIONS.map(option => (
+              <Badge
+                key={option.value}
+                pill
+                bg={filters.etat.includes(option.value) ? 'primary' : 'light'}
+                className="px-3 py-2 cursor-pointer"
+                style={{ cursor: 'pointer', backgroundColor: filters.etat.includes(option.value) ? themeColor : undefined }}
+                onClick={() => handleArrayFilter('etat', option.value)}
+              >
+                {option.label}
+              </Badge>
+            ))}
+          </div>
+        </div>
+        
+        {/* Wilaya */}
+        <div className="mb-4">
+          <h6 className="fw-bold mb-3"><FaMapMarkerAlt className="me-2" />Wilaya</h6>
+          <Form.Select value={filters.wilaya} onChange={(e) => handleFilterChange('wilaya', e.target.value)}>
+            <option value="">Toutes les wilayas</option>
+            {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
+          </Form.Select>
+        </div>
+        
+        {/* Limpiar filtros */}
+        {activeFiltersCount() > 0 && (
+          <Button variant="link" onClick={clearFilters} className="p-0 text-decoration-none" style={{ color: themeColor }}>
+            <FaTimes className="me-1" />Effacer les filtres ({activeFiltersCount()})
+          </Button>
+        )}
+      </div>
+    );
+  };
   
   return (
     <div className="boutique-products-grid">
       {/* Header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
-        <h4 className="mb-1 d-flex align-items-center flex-wrap gap-2">
-  <span>Nos produits</span>
-  {boutiqueCategory && (
-    <span 
-      className="badge d-inline-flex align-items-center gap-2" 
-      style={{
-        backgroundColor: `${boutique?.couleur_theme || '#6366F1'}15`,
-        color: boutique?.couleur_theme || '#6366F1',
-        fontSize: '14px', 
-        padding: '6px 12px',
-        border: `1px solid ${boutique?.couleur_theme || '#6366F1'}30`
-      }}
-    >
-      {(() => {
-        const Icon = getCategoryIcon(boutiqueCategory.slug);
-        return <Icon size={12} className="me-1" />;
-      })()}
-      {boutiqueCategory.name}
-    </span>
-  )}
-</h4>
+          <h4 className="mb-1 d-flex align-items-center gap-2">
+            <span>Nos produits</span>
+            {boutiqueCategory && (
+              <Badge style={{ backgroundColor: `${boutique?.couleur_theme || '#6366F1'}15`, color: boutique?.couleur_theme || '#6366F1' }}>
+                {boutiqueCategory.name}
+              </Badge>
+            )}
+          </h4>
           <small className="text-muted">{products.length} sur {total} produit{total > 1 ? 's' : ''}</small>
         </div>
         
-        <div className="d-flex gap-2 flex-wrap justify-content-between justify-content-md-end">
-          <Button variant="outline-secondary" size="sm" className="d-md-none order-2" onClick={() => setShowMobileFilters(true)} style={{ borderRadius: '30px' }}>
-            <FaSlidersH className="me-1" />Filtres{activeFiltersCount() > 0 && <Badge bg="primary" className="ms-1 rounded-pill">{activeFiltersCount()}</Badge>}
+        <div className="d-flex gap-2">
+          {/* Filtros móvil */}
+          <Button variant="outline-secondary" size="sm" className="d-md-none" onClick={() => setShowMobileFilters(true)}>
+            <FaSlidersH /> Filtres {activeFiltersCount() > 0 && <Badge bg="primary">{activeFiltersCount()}</Badge>}
           </Button>
           
-          <div className="btn-group order-1">
-            <Button variant={viewMode === 'grid' ? 'primary' : 'outline-secondary'} size="sm" onClick={() => setViewMode('grid')} style={viewMode === 'grid' ? { backgroundColor: boutique?.couleur_theme, borderColor: boutique?.couleur_theme } : {}}><FaThLarge /></Button>
-            <Button variant={viewMode === 'list' ? 'primary' : 'outline-secondary'} size="sm" onClick={() => setViewMode('list')} style={viewMode === 'list' ? { backgroundColor: boutique?.couleur_theme, borderColor: boutique?.couleur_theme } : {}}><FaList /></Button>
+          {/* Vista grid/list */}
+          <div className="btn-group">
+            <Button variant={viewMode === 'grid' ? 'primary' : 'outline-secondary'} size="sm" onClick={() => setViewMode('grid')} style={viewMode === 'grid' ? { backgroundColor: boutique?.couleur_theme, borderColor: boutique?.couleur_theme } : {}}>
+              <FaThLarge />
+            </Button>
+            <Button variant={viewMode === 'list' ? 'primary' : 'outline-secondary'} size="sm" onClick={() => setViewMode('list')} style={viewMode === 'list' ? { backgroundColor: boutique?.couleur_theme, borderColor: boutique?.couleur_theme } : {}}>
+              <FaList />
+            </Button>
           </div>
           
-          <Form.Select size="sm" value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ width: 'auto', minWidth: '150px' }}>
+          {/* Ordenamiento */}
+          <Form.Select size="sm" value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ width: 'auto', minWidth: 150 }}>
             <option value="recent">📅 Plus récents</option>
             <option value="price_asc">💰 Prix croissant</option>
             <option value="price_desc">💰 Prix décroissant</option>
             <option value="popular">⭐ Plus populaires</option>
-            <option value="score">🏆 Meilleur score</option>
           </Form.Select>
           
-          <Button variant="outline-secondary" size="sm" className="d-none d-md-flex align-items-center" onClick={() => setIsFilterOpen(!isFilterOpen)}>
-            <FaFilter className="me-1" />Filtres{activeFiltersCount() > 0 && <Badge bg="primary" className="ms-1">{activeFiltersCount()}</Badge>}{isFilterOpen ? <FaChevronUp className="ms-2" size={12} /> : <FaChevronDown className="ms-2" size={12} />}
+          {/* Filtros desktop */}
+          <Button variant="outline-secondary" size="sm" className="d-none d-md-flex" onClick={() => setShowFilters(!showFilters)}>
+            <FaFilter /> Filtres {activeFiltersCount() > 0 && <Badge bg="primary">{activeFiltersCount()}</Badge>}
+            {showFilters ? <FaChevronUp className="ms-2" /> : <FaChevronDown className="ms-2" />}
           </Button>
         </div>
       </div>
       
       <Row>
-        {isFilterOpen && (
+        {/* Sidebar filtros */}
+        {showFilters && (
           <Col lg={3} className="d-none d-lg-block">
-            <div className="filters-sidebar p-4 bg-light rounded-3 sticky-top" style={{ top: '90px' }}>
-              <h5 className="mb-4 d-flex align-items-center"><FaFilter className="me-2" size={16} />Filtres{activeFiltersCount() > 0 && <Badge bg="primary" className="ms-2">{activeFiltersCount()}</Badge>}</h5>
-              <FiltersContent />
+            <div className="p-4 bg-light rounded-3 sticky-top" style={{ top: 90 }}>
+              <h5 className="mb-4"><FaFilter /> Filtres {activeFiltersCount() > 0 && <Badge bg="primary">{activeFiltersCount()}</Badge>}</h5>
+              <FiltersPanel />
             </div>
           </Col>
         )}
         
-        <Col lg={isFilterOpen ? 9 : 12}>
+        {/* Productos */}
+        <Col lg={showFilters ? 9 : 12}>
           {products.length > 0 ? (
             <>
               <Row className={viewMode === 'grid' ? 'g-4' : ''}>
                 {products.map(product => (
-                  <Col key={product._id} {...(viewMode === 'grid' ? { xl: isFilterOpen ? 4 : 3, lg: isFilterOpen ? 6 : 4, md: 6, sm: 6, xs: 12 } : { xs: 12 })} className="mb-4">
+                  <Col key={product._id} {...(viewMode === 'grid' ? { xl: showFilters ? 4 : 3, lg: showFilters ? 6 : 4, md: 6, xs: 12 } : { xs: 12 })}>
                     <BoutiqueProductCard post={product} boutique={boutique} />
                   </Col>
                 ))}
@@ -441,7 +445,7 @@ const BoutiqueProductsGrid = ({ boutique }) => {
               
               {hasMore && (
                 <div ref={loaderRef} className="text-center py-4">
-                  {(loadingProducts || isFetching) ? <><Spinner animation="border" size="sm" className="me-2" /><span className="text-muted">Chargement...</span></> : <span className="text-muted small">↓ Scroll pour charger plus</span>}
+                  {(loadingProducts || isLoading) ? <Spinner animation="border" size="sm" /> : <span className="text-muted small">↓ Scroll pour charger plus</span>}
                 </div>
               )}
             </>
@@ -449,16 +453,25 @@ const BoutiqueProductsGrid = ({ boutique }) => {
             <div className="text-center py-5">
               <FaBoxOpen size={48} className="text-muted mb-3" />
               <h5 className="text-muted">Aucun produit disponible</h5>
-              <p className="text-muted">{activeFiltersCount() > 0 ? 'Aucun produit ne correspond à vos filtres.' : `Cette boutique n'a pas encore de produits.`}</p>
-              {activeFiltersCount() > 0 && <Button variant="link" onClick={clearFilters}>Effacer tous les filtres</Button>}
+              <p className="text-muted">
+                {activeFiltersCount() > 0 ? 'Aucun produit ne correspond à vos filtres.' : 'Cette boutique n\'a pas encore de produits.'}
+              </p>
+              {activeFiltersCount() > 0 && (
+                <Button variant="link" onClick={clearFilters} style={{ color: boutique?.couleur_theme }}>
+                  Effacer les filtres
+                </Button>
+              )}
             </div>
           )}
         </Col>
       </Row>
       
-      <Offcanvas show={showMobileFilters} onHide={() => setShowMobileFilters(false)} placement="start" style={{ width: '320px' }}>
-        <Offcanvas.Header closeButton className="border-bottom"><Offcanvas.Title><FaFilter className="me-2" />Filtres{activeFiltersCount() > 0 && <Badge bg="primary" className="ms-2">{activeFiltersCount()}</Badge>}</Offcanvas.Title></Offcanvas.Header>
-        <Offcanvas.Body><FiltersContent /></Offcanvas.Body>
+      {/* Offcanvas móvil */}
+      <Offcanvas show={showMobileFilters} onHide={() => setShowMobileFilters(false)} placement="start" style={{ width: 320 }}>
+        <Offcanvas.Header closeButton>
+          <Offcanvas.Title><FaFilter /> Filtres {activeFiltersCount() > 0 && <Badge bg="primary">{activeFiltersCount()}</Badge>}</Offcanvas.Title>
+        </Offcanvas.Header>
+        <Offcanvas.Body><FiltersPanel /></Offcanvas.Body>
       </Offcanvas>
     </div>
   );

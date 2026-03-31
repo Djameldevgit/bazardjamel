@@ -1,4 +1,4 @@
-// src/pages/Home.jsx - VERSIÓN CORREGIDA
+// src/pages/Home.jsx - VERSIÓN LIMPIA Y TRADUCIDA
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -6,7 +6,7 @@ import { useHistory } from 'react-router-dom';
 import { 
   getAllCategoriesWithPosts, 
   loadMoreCategories,
-  getSliderCategories  // ← IMPORTAR LA NUEVA ACCIÓN
+  getSliderCategories
 } from '../redux/actions/categoryAction';
 import { getBoutiquesForHome } from '../redux/actions/boutiqueAction';
 import { 
@@ -20,11 +20,12 @@ import {
 } from 'react-bootstrap';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import MainCategorySlider from '../components/SlidersCategories/CategorySlider';
-import CarouselHome from '../components/carousel/CarouselHome';
+import HeaderCarousel from '../components/SlidersCategories/HeaderCarousel';
+ 
 import PostCard from '../components/post-card/PostCard';
 import BoutiquePostCard from '../components/boutique/BoutiquePostCard';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'react-bootstrap-icons';
-
+ 
 const Home = () => {
   const dispatch = useDispatch();
   const history = useHistory();
@@ -35,59 +36,42 @@ const Home = () => {
   const boutiqueSliderRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
-  const [scrollLogs, setScrollLogs] = useState([]);
   
   const { theme = 'light' } = useSelector(state => state.theme || {});
   
-  // 🆕 SEPARAR: Slider (todas las categorías) y Scroll (categorías con posts)
+  // Slider (todas las categorías)
   const {
-    sliderCategories = [],      // Para el slider (todas las categorías)
+    sliderCategories = [],
     sliderLoading = false
   } = useSelector((state) => state.category || {});
   
+  // Scroll infinito (categorías con posts)
   const {
-    categories = [],            // Para scroll infinito (con posts)
+    categories = [],
     loading,
-    error,
+    
     hasMoreCategories,
-    currentPage,
-    totalPages
+   
   } = useSelector((state) => state.category || {});
 
   const { homeBoutiques = [] } = useSelector((state) => state.boutique || {});
 
-  // Función para agregar logs
-  const addLog = (message, type = 'info') => {
-    const timestamp = new Date().toLocaleTimeString();
-    const newLog = { 
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      timestamp, 
-      message, 
-      type 
-    };
-    setScrollLogs(prev => [newLog, ...prev].slice(0, 20));
-    console.log(`[${timestamp}] ${message}`);
-  };
-
-  // 🔥 CARGA INICIAL: Separada en dos partes
+  // Carga inicial
   useEffect(() => {
     if (hasLoadedRef.current) return;
     
     hasLoadedRef.current = true;
     
-    addLog('🚀 INICIO - Cargando...', 'success');
-    
-    // 1. Cargar slider (TODAS las categorías de una vez)
+    // Cargar slider (todas las categorías)
     dispatch(getSliderCategories());
     
-    // 2. Cargar primeras 2 categorías con posts (para scroll infinito)
+    // Cargar primeras 2 categorías con posts (scroll infinito)
     dispatch(getAllCategoriesWithPosts(1, 2));
     dispatch(getBoutiquesForHome(10));
     
     // Timeout de respaldo
     const timer = setTimeout(() => {
       if (!dataLoaded && !loading) {
-        addLog('⚠️ Timeout: Forzando carga completada', 'warning');
         setInitialLoadDone(true);
         setDataLoaded(true);
       }
@@ -96,31 +80,13 @@ const Home = () => {
     return () => clearTimeout(timer);
   }, [dispatch]);
 
-  // Monitorear slider
-  useEffect(() => {
-    if (sliderCategories.length > 0) {
-      addLog(`🎠 SLIDER: ${sliderCategories.length} categorías cargadas`, 'success');
-      // 🔥 LOG PARA VER QUÉ CATEGORÍAS LLEGAN AL SLIDER
-      sliderCategories.forEach(cat => {
-        console.log(`   🎠 Slider - ${cat.name} (${cat.slug})`);
-      });
-    }
-  }, [sliderCategories]);
-
   // Monitorear cuando los datos del scroll están listos
   useEffect(() => {
     if (categories.length > 0 && !loading && !dataLoaded) {
       setDataLoaded(true);
       setInitialLoadDone(true);
-      addLog(`✅ DATOS SCROLL LISTOS: ${categories.length} categorías cargadas (página ${currentPage}/${totalPages})`, 'success');
-      
-      // 🔥 LOG DE POSTS PARA DEPURACIÓN
-      categories.forEach(cat => {
-        const postCount = cat.posts?.length || 0;
-        addLog(`   📦 ${cat.name}: ${postCount} posts`, postCount > 0 ? 'success' : 'warning');
-      });
     }
-  }, [categories, loading, dataLoaded, currentPage, totalPages]);
+  }, [categories, loading, dataLoaded]);
 
   // Verificar scroll de boutiques
   const checkScrollPosition = useCallback(() => {
@@ -152,50 +118,44 @@ const Home = () => {
   // Scroll infinito
   const fetchMoreData = useCallback(() => {
     if (hasMoreCategories && !loading && dataLoaded) {
-      const nextPage = currentPage + 1;
-      addLog(`📡 SCROLL ACTIVADO! Cargando página ${nextPage}`, 'warning');
       dispatch(loadMoreCategories());
     }
-  }, [dispatch, hasMoreCategories, loading, currentPage, dataLoaded, addLog]);
+  }, [dispatch, hasMoreCategories, loading, dataLoaded]);
 
   // Navegación
   const handleCategoryClick = (slugOrObject, categoryNameParam) => {
     let slug, categoryName;
     if (typeof slugOrObject === 'object') {
       slug = slugOrObject.slug;
-      categoryName = slugOrObject.name || 'Categoría';
+      categoryName = slugOrObject.name || 'Catégorie';
     } else {
       slug = slugOrObject;
-      categoryName = categoryNameParam || 'Categoría';
+      categoryName = categoryNameParam || 'Catégorie';
     }
     if (slug) {
-      addLog(`🔗 Navegando a: ${categoryName}`, 'info');
       history.push(`/${slug}`);
     }
   };
 
   const handleViewMore = (slug, categoryName) => {
-    addLog(`🔍 Ver más: ${categoryName}`, 'info');
     history.push(`/${slug}`, { fromHome: true, categoryName });
   };
 
   const handleViewAllBoutiques = () => {
-    addLog(`🏪 Ver todas las boutiques`, 'info');
     history.push('/boutiques/1');
   };
 
   const handleBoutiqueClick = (boutiqueId) => {
-    addLog(`🏪 Click boutique: ${boutiqueId}`, 'info');
     history.push(`/boutique/${boutiqueId}`);
   };
 
-  // Filtrar posts
+  // Filtrar posts normales (excluir boutiques)
   const filterNormalPosts = (posts) => {
     if (!posts) return [];
     return posts.filter(post => !post.isFromBoutique);
   };
 
-  // 🔥 FILTRAR CATEGORÍAS PARA EL SCROLL (excluir boutiques)
+  // Filtrar categorías para el scroll (excluir boutiques)
   const filteredScrollCategories = categories.filter(category => {
     const categoryName = category.name?.toLowerCase() || '';
     const categorySlug = category.slug?.toLowerCase() || '';
@@ -212,7 +172,7 @@ const Home = () => {
         <Container className="flex-grow-1 d-flex align-items-center justify-content-center">
           <div className="text-center">
             <Spinner animation="border" variant="primary" size="lg" />
-            <p className="mt-3 text-muted">Cargando experiencias únicas...</p>
+            <p className="mt-3 text-muted">Chargement des expériences uniques...</p>
           </div>
         </Container>
       </div>
@@ -222,53 +182,21 @@ const Home = () => {
   return (
     <div className={`min-vh-100 d-flex flex-column ${theme === 'dark' ? 'bg-dark text-light' : 'bg-light'}`}>
       
-      {/* PANEL DE LOGS */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="position-fixed bottom-0 end-0 m-3" style={{ zIndex: 9999, maxWidth: '400px' }}>
-          <div className="card shadow-lg border-0" style={{ backgroundColor: 'rgba(0,0,0,0.9)' }}>
-            <div className="card-header bg-dark text-white py-2 px-3">
-              <div className="d-flex justify-content-between align-items-center">
-                <small className="fw-bold">📡 SCROLL LOGS</small>
-                <Button variant="link" size="sm" className="text-white p-0" onClick={() => setScrollLogs([])}>
-                  <i className="fas fa-trash-alt"></i>
-                </Button>
-              </div>
-            </div>
-            <div className="card-body p-2" style={{ maxHeight: '250px', overflowY: 'auto', fontSize: '10px', fontFamily: 'monospace' }}>
-              {scrollLogs.map(log => (
-                <div key={log.id} className="mb-1 pb-1 border-bottom border-secondary" style={{ color: log.type === 'success' ? '#28a745' : log.type === 'warning' ? '#ffc107' : log.type === 'danger' ? '#dc3545' : '#17a2b8' }}>
-                  <small className="text-muted">{log.timestamp}</small>
-                  <div className="small">{log.message}</div>
-                </div>
-              ))}
-            </div>
-            <div className="card-footer bg-dark text-white py-1 px-3">
-              <div className="d-flex justify-content-between small">
-                <span>Slider: {sliderCategories.length}</span>
-                <span>Scroll: {filteredScrollCategories.length}</span>
-                <span>Pág: {currentPage}/{totalPages}</span>
-                <Badge bg={hasMoreCategories ? 'success' : 'secondary'}>{hasMoreCategories ? '✅ Más' : '⛔ Fin'}</Badge>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <CarouselHome />
+      <HeaderCarousel />
       
       <main className="flex-grow-1">
-        {/* 🔥 SLIDER - TODAS LAS CATEGORÍAS DE UNA VEZ */}
+        {/* Slider - Toutes les catégories */}
         <section>
           <Container>
             <MainCategorySlider 
-              categories={sliderCategories}  // ← USAR sliderCategories, NO categories
+              categories={sliderCategories}
               onCategoryClick={handleCategoryClick}  
             />
           </Container>
         </section>
 
         <Container className="py-1">
-          {/* SECCIÓN BOUTIQUES */}
+          {/* Section Boutiques */}
           {homeBoutiques.length > 0 && (
             <section className="mb-2">
               <div className="d-flex justify-content-between align-items-center mb-2">
@@ -276,21 +204,46 @@ const Home = () => {
                   <h5 className="h4 fw-bold mb-0">Boutiques {homeBoutiques.length}</h5>
                 </div>
                 <div className="d-flex gap-2">
-                  <Button variant="outline-purple" className="rounded-circle p-2" onClick={() => scrollBoutiques('left')} disabled={!showLeftArrow} style={{ width: '40px', height: '40px' }}>
+                  <Button 
+                    variant="outline-purple" 
+                    className="rounded-circle p-2" 
+                    onClick={() => scrollBoutiques('left')} 
+                    disabled={!showLeftArrow} 
+                    style={{ width: '40px', height: '40px' }}
+                  >
                     <ChevronLeft size={20} />
                   </Button>
-                  <Button variant="outline-purple" className="rounded-circle p-2" onClick={() => scrollBoutiques('right')} disabled={!showRightArrow} style={{ width: '40px', height: '40px' }}>
+                  <Button 
+                    variant="outline-purple" 
+                    className="rounded-circle p-2" 
+                    onClick={() => scrollBoutiques('right')} 
+                    disabled={!showRightArrow} 
+                    style={{ width: '40px', height: '40px' }}
+                  >
                     <ChevronRight size={20} />
                   </Button>
-                  <Button variant="outline-purple" className="rounded-pill px-4 ms-2" onClick={handleViewAllBoutiques}>
-                    Voir <ArrowRight className="ms-2" size={16} />
+                  <Button 
+                    variant="outline-purple" 
+                    className="rounded-pill px-4 ms-2" 
+                    onClick={handleViewAllBoutiques}
+                  >
+                    Voir tout <ArrowRight className="ms-2" size={16} />
                   </Button>
                 </div>
               </div>
               <div className="boutique-slider-container position-relative">
-                <div className="boutique-slider d-flex gap-3 pb-3" ref={boutiqueSliderRef} style={{ overflowX: 'auto', scrollBehavior: 'smooth', scrollbarWidth: 'thin' }}>
+                <div 
+                  className="boutique-slider d-flex gap-3 pb-3" 
+                  ref={boutiqueSliderRef} 
+                  style={{ overflowX: 'auto', scrollBehavior: 'smooth', scrollbarWidth: 'thin' }}
+                >
                   {homeBoutiques.map((boutique) => (
-                    <div key={boutique._id} className="boutique-slide" style={{ minWidth: '280px', maxWidth: '280px' }} onClick={() => handleBoutiqueClick(boutique._id)}>
+                    <div 
+                      key={boutique._id} 
+                      className="boutique-slide" 
+                      style={{ minWidth: '280px', maxWidth: '280px' }} 
+                      onClick={() => handleBoutiqueClick(boutique._id)}
+                    >
                       <BoutiquePostCard boutique={boutique} />
                     </div>
                   ))}
@@ -299,7 +252,7 @@ const Home = () => {
             </section>
           )}
 
-          {/* 🔥 SCROLL INFINITO - SECCIONES CON POSTS */}
+          {/* Scroll Infinito - Sections avec posts */}
           <InfiniteScroll
             dataLength={filteredScrollCategories.length}
             next={fetchMoreData}
@@ -307,14 +260,14 @@ const Home = () => {
             loader={
               <div className="text-center py-5">
                 <Spinner animation="border" variant="primary" />
-                <p className="mt-3 text-muted">Cargando más categorías...</p>
+                <p className="mt-3 text-muted">Chargement de plus de catégories...</p>
               </div>
             }
             endMessage={
               <div className="text-center py-5">
                 <i className="fas fa-flag-checkered fa-2x text-success mb-3"></i>
-                <h4 className="h5 mb-2">¡Llegaste al final!</h4>
-                <p className="text-muted">Has explorado todas nuestras categorías</p>
+                <h4 className="h5 mb-2">Vous êtes arrivé à la fin !</h4>
+                <p className="text-muted">Vous avez exploré toutes nos catégories</p>
               </div>
             }
             scrollThreshold={0.9}
@@ -332,12 +285,16 @@ const Home = () => {
                         </div>
                         <div>
                           <h3 className="h4 fw-bold mb-0">{category.name}</h3>
-                          <p className="text-muted mb-0">{normalPosts.length} productos</p>
+                          <p className="text-muted mb-0">{normalPosts.length} produits</p>
                         </div>
                       </div>
                     </div>
-                    <Button variant="outline-primary" className="rounded-pill px-4" onClick={() => handleViewMore(category.slug, category.name)}>
-                      Ver todos <ArrowRight className="ms-2" size={16} />
+                    <Button 
+                      variant="outline-primary" 
+                      className="rounded-pill px-4" 
+                      onClick={() => handleViewMore(category.slug, category.name)}
+                    >
+                      Voir tout <ArrowRight className="ms-2" size={16} />
                     </Button>
                   </div>
 
@@ -352,7 +309,7 @@ const Home = () => {
                   ) : (
                     <Alert variant="info" className="text-center">
                       <i className="fas fa-info-circle me-2"></i>
-                      Aún no hay productos en esta categoría
+                      Aucun produit disponible dans cette catégorie pour le moment
                     </Alert>
                   )}
                 </section>

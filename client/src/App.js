@@ -30,7 +30,7 @@ import MesAnnoces from './pages/users/MesAnnoces';
 import ProfileSettings from './pages/users/ProfileSettings';
 import ProfileSaved from './pages/users/ProfileSaved';
 import CreateBoutiqueProductPage from './pages/boutiqueProduct/CreateBoutiqueProductPage';
-import CreateImageHomeCarousel from './pages/carousel/CreateImageHomeCarousel';
+//import CreateImageHomeCarousel from './pages/carousel/CreateImageHomeCarousel';
 import MesProduitsBoutiquePage from './pages/boutiqueProduct/MesProduitsBoutiqueDashborad';
  
 function App() {
@@ -80,10 +80,11 @@ function App() {
   {/* Ruta genérica de boutique - PARA VISTA PÚBLICA */}
   <Route exact path="/boutique/:id" component={BoutiqueDetailPage} />
 
-  {/* ============ RUTAS DE ADMIN ============ */}
+  {/* ============ RUTAS DE ADMIN ============ 
   <Route path="/admin/carousel" exact component={CreateImageHomeCarousel} />
   <Route path="/admin/carousel/create" exact component={CreateImageHomeCarousel} />
   <Route path="/admin/carousel/edit/:id" exact component={CreateImageHomeCarousel} />
+  */}
 
   {/* ============ RUTAS DE ANUNCIOS NORMALES ============ */}
   <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
