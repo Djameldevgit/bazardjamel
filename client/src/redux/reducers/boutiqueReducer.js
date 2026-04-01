@@ -1,4 +1,5 @@
-// redux/reducers/boutiqueReducer.js
+// 📂 redux/reducers/boutiqueReducer.js - VERSIÓN ACTUALIZADA CON FILTERMETADATA
+
 import { BOUTIQUE_TYPES } from '../actions/boutiqueAction';
 
 const initialState = {
@@ -48,33 +49,32 @@ const boutiqueReducer = (state = initialState, action) => {
           ? { ...state.currentBoutique, stats: action.payload.stats }
           : state.currentBoutique
       };
-
-    // ============ UPDATE BOUTIQUE VIEWS ============
-  // redux/reducers/boutiqueReducer.js
-case 'UPDATE_BOUTIQUE_VIEWS':
-  const { boutiqueId: viewBoutiqueId, views } = action.payload;
-  
-  const updateViewsInList = function(list) {
-    return list.map(function(b) {
-      if (b._id === viewBoutiqueId) {
-        return { ...b, views: views };
-      }
-      return b;
-    });
-  };
-  
-  return {
-    ...state,
-    boutiques: updateViewsInList(state.boutiques),
-    userBoutiques: updateViewsInList(state.userBoutiques),
-    homeBoutiques: updateViewsInList(state.homeBoutiques),
-    currentBoutique: state.currentBoutique && state.currentBoutique._id === viewBoutiqueId
-      ? { ...state.currentBoutique, views: views }
-      : state.currentBoutique,
-    boutiqueByDomain: state.boutiqueByDomain && state.boutiqueByDomain._id === viewBoutiqueId
-      ? { ...state.boutiqueByDomain, views: views }
-      : state.boutiqueByDomain
-  };
+ 
+    case 'UPDATE_BOUTIQUE_VIEWS':
+      const { boutiqueId: viewBoutiqueId, views } = action.payload;
+      
+      const updateViewsInList = function(list) {
+        return list.map(function(b) {
+          if (b._id === viewBoutiqueId) {
+            return { ...b, views: views };
+          }
+          return b;
+        });
+      };
+      
+      return {
+        ...state,
+        boutiques: updateViewsInList(state.boutiques),
+        userBoutiques: updateViewsInList(state.userBoutiques),
+        homeBoutiques: updateViewsInList(state.homeBoutiques),
+        currentBoutique: state.currentBoutique && state.currentBoutique._id === viewBoutiqueId
+          ? { ...state.currentBoutique, views: views }
+          : state.currentBoutique,
+        boutiqueByDomain: state.boutiqueByDomain && state.boutiqueByDomain._id === viewBoutiqueId
+          ? { ...state.boutiqueByDomain, views: views }
+          : state.boutiqueByDomain
+      };
+    
     // ============ GET BOUTIQUES BY CATEGORY ============
     case BOUTIQUE_TYPES.GET_BOUTIQUES_BY_CATEGORY:
       const {
@@ -85,7 +85,8 @@ case 'UPDATE_BOUTIQUE_VIEWS':
         totalPages,
         hasMore,
         categoryInfo,
-        children
+        children,
+        filterMetadata  // ✅ AÑADIR filterMetadata
       } = action.payload;
 
       const existingData = state.boutiquesByCategory[categoryPath];
@@ -103,7 +104,8 @@ case 'UPDATE_BOUTIQUE_VIEWS':
             totalPages,
             hasMore,
             categoryInfo,
-            children
+            children,
+            filterMetadata  // ✅ GUARDAR filterMetadata
           }
         },
         error: null
@@ -124,7 +126,8 @@ case 'UPDATE_BOUTIQUE_VIEWS':
         totalPages: 1,
         hasMore: true,
         categoryInfo: null,
-        children: []
+        children: [],
+        filterMetadata: null  // ✅ INCLUIR filterMetadata
       };
 
       return {
@@ -479,7 +482,8 @@ case 'UPDATE_BOUTIQUE_VIEWS':
             totalPages: 1,
             hasMore: false,
             categoryInfo: null,
-            children: []
+            children: [],
+            filterMetadata: null  // ✅ INCLUIR filterMetadata
           }
         },
         loadingByCategory: {

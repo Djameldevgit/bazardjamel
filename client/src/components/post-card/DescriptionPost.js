@@ -1,11 +1,13 @@
 // 📂 frontend/src/components/post/DescriptionPost.jsx
-import React, { useMemo, useCallback, useEffect } from 'react';
-import { Card } from 'react-bootstrap';
+
+import React, { useMemo, useCallback, useEffect, useState } from 'react';
+import { Badge } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import moment from 'moment';
 import 'moment/locale/fr';
 import { getCategoriesForAccordion } from '../../redux/actions/categoryAction';
+ 
 
 moment.locale('fr');
 
@@ -13,6 +15,10 @@ const DescriptionPost = ({ post }) => {
     const dispatch = useDispatch();
     const { accordionCategories = [], accordionLoading } = useSelector(state => state.category || {});
     const history = useHistory();
+    
+    const [mainImage, setMainImage] = useState('');
+    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+    const [isImageLoaded, setIsImageLoaded] = useState(false);
 
     useEffect(() => {
         if (accordionCategories.length === 0 && !accordionLoading) {
@@ -28,6 +34,47 @@ const DescriptionPost = ({ post }) => {
         }
         return allData;
     }, [post]);
+
+    useEffect(() => {
+        if (post?.images && post.images.length > 0) {
+            const firstImage = post.images[0];
+            const imageUrl = typeof firstImage === 'string' ? firstImage : firstImage?.url;
+            if (imageUrl) {
+                setMainImage(imageUrl);
+                setSelectedImageIndex(0);
+            }
+        }
+    }, [post]);
+
+    const handleThumbnailClick = useCallback((imageUrl, index) => {
+        setIsImageLoaded(false);
+        setMainImage(imageUrl);
+        setSelectedImageIndex(index);
+    }, []);
+
+    const handlePrevImage = useCallback(() => {
+        if (post?.images && post.images.length > 0) {
+            const newIndex = selectedImageIndex === 0 ? post.images.length - 1 : selectedImageIndex - 1;
+            const imageUrl = typeof post.images[newIndex] === 'string' ? post.images[newIndex] : post.images[newIndex]?.url;
+            if (imageUrl) {
+                setIsImageLoaded(false);
+                setMainImage(imageUrl);
+                setSelectedImageIndex(newIndex);
+            }
+        }
+    }, [post, selectedImageIndex]);
+
+    const handleNextImage = useCallback(() => {
+        if (post?.images && post.images.length > 0) {
+            const newIndex = selectedImageIndex === post.images.length - 1 ? 0 : selectedImageIndex + 1;
+            const imageUrl = typeof post.images[newIndex] === 'string' ? post.images[newIndex] : post.images[newIndex]?.url;
+            if (imageUrl) {
+                setIsImageLoaded(false);
+                setMainImage(imageUrl);
+                setSelectedImageIndex(newIndex);
+            }
+        }
+    }, [post, selectedImageIndex]);
 
     const getCategoryDisplay = useCallback(() => {
         const categorie = postData.categorie;
@@ -77,29 +124,20 @@ const DescriptionPost = ({ post }) => {
     }, [postData, accordionCategories]);
 
     const fieldIconMap = {
-        'categorie': '📂',
-        'subCategory': '📁',
-        'articleType': '📌',
         'price': '💰',
         'etat': '⭐',
         'views': '👁️',
         'createdAt': '📅',
-        'description': '📄',
         'marque': '🚗',
         'modele': '🚘',
         'annee': '📅',
         'kilometrage': '🛣️',
         'carburant': '⛽',
         'boiteVitesse': '⚙️',
-        'couleurExterieur': '🎨',
-        'couleurInterieur': '🪑',
-        'puissance': '⚡',
-        'places': '👥',
-        'portes': '🚪',
-        'premiereMain': '👤',
-        'garantie': '🛡️',
+        'couleur': '🎨',
         'surface': '📏',
         'chambres': '🛏️',
+        'pieces': '🏠',
         'sallesBain': '🚿',
         'etage': '🏢',
         'meuble': '🪑',
@@ -109,26 +147,19 @@ const DescriptionPost = ({ post }) => {
         'chauffage': '🔥',
         'piscine': '🏊',
         'ascenseur': '🛗',
+        'quartier': '📍',
+        'operationType': '📝',
+        'typeImmobilier': '🏠',
         'ram': '💾',
         'stockage': '💿',
         'processeur': '⚙️',
         'ecran': '🖥️',
         'camera': '📷',
         'batterie': '🔋',
-        'systeme': '💻',
-        'connectivite': '📶',
-        'couleur': '🎨',
+        'capaciteStockage': '💾',
         'taille': '📏',
         'matiere': '🧵',
         'genre': '👤',
-        'age': '🔞',
-        'type': '🏷️',
-        'dimensions': '📐',
-        'poids': '⚖️',
-        'duree': '⏱️',
-        'disponibilite': '📅',
-        'tarif': '💰',
-        'zone': '📍',
         'default': '📋'
     };
 
@@ -145,34 +176,29 @@ const DescriptionPost = ({ post }) => {
             return new Intl.NumberFormat('fr-DZ').format(value);
         }
         if (field === 'createdAt' || field === 'updatedAt') return moment(value).format('DD/MM/YYYY');
+        if (Array.isArray(value)) {
+            if (value.length === 0) return null;
+            return value.join(', ');
+        }
         return String(value).trim().charAt(0).toUpperCase() + String(value).trim().slice(1);
     };
 
     const translateField = (field) => {
         const translations = {
-            'categorie': 'Catégorie',
-            'subCategory': 'Sous-catégorie',
-            'articleType': "Type d'article",
             'price': 'Prix',
             'etat': 'État',
             'views': 'Vues',
             'createdAt': 'Publié le',
-            'description': 'Description',
             'marque': 'Marque',
             'modele': 'Modèle',
             'annee': 'Année',
             'kilometrage': 'Kilométrage',
             'carburant': 'Carburant',
             'boiteVitesse': 'Boîte de vitesse',
-            'couleurExterieur': 'Couleur extérieure',
-            'couleurInterieur': 'Couleur intérieure',
-            'puissance': 'Puissance (CV)',
-            'places': 'Nombre de places',
-            'portes': 'Nombre de portes',
-            'premiereMain': 'Première main',
-            'garantie': 'Garantie',
+            'couleur': 'Couleur',
             'surface': 'Surface',
             'chambres': 'Chambres',
+            'pieces': 'Pièces',
             'sallesBain': 'Salles de bain',
             'etage': 'Étage',
             'meuble': 'Meublé',
@@ -182,41 +208,36 @@ const DescriptionPost = ({ post }) => {
             'chauffage': 'Chauffage',
             'piscine': 'Piscine',
             'ascenseur': 'Ascenseur',
+            'quartier': 'Quartier',
+            'operationType': "Type d'opération",
+            'typeImmobilier': 'Type de bien',
             'ram': 'RAM',
             'stockage': 'Stockage',
             'processeur': 'Processeur',
             'ecran': 'Écran',
             'camera': 'Caméra',
             'batterie': 'Batterie',
-            'systeme': "Système d'exploitation",
-            'connectivite': 'Connectivité',
-            'couleur': 'Couleur',
+            'capaciteStockage': 'Capacité',
             'taille': 'Taille',
             'matiere': 'Matière',
-            'genre': 'Genre',
-            'age': 'Âge',
-            'type': 'Type',
-            'dimensions': 'Dimensions',
-            'poids': 'Poids',
-            'duree': 'Durée',
-            'disponibilite': 'Disponibilité',
-            'tarif': 'Tarif',
-            'zone': 'Zone de service'
+            'genre': 'Genre'
         };
         return translations[field] || field;
     };
 
     const getFieldsToDisplay = useMemo(() => {
         if (!postData) return [];
+        
         const excludeFields = [
             '_id', '__v', 'user', 'categorySpecificData', 'images',
             'updatedAt', 'isActive', 'likes', 'comments',
             'boutique', 'isFromBoutique', 'category', 'title',
-            'wilaya', 'commune', 'address',
-            'phone', 'email', 'website'
+            'description', 'wilaya', 'commune', 'address',
+            'phone', 'email', 'website', 'slug', 'score',
+            'lastInteractionAt', 'categorie', 'subCategory', 'articleType',
+            'price', 'etat', 'views', 'createdAt'
         ];
-        const baseFields = ['categorie', 'subCategory', 'articleType', 'etat', 'price', 'views', 'createdAt'];
-
+        
         const fields = Object.keys(postData).filter(field => {
             if (excludeFields.includes(field)) return false;
             const value = postData[field];
@@ -225,20 +246,15 @@ const DescriptionPost = ({ post }) => {
             return true;
         });
 
-        const allFields = [...new Set([...baseFields, ...fields])];
-
         const priorityOrder = [
-            'categorie', 'subCategory', 'articleType', 'etat', 'price',
-            'marque', 'modele', 'annee', 'kilometrage', 'carburant', 'boiteVitesse', 'couleurExterieur', 'couleurInterieur', 'places', 'portes', 'premiereMain', 'garantie',
-            'surface', 'chambres', 'sallesBain', 'etage', 'meuble', 'jardin', 'parking', 'climatisation', 'chauffage', 'piscine', 'ascenseur',
-            'ram', 'stockage', 'processeur', 'ecran', 'camera', 'batterie', 'systeme', 'connectivite', 'couleur',
-            'taille', 'matiere', 'couleur', 'marque', 'genre', 'age',
-            'type', 'marque', 'matiere', 'dimensions', 'poids',
-            'duree', 'disponibilite', 'tarif', 'zone',
-            'views', 'createdAt'
+            'marque', 'modele', 'annee', 'kilometrage', 'carburant', 'boiteVitesse', 'couleur',
+            'operationType', 'typeImmobilier', 'pieces', 'surface', 'chambres', 'sallesBain',
+            'etage', 'meuble', 'jardin', 'parking', 'climatisation', 'chauffage', 'piscine', 'ascenseur', 'quartier',
+            'processeur', 'ram', 'stockage', 'ecran', 'camera', 'batterie', 'capaciteStockage',
+            'taille', 'matiere', 'genre'
         ];
 
-        return allFields.sort((a, b) => {
+        return fields.sort((a, b) => {
             const ia = priorityOrder.indexOf(a);
             const ib = priorityOrder.indexOf(b);
             if (ia !== -1 && ib !== -1) return ia - ib;
@@ -248,126 +264,349 @@ const DescriptionPost = ({ post }) => {
         });
     }, [postData]);
 
-    const renderHeader = () => {
-        const title = postData.title || 'Annonce';
-        const description = postData.description;
-        return (
-            <Card className="border-0 shadow-sm mb-4">
-                <Card.Header className="bg-white border-bottom py-3">
-                    <h5 className="mb-0 fw-bold text-dark">
-                        <span style={{ fontSize: '1.2rem', marginRight: '8px' }}>📄</span>
-                        Description de l'annonce
-                    </h5>
-                </Card.Header>
-                <Card.Body className="p-4">
-                    <h1 className="fw-bold mb-3" style={{ fontSize: '1.8rem', color: '#111827', wordBreak: 'break-word' }}>
-                        {title}
-                    </h1>
-                    {description && (
-                        <p className="text-muted mb-0" style={{ fontSize: '1rem', lineHeight: '1.6', wordBreak: 'break-word' }}>
-                            {description}
-                        </p>
-                    )}
-                </Card.Body>
-            </Card>
-        );
-    };
-
-    const FieldItem = ({ field }) => {
-        if ((field === 'subCategory' || field === 'articleType') && postData.categorie) return null;
-
-        let displayValue;
-        let displayIcon;
-        let displayLabel;
-
-        if (field === 'categorie') {
-            const categoryDisplay = getCategoryDisplay();
-            if (!categoryDisplay) return null;
-            displayValue = categoryDisplay;
-            displayIcon = '🏷️';
-            displayLabel = 'Catégorie';
-        } else {
-            const value = postData[field];
-            displayValue = formatValue(field, value);
-            if (!displayValue) return null;
-            displayIcon = getFieldIcon(field);
-            displayLabel = translateField(field);
-        }
-
-        // Determinar si el valor es largo (más de 30 caracteres) para ajustar el layout en móvil
-        const isLongValue = displayValue.length > 30;
-
-        return (
-            <div className="p-3 border-bottom">
-                <div className={`d-flex ${isLongValue ? 'flex-column align-items-start' : 'align-items-center justify-content-between'} flex-wrap gap-2`}>
-                    <div className="d-flex align-items-center">
-                        <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px', flexShrink: 0 }}>
-                            {displayIcon}
-                        </div>
-                        <span className="text-muted me-2" style={{ whiteSpace: 'nowrap' }}>{displayLabel}:</span>
-                    </div>
-                    <div className={`d-flex align-items-center ${isLongValue ? 'ms-4' : ''}`} style={{ maxWidth: '100%', wordBreak: 'break-word' }}>
-                        {field === 'price' ? (
-                            <span className="fw-bold" style={{ color: '#dc2626', whiteSpace: 'normal' }}>
-                                {displayValue}
-                            </span>
-                        ) : (
-                            <span className="fw-bold text-dark" style={{ whiteSpace: 'normal' }}>
-                                {displayValue}
-                            </span>
-                        )}
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-    if (!post) {
-        return (
-            <div className="text-center py-5">
-                <div className="spinner-border text-secondary" role="status">
-                    <span className="visually-hidden">Chargement...</span>
-                </div>
-                <p className="mt-3 text-muted">Chargement de l'annonce...</p>
-            </div>
-        );
-    }
+    const sellerInfo = useMemo(() => {
+        if (!post) return null;
+        return {
+            name: post.user?.username || post.user?.name || 'Annonceur',
+            avatar: post.user?.avatar,
+            phone: post.phone || postData.telephone,
+            email: post.email,
+            wilaya: post.wilaya,
+            commune: post.commune,
+            address: post.address
+        };
+    }, [post, postData]);
 
     const fieldsToDisplay = getFieldsToDisplay;
+    const hasImages = post?.images && post.images.length > 0;
+    const imagesList = post?.images || [];
 
     return (
-        <div className="description-post-container">
-            {renderHeader()}
-            {fieldsToDisplay.length > 0 && (
-                <Card className="border-0 shadow-sm mb-4">
-                    <Card.Header className="bg-white border-bottom py-3">
-                        <h5 className="mb-0 fw-bold text-dark">
-                            <span style={{ fontSize: '1.2rem', marginRight: '8px' }}>📋</span>
-                            Caractéristiques détaillées
-                            <span>👁 vistas: {post.views}</span>
-                        </h5>
-                    </Card.Header>
-                    <Card.Body className="p-0">
-                        {fieldsToDisplay.map(field => (
-                            <FieldItem key={field} field={field} />
-                        ))}
-                    </Card.Body>
-                </Card>
-            )}
-            <div className="d-flex justify-content-center mt-4">
-                <button 
-                    className="btn btn-outline-secondary py-2 px-4"
-                    onClick={() => history.goBack()}
-                    style={{ 
-                        border: '1px solid #e5e7eb',
-                        backgroundColor: '#ffffff',
-                        color: '#4b5563',
-                        fontSize: '14px'
-                    }}
-                >
-                    <span style={{ marginRight: '6px' }}>←</span>
-                    Retour
-                </button>
+        <div className="description-post">
+            <div className="description-post-inner">
+                {/* FILA SUPERIOR - IMAGENES + INFO PRINCIPAL */}
+                <div className="top-section">
+                    {/* COLUMNA IZQUIERDA - GALERÍA DE IMÁGENES */}
+                    <div className="gallery-column">
+                        <div className="image-gallery">
+                            {hasImages ? (
+                                <>
+                                    <div className="main-image-container">
+                                        <button 
+                                            className="nav-arrow prev-arrow" 
+                                            onClick={handlePrevImage}
+                                            aria-label="Image précédente"
+                                        >
+                                            <i className="fas fa-chevron-left"></i>
+                                        </button>
+                                        <div className="main-image-wrapper">
+                                            <img 
+                                                src={mainImage} 
+                                                alt={post.title || 'Image principale'}
+                                                className={`main-image ${isImageLoaded ? 'loaded' : 'loading'}`}
+                                                onLoad={() => setIsImageLoaded(true)}
+                                            />
+                                            {!isImageLoaded && (
+                                                <div className="image-loader">
+                                                    <div className="spinner-border text-primary"></div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <button 
+                                            className="nav-arrow next-arrow" 
+                                            onClick={handleNextImage}
+                                            aria-label="Image suivante"
+                                        >
+                                            <i className="fas fa-chevron-right"></i>
+                                        </button>
+                                        <div className="image-counter">
+                                            {selectedImageIndex + 1} / {imagesList.length}
+                                        </div>
+                                    </div>
+                                    <div className="thumbnail-container">
+                                        {imagesList.map((img, index) => {
+                                            const imageUrl = typeof img === 'string' ? img : img?.url;
+                                            return (
+                                                <div 
+                                                    key={index}
+                                                    className={`thumbnail ${selectedImageIndex === index ? 'active' : ''}`}
+                                                    onClick={() => handleThumbnailClick(imageUrl, index)}
+                                                >
+                                                    <img 
+                                                        src={imageUrl} 
+                                                        alt={`Image ${index + 1}`}
+                                                        loading="lazy"
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="no-image-placeholder">
+                                    <i className="fas fa-image"></i>
+                                    <p>Aucune image disponible</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* COLUMNA DERECHA - INFORMACIÓN PRINCIPAL (Estilo UserInfo) */}
+                    <div className="info-column">
+                        <div className="card-header">
+                            <h5>
+                                <i className="fas fa-info-circle me-2"></i>
+                                Détails de l'annonce
+                            </h5>
+                        </div>
+                        <div className="card-body">
+                            {/* Título */}
+                            <div className="info-row">
+                                <div className="info-row-content">
+                                    <div className="info-label">
+                                        <span className="info-icon"><i className="fas fa-heading"></i></span>
+                                        <span className="info-label-text">Titre:</span>
+                                    </div>
+                                    <div className="info-value">{postData.title || 'Annonce'}</div>
+                                </div>
+                            </div>
+                            
+                            {/* Precio */}
+                            {postData.price !== undefined && postData.price !== null && (
+                                <div className="info-row">
+                                    <div className="info-row-content">
+                                        <div className="info-label">
+                                            <span className="info-icon"><i className="fas fa-tag"></i></span>
+                                            <span className="info-label-text">Prix:</span>
+                                        </div>
+                                        <div className="info-value price-value">
+                                            {new Intl.NumberFormat('fr-DZ').format(postData.price)} DA
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Estado */}
+                            {postData.etat && (
+                                <div className="info-row">
+                                    <div className="info-row-content">
+                                        <div className="info-label">
+                                            <span className="info-icon"><i className="fas fa-star"></i></span>
+                                            <span className="info-label-text">État:</span>
+                                        </div>
+                                        <div className="info-value">
+                                            <Badge className="condition-badge">
+                                                {postData.etat === 'neuf' ? 'Neuf' : 
+                                                 postData.etat === 'excellent' ? 'Excellent état' :
+                                                 postData.etat === 'bon' ? 'Bon état' :
+                                                 postData.etat === 'occasion' ? 'Occasion' : postData.etat}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Categoría */}
+                            <div className="info-row">
+                                <div className="info-row-content">
+                                    <div className="info-label">
+                                        <span className="info-icon"><i className="fas fa-folder-open"></i></span>
+                                        <span className="info-label-text">Catégorie:</span>
+                                    </div>
+                                    <div className="info-value">{getCategoryDisplay() || postData.categorie}</div>
+                                </div>
+                            </div>
+                            
+                            {/* Vendedor */}
+                            <div className="info-row">
+                                <div className="info-row-content">
+                                    <div className="info-label">
+                                        <span className="info-icon"><i className="fas fa-user"></i></span>
+                                        <span className="info-label-text">Vendeur:</span>
+                                    </div>
+                                    <div className="info-value">{sellerInfo?.name || 'Annonceur'}</div>
+                                </div>
+                            </div>
+                            
+                            {/* Ubicación del vendedor */}
+                            {sellerInfo?.wilaya && (
+                                <div className="info-row">
+                                    <div className="info-row-content">
+                                        <div className="info-label">
+                                            <span className="info-icon"><i className="fas fa-map-marker-alt"></i></span>
+                                            <span className="info-label-text">Localisation:</span>
+                                        </div>
+                                        <div className="info-value">
+                                            {sellerInfo.wilaya}{sellerInfo.commune ? `, ${sellerInfo.commune}` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Teléfono */}
+                            {sellerInfo?.phone && (
+                                <div className="info-row">
+                                    <div className="info-row-content">
+                                        <div className="info-label">
+                                            <span className="info-icon"><i className="fas fa-phone"></i></span>
+                                            <span className="info-label-text">Téléphone:</span>
+                                        </div>
+                                        <div className="info-value">
+                                            <a href={`tel:${sellerInfo.phone}`} className="text-decoration-none text-dark">
+                                                {sellerInfo.phone}
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Email */}
+                            {sellerInfo?.email && (
+                                <div className="info-row">
+                                    <div className="info-row-content">
+                                        <div className="info-label">
+                                            <span className="info-icon"><i className="fas fa-envelope"></i></span>
+                                            <span className="info-label-text">Email:</span>
+                                        </div>
+                                        <div className="info-value">
+                                            <a href={`mailto:${sellerInfo.email}`} className="text-decoration-none text-dark">
+                                                {sellerInfo.email}
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Vistas */}
+                            <div className="info-row">
+                                <div className="info-row-content">
+                                    <div className="info-label">
+                                        <span className="info-icon"><i className="fas fa-eye"></i></span>
+                                        <span className="info-label-text">Vues:</span>
+                                    </div>
+                                    <div className="info-value">{postData.views || 0}</div>
+                                </div>
+                            </div>
+                            
+                            {/* Fecha */}
+                            <div className="info-row">
+                                <div className="info-row-content">
+                                    <div className="info-label">
+                                        <span className="info-icon"><i className="fas fa-calendar-alt"></i></span>
+                                        <span className="info-label-text">Publié le:</span>
+                                    </div>
+                                    <div className="info-value">{moment(post.createdAt).format('DD/MM/YYYY')}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* FILA INFERIOR - ESPECIFICACIONES COMPLETAS Y DESCRIPCIÓN */}
+                <div className="bottom-section">
+                    {/* Especificaciones completas */}
+                    {fieldsToDisplay.length > 0 && (
+                        <div className="specifications-section">
+                            <div className="section-header">
+                                <h5>
+                                    <i className="fas fa-list-ul"></i>
+                                    Caractéristiques détaillées
+                                </h5>
+                            </div>
+                            <div className="section-body">
+                                {fieldsToDisplay.map(field => {
+                                    const value = formatValue(field, postData[field]);
+                                    if (!value) return null;
+                                    return (
+                                        <div key={field} className="spec-item">
+                                            <div className="spec-content">
+                                                <div className="spec-label">
+                                                    <span className="spec-icon">{getFieldIcon(field)}</span>
+                                                    <span className="spec-label-text">{translateField(field)}</span>
+                                                </div>
+                                                <div className="spec-value">{value}</div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Ubicación */}
+                    {(postData.wilaya || postData.commune || postData.address) && (
+                        <div className="location-section">
+                            <div className="section-header">
+                                <h5>
+                                    <i className="fas fa-map-marker-alt"></i>
+                                    Localisation
+                                </h5>
+                            </div>
+                            <div className="section-body">
+                                {postData.wilaya && (
+                                    <div className="location-item">
+                                        <div className="location-content-inner">
+                                            <div className="location-label">
+                                                <i className="fas fa-map-pin"></i>
+                                                <strong>Wilaya:</strong>
+                                            </div>
+                                            <div className="location-value">{postData.wilaya}</div>
+                                        </div>
+                                    </div>
+                                )}
+                                {postData.commune && (
+                                    <div className="location-item">
+                                        <div className="location-content-inner">
+                                            <div className="location-label">
+                                                <i className="fas fa-building"></i>
+                                                <strong>Commune:</strong>
+                                            </div>
+                                            <div className="location-value">{postData.commune}</div>
+                                        </div>
+                                    </div>
+                                )}
+                                {postData.address && (
+                                    <div className="location-item">
+                                        <div className="location-content-inner">
+                                            <div className="location-label">
+                                                <i className="fas fa-home"></i>
+                                                <strong>Adresse:</strong>
+                                            </div>
+                                            <div className="location-value">{postData.address}</div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Descripción (al final) */}
+                    {postData.description && (
+                        <div className="description-section">
+                            <div className="section-header">
+                                <h5>
+                                    <i className="fas fa-align-left"></i>
+                                    Description
+                                </h5>
+                            </div>
+                            <div className="section-body">
+                                <div className="description-content">
+                                    <p>{postData.description}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Botón de retorno */}
+                    <div className="back-button-container">
+                        <button 
+                            className="back-button"
+                            onClick={() => history.goBack()}
+                        >
+                            <i className="fas fa-arrow-left"></i> Retour aux annonces
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );

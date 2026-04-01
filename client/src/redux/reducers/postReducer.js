@@ -1,4 +1,4 @@
-// postReducer.js - VERSIÓN CORREGIDA (ELIMINAR DUPLICADOS)
+// 📂 redux/reducers/postReducer.js - VERSIÓN CORREGIDA
 
 import { POST_TYPES } from '../actions/postAction';
 import { GLOBALTYPES } from '../actions/globalTypes';
@@ -10,6 +10,7 @@ const initialState = {
   result: 0,
   page: 1,
   detailPost: null,
+  postToEdit: null,  // ✅ AÑADIR: Para almacenar el post a editar
   error: null,
   filters: {
     categoryId: null,
@@ -19,8 +20,8 @@ const initialState = {
     location: null
   },
   
-  // ✅ UNIFICADO: solo similarPostsArray
-  similarPostsArray: [],
+  // Posts similares - UNIFICADO
+  similarPosts: [],  // ✅ UNIFICAR: usar solo similarPosts
   similarPostsTotal: 0,
   similarPostsPage: 1,
   similarPostsTotalPages: 1,
@@ -33,6 +34,7 @@ const initialState = {
   loadingMorePosts: false,
   postsError: null,
   hasMorePosts: true,
+  postsLastUpdate: null,  // ✅ Para forzar refrescos
   pagination: {
     currentPage: 1,
     totalPages: 1,
@@ -43,9 +45,16 @@ const initialState = {
 
 const postReducer = (state = initialState, action) => {
   switch (action.type) {
-    // ========== CATEGORY POSTS PAGINADOS ==========
-    
+    // ========== GET POST PARA EDITAR ==========
+    case POST_TYPES.GET_POST_BY_ID:
+      console.log('📝 REDUCER GET_POST_BY_ID:', action.payload);
+      return {
+        ...state,
+        postToEdit: action.payload,
+        loading: false
+      };
 
+    // ========== CATEGORY POSTS PAGINADOS ==========
     case POST_TYPES.LOADING_MORE_POSTS:
       return { ...state, loadingMorePosts: true, postsError: null };
 
@@ -84,7 +93,12 @@ const postReducer = (state = initialState, action) => {
       return { ...state, loading: action.payload };
 
     case POST_TYPES.CREATE_POST:
-      return { ...state, posts: [action.payload, ...state.posts], result: state.result + 1 };
+      return { 
+        ...state, 
+        posts: [action.payload, ...state.posts], 
+        result: state.result + 1,
+        postsLastUpdate: Date.now()
+      };
 
     case POST_TYPES.GET_POSTS:
       return {
@@ -98,82 +112,63 @@ const postReducer = (state = initialState, action) => {
     case POST_TYPES.GET_POST:
       return { ...state, detailPost: action.payload, loading: false };
 
-    case POST_TYPES.GET_POST_BY_ID:
-      return { ...state, postToEdit: action.payload };
+    // ========== UPDATE POST - VERSIÓN CORREGIDA ==========
+    case POST_TYPES.UPDATE_POST: {
+      console.log('🔄 REDUCER UPDATE_POST:', {
+        id: action.payload?._id,
+        title: action.payload?.title,
+        categoryChanged: action.payload?._categoryChanged
+      });
 
-   // ========== UPDATE POST - VERSIÓN CORREGIDA ==========
-case POST_TYPES.UPDATE_POST: {
-  console.log('🔄 REDUCER UPDATE_POST - Post actualizado:', {
-    id: action.payload?._id,
-    nuevaCategoria: action.payload?.categorie,
-    categoriaAnterior: action.payload?._oldCategory
-  });
+      // 1. Actualizar detailPost si es el post que estamos viendo
+      const newDetailPost = state.detailPost?._id === action.payload._id 
+        ? action.payload 
+        : state.detailPost;
 
-  // 1. Actualizar detailPost si es el post que estamos viendo
-  const newDetailPost = state.detailPost?._id === action.payload._id 
-    ? action.payload 
-    : state.detailPost;
+      // 2. Buscar el post anterior en la lista
+      const oldPost = state.posts.find(p => p._id === action.payload._id);
+      
+      // 3. Verificar si cambió de categoría
+      const categoryChanged = oldPost && (
+        oldPost.categorie !== action.payload.categorie ||
+        oldPost.subCategory !== action.payload.subCategory ||
+        String(oldPost.category) !== String(action.payload.category)
+      );
 
-  // 2. Buscar el post anterior en la lista
-  const oldPost = state.posts.find(p => p._id === action.payload._id);
-  
-  // 3. Verificar si cambió de categoría
-  const categoryChanged = oldPost && (
-    oldPost.categorie !== action.payload.categorie ||
-    oldPost.subCategory !== action.payload.subCategory ||
-    String(oldPost.category) !== String(action.payload.category)
-  );
-
-  if (categoryChanged) {
-    console.log('🔄 POST CAMBIÓ DE CATEGORÍA DETECTADO EN REDUCER:', {
-      old: {
-        categorie: oldPost.categorie,
-        subCategory: oldPost.subCategory,
-        category: oldPost.category
-      },
-      new: {
-        categorie: action.payload.categorie,
-        subCategory: action.payload.subCategory,
-        category: action.payload.category
+      // 4. Actualizar la lista de posts
+      let updatedPosts = [...state.posts];
+      
+      if (categoryChanged) {
+        // Si cambió de categoría, QUITAMOS el post de la lista actual
+        updatedPosts = updatedPosts.filter(post => post._id !== action.payload._id);
+        console.log('🗑️ Post removido de la lista actual por cambio de categoría');
+      } else {
+        // Si no cambió de categoría, actualizamos normalmente
+        updatedPosts = updatedPosts.map(post => 
+          post._id === action.payload._id ? action.payload : post
+        );
       }
-    });
-  }
 
-  // 4. Actualizar la lista de posts
-  let updatedPosts = [...state.posts];
-  
-  if (categoryChanged) {
-    // Si cambió de categoría, QUITAMOS el post de la lista actual
-    // (porque ya no pertenece a esta categoría)
-    updatedPosts = updatedPosts.filter(post => post._id !== action.payload._id);
-    console.log('🗑️ Post removido de la lista actual por cambio de categoría');
-  } else {
-    // Si no cambió de categoría, actualizamos normalmente
-    updatedPosts = updatedPosts.map(post => 
-      post._id === action.payload._id ? action.payload : post
-    );
-  }
+      // 5. Si el post que se está editando es el postToEdit, actualizarlo también
+      const newPostToEdit = state.postToEdit?._id === action.payload._id
+        ? action.payload
+        : state.postToEdit;
 
-  // 5. IMPORTANTE: Forzar timestamp para que los componentes sepan que hubo cambio
-  const newState = {
-    ...state,
-    posts: updatedPosts,
-    detailPost: newDetailPost,
-    // Este timestamp fuerza la recarga de componentes que dependan de postsLastUpdate
-    postsLastUpdate: Date.now()
-  };
-
-  // 6. Si el post que cambió es el que estamos viendo en detalle, también actualizar
-  if (state.detailPost?._id === action.payload._id) {
-    newState.detailPost = action.payload;
-  }
-
-  console.log('✅ UPDATE_POST completado en reducer');
-  return newState;
-}
+      return {
+        ...state,
+        posts: updatedPosts,
+        detailPost: newDetailPost,
+        postToEdit: newPostToEdit,  // ✅ Actualizar también el post en edición
+        postsLastUpdate: Date.now()
+      };
+    }
 
     case POST_TYPES.DELETE_POST:
-      return { ...state, posts: DeleteData(state.posts, action.payload._id) };
+      return { 
+        ...state, 
+        posts: DeleteData(state.posts, action.payload._id),
+        postsLastUpdate: Date.now()
+      };
 
     case POST_TYPES.SET_POST_FILTERS:
       return {
@@ -185,7 +180,7 @@ case POST_TYPES.UPDATE_POST: {
         pagination: { ...initialState.pagination }
       };
 
-    // ========== POSTS SIMILARES (ÚNICO CASO) ==========
+    // ========== POSTS SIMILARES - CORREGIDO ==========
     case POST_TYPES.LOADING_SIMILAR_POSTS:
       console.log('⏳ REDUCER LOADING_SIMILAR_POSTS:', action.payload);
       return {
@@ -194,7 +189,7 @@ case POST_TYPES.UPDATE_POST: {
       };
 
     case POST_TYPES.GET_SIMILAR_POSTS:
-      console.log('🔥 REDUCER GET_SIMILAR_POSTS - payload completo:', action.payload);
+      console.log('🔥 REDUCER GET_SIMILAR_POSTS');
       
       const { 
         posts: newSimilarPosts = [],
@@ -205,19 +200,13 @@ case POST_TYPES.UPDATE_POST: {
         currentPostId: newCurrentPostId 
       } = action.payload;
       
-      // Validar que sea un array
       const safeSimilarPosts = Array.isArray(newSimilarPosts) ? newSimilarPosts : [];
-      
-      console.log('📊 Similar posts procesados:', {
-        safeLength: safeSimilarPosts.length,
-        guardandoEn: 'similarPostsArray'
-      });
       
       // Si es página 1 o es un post diferente, reemplazar
       if (newPage === 1 || newCurrentPostId !== state.currentSimilarPostId) {
         return {
           ...state,
-          similarPosts: safeSimilarPosts,
+          similarPosts: safeSimilarPosts,  // ✅ USAR similarPosts (no similarPostsArray)
           similarPostsTotal: newTotal,
           similarPostsPage: newPage,
           similarPostsTotalPages: newTotalPages,
@@ -231,7 +220,7 @@ case POST_TYPES.UPDATE_POST: {
       // Agregar más posts (paginación)
       return {
         ...state,
-        similarPostsArray: [...state.similarPostsArray, ...safeSimilarPosts],  // ✅ Agregamos a similarPostsArray
+        similarPosts: [...state.similarPosts, ...safeSimilarPosts],  // ✅ Concatenar en similarPosts
         similarPostsTotal: newTotal,
         similarPostsPage: newPage,
         similarPostsTotalPages: newTotalPages,
@@ -243,7 +232,7 @@ case POST_TYPES.UPDATE_POST: {
     case POST_TYPES.CLEAR_SIMILAR_POSTS:
       return {
         ...state,
-        similarPostsArray: [],  // ✅ Limpiamos similarPostsArray
+        similarPosts: [],  // ✅ Limpiar similarPosts
         similarPostsTotal: 0,
         similarPostsPage: 1,
         similarPostsTotalPages: 1,
@@ -258,19 +247,26 @@ case POST_TYPES.UPDATE_POST: {
       return {
         ...state,
         posts: state.posts.map(post => post._id === action.payload._id ? action.payload : post),
-        detailPost: state.detailPost?._id === action.payload._id ? action.payload : state.detailPost
+        detailPost: state.detailPost?._id === action.payload._id ? action.payload : state.detailPost,
+        postToEdit: state.postToEdit?._id === action.payload._id ? action.payload : state.postToEdit
       };
 
     case POST_TYPES.SAVE_POST:
-      return {
-        ...state,
-        posts: state.posts.map(post => post._id === action.payload.postId ? { ...post, saved: [...(post.saved || []), action.payload.userId] } : post)
-      };
-
     case POST_TYPES.UNSAVE_POST:
+      const updateSaveInList = (list) => list.map(post => 
+        post._id === action.payload.postId 
+          ? { ...post, saved: action.payload.saved } 
+          : post
+      );
       return {
         ...state,
-        posts: state.posts.map(post => post._id === action.payload.postId ? { ...post, saved: (post.saved || []).filter(id => id !== action.payload.userId) } : post)
+        posts: updateSaveInList(state.posts),
+        detailPost: state.detailPost?._id === action.payload.postId 
+          ? { ...state.detailPost, saved: action.payload.saved }
+          : state.detailPost,
+        postToEdit: state.postToEdit?._id === action.payload.postId
+          ? { ...state.postToEdit, saved: action.payload.saved }
+          : state.postToEdit
       };
 
     // ========== ERRORES ==========

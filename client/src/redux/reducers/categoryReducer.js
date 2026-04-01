@@ -36,6 +36,15 @@ const initialState = {
   accordionLoading: false,
   accordionError: null,
   
+  metadataChildren: [],      // Hijos SOLO para filtros (no afecta posts)
+  filterMetadata: {          // Metadata de filtros
+    wilayas: [],
+    priceRange: { min: 0, max: 1000000 },
+    communes: []
+  },
+  metadataLoading: false,
+  metadataError: null,
+
   // ==================== PARA FILTROS ====================
   filterOptions: null
 };
@@ -60,7 +69,32 @@ export const categoryReducer = (state = initialState, action) => {
         sliderLoading: false,
         sliderError: action.payload
       };
-    
+      case types.GET_CATEGORY_METADATA:
+        return {
+          ...state,
+          metadataLoading: true,
+          metadataError: null
+        };
+        
+      case types.GET_CATEGORY_METADATA_SUCCESS:
+        console.log('✅ Metadata guardada en Redux (sin afectar posts)');
+        return {
+          ...state,
+          metadataLoading: false,
+          metadataChildren: action.payload.children || [],
+          filterMetadata: {
+            ...state.filterMetadata,
+            ...action.payload.filterMetadata
+          },
+          metadataError: null
+        };
+        
+      case types.GET_CATEGORY_METADATA_FAIL:
+        return {
+          ...state,
+          metadataLoading: false,
+          metadataError: action.payload
+        };
     case types.LOADING:
       return { ...state, loading: action.payload };
       

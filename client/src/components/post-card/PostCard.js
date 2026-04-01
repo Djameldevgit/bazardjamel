@@ -1,4 +1,5 @@
-// 📂 frontend/src/components/PostCard.jsx
+// 📂 frontend/src/components/PostCard.jsx - VERSIÓN CORREGIDA
+
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { Card } from 'react-bootstrap';
@@ -30,7 +31,7 @@ const PostCard = ({ post }) => {
                      pathname === '';
 
   const isCategoryPage = !isDetailPage && !isHomePage && (
-    pathname.match(/^\/(immobilier|vehicules|pieces-detachees|telephones|informatique|electromenager|vetements|sante-beaute|meubles|loisirs|sport|emploi|materiaux|alimentaires|services|voyages|boutiques)$/) ||
+    pathname.match(/^\/(immobilier|vehicules|pieces-detachees|telephone|informatique|electromenager|vetements|sante-beaute|meubles|loisirs|sport|emploi|materiaux|alimentaires|services|voyages|boutiques)$/) ||
     pathname.startsWith('/category/')
   );
 
@@ -55,11 +56,12 @@ const PostCard = ({ post }) => {
         ...(isDetailPage && { boxShadow: '0 8px 24px rgba(0,0,0,0.12)' })
       }}
     >
-      {/* Título solo en vistas de cuadrícula */}
+      {/* Título solo en vistas de cuadrícula (Home y Category) */}
       {!isDetailPage && <CardBodyTitle post={post} />}
 
-      {/* Carrusel de imágenes */}
-      <CardBodyCarousel post={post} />
+      {/* 🔥 Carrusel de imágenes SOLO en Home y CategoryPage */}
+      {/* En la página de detalle, DescriptionPost ya tiene su propia galería */}
+      {!isDetailPage && <CardBodyCarousel post={post} />}
 
       {/* Secciones solo en detalle */}
       {isDetailPage && (
@@ -73,7 +75,27 @@ const PostCard = ({ post }) => {
       {renderFooter()}
 
       {/* Estilos mínimos para la card y tema oscuro */}
-      
+      <style jsx>{`
+        .detail-view {
+          max-width: 100%;
+          margin: 0 auto;
+        }
+        .grid-view {
+          cursor: pointer;
+        }
+        .grid-view:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+        }
+        .bg-dark {
+          background-color: #1f2937 !important;
+          color: #f3f4f6;
+        }
+        .bg-white {
+          background-color: #ffffff !important;
+          color: #111827;
+        }
+      `}</style>
     </Card>
   );
 };

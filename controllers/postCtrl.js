@@ -680,108 +680,137 @@ const postCtrl = {
   },
 
   // controllers/postController.js - updatePost CORREGIDO
-  updatePost: async (req, res) => {
-    try {
-      const { id } = req.params;
-      const userId = req.user._id;
-      const updateData = req.body;
+  // 📂 controllers/postCtrl.js - updatePost CORREGIDO
 
-      console.log('🔄 Actualizando post:', { id, userId: userId.toString() });
+updatePost: async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+    const updateData = req.body;
 
-      // Buscar el post
-      const post = await Post.findById(id);
-      if (!post) {
-        return res.status(404).json({ msg: "Post non trouvé" });
-      }
+    console.log('🔄 Actualizando post:', { id, userId: userId.toString() });
+    console.log('📦 Datos recibidos:', JSON.stringify(updateData, null, 2));
 
-      // Verificar propiedad
-      if (post.user.toString() !== userId.toString()) {
-        return res.status(403).json({ msg: "Non autorisé" });
-      }
+    // Buscar el post
+    const post = await Post.findById(id);
+    if (!post) {
+      return res.status(404).json({ msg: "Post non trouvé" });
+    }
 
-      // GUARDAR VALORES ANTERIORES
-      const oldCategory = {
-        categorie: post.categorie,
-        subCategory: post.subCategory,
-        articleType: post.articleType,
-        category: post.category
-      };
+    // Verificar propiedad
+    if (post.user.toString() !== userId.toString()) {
+      return res.status(403).json({ msg: "Non autorisé" });
+    }
 
-      console.log('📦 Valores anteriores:', oldCategory);
+    // GUARDAR VALORES ANTERIORES
+    const oldCategory = {
+      categorie: post.categorie,
+      subCategory: post.subCategory,
+      articleType: post.articleType,
+      category: post.category
+    };
 
-      // 🔥 CONVERTIR SLUGS A IDs si es necesario
-      const processedData = { ...updateData };
+    console.log('📦 Valores anteriores:', oldCategory);
 
-      // Si category viene como slug, buscar su ID
-      if (updateData.category && typeof updateData.category === 'string' && !updateData.category.match(/^[0-9a-fA-F]{24}$/)) {
-        const categoryDoc = await Category.findOne({ slug: updateData.category, level: 1 });
+    // 🔥 PROCESAR DATOS CORRECTAMENTE
+    const processedData = { ...updateData };
+
+    // Si category viene como slug, buscar su ID
+    if (updateData.category && typeof updateData.category === 'string') {
+      // Si no es un ObjectId válido
+      if (!updateData.category.match(/^[0-9a-fA-F]{24}$/)) {
+        const categoryDoc = await Category.findOne({ 
+          $or: [
+            { slug: updateData.category },
+            { name: { $regex: new RegExp(updateData.category, 'i') } }
+          ],
+          level: 1 
+        });
         if (categoryDoc) {
           processedData.category = categoryDoc._id;
-          processedData.categorie = categoryDoc.name; // También actualizar el nombre
+          processedData.categorie = categoryDoc.name;
+          console.log(`✅ Categoría encontrada: ${categoryDoc.name} (${categoryDoc._id})`);
         }
       }
-
-      // Si subCategory viene como slug, buscar su ID
-      if (updateData.subCategory && typeof updateData.subCategory === 'string' && !updateData.subCategory.match(/^[0-9a-fA-F]{24}$/)) {
-        const subDoc = await Category.findOne({ slug: updateData.subCategory });
-        if (subDoc) {
-          processedData.subCategory = subDoc._id;
-        }
-      }
-
-      // Si articleType viene como slug, buscar su ID
-      if (updateData.articleType && typeof updateData.articleType === 'string' && !updateData.articleType.match(/^[0-9a-fA-F]{24}$/)) {
-        const articleDoc = await Category.findOne({ slug: updateData.articleType });
-        if (articleDoc) {
-          processedData.articleType = articleDoc._id;
-        }
-      }
-
-      console.log('📦 Datos procesados:', {
-        category: processedData.category,
-        subCategory: processedData.subCategory,
-        articleType: processedData.articleType
-      });
-
-      // Actualizar campos
-      const fieldsToUpdate = [
-        'categorie', 'subCategory', 'articleType', 'title', 'description',
-        'price', 'etat', 'wilaya', 'commune', 'address', 'phone', 'email',
-        'images', 'categorySpecificData', 'category'
-      ];
-
-      fieldsToUpdate.forEach(field => {
-        if (processedData[field] !== undefined) {
-          post[field] = processedData[field];
-        }
-      });
-
-      await post.save();
-
-      // Poblar para la respuesta
-      const updatedPost = await Post.findById(id)
-        .populate('user', 'username avatar')
-        .populate('category', 'name slug')
-        .populate('subCategory', 'name slug')
-        .populate('articleType', 'name slug')
-        .lean();
-
-      console.log('✅ Post actualizado correctamente');
-
-      res.json({
-        success: true,
-        msg: "Post mis à jour",
-        post: updatedPost,
-        oldCategory: oldCategory
-      });
-
-    } catch (err) {
-      console.error('❌ Error updatePost:', err);
-      res.status(500).json({ msg: err.message });
     }
-  },
 
-  
+    // Si subCategory viene como slug, buscar su ID
+    if (updateData.subCategory && typeof updateData.subCategory === 'string') {
+      if (!updateData.subCategory.match(/^[0-9a-fA-F]{24}$/)) {
+        const subDoc = await Category.findOne({ 
+          slug: updateData.subCategory,
+          level: 2
+        });
+        if (subDoc) {
+          processedData.subCategory = subDoc.slug; // Guardamos el slug, no el ID
+          console.log(`✅ Subcategoría encontrada: ${subDoc.name} (${subDoc.slug})`);
+        }
+      }
+    }
+
+    // Si articleType viene como slug
+    if (updateData.articleType && typeof updateData.articleType === 'string') {
+      if (!updateData.articleType.match(/^[0-9a-fA-F]{24}$/)) {
+        const articleDoc = await Category.findOne({ 
+          slug: updateData.articleType,
+          level: 3
+        });
+        if (articleDoc) {
+          processedData.articleType = articleDoc.slug;
+          console.log(`✅ Artículo encontrado: ${articleDoc.name} (${articleDoc.slug})`);
+        }
+      }
+    }
+
+    // ✅ ACTUALIZAR categorySpecificData correctamente (objeto anidado)
+    if (updateData.categorySpecificData) {
+      processedData.categorySpecificData = {
+        ...post.categorySpecificData,
+        ...updateData.categorySpecificData
+      };
+    }
+
+    // ✅ Actualizar campos
+    const fieldsToUpdate = [
+      'categorie', 'subCategory', 'articleType', 'title', 'description',
+      'price', 'etat', 'wilaya', 'commune', 'address', 'phone', 'email',
+      'images', 'categorySpecificData', 'category'
+    ];
+
+    fieldsToUpdate.forEach(field => {
+      if (processedData[field] !== undefined) {
+        post[field] = processedData[field];
+      }
+    });
+
+    await post.save();
+
+    // Poblar para la respuesta
+    const updatedPost = await Post.findById(id)
+      .populate('user', 'username avatar')
+      .lean();
+
+    console.log('✅ Post actualizado correctamente');
+
+    // Detectar si la categoría cambió
+    const categoryChanged = 
+      oldCategory.categorie !== post.categorie ||
+      oldCategory.subCategory !== post.subCategory ||
+      String(oldCategory.category) !== String(post.category);
+
+    res.json({
+      success: true,
+      msg: "Post mis à jour",
+      post: updatedPost,
+      oldCategory: oldCategory,
+      categoryChanged: categoryChanged
+    });
+
+  } catch (err) {
+    console.error('❌ Error updatePost:', err);
+    res.status(500).json({ msg: err.message });
+  }
+},
 
 
  // Controlador público para obtener posts de un usuario (sin autenticación)

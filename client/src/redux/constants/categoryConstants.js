@@ -48,7 +48,14 @@ export const GET_SLIDER_CATEGORIES_FAIL = 'GET_SLIDER_CATEGORIES_FAIL';
 export const GET_FILTER_OPTIONS = 'GET_FILTER_OPTIONS';
 export const GET_FILTER_OPTIONS_SUCCESS = 'GET_FILTER_OPTIONS_SUCCESS';
 export const GET_FILTER_OPTIONS_FAIL = 'GET_FILTER_OPTIONS_FAIL';
+// 📂 redux/constants/categoryConstants.js
 
+// ... tus constantes existentes ...
+
+// ==================== NUEVAS CONSTANTES PARA METADATA ====================
+export const GET_CATEGORY_METADATA = 'GET_CATEGORY_METADATA';
+export const GET_CATEGORY_METADATA_SUCCESS = 'GET_CATEGORY_METADATA_SUCCESS';
+export const GET_CATEGORY_METADATA_FAIL = 'GET_CATEGORY_METADATA_FAIL';
 // ==================== TIPOS PARA ESTADO GENERAL ====================
 export const CLEAR_ERRORS = 'CLEAR_ERRORS';
 export const RESET_CATEGORY_STATE = 'RESET_CATEGORY_STATE';

@@ -5,7 +5,102 @@ import axios from 'axios';
 import { BASE_URL } from '../../utils/config';
 // 📂 redux/actions/categoryAction.js
 
-// 📂 redux/actions/categoryAction.js
+// ==================== NUEVA ACCIÓN: OBTENER SOLO METADATA ====================
+export const getCategoryMetadata = (
+  categorySlug, 
+  subSlug = null, 
+  articleSlug = null
+) => async (dispatch) => {
+  try {
+    dispatch({ type: types.GET_CATEGORY_METADATA });
+    
+    console.log(`📡 getCategoryMetadata - Cargando metadata para: ${categorySlug}`);
+    
+    // 🔥 USAR UN ENDPOINT ESPECÍFICO PARA METADATA
+    const { data } = await axios.get(`${BASE_URL}/api/categories/${categorySlug}/metadata`, {
+      params: {
+        sub: subSlug,
+        article: articleSlug
+      }
+    });
+    
+    console.log('✅ Metadata recibida:', {
+      childrenCount: data.children?.length || 0,
+      hasFilterMetadata: !!data.filterMetadata
+    });
+    
+    // 🔥 IMPORTANTE: ESTA ACCIÓN NO MODIFICA LOS POSTS
+    dispatch({
+      type: types.GET_CATEGORY_METADATA_SUCCESS,
+      payload: {
+        children: data.children || [],
+        filterMetadata: data.filterMetadata || {
+          wilayas: [],
+          priceRange: { min: 0, max: 1000000 },
+          communes: []
+        }
+      }
+    });
+    
+    return {
+      success: true,
+      children: data.children || [],
+      filterMetadata: data.filterMetadata || {}
+    };
+    
+  } catch (error) {
+    console.error('❌ Error en getCategoryMetadata:', error);
+    
+    // ✅ SI EL ENDPOINT NO EXISTE, USAR getFilterOptions COMO FALLBACK
+    if (error.response?.status === 404) {
+      console.log('⚠️ Endpoint /metadata no existe, usando getFilterOptions como fallback');
+      
+      try {
+        // Usar getFilterOptions existente como alternativa
+        const result = await dispatch(getFilterOptions(categorySlug, subSlug, articleSlug));
+        
+        if (result) {
+          dispatch({
+            type: types.GET_CATEGORY_METADATA_SUCCESS,
+            payload: {
+              children: result.children || [],
+              filterMetadata: {
+                wilayas: result.wilayas || [],
+                priceRange: result.priceRange || { min: 0, max: 1000000 },
+                communes: []
+              }
+            }
+          });
+          
+          return {
+            success: true,
+            children: result.children || [],
+            filterMetadata: {
+              wilayas: result.wilayas || [],
+              priceRange: result.priceRange || { min: 0, max: 1000000 }
+            }
+          };
+        }
+      } catch (fallbackError) {
+        console.error('❌ Fallback también falló:', fallbackError);
+      }
+    }
+    
+    dispatch({
+      type: types.GET_CATEGORY_METADATA_FAIL,
+      payload: error.response?.data?.message || error.message
+    });
+    
+    return {
+      success: false,
+      children: [],
+      filterMetadata: {
+        wilayas: [],
+        priceRange: { min: 0, max: 1000000 }
+      }
+    };
+  }
+};
 
 export const getCategoryPosts = (
   categorySlug, 

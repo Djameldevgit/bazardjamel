@@ -209,7 +209,179 @@ const obtenerCategoriasParaSlider = asyncHandler(async (req, res) => {
  // 📂 controllers/categoryController.js
 
 // 📂 controllers/categoryController.js
+// 📂 controllers/categoryCtrl.js - AGREGAR NUEVO CONTROLADOR
 
+/**
+ * GET /api/categories/:slug/metadata
+ * Obtiene SOLO metadata para filtros (wilayas, priceRange, children)
+ * SIN MODIFICAR el estado de posts en Redux
+ */
+ const getCategoryMetadata = asyncHandler(async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { sub: subSlug, article: articleSlug } = req.query;
+
+    console.log('📡 getCategoryMetadata - Parámetros:', { slug, subSlug, articleSlug });
+
+    if (!slug) {
+      return res.status(400).json({
+        success: false,
+        message: 'Se requiere slug de categoría'
+      });
+    }
+
+    // 1. Buscar la categoría principal
+    let mainCategory = await Category.findOne({ slug, isActive: true }).lean();
+    
+    if (!mainCategory) {
+      console.log(`❌ Categoría no encontrada: ${slug}`);
+      return res.status(404).json({
+        success: false,
+        message: 'Categoría no encontrada'
+      });
+    }
+
+    // Si la categoría no es nivel 1, buscar su raíz
+    let level1Category = mainCategory;
+    if (mainCategory.level !== 1) {
+      let parent = mainCategory.parent;
+      while (parent) {
+        const parentCat = await Category.findById(parent).lean();
+        if (parentCat && parentCat.level === 1) {
+          level1Category = parentCat;
+          break;
+        }
+        parent = parentCat.parent;
+      }
+    }
+
+    console.log(`✅ Categoría base: ${level1Category.name} (level: ${level1Category.level})`);
+
+    // 2. Obtener subcategorías (nivel 2)
+    const subCategories = await Category.find({ 
+      parent: level1Category._id, 
+      level: 2, 
+      isActive: true 
+    })
+      .select('_id name slug parent icon emoji order')
+      .sort({ order: 1 })
+      .lean();
+
+    // 3. Obtener artículos (nivel 3)
+    const articles = await Category.find({ 
+      level: 3, 
+      isActive: true 
+    })
+      .select('_id name slug parent icon emoji order')
+      .sort({ order: 1 })
+      .lean();
+
+    // 4. Construir estructura jerárquica para children
+    const articlesByParent = {};
+    articles.forEach(article => {
+      const parentId = String(article.parent);
+      if (!articlesByParent[parentId]) {
+        articlesByParent[parentId] = [];
+      }
+      articlesByParent[parentId].push({
+        _id: article._id,
+        name: article.name,
+        slug: article.slug,
+        level: article.level,
+        icon: article.icon || '📄',
+        postCount: article.postCount || 0
+      });
+    });
+
+    const childrenWithArticles = subCategories.map(child => ({
+      _id: child._id,
+      name: child.name,
+      slug: child.slug,
+      level: child.level,
+      icon: child.icon || '📦',
+      postCount: child.postCount || 0,
+      articles: articlesByParent[String(child._id)] || []
+    }));
+
+    // 5. Obtener metadata de filtros (sin afectar posts)
+    // Construir query base para obtener rangos
+    let baseFilter = {
+      isActive: true,
+      $or: [
+        { category: level1Category._id },
+        { categorie: { $regex: new RegExp(level1Category.name, 'i') } }
+      ]
+    };
+
+    // Si hay subSlug, filtrar por esa subcategoría para los rangos
+    if (subSlug) {
+      const subCategory = subCategories.find(s => s.slug === subSlug);
+      if (subCategory) {
+        baseFilter.subCategory = subCategory.slug;
+        
+        if (articleSlug) {
+          const article = articles.find(a => a.slug === articleSlug);
+          if (article) {
+            baseFilter.articleType = article.slug;
+          }
+        }
+      }
+    }
+
+    // Obtener wilayas únicas
+    const wilayas = await Post.distinct('wilaya', {
+      ...baseFilter,
+      wilaya: { $ne: null, $ne: '' }
+    }).lean();
+
+    // Obtener rango de precios
+    const priceStats = await Post.aggregate([
+      { $match: baseFilter },
+      {
+        $group: {
+          _id: null,
+          minPrice: { $min: '$price' },
+          maxPrice: { $max: '$price' }
+        }
+      }
+    ]);
+
+    const priceRange = priceStats[0] || { minPrice: 0, maxPrice: 1000000 };
+
+    // 6. Respuesta SOLO con metadata
+    res.json({
+      success: true,
+      children: childrenWithArticles,
+      filterMetadata: {
+        wilayas: wilayas.filter(w => w && w !== ''),
+        priceRange: {
+          min: priceRange.minPrice || 0,
+          max: priceRange.maxPrice || 1000000
+        },
+        communes: [], // Puedes agregar communes si las necesitas
+        appliedFilters: {
+          sub: subSlug || null,
+          article: articleSlug || null
+        }
+      },
+      categoryInfo: {
+        _id: level1Category._id,
+        name: level1Category.name,
+        slug: level1Category.slug,
+        level: level1Category.level,
+        emoji: level1Category.emoji || ''
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error en getCategoryMetadata:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener metadata de la categoría',
+      error: error.message
+    });
+  }
+});
 const getPostsByCategory = asyncHandler(async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -723,6 +895,7 @@ module.exports = {
   buscarCategorias,
   obtenerEstadisticasDeCategorias,
   getCategoriesForAccordion,
-  getPostsByCategory
+  getPostsByCategory,
+  getCategoryMetadata
 
 };

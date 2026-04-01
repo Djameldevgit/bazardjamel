@@ -143,6 +143,8 @@ export const createPost = ({
 
 // 🎯 ACCIÓN UPDATE - CORREGIDA para recibir postId en lugar de status
 // actions/postAction.js - updatePost DEBE SER ASÍ
+// 📂 redux/actions/postAction.js - updatePost CORREGIDO
+
 export const updatePost = ({
   postId,
   postData,
@@ -150,51 +152,76 @@ export const updatePost = ({
   auth
 }) => async (dispatch) => {
   console.time('⏱️ updatePost action time');
-  let media = []
+  let media = [];
 
   try {
     console.log('🟡 updatePost action iniciada', { postId });
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } })
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
 
-    // Subir imágenes nuevas
+    // ✅ PROCESAR IMÁGENES CORRECTAMENTE
     const newImages = images.filter(img => !img.isExisting && img.url?.startsWith('blob:'));
     const existingImages = images.filter(img => img.isExisting);
+
+    console.log('📸 Procesando imágenes:', {
+      total: images.length,
+      nuevas: newImages.length,
+      existentes: existingImages.length
+    });
 
     if (newImages.length > 0) {
       console.log(`📤 Subiendo ${newImages.length} imágenes nuevas...`);
       media = await imageUpload(newImages);
+      console.log('✅ Imágenes subidas:', media.length);
     }
 
     const finalImages = [...existingImages, ...media];
 
+    // ✅ PREPARAR DATOS PARA ENVIAR
     const postToSend = {
       ...postData,
       images: finalImages,
       categorySpecificData: postData.categorySpecificData || {}
     };
 
-    console.log('📦 Enviando actualización:', {
+    // ✅ ELIMINAR CAMPOS VACÍOS O INDEFINIDOS
+    Object.keys(postToSend).forEach(key => {
+      if (postToSend[key] === undefined || postToSend[key] === null) {
+        delete postToSend[key];
+      }
+    });
+
+    console.log('📦 Enviando actualización al backend:', {
       postId,
+      title: postToSend.title,
+      categorie: postToSend.categorie,
+      subCategory: postToSend.subCategory,
       imagesCount: finalImages.length
     });
 
     const res = await patchDataAPI(`post/${postId}`, postToSend, auth.token);
 
-    console.log('✅ Respuesta del backend:', res.data);
+    console.log('✅ Respuesta del backend:', {
+      success: res.data.success,
+      categoryChanged: res.data.categoryChanged,
+      oldCategory: res.data.oldCategory
+    });
 
-    // 🔥 AHORA SÍ TENEMOS LA CATEGORÍA ANTERIOR
+    // ✅ DISPATCH CON TODOS LOS DATOS
     dispatch({
       type: POST_TYPES.UPDATE_POST,
       payload: {
         ...res.data.post,
         user: auth.user,
         categorySpecificData: postData.categorySpecificData || {},
-        _oldCategory: res.data.oldCategory,  // ← Recibimos la categoría anterior
-        _categoryChanged: res.data.categoryChanged // ← Sabemos si cambió
+        _oldCategory: res.data.oldCategory,
+        _categoryChanged: res.data.categoryChanged
       }
     });
 
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
+    dispatch({ 
+      type: GLOBALTYPES.ALERT, 
+      payload: { success: "Post mis à jour avec succès!" } 
+    });
 
   } catch (err) {
     console.error('❌ Error en updatePost:', err);
@@ -203,9 +230,10 @@ export const updatePost = ({
       payload: { error: err.response?.data?.msg || err.message }
     });
   } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
     console.timeEnd('⏱️ updatePost action time');
   }
-}
+};
 export const getPost = (id) => async (dispatch) => {
   try {
     console.log('🔍 Fetching post with ID:', id)

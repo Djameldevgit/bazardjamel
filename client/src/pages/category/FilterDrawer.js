@@ -1,316 +1,855 @@
-// 📂 components/FilterDrawer.js
+// 📂 pages/FilterDrawer.jsx - VERSIÓN CORREGIDA CON FILTROS FUNCIONALES
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { Offcanvas, Form, Button, Accordion } from 'react-bootstrap';
-import { useDispatch, useSelector } from 'react-redux';
-import Select from 'react-select';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Offcanvas, Form, Button, Accordion, Spinner } from 'react-bootstrap';
+import { useParams } from 'react-router-dom';
+import { 
+  Funnel, 
+  XLg, 
+  ArrowCounterclockwise,
+  Check2,
+  GeoAlt,
+  CurrencyEuro,
+  SortDown
+} from 'react-bootstrap-icons';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
-import { getFilterOptions } from '../../redux/actions/categoryAction';
-import wilayasData from './wilayas.json';
+import axios from 'axios';
+import { BASE_URL } from '../../utils/config';
+import WilayaCommuneField from '../../components/CATEGORIES/camposComun/WilayaCommuneField';
 
 const FilterDrawer = ({ 
   show, 
   onHide, 
-  onApplyFilters, 
-  category,
-  subSlug = '',
-  articleSlug = '',
+  onApplyFilters,
   initialWilaya = '',
   initialCommune = '',
-  initialMinPrice = null,
-  initialMaxPrice = null,
-  initialSortBy = 'recent'
+  isBoutique = false  // ✅ NUEVO PROP
+
 }) => {
-
-  const dispatch = useDispatch();
-  const isBoutique = category === 'boutiques';
-
-  // Campos específicos por categoría
-  const getCategoryFields = () => {
-    const noPriceCategories = ['boutiques', 'services', 'emploi', 'voyages', 'immobilier'];
-    return {
-      hasPrice: !noPriceCategories.includes(category)
-    };
-  };
-
-  const categoryFields = getCategoryFields();
-
-  // 🔥 Obtener datos del reducer de filtros
-  const { children = [], priceRange = { min: 0, max: 1000000 }, wilayas = [] } = useSelector(state => state.filter || {});
-
-  const [tempFilters, setTempFilters] = useState({
-    subCategory: subSlug,
-    article: articleSlug,
-    wilaya: initialWilaya,
-    commune: initialCommune,
-    priceMin: initialMinPrice !== null ? initialMinPrice : priceRange.min,
-    priceMax: initialMaxPrice !== null ? initialMaxPrice : priceRange.max,
-    sortBy: initialSortBy
+  const { slug, subSlug, articleSlug } = useParams();
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  
+  // ============ ESTADOS LOCALES ============
+  const [categoryChildren, setCategoryChildren] = useState([]);
+  const [loadingChildren, setLoadingChildren] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Metadata de filtros (local, no afecta Redux)
+  const [localFilterMetadata, setLocalFilterMetadata] = useState({
+    wilayas: [],
+    priceRange: { min: 0, max: 1000000 },
+    communes: []
   });
 
-  const [communesList, setCommunesList] = useState([]);
+  // ============ ESTADO DE FILTROS TEMPORALES ============
+  const [tempFilters, setTempFilters] = useState({
+    subCategory: '',      // ✅ GUARDAMOS EL SLUG, no el ID
+    article: '',          // ✅ GUARDAMOS EL SLUG, no el ID
+    wilaya: initialWilaya || '',
+    commune: initialCommune || '',
+    priceMin: 0,
+    priceMax: 1000000,
+    sortBy: 'recent'
+  });
+  
+  const [priceRange, setPriceRange] = useState([0, 1000000]);
 
-  // Cargar opciones de filtro cuando se abre el drawer
+  // ============ DETECTAR TAMAÑO DE PANTALLA ============
   useEffect(() => {
-    if (show && category) {
-      console.log('🔍 FilterDrawer - Cargando opciones para:', { category, subSlug, articleSlug });
-      dispatch(getFilterOptions(category, subSlug, articleSlug));
-    }
-  }, [show, category, subSlug, articleSlug, dispatch]);
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  // Actualizar comunas cuando cambia la wilaya
+  // ============ CARGAR METADATA CUANDO SE ABRE EL DRAWER ============
   useEffect(() => {
-    if (tempFilters.wilaya) {
-      const wilayaData = wilayasData.find(w => 
-        w.wilaya === tempFilters.wilaya || 
-        w.name === tempFilters.wilaya
-      );
-      setCommunesList(wilayaData?.commune || wilayaData?.communes || []);
-    } else {
-      setCommunesList([]);
-    }
-  }, [tempFilters.wilaya]);
+    if (!show || !slug) return;
+    
+    const loadMetadata = async () => {
+      setLoadingChildren(true);
+      setError(null);
+      
+      try {
+        console.log('🔄 Cargando metadata para drawer...', { slug, subSlug, articleSlug });
+        
+        // 🔥 USAR EL ENDPOINT DE METADATA
+        const response = await axios.get(`${BASE_URL}/api/categories/metadata/${slug}`, {
+          params: {
+            sub: subSlug,
+            article: articleSlug
+          }
+        });
+        
+        const data = response.data;
+        
+        if (data.success) {
+          // ✅ GUARDAR HIJOS CON SU ESTRUCTURA COMPLETA
+          setCategoryChildren(data.children || []);
+          
+          // Actualizar metadata de filtros
+          setLocalFilterMetadata({
+            wilayas: data.filterMetadata?.wilayas || [],
+            priceRange: data.filterMetadata?.priceRange || { min: 0, max: 1000000 },
+            communes: data.filterMetadata?.communes || []
+          });
+          
+          console.log('✅ Metadata cargada:', {
+            childrenCount: data.children?.length || 0,
+            wilayasCount: data.filterMetadata?.wilayas?.length || 0,
+            priceRange: data.filterMetadata?.priceRange
+          });
+        } else {
+          throw new Error(data.message || 'Error al cargar metadata');
+        }
+        
+      } catch (error) {
+        console.error('❌ Error cargando metadata:', error);
+        setError(error.response?.data?.message || error.message || 'Error al cargar filtros');
+        
+        // Fallback: usar estructura vacía pero funcional
+        setCategoryChildren([]);
+        setLocalFilterMetadata({
+          wilayas: [],
+          priceRange: { min: 0, max: 1000000 },
+          communes: []
+        });
+      } finally {
+        setLoadingChildren(false);
+      }
+    };
+    
+    loadMetadata();
+  }, [show, slug, subSlug, articleSlug]);
 
-  // Actualizar precios cuando cambia priceRange del reducer
+  // ============ INICIALIZAR FILTROS CON LOS VALORES ACTUALES ============
+  const initializeFilters = useCallback(() => {
+    const min = localFilterMetadata?.priceRange?.min ?? 0;
+    const max = localFilterMetadata?.priceRange?.max ?? 1000000;
+    
+    // ✅ INICIALIZAR CON SLUGS, no con IDs
+    let initialSub = subSlug || '';
+    let initialArticle = articleSlug || '';
+    
+    // Verificar si los slugs existen en categoryChildren
+    if (initialSub && categoryChildren.length > 0) {
+      const exists = categoryChildren.some(sub => sub.slug === initialSub);
+      if (!exists) initialSub = '';
+    }
+    
+    if (initialArticle && categoryChildren.length > 0) {
+      let exists = false;
+      for (const sub of categoryChildren) {
+        if (sub.articles && sub.articles.some(art => art.slug === initialArticle)) {
+          exists = true;
+          break;
+        }
+      }
+      if (!exists) initialArticle = '';
+    }
+    
+    setTempFilters({
+      subCategory: initialSub,      // ✅ GUARDAR SLUG
+      article: initialArticle,      // ✅ GUARDAR SLUG
+      wilaya: initialWilaya || '',
+      commune: initialCommune || '',
+      priceMin: min,
+      priceMax: max,
+      sortBy: 'recent'
+    });
+    
+    setPriceRange([min, max]);
+  }, [localFilterMetadata, subSlug, articleSlug, initialWilaya, initialCommune, categoryChildren]);
+
+  // Actualizar cuando cambia metadata o slugs
   useEffect(() => {
-    if (priceRange && (initialMinPrice === null || initialMaxPrice === null)) {
-      setTempFilters(prev => ({
-        ...prev,
-        priceMin: initialMinPrice !== null ? initialMinPrice : priceRange.min,
-        priceMax: initialMaxPrice !== null ? initialMaxPrice : priceRange.max
-      }));
+    if (!loadingChildren) {
+      initializeFilters();
     }
-  }, [priceRange, initialMinPrice, initialMaxPrice]);
+  }, [initializeFilters, loadingChildren]);
 
-  const handleChange = (key, value) => {
+  // ============ HANDLERS ============
+  const handleFilterChange = (key, value) => {
+    console.log(`🔄 Cambiando filtro ${key}:`, value);
     setTempFilters(prev => ({ ...prev, [key]: value }));
-    if (key === 'wilaya') {
-      setTempFilters(prev => ({ ...prev, commune: '' }));
-    }
+    
+    // Si cambia subcategoría, resetear artículo
     if (key === 'subCategory') {
       setTempFilters(prev => ({ ...prev, article: '' }));
     }
   };
 
+  // Handler específico para WilayaCommuneField
+  const handleLocationChange = (e) => {
+    const { name, value } = e.target;
+    console.log('📍 Cambio de ubicación:', { name, value });
+    setTempFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handlePriceRangeChange = (values) => {
+    setPriceRange(values);
+    setTempFilters(prev => ({
+      ...prev,
+      priceMin: values[0],
+      priceMax: values[1]
+    }));
+  };
+
+  // ✅ APLICAR FILTROS - ENVIAR SLUGS DIRECTAMENTE
   const applyFilters = () => {
-    let finalFilters = {
-      subCategory: tempFilters.subCategory,
-      article: tempFilters.article,
-      wilaya: tempFilters.wilaya || null,
-      commune: tempFilters.commune || null,
+    console.log('🎯 Aplicando filtros desde drawer:', tempFilters);
+    
+    // Preparar filtros para el callback - ENVIAR SLUGS DIRECTAMENTE
+    const filtersToApply = {
+      subCategory: tempFilters.subCategory,    // ✅ Ya es slug
+      article: tempFilters.article,            // ✅ Ya es slug
+      wilaya: tempFilters.wilaya,
+      commune: tempFilters.commune,
+      priceMin: tempFilters.priceMin,
+      priceMax: tempFilters.priceMax,
       sortBy: tempFilters.sortBy
     };
     
-    if (categoryFields.hasPrice) {
-      finalFilters.minPrice = tempFilters.priceMin;
-      finalFilters.maxPrice = tempFilters.priceMax;
+    console.log('📤 Enviando al padre:', filtersToApply);
+    
+    if (onApplyFilters && typeof onApplyFilters === 'function') {
+      onApplyFilters(filtersToApply);
+    } else {
+      console.error('❌ onApplyFilters no está definida');
     }
     
-    Object.keys(finalFilters).forEach(key => {
-      if (finalFilters[key] === '' || finalFilters[key] === null || finalFilters[key] === undefined) {
-        delete finalFilters[key];
-      }
-    });
-    
-    console.log('🎯 Aplicando filtros:', finalFilters);
-    onApplyFilters(finalFilters);
     onHide();
   };
 
+  // Resetear todos los filtros
   const resetFilters = () => {
+    const min = localFilterMetadata?.priceRange?.min ?? 0;
+    const max = localFilterMetadata?.priceRange?.max ?? 1000000;
+    
     setTempFilters({
-      subCategory: subSlug,
-      article: articleSlug,
+      subCategory: '',      // ✅ Vacío
+      article: '',          // ✅ Vacío
       wilaya: '',
       commune: '',
-      priceMin: priceRange.min,
-      priceMax: priceRange.max,
+      priceMin: min,
+      priceMax: max,
       sortBy: 'recent'
     });
+    setPriceRange([min, max]);
   };
 
-  // Opciones para el select de subcategorías
-  const subCategoryOptions = useMemo(() => {
-    if (!children || !Array.isArray(children)) return [];
-    return children.map(c => ({
-      value: c.slug,
-      label: c.name
-    }));
-  }, [children]);
+  // Contar filtros activos (excluyendo valores por defecto)
+  const countActiveFilters = () => {
+    let count = 0;
+    
+    const defaultMin = localFilterMetadata?.priceRange?.min ?? 0;
+    const defaultMax = localFilterMetadata?.priceRange?.max ?? 1000000;
+    
+    if (tempFilters.subCategory && tempFilters.subCategory !== '') count++;
+    if (tempFilters.article && tempFilters.article !== '') count++;
+    if (tempFilters.wilaya && tempFilters.wilaya !== '') count++;
+    if (tempFilters.commune && tempFilters.commune !== '') count++;
+    if (tempFilters.priceMin !== defaultMin) count++;
+    if (tempFilters.priceMax !== defaultMax) count++;
+    if (tempFilters.sortBy !== 'recent') count++;
+    
+    return count;
+  };
 
-  // Opciones para wilayas (usar las que vienen del backend o fallback a wilayasData)
-  const wilayaOptions = useMemo(() => {
-    if (wilayas && wilayas.length > 0) {
-      return wilayas.map(w => ({ value: w.value || w, label: w.label || w }));
-    }
-    // Fallback a wilayasData
-    return wilayasData.map(w => ({ value: w.wilaya || w.name, label: w.wilaya || w.name }));
-  }, [wilayas]);
+  // ✅ OBTENER ARTÍCULOS PARA EL SELECT (usando slugs)
+  const getArticlesForSelect = () => {
+    if (!tempFilters.subCategory) return [];
+    
+    const selectedSub = categoryChildren.find(
+      sub => sub.slug === tempFilters.subCategory  // ✅ Comparar por slug
+    );
+    
+    return selectedSub?.articles || [];
+  };
 
+  const isMobile = windowWidth <= 768;
+
+  // Opciones de ordenamiento
+  const sortOptions = [
+    { value: 'recent', label: 'Plus récents', icon: '🕐' },
+    { value: 'price_asc', label: 'Prix croissant', icon: '💰' },
+    { value: 'price_desc', label: 'Prix décroissant', icon: '💎' }
+  ];
+
+  // ============ RENDER LOADING ============
+  if (loadingChildren) {
+    return (
+      <Offcanvas 
+        show={show} 
+        onHide={onHide} 
+        placement="start" 
+        style={{ 
+          width: isMobile ? '100%' : '400px',
+          maxWidth: '100%'
+        }}
+      >
+        <div style={styles.loadingContainer}>
+          <Spinner animation="border" variant="primary" />
+          <p style={styles.loadingText}>Chargement des filtres...</p>
+        </div>
+      </Offcanvas>
+    );
+  }
+
+  // ============ RENDER ERROR ============
+  if (error) {
+    return (
+      <Offcanvas 
+        show={show} 
+        onHide={onHide} 
+        placement="start" 
+        style={{ 
+          width: isMobile ? '100%' : '400px',
+          maxWidth: '100%'
+        }}
+      >
+        <div style={styles.errorContainer}>
+          <div style={styles.errorIcon}>⚠️</div>
+          <h6 style={styles.errorTitle}>Erreur</h6>
+          <p style={styles.errorText}>{error}</p>
+          <Button 
+            variant="outline-primary" 
+            size="sm" 
+            onClick={() => window.location.reload()}
+            style={styles.errorButton}
+          >
+            Réessayer
+          </Button>
+        </div>
+      </Offcanvas>
+    );
+  }
+
+  // ============ RENDER PRINCIPAL ============
   return (
     <Offcanvas
       show={show}
       onHide={onHide}
+      placement="start"
       style={{
-        width: '320px',
-        maxWidth: '90%',
-        borderLeft: '1px solid #eee',
-        boxShadow: '-2px 0 10px rgba(0,0,0,0.05)'
+        width: isMobile ? '100%' : '400px',
+        maxWidth: '100%'
       }}
     >
-      <Offcanvas.Header closeButton>
-        <Offcanvas.Title style={{ fontSize: '16px', fontWeight: 600 }}>
-          Filtres {isBoutique ? 'Boutiques' : ''}
-        </Offcanvas.Title>
-      </Offcanvas.Header>
+      {/* HEADER */}
+      <div style={styles.header}>
+        <div style={styles.headerLeft}>
+          <div style={styles.iconCircle}>
+            <Funnel size={18} color="#667eea" />
+          </div>
+          <h6 style={styles.headerTitle}>Filtres</h6>
+          {countActiveFilters() > 0 && (
+            <span style={styles.badge}>
+              {countActiveFilters()}
+            </span>
+          )}
+        </div>
+        
+        <div style={styles.headerRight}>
+          <button 
+            onClick={resetFilters}
+            style={styles.iconButton}
+            title="Réinitialiser"
+          >
+            <ArrowCounterclockwise size={16} color="#666" />
+          </button>
+          
+          <button 
+            onClick={onHide}
+            style={styles.iconButton}
+            title="Fermer"
+          >
+            <XLg size={16} color="#666" />
+          </button>
+        </div>
+      </div>
 
-      <Offcanvas.Body style={{ padding: '14px', paddingBottom: '80px' }}>
-
-        {/* SUBCATEGORY */}
-        {children.length > 0 && (
-          <Accordion defaultActiveKey="0" flush>
-            <Accordion.Item eventKey="0">
-              <Accordion.Header>Catégorie</Accordion.Header>
-              <Accordion.Body>
-                <Select
-                  options={subCategoryOptions}
-                  value={subCategoryOptions.find(opt => opt.value === tempFilters.subCategory) || null}
-                  onChange={(opt) => handleChange('subCategory', opt?.value || '')}
-                  isClearable
-                  placeholder="Toutes les catégories"
-                  styles={{
-                    control: (base) => ({ ...base, fontSize: '13px' })
-                  }}
-                />
-              </Accordion.Body>
-            </Accordion.Item>
-          </Accordion>
-        )}
-
-        {/* LOCATION */}
-        <Accordion defaultActiveKey="1" className="mt-2" flush>
-          <Accordion.Item eventKey="1">
-            <Accordion.Header>Localisation</Accordion.Header>
-            <Accordion.Body>
-              <Form.Select
-                value={tempFilters.wilaya}
-                onChange={(e) => handleChange('wilaya', e.target.value)}
-                style={{ fontSize: '13px', marginBottom: '8px' }}
-              >
-                <option value="">Toutes les wilayas</option>
-                {wilayaOptions.map((w, i) => (
-                  <option key={i} value={w.value}>
-                    {w.label}
-                  </option>
-                ))}
-              </Form.Select>
-
-              {communesList.length > 0 && (
+      <Offcanvas.Body style={styles.body}>
+        {/* SECCIÓN CATEGORÍAS */}
+        {categoryChildren.length > 0 && (
+          <Accordion defaultActiveKey="0" style={styles.accordion}>
+            <Accordion.Item eventKey="0" style={styles.accordionItem}>
+              <Accordion.Header>
+                <div style={styles.accordionTitle}>
+                  <span>Catégories</span>
+                  <span style={styles.countBadge}>{categoryChildren.length}</span>
+                </div>
+              </Accordion.Header>
+              <Accordion.Body style={styles.accordionBody}>
+                <Form.Label style={styles.label}>
+                  Sous-catégorie
+                </Form.Label>
                 <Form.Select
-                  value={tempFilters.commune}
-                  onChange={(e) => handleChange('commune', e.target.value)}
-                  style={{ fontSize: '13px' }}
+                  value={tempFilters.subCategory}
+                  onChange={(e) => handleFilterChange('subCategory', e.target.value)}
+                  style={styles.select}
                 >
-                  <option value="">Toutes les communes</option>
-                  {communesList.map((c, i) => (
-                    <option key={i} value={c}>
-                      {c}
+                  <option value="">Toutes les sous-catégories</option>
+                  {categoryChildren.map(sub => (
+                    <option key={sub._id} value={sub.slug}>  {/* ✅ Usar slug como value */}
+                      {sub.name}  {/* ✅ Usar name, no icon */}
+                      {sub.postCount ? ` (${sub.postCount})` : ''}
                     </option>
                   ))}
                 </Form.Select>
-              )}
-            </Accordion.Body>
-          </Accordion.Item>
-        </Accordion>
 
-        {/* PRIX */}
-        {categoryFields.hasPrice && (
-          <Accordion defaultActiveKey="2" className="mt-2" flush>
-            <Accordion.Item eventKey="2">
-              <Accordion.Header>Prix</Accordion.Header>
-              <Accordion.Body>
-                <div style={{ padding: '10px 0' }}>
-                  <Slider
-                    range
-                    min={priceRange.min}
-                    max={priceRange.max}
-                    value={[tempFilters.priceMin, tempFilters.priceMax]}
-                    onChange={(val) => {
-                      setTempFilters(prev => ({
-                        ...prev,
-                        priceMin: val[0],
-                        priceMax: val[1]
-                      }));
-                    }}
-                    trackStyle={[{ backgroundColor: '#007bff' }]}
-                    handleStyle={[
-                      { borderColor: '#007bff' },
-                      { borderColor: '#007bff' }
-                    ]}
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontSize: '12px' }}>
-                    <span>{tempFilters.priceMin?.toLocaleString()} DA</span>
-                    <span>{tempFilters.priceMax?.toLocaleString()} DA</span>
-                  </div>
-                </div>
+                {tempFilters.subCategory && getArticlesForSelect().length > 0 && (
+                  <>
+                    <Form.Label style={{...styles.label, marginTop: '20px'}}>
+                      Article
+                    </Form.Label>
+                    <Form.Select
+                      value={tempFilters.article}
+                      onChange={(e) => handleFilterChange('article', e.target.value)}
+                      style={styles.select}
+                    >
+                      <option value="">Tous les articles</option>
+                      {getArticlesForSelect().map(article => (
+                        <option key={article._id} value={article.slug}>  {/* ✅ Usar slug como value */}
+                          {article.name}  {/* ✅ Usar name, no icon */}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </>
+                )}
               </Accordion.Body>
             </Accordion.Item>
           </Accordion>
         )}
 
-        {/* SORT BY */}
-        <Accordion defaultActiveKey="last" className="mt-2" flush>
-          <Accordion.Item eventKey="last">
-            <Accordion.Header>Trier par</Accordion.Header>
-            <Accordion.Body>
-              <Form.Select
-                value={tempFilters.sortBy}
-                onChange={(e) => handleChange('sortBy', e.target.value)}
-                style={{ fontSize: '13px' }}
-              >
-                <option value="recent">Plus récents</option>
-                <option value="price_asc">Prix croissant</option>
-                <option value="price_desc">Prix décroissant</option>
-              </Form.Select>
+        {/* SECCIÓN LOCALISATION */}
+        <Accordion defaultActiveKey="1" style={styles.accordion}>
+          <Accordion.Item eventKey="1" style={styles.accordionItem}>
+            <Accordion.Header>
+              <div style={styles.accordionTitle}>
+                <GeoAlt size={16} color="#667eea" style={{ marginRight: '8px' }} />
+                <span>Localisation</span>
+              </div>
+            </Accordion.Header>
+            <Accordion.Body style={styles.accordionBody}>
+              <WilayaCommuneField
+                mainCategory={slug}
+                subCategory={subSlug}
+                postData={{
+                  wilaya: tempFilters.wilaya,
+                  commune: tempFilters.commune
+                }}
+                handleChangeInput={handleLocationChange}
+                isRTL={false}
+                t={(key) => key}
+                fieldName="location"
+              />
+              <Form.Text className="text-muted" style={{ fontSize: '11px', display: 'block', marginTop: '6px' }}>
+                Sélectionnez une wilaya pour voir les communes disponibles
+              </Form.Text>
             </Accordion.Body>
           </Accordion.Item>
         </Accordion>
 
-        {/* BOTONES */}
-        <div style={{
-          position: 'sticky',
-          bottom: '0',
-          left: '0',
-          right: '0',
-          backgroundColor: 'white',
-          padding: '15px 0',
-          marginTop: '20px',
-          borderTop: '1px solid #eee',
-          display: 'flex',
-          gap: '10px'
-        }}>
-          <Button 
-            variant="outline-secondary" 
-            onClick={resetFilters} 
-            size="sm" 
-            style={{ flex: 1 }}
-          >
-            Réinitialiser
-          </Button>
-          <Button 
-            variant="primary" 
-            onClick={applyFilters} 
-            size="sm" 
-            style={{ flex: 1 }}
-          >
-            Appliquer
-          </Button>
-        </div>
+        {/* SECCIÓN PRIX */}
+        <Accordion defaultActiveKey="2" style={styles.accordion}>
+          <Accordion.Item eventKey="2" style={styles.accordionItem}>
+            <Accordion.Header>
+              <div style={styles.accordionTitle}>
+                <CurrencyEuro size={16} color="#667eea" style={{ marginRight: '8px' }} />
+                <span>Prix</span>
+              </div>
+            </Accordion.Header>
+            <Accordion.Body style={styles.accordionBody}>
+              <div style={styles.priceRangeContainer}>
+                <Slider
+                  range
+                  min={localFilterMetadata.priceRange.min}
+                  max={localFilterMetadata.priceRange.max}
+                  step={1000}
+                  value={priceRange}
+                  onChange={handlePriceRangeChange}
+                  trackStyle={[{ backgroundColor: '#667eea', height: '4px' }]}
+                  handleStyle={[
+                    { 
+                      borderColor: '#667eea', 
+                      backgroundColor: '#667eea',
+                      width: '18px',
+                      height: '18px',
+                      marginTop: '-7px',
+                      opacity: 1,
+                      boxShadow: '0 2px 4px rgba(102,126,234,0.3)'
+                    },
+                    { 
+                      borderColor: '#667eea', 
+                      backgroundColor: '#667eea',
+                      width: '18px',
+                      height: '18px',
+                      marginTop: '-7px',
+                      opacity: 1,
+                      boxShadow: '0 2px 4px rgba(102,126,234,0.3)'
+                    }
+                  ]}
+                  railStyle={{ backgroundColor: '#e9ecef', height: '4px' }}
+                />
+                
+                <div style={styles.priceInputs}>
+                  <div style={styles.priceInputGroup}>
+                    <span style={styles.priceLabel}>Min</span>
+                    <div style={styles.priceInputWrapper}>
+                      <span style={styles.priceCurrency}>DA</span>
+                      <input
+                        type="number"
+                        value={tempFilters.priceMin}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          handleFilterChange('priceMin', val);
+                          setPriceRange([Number(val) || localFilterMetadata.priceRange.min, priceRange[1]]);
+                        }}
+                        placeholder={localFilterMetadata.priceRange.min.toString()}
+                        style={styles.priceInput}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div style={styles.priceSeparator}>
+                    <span>−</span>
+                  </div>
+                  
+                  <div style={styles.priceInputGroup}>
+                    <span style={styles.priceLabel}>Max</span>
+                    <div style={styles.priceInputWrapper}>
+                      <span style={styles.priceCurrency}>DA</span>
+                      <input
+                        type="number"
+                        value={tempFilters.priceMax}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          handleFilterChange('priceMax', val);
+                          setPriceRange([priceRange[0], Number(val) || localFilterMetadata.priceRange.max]);
+                        }}
+                        placeholder={localFilterMetadata.priceRange.max.toString()}
+                        style={styles.priceInput}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Accordion.Body>
+          </Accordion.Item>
+        </Accordion>
 
+        {/* SECCIÓN TRI */}
+        <Accordion defaultActiveKey="3" style={styles.accordion}>
+          <Accordion.Item eventKey="3" style={styles.accordionItem}>
+            <Accordion.Header>
+              <div style={styles.accordionTitle}>
+                <SortDown size={16} color="#667eea" style={{ marginRight: '8px' }} />
+                <span>Trier par</span>
+              </div>
+            </Accordion.Header>
+            <Accordion.Body style={styles.accordionBody}>
+              <div style={styles.sortOptions}>
+                {sortOptions.map(option => (
+                  <div
+                    key={option.value}
+                    onClick={() => handleFilterChange('sortBy', option.value)}
+                    style={{
+                      ...styles.sortOption,
+                      backgroundColor: tempFilters.sortBy === option.value ? '#f0f3ff' : 'white',
+                      borderColor: tempFilters.sortBy === option.value ? '#667eea' : '#e9ecef'
+                    }}
+                  >
+                    <div style={styles.sortOptionLeft}>
+                      <span style={styles.sortIcon}>{option.icon}</span>
+                      <span style={styles.sortLabel}>{option.label}</span>
+                    </div>
+                    {tempFilters.sortBy === option.value && (
+                      <Check2 size={16} color="#667eea" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Accordion.Body>
+          </Accordion.Item>
+        </Accordion>
       </Offcanvas.Body>
+
+      {/* FOOTER */}
+      <div style={styles.footer}>
+        <Button 
+          variant="outline-secondary" 
+          onClick={resetFilters}
+          style={styles.resetButton}
+        >
+          Réinitialiser
+        </Button>
+        <Button 
+          variant="primary" 
+          onClick={applyFilters}
+          style={styles.applyButton}
+        >
+          Appliquer les filtres ({countActiveFilters()})
+        </Button>
+      </div>
     </Offcanvas>
   );
+};
+
+// ============ ESTILOS ============
+const styles = {
+  loadingContainer: {
+    height: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '20px'
+  },
+  loadingText: {
+    marginTop: '16px',
+    color: '#666',
+    fontSize: '14px'
+  },
+  errorContainer: {
+    height: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '20px',
+    textAlign: 'center'
+  },
+  errorIcon: {
+    fontSize: '48px',
+    marginBottom: '16px'
+  },
+  errorTitle: {
+    fontSize: '18px',
+    fontWeight: '600',
+    color: '#dc3545',
+    marginBottom: '8px'
+  },
+  errorText: {
+    fontSize: '14px',
+    color: '#666',
+    marginBottom: '20px',
+    maxWidth: '280px'
+  },
+  errorButton: {
+    borderRadius: '20px',
+    padding: '8px 24px'
+  },
+  header: {
+    padding: '16px 20px',
+    borderBottom: '1px solid #e9ecef',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'white'
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px'
+  },
+  iconCircle: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '8px',
+    backgroundColor: '#f0f3ff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  headerTitle: {
+    margin: 0,
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#333'
+  },
+  badge: {
+    backgroundColor: '#667eea',
+    color: 'white',
+    fontSize: '11px',
+    fontWeight: '600',
+    padding: '2px 6px',
+    borderRadius: '12px',
+    marginLeft: '4px'
+  },
+  headerRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  },
+  iconButton: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '8px',
+    border: '1px solid #e9ecef',
+    backgroundColor: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.2s'
+  },
+  body: {
+    padding: '16px',
+    backgroundColor: '#f8f9fa',
+    flex: 1,
+    overflowY: 'auto'
+  },
+  accordion: {
+    marginBottom: '12px',
+    borderRadius: '12px',
+    overflow: 'hidden',
+    border: 'none',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+  },
+  accordionItem: {
+    border: 'none',
+    backgroundColor: 'white'
+  },
+  accordionTitle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontWeight: '500',
+    color: '#333'
+  },
+  accordionBody: {
+    padding: '16px',
+    backgroundColor: 'white',
+    borderTop: '1px solid #e9ecef'
+  },
+  label: {
+    fontSize: '13px',
+    fontWeight: '500',
+    marginBottom: '6px',
+    color: '#495057',
+    display: 'block'
+  },
+  select: {
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: '10px',
+    border: '1px solid #e9ecef',
+    fontSize: '14px',
+    color: '#333',
+    backgroundColor: 'white',
+    cursor: 'pointer',
+    outline: 'none'
+  },
+  countBadge: {
+    backgroundColor: '#e9ecef',
+    color: '#666',
+    fontSize: '11px',
+    fontWeight: '600',
+    padding: '2px 6px',
+    borderRadius: '10px',
+    marginLeft: '8px'
+  },
+  priceRangeContainer: {
+    padding: '8px 0'
+  },
+  priceInputs: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    marginTop: '24px'
+  },
+  priceInputGroup: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px'
+  },
+  priceLabel: {
+    fontSize: '12px',
+    color: '#666',
+    marginLeft: '4px'
+  },
+  priceInputWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center'
+  },
+  priceCurrency: {
+    position: 'absolute',
+    left: '10px',
+    fontSize: '12px',
+    color: '#999'
+  },
+  priceInput: {
+    width: '100%',
+    padding: '10px 10px 10px 30px',
+    borderRadius: '8px',
+    border: '1px solid #e9ecef',
+    fontSize: '13px',
+    outline: 'none'
+  },
+  priceSeparator: {
+    color: '#666',
+    fontSize: '18px',
+    marginTop: '16px'
+  },
+  sortOptions: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px'
+  },
+  sortOption: {
+    padding: '12px 16px',
+    border: '1px solid #e9ecef',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    transition: 'all 0.2s'
+  },
+  sortOptionLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px'
+  },
+  sortIcon: {
+    fontSize: '16px'
+  },
+  sortLabel: {
+    fontSize: '14px',
+    color: '#333'
+  },
+  footer: {
+    padding: '16px 20px',
+    borderTop: '1px solid #e9ecef',
+    backgroundColor: 'white',
+    display: 'flex',
+    gap: '12px'
+  },
+  resetButton: {
+    flex: 1,
+    padding: '12px',
+    borderRadius: '10px',
+    fontSize: '14px',
+    fontWeight: '500',
+    border: '1px solid #e9ecef',
+    backgroundColor: 'white',
+    color: '#666',
+    cursor: 'pointer'
+  },
+  applyButton: {
+    flex: 1,
+    padding: '12px',
+    borderRadius: '10px',
+    fontSize: '14px',
+    fontWeight: '500',
+    border: 'none',
+    backgroundColor: '#667eea',
+    color: 'white',
+    cursor: 'pointer'
+  }
 };
 
 export default FilterDrawer;

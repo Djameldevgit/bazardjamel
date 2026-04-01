@@ -270,6 +270,8 @@ export const getUserBoutiques = (auth) => async (dispatch) => {
 };
 
 // ============ GET BOUTIQUES BY CATEGORY ============
+// 📂 redux/actions/boutiqueAction.js - ACTUALIZAR getBoutiquesByCategory
+
 export const getBoutiquesByCategory = (
   categorySlug,
   subSlug = null,
@@ -284,15 +286,28 @@ export const getBoutiquesByCategory = (
   try {
     const categoryPath = subSlug ? `${categorySlug}/${subSlug}` : categorySlug;
 
-    const params = { category: categorySlug, page, limit };
+    const params = { 
+      category: categorySlug, 
+      page, 
+      limit,
+      sortBy
+    };
+    
     if (subSlug && subSlug !== 'undefined' && subSlug !== 'null') params.sub = subSlug;
-    if (wilaya) params.wilaya = wilaya;
-    if (commune) params.commune = commune;
-    if (minPrice !== null) params.minPrice = minPrice;
-    if (maxPrice !== null) params.maxPrice = maxPrice;
-    if (sortBy) params.sortBy = sortBy;
+    if (wilaya && wilaya !== '') params.wilaya = wilaya;
+    if (commune && commune !== '') params.commune = commune;
+    if (minPrice !== null && minPrice !== '') params.minPrice = minPrice;
+    if (maxPrice !== null && maxPrice !== '') params.maxPrice = maxPrice;
+
+    console.log('📡 Llamando a API boutique/filter con params:', params);
 
     const res = await getDataAPI(`boutique/filter?${new URLSearchParams(params)}`);
+    
+    console.log('✅ Respuesta de API:', {
+      boutiquesCount: res.data.boutiques?.length || 0,
+      total: res.data.total,
+      hasFilterMetadata: !!res.data.filterMetadata
+    });
     
     dispatch({
       type: BOUTIQUE_TYPES.GET_BOUTIQUES_BY_CATEGORY,
@@ -304,7 +319,8 @@ export const getBoutiquesByCategory = (
         totalPages: res.data.totalPages || 1,
         hasMore: res.data.hasMore || false,
         categoryInfo: res.data.categoryInfo || null,
-        children: res.data.children || []
+        children: res.data.children || [],
+        filterMetadata: res.data.filterMetadata || null  // ✅ INCLUIR METADATA
       }
     });
 

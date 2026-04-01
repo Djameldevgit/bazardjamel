@@ -531,190 +531,196 @@ getBoutique: async function(req, res) {
     }
   },
 
-  filterBoutiques: async function(req, res) {
-    try {
-      var page = parseInt(req.query.page) || 1;
-      var limit = parseInt(req.query.limit) || 12;
-      var skip = (page - 1) * limit;
+ // 📂 controllers/boutiqueController.js - MODIFICAR filterBoutiques
 
-      var categorySlug = req.query.category;
-      var subSlug = req.query.sub;
-      var wilaya = req.query.wilaya;
-      var commune = req.query.commune;
-      var minPrice = req.query.minPrice;
-      var maxPrice = req.query.maxPrice;
-      var sortBy = req.query.sortBy;
+filterBoutiques: async function(req, res) {
+  try {
+    var page = parseInt(req.query.page) || 1;
+    var limit = parseInt(req.query.limit) || 12;
+    var skip = (page - 1) * limit;
 
-      // Validar categoría principal
-      if (!categorySlug || categorySlug !== 'boutiques') {
-        return res.status(400).json({ success: false, message: 'Categoría no válida' });
-      }
+    var categorySlug = req.query.category;
+    var subSlug = req.query.sub;
+    var wilaya = req.query.wilaya;
+    var commune = req.query.commune;
+    var minPrice = req.query.minPrice;
+    var maxPrice = req.query.maxPrice;
+    var sortBy = req.query.sortBy;
 
-      var categoryDoc = await Category.findOne({
-        slug: 'boutiques',
-        level: 1,
+    // Validar categoría principal
+    if (!categorySlug || categorySlug !== 'boutiques') {
+      return res.status(400).json({ success: false, message: 'Categoría no válida' });
+    }
+
+    var categoryDoc = await Category.findOne({
+      slug: 'boutiques',
+      level: 1,
+      isActive: true
+    }).lean();
+
+    if (!categoryDoc) {
+      return res.status(404).json({ success: false, message: 'Categoría Boutiques no encontrada' });
+    }
+
+    // Construir filtro base para BOUTIQUES
+    var filter = { category: categoryDoc._id, isActive: true };
+
+    // Filtrado por subcategoría (tipo de boutique)
+    if (subSlug && subSlug !== 'undefined' && subSlug !== 'null') {
+      var subCategoryDoc = await Category.findOne({
+        slug: subSlug,
+        level: 2,
+        parent: categoryDoc._id,
         isActive: true
       }).lean();
 
-      if (!categoryDoc) {
-        return res.status(404).json({ success: false, message: 'Categoría Boutiques no encontrada' });
-      }
+      if (subCategoryDoc) {
+        var nombreOriginal = subCategoryDoc.name || '';
+        var soloSlug = subCategoryDoc.slug || '';
 
-      // Construir filtro base
-      var filter = { category: categoryDoc._id, isActive: true };
+        var variantes = [
+          nombreOriginal,
+          nombreOriginal.replace('Boutique ', '').replace("d'", '').trim(),
+          nombreOriginal.toLowerCase(),
+          soloSlug,
+          soloSlug.replace(/-/g, ' ')
+        ];
+        
+        variantes = variantes.filter(function(v) {
+          return v && typeof v === 'string' && v.trim() !== '';
+        });
 
-      // Filtrado por subcategoría
-      if (subSlug && subSlug !== 'undefined' && subSlug !== 'null') {
-        var subCategoryDoc = await Category.findOne({
-          slug: subSlug,
-          level: 2,
-          parent: categoryDoc._id,
-          isActive: true
-        }).lean();
+        var orConditions = [];
+        for (var i = 0; i < variantes.length; i++) {
+          var v = variantes[i];
+          var escaped = v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          orConditions.push({ categorie: { $regex: escaped, $options: 'i' } });
+          orConditions.push({ subCategory: { $regex: escaped, $options: 'i' } });
+        }
 
-        if (subCategoryDoc) {
-          var nombreOriginal = subCategoryDoc.name || '';
-          var soloSlug = subCategoryDoc.slug || '';
-
-          var variantes = [
-            nombreOriginal,
-            nombreOriginal.replace('Boutique ', '').replace("d'", '').trim(),
-            nombreOriginal.toLowerCase(),
-            soloSlug,
-            soloSlug.replace(/-/g, ' ')
-          ];
-          
-          // Filtrar variantes vacías
-          variantes = variantes.filter(function(v) {
-            return v && typeof v === 'string' && v.trim() !== '';
-          });
-
-          var orConditions = [];
-          for (var i = 0; i < variantes.length; i++) {
-            var v = variantes[i];
-            var escaped = v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            orConditions.push({ categorie: { $regex: escaped, $options: 'i' } });
-            orConditions.push({ subCategory: { $regex: escaped, $options: 'i' } });
+        var uniqueConditions = [];
+        var seen = {};
+        for (var j = 0; j < orConditions.length; j++) {
+          var condStr = JSON.stringify(orConditions[j]);
+          if (!seen[condStr]) {
+            seen[condStr] = true;
+            uniqueConditions.push(orConditions[j]);
           }
-
-          // Eliminar duplicados
-          var uniqueConditions = [];
-          var seen = {};
-          for (var j = 0; j < orConditions.length; j++) {
-            var condStr = JSON.stringify(orConditions[j]);
-            if (!seen[condStr]) {
-              seen[condStr] = true;
-              uniqueConditions.push(orConditions[j]);
-            }
-          }
-
-          filter.$or = uniqueConditions;
-        } else {
-          var cleaned = subSlug.replace(/-/g, ' ');
-          filter.$or = [
-            { categorie: { $regex: cleaned, $options: 'i' } },
-            { subCategory: { $regex: cleaned, $options: 'i' } }
-          ];
         }
+
+        filter.$or = uniqueConditions;
+      } else {
+        var cleaned = subSlug.replace(/-/g, ' ');
+        filter.$or = [
+          { categorie: { $regex: cleaned, $options: 'i' } },
+          { subCategory: { $regex: cleaned, $options: 'i' } }
+        ];
       }
-
-      // Filtrado geográfico
-      if (wilaya) {
-        filter.wilaya = wilaya;
-      }
-      if (commune) {
-        filter.commune = commune;
-      }
-
-      // Filtrado por precio
-      if (minPrice || maxPrice) {
-        filter.price = {};
-        if (minPrice) {
-          filter.price.$gte = Number(minPrice);
-        }
-        if (maxPrice) {
-          filter.price.$lte = Number(maxPrice);
-        }
-      }
-
-      // Ordenamiento
-      var sort = { createdAt: -1 };
-      if (sortBy === 'priceAsc') {
-        sort = { price: 1 };
-      }
-      if (sortBy === 'priceDesc') {
-        sort = { price: -1 };
-      }
-
-      console.log('🎯 Filtro final:', JSON.stringify(filter, null, 2));
-      console.log('📌 Ordenamiento:', sort);
-
-      // Obtener boutiques
-      var boutiques = await Boutique.find(filter)
-        .sort(sort)
-        .skip(skip)
-        .limit(limit)
-        .populate('user', 'name username avatar email mobile')
-        .lean();
-
-      var total = await Boutique.countDocuments(filter);
-
-      // Obtener subcategorías hijas para slider
-      var children = await Category.find({
-        parent: categoryDoc._id,
-        level: 2,
-        isActive: true
-      })
-        .select('_id name slug level emoji icon iconType iconColor bgColor')
-        .sort({ order: 1 })
-        .lean();
-
-      // Añadir articles vacíos a cada child
-      var childrenWithArticles = [];
-      for (var k = 0; k < children.length; k++) {
-        var child = children[k];
-        child.articles = [];
-        childrenWithArticles.push(child);
-      }
-
-      return res.json({
-        success: true,
-        boutiques: boutiques,
-        total: total,
-        page: page,
-        limit: limit,
-        hasMore: page * limit < total,
-        totalPages: Math.ceil(total / limit),
-        pagination: {
-          currentPage: page,
-          totalPages: Math.ceil(total / limit),
-          totalPosts: total,
-          limit: limit,
-          hasMore: page * limit < total
-        },
-        categoryInfo: {
-          _id: categoryDoc._id,
-          name: categoryDoc.name,
-          slug: categoryDoc.slug,
-          level: categoryDoc.level,
-          emoji: categoryDoc.emoji || '',
-          icon: categoryDoc.icon || '',
-          iconType: categoryDoc.iconType || 'emoji',
-          iconColor: categoryDoc.iconColor || '#8B5CF6',
-          bgColor: categoryDoc.bgColor || '#EDE9FE'
-        },
-        children: childrenWithArticles
-      });
-
-    } catch (error) {
-      console.error('❌ Error en filterBoutiques:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Error al filtrar boutiques', 
-        error: error.message 
-      });
     }
-  },
+
+    // ✅ FILTRO GEOGRÁFICO - SÍ aplica a boutiques
+    if (wilaya && wilaya !== '') {
+      filter.wilaya = { $regex: new RegExp(`^${wilaya}$`, 'i') };
+    }
+    if (commune && commune !== '') {
+      filter.commune = { $regex: new RegExp(commune, 'i') };
+    }
+
+    // ⚠️ PRECIO - NO aplicar a boutiques, ignorar estos parámetros
+    // Si se pasan minPrice o maxPrice, se IGNORAN para boutiques
+    if (minPrice || maxPrice) {
+      console.log('⚠️ Filtros de precio ignorados para boutiques (las boutiques no tienen precio)');
+      // No añadir filter.price
+    }
+
+    // Ordenamiento para boutiques
+    var sort = { createdAt: -1 };
+    if (sortBy === 'name_asc') {
+      sort = { name: 1 };
+    }
+    if (sortBy === 'name_desc') {
+      sort = { name: -1 };
+    }
+    if (sortBy === 'price_asc' || sortBy === 'price_desc') {
+      // Si ordenan por precio, ignorar y usar orden por nombre
+      console.log('⚠️ Ordenamiento por precio ignorado para boutiques');
+      sort = { name: 1 };
+    }
+
+    console.log('🎯 Filtro final BOUTIQUES:', JSON.stringify(filter, null, 2));
+    console.log('📌 Ordenamiento:', sort);
+
+    // Obtener boutiques
+    var boutiques = await Boutique.find(filter)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .populate('user', 'name username avatar email mobile')
+      .lean();
+
+    var total = await Boutique.countDocuments(filter);
+
+    // Obtener subcategorías hijas para slider
+    var children = await Category.find({
+      parent: categoryDoc._id,
+      level: 2,
+      isActive: true
+    })
+      .select('_id name slug level emoji icon iconType iconColor bgColor')
+      .sort({ order: 1 })
+      .lean();
+
+    var childrenWithArticles = [];
+    for (var k = 0; k < children.length; k++) {
+      var child = children[k];
+      child.articles = [];
+      childrenWithArticles.push(child);
+    }
+
+    return res.json({
+      success: true,
+      boutiques: boutiques,
+      total: total,
+      page: page,
+      limit: limit,
+      hasMore: page * limit < total,
+      totalPages: Math.ceil(total / limit),
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalPosts: total,
+        limit: limit,
+        hasMore: page * limit < total
+      },
+      categoryInfo: {
+        _id: categoryDoc._id,
+        name: categoryDoc.name,
+        slug: categoryDoc.slug,
+        level: categoryDoc.level,
+        emoji: categoryDoc.emoji || '',
+        icon: categoryDoc.icon || '',
+        iconType: categoryDoc.iconType || 'emoji',
+        iconColor: categoryDoc.iconColor || '#8B5CF6',
+        bgColor: categoryDoc.bgColor || '#EDE9FE'
+      },
+      children: childrenWithArticles,
+      // ✅ METADATA DE FILTROS (solo ubicación, sin precio)
+      filterMetadata: {
+        wilayas: await Boutique.distinct('wilaya', { category: categoryDoc._id, isActive: true }),
+        priceRange: { min: 0, max: 0 }, // Precio no aplica a boutiques
+        communes: []
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error en filterBoutiques:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al filtrar boutiques', 
+      error: error.message 
+    });
+  }
+},
 
  // En controllers/boutiqueCtrl.js
 // controllers/boutiqueCtrl.js

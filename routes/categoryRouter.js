@@ -1,4 +1,4 @@
-// 📂 routes/categoryRoutes.js - CORREGIDO
+// 📂 routes/categoryRoutes.js - AGREGAR NUEVA RUTA
 
 const express = require('express');
 const router = express.Router();
@@ -11,15 +11,19 @@ const {
   buscarCategorias,
   obtenerEstadisticasDeCategorias,
   getCategoriesForAccordion,
-  getPostsByCategory
+  getPostsByCategory,
+  getCategoryMetadata  // ✅ NUEVO CONTROLADOR
 } = require('../controllers/categoryCtrl');
 
 // ============ RUTAS ============
 
-// 🔥 CORREGIDO: Quitar "categories/" porque ya está en la base URL
-router.get('/posts/:slug', getPostsByCategory);
+// 🔥 NUEVA RUTA PARA METADATA (debe ir antes de :slug)
+router.get('/metadata/:slug', getCategoryMetadata);  // ✅ OPCIÓN 1: /api/categories/metadata/:slug
+// O también puedes usar:
+// router.get('/:slug/metadata', getCategoryMetadata); // ✅ OPCIÓN 2: /api/categories/:slug/metadata
 
 // Resto de rutas
+router.get('/posts/:slug', getPostsByCategory);
 router.get('/slider', obtenerCategoriasParaSlider);
 router.get('/accordion', getCategoriesForAccordion);
 router.get('/main', obtenerCategoriasPrincipales);
