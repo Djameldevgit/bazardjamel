@@ -145,6 +145,9 @@ export const createPost = ({
 // actions/postAction.js - updatePost DEBE SER ASÍ
 // 📂 redux/actions/postAction.js - updatePost CORREGIDO
 
+// 📂 redux/actions/postAction.js - updatePost CORREGIDO
+// 📂 redux/actions/postAction.js - updatePost CON MÁS LOGS
+
 export const updatePost = ({
   postId,
   postData,
@@ -155,26 +158,45 @@ export const updatePost = ({
   let media = [];
 
   try {
-    console.log('🟡 updatePost action iniciada', { postId });
+    console.log('🟡 ========== UPDATE POST INICIADO ==========');
+    console.log('📌 postId:', postId);
+    console.log('📌 images recibidas:', images.length);
+    console.log('📌 Detalle de imágenes:', images.map(img => ({ 
+      hasUrl: !!img.url, 
+      urlPreview: img.url?.substring(0, 50),
+      isExisting: img.isExisting,
+      hasPublicId: !!img.public_id
+    })));
+    
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
 
-    // ✅ PROCESAR IMÁGENES CORRECTAMENTE
+    // ✅ SEPARAR IMÁGENES
     const newImages = images.filter(img => !img.isExisting && img.url?.startsWith('blob:'));
-    const existingImages = images.filter(img => img.isExisting);
+    const existingImages = images.filter(img => img.isExisting && img.url && !img.url.startsWith('blob:'));
 
-    console.log('📸 Procesando imágenes:', {
-      total: images.length,
+    console.log('📸 Clasificación de imágenes:', {
       nuevas: newImages.length,
-      existentes: existingImages.length
+      existentes: existingImages.length,
+      nuevasPreview: newImages.map(img => img.url?.substring(0, 50)),
+      existentesPreview: existingImages.map(img => img.url?.substring(0, 50))
     });
 
+    // Subir imágenes nuevas
     if (newImages.length > 0) {
       console.log(`📤 Subiendo ${newImages.length} imágenes nuevas...`);
       media = await imageUpload(newImages);
-      console.log('✅ Imágenes subidas:', media.length);
+      console.log('✅ Imágenes subidas:', media.map(m => ({ url: m.url?.substring(0, 50), public_id: m.public_id })));
+    } else {
+      console.log('⏭️ No hay imágenes nuevas para subir');
     }
 
-    const finalImages = [...existingImages, ...media];
+    // Combinar imágenes existentes con las nuevas
+    const finalImages = [
+      ...existingImages.map(img => ({ url: img.url, public_id: img.public_id })),
+      ...media
+    ];
+
+    console.log('📦 Imágenes finales para enviar:', finalImages.length);
 
     // ✅ PREPARAR DATOS PARA ENVIAR
     const postToSend = {
@@ -183,19 +205,14 @@ export const updatePost = ({
       categorySpecificData: postData.categorySpecificData || {}
     };
 
-    // ✅ ELIMINAR CAMPOS VACÍOS O INDEFINIDOS
-    Object.keys(postToSend).forEach(key => {
-      if (postToSend[key] === undefined || postToSend[key] === null) {
-        delete postToSend[key];
-      }
-    });
-
-    console.log('📦 Enviando actualización al backend:', {
+    console.log('📦 Datos a enviar:', {
       postId,
       title: postToSend.title,
       categorie: postToSend.categorie,
       subCategory: postToSend.subCategory,
-      imagesCount: finalImages.length
+      imagesCount: postToSend.images?.length,
+      hasCategorySpecificData: !!postToSend.categorySpecificData,
+      categorySpecificDataKeys: Object.keys(postToSend.categorySpecificData || {})
     });
 
     const res = await patchDataAPI(`post/${postId}`, postToSend, auth.token);
@@ -203,10 +220,10 @@ export const updatePost = ({
     console.log('✅ Respuesta del backend:', {
       success: res.data.success,
       categoryChanged: res.data.categoryChanged,
-      oldCategory: res.data.oldCategory
+      postId: res.data.post?._id,
+      imagesCount: res.data.post?.images?.length
     });
 
-    // ✅ DISPATCH CON TODOS LOS DATOS
     dispatch({
       type: POST_TYPES.UPDATE_POST,
       payload: {
@@ -225,6 +242,8 @@ export const updatePost = ({
 
   } catch (err) {
     console.error('❌ Error en updatePost:', err);
+    console.error('❌ Respuesta de error:', err.response?.data);
+    console.error('❌ Status:', err.response?.status);
     dispatch({
       type: GLOBALTYPES.ALERT,
       payload: { error: err.response?.data?.msg || err.message }

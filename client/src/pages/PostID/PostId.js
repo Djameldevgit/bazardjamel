@@ -1,14 +1,22 @@
+import PostCard from '../../components/post-card/PostCard';
+import { addView } from '../../redux/actions/postAction';
+import PostThumb from '../../components/PostThumb';
+import UserPosts from '../../components/UserPosts';
+import { getDataAPI } from '../../utils/fetchData';
+
+
+
+
+
+
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { Container, Spinner, Alert, Badge } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
-import { getSimilarPosts, clearSimilarPosts } from '../redux/actions/postAction';
-import PostCard from '../components/post-card/PostCard';
-import { addView } from '../redux/actions/postAction';
-import PostThumb from '../components/PostThumb';
-import UserPosts from '../components/UserPosts';
-import { getDataAPI } from '../utils/fetchData';
+ 
+import { getSimilarPosts, clearSimilarPosts } from '../../redux/actions/postAction';
+
 
 const PostId = () => {
   const { id } = useParams();

@@ -1,13 +1,10 @@
-// 📂 frontend/src/components/post/DescriptionPost.jsx
-
-import React, { useMemo, useCallback, useEffect, useState } from 'react';
-import { Badge } from 'react-bootstrap';
+import React, { useMemo, useCallback, useEffect, useState, useRef } from 'react';
+import { Card, Badge, Button } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import moment from 'moment';
 import 'moment/locale/fr';
 import { getCategoriesForAccordion } from '../../redux/actions/categoryAction';
- 
 
 moment.locale('fr');
 
@@ -19,6 +16,8 @@ const DescriptionPost = ({ post }) => {
     const [mainImage, setMainImage] = useState('');
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [isImageLoaded, setIsImageLoaded] = useState(false);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const imageLoadTimeoutRef = useRef(null);
 
     useEffect(() => {
         if (accordionCategories.length === 0 && !accordionLoading) {
@@ -42,39 +41,84 @@ const DescriptionPost = ({ post }) => {
             if (imageUrl) {
                 setMainImage(imageUrl);
                 setSelectedImageIndex(0);
+                setIsImageLoaded(false);
+                // Limpiar timeout anterior
+                if (imageLoadTimeoutRef.current) {
+                    clearTimeout(imageLoadTimeoutRef.current);
+                }
+                // Timeout para evitar loading infinito
+                imageLoadTimeoutRef.current = setTimeout(() => {
+                    setIsImageLoaded(true);
+                }, 3000);
             }
         }
+        return () => {
+            if (imageLoadTimeoutRef.current) {
+                clearTimeout(imageLoadTimeoutRef.current);
+            }
+        };
     }, [post]);
 
     const handleThumbnailClick = useCallback((imageUrl, index) => {
+        if (!imageUrl) return;
         setIsImageLoaded(false);
         setMainImage(imageUrl);
         setSelectedImageIndex(index);
+        
+        // Timeout para evitar loading infinito
+        if (imageLoadTimeoutRef.current) {
+            clearTimeout(imageLoadTimeoutRef.current);
+        }
+        imageLoadTimeoutRef.current = setTimeout(() => {
+            setIsImageLoaded(true);
+        }, 3000);
     }, []);
 
     const handlePrevImage = useCallback(() => {
-        if (post?.images && post.images.length > 0) {
-            const newIndex = selectedImageIndex === 0 ? post.images.length - 1 : selectedImageIndex - 1;
-            const imageUrl = typeof post.images[newIndex] === 'string' ? post.images[newIndex] : post.images[newIndex]?.url;
-            if (imageUrl) {
-                setIsImageLoaded(false);
-                setMainImage(imageUrl);
-                setSelectedImageIndex(newIndex);
+        if (!post?.images || post.images.length === 0) return;
+        const newIndex = selectedImageIndex === 0 ? post.images.length - 1 : selectedImageIndex - 1;
+        const imageUrl = typeof post.images[newIndex] === 'string' ? post.images[newIndex] : post.images[newIndex]?.url;
+        if (imageUrl) {
+            setIsImageLoaded(false);
+            setMainImage(imageUrl);
+            setSelectedImageIndex(newIndex);
+            
+            if (imageLoadTimeoutRef.current) {
+                clearTimeout(imageLoadTimeoutRef.current);
             }
+            imageLoadTimeoutRef.current = setTimeout(() => {
+                setIsImageLoaded(true);
+            }, 3000);
         }
     }, [post, selectedImageIndex]);
 
     const handleNextImage = useCallback(() => {
-        if (post?.images && post.images.length > 0) {
-            const newIndex = selectedImageIndex === post.images.length - 1 ? 0 : selectedImageIndex + 1;
-            const imageUrl = typeof post.images[newIndex] === 'string' ? post.images[newIndex] : post.images[newIndex]?.url;
-            if (imageUrl) {
-                setIsImageLoaded(false);
-                setMainImage(imageUrl);
-                setSelectedImageIndex(newIndex);
+        if (!post?.images || post.images.length === 0) return;
+        const newIndex = selectedImageIndex === post.images.length - 1 ? 0 : selectedImageIndex + 1;
+        const imageUrl = typeof post.images[newIndex] === 'string' ? post.images[newIndex] : post.images[newIndex]?.url;
+        if (imageUrl) {
+            setIsImageLoaded(false);
+            setMainImage(imageUrl);
+            setSelectedImageIndex(newIndex);
+            
+            if (imageLoadTimeoutRef.current) {
+                clearTimeout(imageLoadTimeoutRef.current);
             }
+            imageLoadTimeoutRef.current = setTimeout(() => {
+                setIsImageLoaded(true);
+            }, 3000);
         }
     }, [post, selectedImageIndex]);
+
+    // Scroll manual para miniaturas
+    const handleThumbnailScroll = useCallback((e) => {
+        const container = e.currentTarget;
+        const isAtEnd = container.scrollWidth - container.scrollLeft - container.clientWidth < 10;
+        if (isAtEnd && !isLoadingMore) {
+            // Si está al final, no hacer nada
+            console.log('Fin del scroll de miniaturas');
+        }
+    }, [isLoadingMore]);
 
     const getCategoryDisplay = useCallback(() => {
         const categorie = postData.categorie;
@@ -280,18 +324,21 @@ const DescriptionPost = ({ post }) => {
     const fieldsToDisplay = getFieldsToDisplay;
     const hasImages = post?.images && post.images.length > 0;
     const imagesList = post?.images || [];
+    const hasMultipleImages = imagesList.length > 1;
+
+    // Determinar si el scroll es necesario (más de 4 miniaturas en móvil, más de 6 en desktop)
+    const needsScroll = imagesList.length > (window.innerWidth < 768 ? 4 : 6);
 
     return (
         <div className="description-post">
-            <div className="description-post-inner">
-                {/* FILA SUPERIOR - IMAGENES + INFO PRINCIPAL */}
-                <div className="top-section">
-                    {/* COLUMNA IZQUIERDA - GALERÍA DE IMÁGENES */}
-                    <div className="gallery-column">
-                        <div className="image-gallery">
-                            {hasImages ? (
-                                <>
-                                    <div className="main-image-container">
+            {/* GALERÍA DE IMÁGENES */}
+            <Card className="border-0 shadow-sm mb-4">
+                <Card.Body className="p-0">
+                    <div className="image-gallery">
+                        {hasImages ? (
+                            <>
+                                <div className="main-image-container">
+                                    {hasMultipleImages && (
                                         <button 
                                             className="nav-arrow prev-arrow" 
                                             onClick={handlePrevImage}
@@ -299,19 +346,32 @@ const DescriptionPost = ({ post }) => {
                                         >
                                             <i className="fas fa-chevron-left"></i>
                                         </button>
-                                        <div className="main-image-wrapper">
-                                            <img 
-                                                src={mainImage} 
-                                                alt={post.title || 'Image principale'}
-                                                className={`main-image ${isImageLoaded ? 'loaded' : 'loading'}`}
-                                                onLoad={() => setIsImageLoaded(true)}
-                                            />
-                                            {!isImageLoaded && (
-                                                <div className="image-loader">
-                                                    <div className="spinner-border text-primary"></div>
-                                                </div>
-                                            )}
-                                        </div>
+                                    )}
+                                    <div className="main-image-wrapper">
+                                        <img 
+                                            src={mainImage} 
+                                            alt={post.title || 'Image principale'}
+                                            className={`main-image ${isImageLoaded ? 'loaded' : 'loading'}`}
+                                            onLoad={() => {
+                                                setIsImageLoaded(true);
+                                                if (imageLoadTimeoutRef.current) {
+                                                    clearTimeout(imageLoadTimeoutRef.current);
+                                                }
+                                            }}
+                                            onError={() => {
+                                                setIsImageLoaded(true);
+                                                if (imageLoadTimeoutRef.current) {
+                                                    clearTimeout(imageLoadTimeoutRef.current);
+                                                }
+                                            }}
+                                        />
+                                        {!isImageLoaded && (
+                                            <div className="image-loader">
+                                                <div className="spinner-border text-primary" style={{ width: '1.5rem', height: '1.5rem' }}></div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {hasMultipleImages && (
                                         <button 
                                             className="nav-arrow next-arrow" 
                                             onClick={handleNextImage}
@@ -319,11 +379,20 @@ const DescriptionPost = ({ post }) => {
                                         >
                                             <i className="fas fa-chevron-right"></i>
                                         </button>
+                                    )}
+                                    {hasMultipleImages && (
                                         <div className="image-counter">
                                             {selectedImageIndex + 1} / {imagesList.length}
                                         </div>
-                                    </div>
-                                    <div className="thumbnail-container">
+                                    )}
+                                </div>
+                                
+                                {/* Miniaturas - Solo mostrar si hay más de 1 imagen */}
+                                {hasMultipleImages && (
+                                    <div 
+                                        className={`thumbnail-container ${needsScroll ? 'has-scroll' : ''}`}
+                                        onScroll={handleThumbnailScroll}
+                                    >
                                         {imagesList.map((img, index) => {
                                             const imageUrl = typeof img === 'string' ? img : img?.url;
                                             return (
@@ -341,273 +410,436 @@ const DescriptionPost = ({ post }) => {
                                             );
                                         })}
                                     </div>
-                                </>
-                            ) : (
-                                <div className="no-image-placeholder">
-                                    <i className="fas fa-image"></i>
-                                    <p>Aucune image disponible</p>
+                                )}
+                            </>
+                        ) : (
+                            <div className="no-image-placeholder">
+                                <i className="fas fa-image"></i>
+                                <p>Aucune image disponible</p>
+                            </div>
+                        )}
+                    </div>
+                </Card.Body>
+            </Card>
+
+            {/* Resto del código igual... */}
+            {/* DÉTAILS DE L'ANNONCE - Estilo UserInfo */}
+            <Card className="border-0 shadow-sm mb-4">
+                <Card.Header className="bg-white border-bottom py-3">
+                    <h5 className="mb-0 fw-bold text-dark">
+                        <i className="fas fa-info-circle text-primary me-2"></i>
+                        Détails de l'annonce
+                    </h5>
+                </Card.Header>
+                <Card.Body className="p-0">
+                    {/* Título */}
+                    <div className="p-3 border-bottom">
+                        <div className="d-flex align-items-center justify-content-between">
+                            <div className="d-flex align-items-center">
+                                <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
+                                    <i className="fas fa-heading"></i>
                                 </div>
-                            )}
+                                <span className="text-muted me-2">Titre:</span>
+                            </div>
+                            <span className="fw-bold text-dark">{postData.title || 'Annonce'}</span>
                         </div>
                     </div>
-
-                    {/* COLUMNA DERECHA - INFORMACIÓN PRINCIPAL (Estilo UserInfo) */}
-                    <div className="info-column">
-                        <div className="card-header">
-                            <h5>
-                                <i className="fas fa-info-circle me-2"></i>
-                                Détails de l'annonce
-                            </h5>
-                        </div>
-                        <div className="card-body">
-                            {/* Título */}
-                            <div className="info-row">
-                                <div className="info-row-content">
-                                    <div className="info-label">
-                                        <span className="info-icon"><i className="fas fa-heading"></i></span>
-                                        <span className="info-label-text">Titre:</span>
+                    
+                    {/* Precio */}
+                    {postData.price !== undefined && postData.price !== null && (
+                        <div className="p-3 border-bottom">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div className="d-flex align-items-center">
+                                    <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
+                                        <i className="fas fa-tag"></i>
                                     </div>
-                                    <div className="info-value">{postData.title || 'Annonce'}</div>
+                                    <span className="text-muted me-2">Prix:</span>
                                 </div>
-                            </div>
-                            
-                            {/* Precio */}
-                            {postData.price !== undefined && postData.price !== null && (
-                                <div className="info-row">
-                                    <div className="info-row-content">
-                                        <div className="info-label">
-                                            <span className="info-icon"><i className="fas fa-tag"></i></span>
-                                            <span className="info-label-text">Prix:</span>
-                                        </div>
-                                        <div className="info-value price-value">
-                                            {new Intl.NumberFormat('fr-DZ').format(postData.price)} DA
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {/* Estado */}
-                            {postData.etat && (
-                                <div className="info-row">
-                                    <div className="info-row-content">
-                                        <div className="info-label">
-                                            <span className="info-icon"><i className="fas fa-star"></i></span>
-                                            <span className="info-label-text">État:</span>
-                                        </div>
-                                        <div className="info-value">
-                                            <Badge className="condition-badge">
-                                                {postData.etat === 'neuf' ? 'Neuf' : 
-                                                 postData.etat === 'excellent' ? 'Excellent état' :
-                                                 postData.etat === 'bon' ? 'Bon état' :
-                                                 postData.etat === 'occasion' ? 'Occasion' : postData.etat}
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {/* Categoría */}
-                            <div className="info-row">
-                                <div className="info-row-content">
-                                    <div className="info-label">
-                                        <span className="info-icon"><i className="fas fa-folder-open"></i></span>
-                                        <span className="info-label-text">Catégorie:</span>
-                                    </div>
-                                    <div className="info-value">{getCategoryDisplay() || postData.categorie}</div>
-                                </div>
-                            </div>
-                            
-                            {/* Vendedor */}
-                            <div className="info-row">
-                                <div className="info-row-content">
-                                    <div className="info-label">
-                                        <span className="info-icon"><i className="fas fa-user"></i></span>
-                                        <span className="info-label-text">Vendeur:</span>
-                                    </div>
-                                    <div className="info-value">{sellerInfo?.name || 'Annonceur'}</div>
-                                </div>
-                            </div>
-                            
-                            {/* Ubicación del vendedor */}
-                            {sellerInfo?.wilaya && (
-                                <div className="info-row">
-                                    <div className="info-row-content">
-                                        <div className="info-label">
-                                            <span className="info-icon"><i className="fas fa-map-marker-alt"></i></span>
-                                            <span className="info-label-text">Localisation:</span>
-                                        </div>
-                                        <div className="info-value">
-                                            {sellerInfo.wilaya}{sellerInfo.commune ? `, ${sellerInfo.commune}` : ''}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {/* Teléfono */}
-                            {sellerInfo?.phone && (
-                                <div className="info-row">
-                                    <div className="info-row-content">
-                                        <div className="info-label">
-                                            <span className="info-icon"><i className="fas fa-phone"></i></span>
-                                            <span className="info-label-text">Téléphone:</span>
-                                        </div>
-                                        <div className="info-value">
-                                            <a href={`tel:${sellerInfo.phone}`} className="text-decoration-none text-dark">
-                                                {sellerInfo.phone}
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {/* Email */}
-                            {sellerInfo?.email && (
-                                <div className="info-row">
-                                    <div className="info-row-content">
-                                        <div className="info-label">
-                                            <span className="info-icon"><i className="fas fa-envelope"></i></span>
-                                            <span className="info-label-text">Email:</span>
-                                        </div>
-                                        <div className="info-value">
-                                            <a href={`mailto:${sellerInfo.email}`} className="text-decoration-none text-dark">
-                                                {sellerInfo.email}
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {/* Vistas */}
-                            <div className="info-row">
-                                <div className="info-row-content">
-                                    <div className="info-label">
-                                        <span className="info-icon"><i className="fas fa-eye"></i></span>
-                                        <span className="info-label-text">Vues:</span>
-                                    </div>
-                                    <div className="info-value">{postData.views || 0}</div>
-                                </div>
-                            </div>
-                            
-                            {/* Fecha */}
-                            <div className="info-row">
-                                <div className="info-row-content">
-                                    <div className="info-label">
-                                        <span className="info-icon"><i className="fas fa-calendar-alt"></i></span>
-                                        <span className="info-label-text">Publié le:</span>
-                                    </div>
-                                    <div className="info-value">{moment(post.createdAt).format('DD/MM/YYYY')}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* FILA INFERIOR - ESPECIFICACIONES COMPLETAS Y DESCRIPCIÓN */}
-                <div className="bottom-section">
-                    {/* Especificaciones completas */}
-                    {fieldsToDisplay.length > 0 && (
-                        <div className="specifications-section">
-                            <div className="section-header">
-                                <h5>
-                                    <i className="fas fa-list-ul"></i>
-                                    Caractéristiques détaillées
-                                </h5>
-                            </div>
-                            <div className="section-body">
-                                {fieldsToDisplay.map(field => {
-                                    const value = formatValue(field, postData[field]);
-                                    if (!value) return null;
-                                    return (
-                                        <div key={field} className="spec-item">
-                                            <div className="spec-content">
-                                                <div className="spec-label">
-                                                    <span className="spec-icon">{getFieldIcon(field)}</span>
-                                                    <span className="spec-label-text">{translateField(field)}</span>
-                                                </div>
-                                                <div className="spec-value">{value}</div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                                <span className="fw-bold text-dark" style={{ color: '#dc2626', fontSize: '1.25rem' }}>
+                                    {new Intl.NumberFormat('fr-DZ').format(postData.price)} DA
+                                </span>
                             </div>
                         </div>
                     )}
-
-                    {/* Ubicación */}
-                    {(postData.wilaya || postData.commune || postData.address) && (
-                        <div className="location-section">
-                            <div className="section-header">
-                                <h5>
-                                    <i className="fas fa-map-marker-alt"></i>
-                                    Localisation
-                                </h5>
-                            </div>
-                            <div className="section-body">
-                                {postData.wilaya && (
-                                    <div className="location-item">
-                                        <div className="location-content-inner">
-                                            <div className="location-label">
-                                                <i className="fas fa-map-pin"></i>
-                                                <strong>Wilaya:</strong>
-                                            </div>
-                                            <div className="location-value">{postData.wilaya}</div>
-                                        </div>
+                    
+                    {/* Estado */}
+                    {postData.etat && (
+                        <div className="p-3 border-bottom">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div className="d-flex align-items-center">
+                                    <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
+                                        <i className="fas fa-star"></i>
                                     </div>
-                                )}
-                                {postData.commune && (
-                                    <div className="location-item">
-                                        <div className="location-content-inner">
-                                            <div className="location-label">
-                                                <i className="fas fa-building"></i>
-                                                <strong>Commune:</strong>
-                                            </div>
-                                            <div className="location-value">{postData.commune}</div>
-                                        </div>
-                                    </div>
-                                )}
-                                {postData.address && (
-                                    <div className="location-item">
-                                        <div className="location-content-inner">
-                                            <div className="location-label">
-                                                <i className="fas fa-home"></i>
-                                                <strong>Adresse:</strong>
-                                            </div>
-                                            <div className="location-value">{postData.address}</div>
-                                        </div>
-                                    </div>
-                                )}
+                                    <span className="text-muted me-2">État:</span>
+                                </div>
+                                <Badge bg="secondary" className="fw-bold">
+                                    {postData.etat === 'neuf' ? 'Neuf' : 
+                                     postData.etat === 'excellent' ? 'Excellent état' :
+                                     postData.etat === 'bon' ? 'Bon état' :
+                                     postData.etat === 'occasion' ? 'Occasion' : postData.etat}
+                                </Badge>
                             </div>
                         </div>
                     )}
-
-                    {/* Descripción (al final) */}
-                    {postData.description && (
-                        <div className="description-section">
-                            <div className="section-header">
-                                <h5>
-                                    <i className="fas fa-align-left"></i>
-                                    Description
-                                </h5>
+                    
+                    {/* Categoría */}
+                    <div className="p-3 border-bottom">
+                        <div className="d-flex align-items-center justify-content-between">
+                            <div className="d-flex align-items-center">
+                                <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
+                                    <i className="fas fa-folder-open"></i>
+                                </div>
+                                <span className="text-muted me-2">Catégorie:</span>
                             </div>
-                            <div className="section-body">
-                                <div className="description-content">
-                                    <p>{postData.description}</p>
+                            <span className="fw-bold text-dark">{getCategoryDisplay() || postData.categorie}</span>
+                        </div>
+                    </div>
+                    
+                    {/* Vendedor */}
+                    <div className="p-3 border-bottom">
+                        <div className="d-flex align-items-center justify-content-between">
+                            <div className="d-flex align-items-center">
+                                <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
+                                    <i className="fas fa-user"></i>
+                                </div>
+                                <span className="text-muted me-2">Vendeur:</span>
+                            </div>
+                            <span className="fw-bold text-dark">{sellerInfo?.name || 'Annonceur'}</span>
+                        </div>
+                    </div>
+                    
+                    {/* Ubicación del vendedor */}
+                    {sellerInfo?.wilaya && (
+                        <div className="p-3 border-bottom">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div className="d-flex align-items-center">
+                                    <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
+                                        <i className="fas fa-map-marker-alt"></i>
+                                    </div>
+                                    <span className="text-muted me-2">Localisation:</span>
+                                </div>
+                                <span className="fw-bold text-dark">
+                                    {sellerInfo.wilaya}{sellerInfo.commune ? `, ${sellerInfo.commune}` : ''}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Teléfono */}
+                    {sellerInfo?.phone && (
+                        <div className="p-3 border-bottom">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div className="d-flex align-items-center">
+                                    <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
+                                        <i className="fas fa-phone"></i>
+                                    </div>
+                                    <span className="text-muted me-2">Téléphone:</span>
+                                </div>
+                                <a href={`tel:${sellerInfo.phone}`} className="fw-bold text-dark text-decoration-none">
+                                    {sellerInfo.phone}
+                                </a>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Email */}
+                    {sellerInfo?.email && (
+                        <div className="p-3 border-bottom">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div className="d-flex align-items-center">
+                                    <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
+                                        <i className="fas fa-envelope"></i>
+                                    </div>
+                                    <span className="text-muted me-2">Email:</span>
+                                </div>
+                                <a href={`mailto:${sellerInfo.email}`} className="fw-bold text-dark text-decoration-none">
+                                    {sellerInfo.email}
+                                </a>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Vistas */}
+                    <div className="p-3 border-bottom">
+                        <div className="d-flex align-items-center justify-content-between">
+                            <div className="d-flex align-items-center">
+                                <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
+                                    <i className="fas fa-eye"></i>
+                                </div>
+                                <span className="text-muted me-2">Vues:</span>
+                            </div>
+                            <span className="fw-bold text-dark">{postData.views || 0}</span>
+                        </div>
+                    </div>
+                    
+                    {/* Fecha */}
+                    <div className="p-3">
+                        <div className="d-flex align-items-center justify-content-between">
+                            <div className="d-flex align-items-center">
+                                <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
+                                    <i className="fas fa-calendar-alt"></i>
+                                </div>
+                                <span className="text-muted me-2">Publié le:</span>
+                            </div>
+                            <span className="fw-bold text-dark">{moment(post.createdAt).format('DD/MM/YYYY')}</span>
+                        </div>
+                    </div>
+                </Card.Body>
+            </Card>
+
+            {/* CARACTÉRISTIQUES DÉTAILLÉES */}
+            {fieldsToDisplay.length > 0 && (
+                <Card className="border-0 shadow-sm mb-4">
+                    <Card.Header className="bg-white border-bottom py-3">
+                        <h5 className="mb-0 fw-bold text-dark">
+                            <i className="fas fa-list-ul text-primary me-2"></i>
+                            Caractéristiques détaillées
+                        </h5>
+                    </Card.Header>
+                    <Card.Body className="p-0">
+                        {fieldsToDisplay.map(field => {
+                            const value = formatValue(field, postData[field]);
+                            if (!value) return null;
+                            return (
+                                <div key={field} className="p-3 border-bottom">
+                                    <div className="d-flex align-items-center justify-content-between">
+                                        <div className="d-flex align-items-center">
+                                            <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
+                                                {getFieldIcon(field)}
+                                            </div>
+                                            <span className="text-muted">{translateField(field)}:</span>
+                                        </div>
+                                        <span className="fw-bold text-dark">{value}</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </Card.Body>
+                </Card>
+            )}
+
+            {/* LOCALISATION */}
+            {(postData.wilaya || postData.commune || postData.address) && (
+                <Card className="border-0 shadow-sm mb-4">
+                    <Card.Header className="bg-white border-bottom py-3">
+                        <h5 className="mb-0 fw-bold text-dark">
+                            <i className="fas fa-map-marker-alt text-primary me-2"></i>
+                            Localisation
+                        </h5>
+                    </Card.Header>
+                    <Card.Body className="p-0">
+                        {postData.wilaya && (
+                            <div className="p-3 border-bottom">
+                                <div className="d-flex align-items-center justify-content-between">
+                                    <div className="d-flex align-items-center">
+                                        <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
+                                            <i className="fas fa-map-pin"></i>
+                                        </div>
+                                        <span className="text-muted">Wilaya:</span>
+                                    </div>
+                                    <span className="fw-bold text-dark">{postData.wilaya}</span>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                        {postData.commune && (
+                            <div className="p-3 border-bottom">
+                                <div className="d-flex align-items-center justify-content-between">
+                                    <div className="d-flex align-items-center">
+                                        <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
+                                            <i className="fas fa-building"></i>
+                                        </div>
+                                        <span className="text-muted">Commune:</span>
+                                    </div>
+                                    <span className="fw-bold text-dark">{postData.commune}</span>
+                                </div>
+                            </div>
+                        )}
+                        {postData.address && (
+                            <div className="p-3">
+                                <div className="d-flex align-items-center justify-content-between">
+                                    <div className="d-flex align-items-center">
+                                        <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
+                                            <i className="fas fa-home"></i>
+                                        </div>
+                                        <span className="text-muted">Adresse:</span>
+                                    </div>
+                                    <span className="fw-bold text-dark">{postData.address}</span>
+                                </div>
+                            </div>
+                        )}
+                    </Card.Body>
+                </Card>
+            )}
 
-                    {/* Botón de retorno */}
-                    <div className="back-button-container">
-                        <button 
-                            className="back-button"
-                            onClick={() => history.goBack()}
-                        >
-                            <i className="fas fa-arrow-left"></i> Retour aux annonces
-                        </button>
-                    </div>
-                </div>
+            {/* DESCRIPTION */}
+            {postData.description && (
+                <Card className="border-0 shadow-sm mb-4">
+                    <Card.Header className="bg-white border-bottom py-3">
+                        <h5 className="mb-0 fw-bold text-dark">
+                            <i className="fas fa-align-left text-primary me-2"></i>
+                            Description
+                        </h5>
+                    </Card.Header>
+                    <Card.Body>
+                        <p className="text-muted mb-0" style={{ lineHeight: '1.6', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                            {postData.description}
+                        </p>
+                    </Card.Body>
+                </Card>
+            )}
+
+            {/* BOTÓN DE RETORNO */}
+            <div className="d-flex justify-content-center mt-4">
+                <Button 
+                    variant="outline-secondary"
+                    onClick={() => history.goBack()}
+                    className="px-4 py-2"
+                    style={{ borderRadius: '40px' }}
+                >
+                    <i className="fas fa-arrow-left me-2"></i>
+                    Retour aux annonces
+                </Button>
             </div>
+
+            {/* ESTILOS ADICIONALES */}
+            <style>{`
+                .image-gallery {
+                    border-radius: 12px;
+                    overflow: hidden;
+                }
+                .main-image-container {
+                    position: relative;
+                    aspect-ratio: 1 / 1;
+                    background-color: #f5f5f5;
+                    overflow: hidden;
+                }
+                .main-image-wrapper {
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .main-image {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: contain;
+                    transition: opacity 0.3s ease;
+                    opacity: 0;
+                    background-color: #f5f5f5;
+                }
+                .main-image.loaded {
+                    opacity: 1;
+                }
+                .nav-arrow {
+                    position: absolute;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    width: 40px;
+                    height: 40px;
+                    background: rgba(0, 0, 0, 0.6);
+                    border: none;
+                    border-radius: 50%;
+                    color: white;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.3s ease;
+                    z-index: 10;
+                }
+                .nav-arrow:hover {
+                    background: rgba(0, 0, 0, 0.8);
+                    transform: translateY(-50%) scale(1.05);
+                }
+                .prev-arrow { left: 1rem; }
+                .next-arrow { right: 1rem; }
+                .image-counter {
+                    position: absolute;
+                    bottom: 1rem;
+                    right: 1rem;
+                    background: rgba(0, 0, 0, 0.6);
+                    color: white;
+                    padding: 0.25rem 0.75rem;
+                    border-radius: 20px;
+                    font-size: 0.75rem;
+                    z-index: 10;
+                }
+                .thumbnail-container {
+                    display: flex;
+                    gap: 0.5rem;
+                    padding: 1rem;
+                    background: white;
+                    border-top: 1px solid #e9ecef;
+                }
+                .thumbnail-container.has-scroll {
+                    overflow-x: auto;
+                }
+                .thumbnail-container:not(.has-scroll) {
+                    justify-content: center;
+                }
+                .thumbnail-container::-webkit-scrollbar {
+                    height: 8px;
+                }
+                .thumbnail-container::-webkit-scrollbar-track {
+                    background: #f1f1f1;
+                    border-radius: 10px;
+                }
+                .thumbnail-container::-webkit-scrollbar-thumb {
+                    background: #cbd5e0;
+                    border-radius: 10px;
+                }
+                .thumbnail {
+                    flex-shrink: 0;
+                    width: 70px;
+                    height: 70px;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    cursor: pointer;
+                    border: 2px solid transparent;
+                    transition: all 0.2s ease;
+                    background-color: #f5f5f5;
+                }
+                .thumbnail:hover {
+                    transform: scale(1.05);
+                    border-color: #4f46e5;
+                }
+                .thumbnail.active {
+                    border-color: #4f46e5;
+                    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+                }
+                .thumbnail img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+                .no-image-placeholder {
+                    aspect-ratio: 1 / 1;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    background: linear-gradient(135deg, #f5f5f5, #e9ecef);
+                    color: #adb5bd;
+                }
+                .no-image-placeholder i {
+                    font-size: 4rem;
+                    margin-bottom: 1rem;
+                }
+                .image-loader {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                }
+                @media (max-width: 768px) {
+                    .thumbnail { width: 60px; height: 60px; }
+                    .nav-arrow { width: 32px; height: 32px; }
+                }
+                @media (max-width: 576px) {
+                    .thumbnail { width: 50px; height: 50px; }
+                }
+            `}</style>
         </div>
     );
 };

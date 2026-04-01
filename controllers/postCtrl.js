@@ -681,15 +681,24 @@ const postCtrl = {
 
   // controllers/postController.js - updatePost CORREGIDO
   // 📂 controllers/postCtrl.js - updatePost CORREGIDO
+// 📂 controllers/postCtrl.js - updatePost CORREGIDO
+
+// 📂 controllers/postCtrl.js - updatePost CORREGIDO
+
+// 📂 controllers/postCtrl.js - updatePost
 
 updatePost: async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user._id;
+    const userRole = req.user.role;  // ← Obtener el rol
     const updateData = req.body;
 
-    console.log('🔄 Actualizando post:', { id, userId: userId.toString() });
-    console.log('📦 Datos recibidos:', JSON.stringify(updateData, null, 2));
+    console.log('🔄 Actualizando post:', { 
+      postId: id, 
+      userId: userId.toString(), 
+      userRole: userRole 
+    });
 
     // Buscar el post
     const post = await Post.findById(id);
@@ -697,10 +706,25 @@ updatePost: async (req, res) => {
       return res.status(404).json({ msg: "Post non trouvé" });
     }
 
-    // Verificar propiedad
-    if (post.user.toString() !== userId.toString()) {
-      return res.status(403).json({ msg: "Non autorisé" });
+    // ✅ VERIFICACIÓN: Admin puede editar cualquier post
+    const isAdmin = userRole === 'admin';
+    const isOwner = post.user.toString() === userId.toString();
+
+    console.log('🔍 Verificación de permisos:', {
+      isAdmin,
+      isOwner,
+      postOwner: post.user.toString(),
+      currentUser: userId.toString()
+    });
+
+    if (!isAdmin && !isOwner) {
+      console.log('❌ Acceso denegado - No autorizado');
+      return res.status(403).json({ 
+        msg: "Non autorisé - Vous n'êtes pas le propriétaire de cette annonce" 
+      });
     }
+
+    console.log('✅ Autorizado:', isAdmin ? 'ADMINISTRADOR' : 'PROPIETARIO');
 
     // GUARDAR VALORES ANTERIORES
     const oldCategory = {
@@ -710,14 +734,11 @@ updatePost: async (req, res) => {
       category: post.category
     };
 
-    console.log('📦 Valores anteriores:', oldCategory);
-
-    // 🔥 PROCESAR DATOS CORRECTAMENTE
+    // 🔥 PROCESAR DATOS
     const processedData = { ...updateData };
 
     // Si category viene como slug, buscar su ID
     if (updateData.category && typeof updateData.category === 'string') {
-      // Si no es un ObjectId válido
       if (!updateData.category.match(/^[0-9a-fA-F]{24}$/)) {
         const categoryDoc = await Category.findOne({ 
           $or: [
@@ -734,40 +755,36 @@ updatePost: async (req, res) => {
       }
     }
 
-    // Si subCategory viene como slug, buscar su ID
+    // Si subCategory viene como slug, mantener como string
     if (updateData.subCategory && typeof updateData.subCategory === 'string') {
-      if (!updateData.subCategory.match(/^[0-9a-fA-F]{24}$/)) {
-        const subDoc = await Category.findOne({ 
-          slug: updateData.subCategory,
-          level: 2
-        });
-        if (subDoc) {
-          processedData.subCategory = subDoc.slug; // Guardamos el slug, no el ID
-          console.log(`✅ Subcategoría encontrada: ${subDoc.name} (${subDoc.slug})`);
-        }
-      }
+      processedData.subCategory = updateData.subCategory;
     }
 
     // Si articleType viene como slug
     if (updateData.articleType && typeof updateData.articleType === 'string') {
-      if (!updateData.articleType.match(/^[0-9a-fA-F]{24}$/)) {
-        const articleDoc = await Category.findOne({ 
-          slug: updateData.articleType,
-          level: 3
-        });
-        if (articleDoc) {
-          processedData.articleType = articleDoc.slug;
-          console.log(`✅ Artículo encontrado: ${articleDoc.name} (${articleDoc.slug})`);
-        }
-      }
+      processedData.articleType = updateData.articleType;
     }
 
-    // ✅ ACTUALIZAR categorySpecificData correctamente (objeto anidado)
+    // ✅ ACTUALIZAR categorySpecificData
     if (updateData.categorySpecificData) {
       processedData.categorySpecificData = {
-        ...post.categorySpecificData,
+        ...(post.categorySpecificData || {}),
         ...updateData.categorySpecificData
       };
+    }
+
+    // ✅ ACTUALIZAR IMÁGENES
+    if (updateData.images && Array.isArray(updateData.images)) {
+      processedData.images = updateData.images.map(img => {
+        if (typeof img === 'string') {
+          return { url: img, public_id: null };
+        }
+        return {
+          url: img.url,
+          public_id: img.public_id || null
+        };
+      });
+      console.log(`✅ Imágenes actualizadas: ${processedData.images.length}`);
     }
 
     // ✅ Actualizar campos
@@ -811,8 +828,6 @@ updatePost: async (req, res) => {
     res.status(500).json({ msg: err.message });
   }
 },
-
-
  // Controlador público para obtener posts de un usuario (sin autenticación)
   getPublicUserPosts :  async (req, res) => {
   const { userId } = req.params;

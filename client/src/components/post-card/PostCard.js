@@ -100,4 +100,4 @@ const PostCard = ({ post }) => {
   );
 };
 
-export default React.memo(PostCard);
+export default  PostCard;

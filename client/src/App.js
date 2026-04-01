@@ -15,7 +15,8 @@ import NotFound from './pages/NotFound';
 import CategoryPage from './pages/category/CategoryPage';
 import Navbar2 from './components/header/Navbar2';
 import CreateAnnoncePage from './pages/CreateAnnoncePage';
-import PostId from './pages/PostId';
+import PostId from './pages/PostID/PostId';
+ 
 import DashboardPage from './pages/users/dashboardpage';
 import profile from './pages/users/profile';
 import CreateBoutiquePage from './pages/boutique/createBoutiquePage';
@@ -32,6 +33,7 @@ import ProfileSaved from './pages/users/ProfileSaved';
 import CreateBoutiqueProductPage from './pages/boutiqueProduct/CreateBoutiqueProductPage';
 //import CreateImageHomeCarousel from './pages/carousel/CreateImageHomeCarousel';
 import MesProduitsBoutiquePage from './pages/boutiqueProduct/MesProduitsBoutiqueDashborad';
+
  
 function App() {
   const { auth } = useSelector(state => state)
