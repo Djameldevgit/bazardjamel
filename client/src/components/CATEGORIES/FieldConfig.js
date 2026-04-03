@@ -1,565 +1,864 @@
 // 📂 components/CATEGORIES/FieldConfig.js
 
 export const DYNAMIC_FIELDS_CONFIG = {
-  // ==================== 1. VEHICULES ====================
+
+  // ==================== VEHICULES ====================
   'vehicules': {
-    step2: [  'description', 'etat', 'reference'],
-    step3: ['price', 'typeOffre', 'echange'],
-    step4: ['wilaya', 'commune', 'telephone', 'email'],
-    step5: ['images'],
+    step2: [],
+    step3: [],
+    step4: [],
+    step5: [],
     subCategories: {
-      // Level 2: Tipos de vehículos
       'voitures': {
-        step2: [  'marque', 'modele', 'annee', 'couleur', 'kilometrage', 'carburant', 'boiteVitesse'],
-        step3: ['options', 'puissance'],
-        step4: []
+        step2: ['marque',  'annee', 'finition', 'motorisation', 'moteur', 'energie', 'boite', 'specs', 'kilometrage', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
       'utilitaire': {
-        step2: ['marque', 'modele', 'annee', 'couleur', 'kilometrage', 'carburant', 'chargeUtile'],
-        step3: ['options'],
-        step4: []
+        step2: ['marque',  'annee', 'energie', 'boite', 'kilometrage', 'chargeUtile', 'volume', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
       'motos-scooters': {
-        step2: ['marque', 'modele', 'annee', 'couleur', 'kilometrage', 'carburant', 'cylindree'],
-        step3: ['options'],
-        step4: []
+        step2: ['marque',  'annee', 'energie', 'boite', 'kilometrage', 'cylindree', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
       'quads': {
-        step2: ['marque', 'modele', 'annee', 'couleur', 'kilometrage', 'carburant'],
-        step3: ['options'],
-        step4: []
+        step2: ['marque',  'annee', 'energie', 'kilometrage', 'typeQuad', 'cylindree', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
       'fourgon': {
-        step2: ['marque', 'modele', 'annee', 'couleur', 'kilometrage', 'carburant', 'volume'],
-        step3: ['options'],
-        step4: []
+        step2: ['marque',  'annee', 'energie', 'boite', 'kilometrage', 'volume', 'chargeUtile', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
       'camion': {
-        step2: ['marque', 'modele', 'annee', 'couleur', 'kilometrage', 'carburant', 'poids'],
-        step3: ['options'],
-        step4: []
+        step2: ['marque',  'annee', 'energie', 'boite', 'kilometrage', 'poids', 'chargeUtile', 'essieux', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
       'bus': {
-        step2: ['marque', 'modele', 'annee', 'couleur', 'kilometrage', 'carburant', 'places'],
-        step3: ['options'],
-        step4: []
+        step2: ['marque',  'annee', 'energie', 'boite', 'kilometrage', 'places', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
       'engin': {
-        step2: ['marque', 'modele', 'annee', 'couleur', 'heures', 'typeEngin'],
-        step3: ['options'],
-        step4: []
+        step2: ['marque',  'annee', 'heures', 'typeEngin', 'puissance', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
       'tracteurs': {
-        step2: ['marque', 'modele', 'annee', 'couleur', 'heures', 'puissance'],
-        step3: ['options'],
-        step4: []
+        step2: ['marque',  'annee', 'heures', 'puissance', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
       'remorques': {
-        step2: ['marque', 'modele', 'annee', 'longueur', 'charge'],
-        step3: ['options'],
-        step4: []
+        step2: ['marque',  'annee', 'longueur', 'chargeUtile', 'essieux', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
       'bateaux-barques': {
-        step2: ['marque', 'modele', 'annee', 'longueur', 'moteur'],
-        step3: ['options'],
-        step4: []
+        step2: ['marque',  'annee', 'longueur', 'moteurBateau', 'places', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       }
     }
   },
 
-  // ==================== 2. VETEMENTS ====================
-  'vetements': {
-    step2: ['title', 'description', 'etat', 'reference'],
-    step3: ['price', 'typeOffre', 'echange'],
-    step4: ['wilaya', 'commune', 'telephone'],
-    step5: ['images'],
-    subCategories: {
-      // Level 2: Categorías principales de ropa
-      'vetements-homme': {
-        step2: ['marque', 'taille', 'couleur', 'matiere'],
-        step3: [],
-        step4: [],
-        articleTypes: {
-          // Level 3: Tipos específicos de ropa hombre
-          'hauts-chemises': { step2: ['typeCoupe', 'col'] },
-          'jeans-pantalons': { step2: ['coupe', 'longueur'] },
-          'costumes-blazers': { step2: ['coupe', 'tailleVeste', 'taillePantalon'] },
-          'survetements': { step2: ['ensemble', 'taille'] },
-          'kamiss': { step2: ['tissu', 'longueur'] },
-          'sous-vetements': { step2: ['type', 'lot'] }
-        }
-      },
-      'vetements-femme': {
-        step2: ['marque', 'taille', 'couleur', 'matiere'],
-        step3: [],
-        step4: [],
-        articleTypes: {
-          'robes': { step2: ['longueur', 'coupe'] },
-          'abayas-hijabs': { step2: ['tissu', 'style'] },
-          'jupes': { step2: ['longueur', 'coupe'] }
-        }
-      },
-      'chaussures-homme': {
-        step2: ['marque', 'pointure', 'couleur', 'matiere'],
-        step3: [],
-        step4: []
-      },
-      'chaussures-femme': {
-        step2: ['marque', 'pointure', 'couleur', 'hauteurTalon'],
-        step3: [],
-        step4: []
-      },
-      'garcons': {
-        step2: ['marque', 'taille', 'age', 'couleur'],
-        step3: [],
-        step4: []
-      },
-      'filles': {
-        step2: ['marque', 'taille', 'age', 'couleur'],
-        step3: [],
-        step4: []
-      },
-      'bebe': {
-        step2: ['marque', 'taille', 'ageMois', 'couleur'],
-        step3: [],
-        step4: []
-      },
-      'sacs-valises': {
-        step2: ['marque', 'type', 'couleur', 'matiere'],
-        step3: [],
-        step4: []
-      },
-      'montres': {
-        step2: ['marque', 'type', 'couleur', 'materiauBracelet'],
-        step3: [],
-        step4: []
-      },
-      'lunettes': {
-        step2: ['marque', 'type', 'couleur', 'protection'],
-        step3: [],
-        step4: []
-      },
-      'bijoux': {
-        step2: ['marque', 'type', 'materiau', 'pierres'],
-        step3: [],
-        step4: []
-      }
-    }
-  },
-
-  // ==================== 3. ELECTROMENAGER ====================
-  'electromenager': {
-    step2: ['title', 'description', 'etat', 'reference'],
-    step3: ['price', 'typeOffre', 'echange'],
-    step4: ['wilaya', 'commune', 'telephone'],
-    step5: ['images'],
-    subCategories: {
-      'refrigerateurs-congelateurs': {
-        step2: ['marque', 'modele', 'capacite', 'classeEnergetique'],
-        step3: ['garantie'],
-        step4: []
-      },
-      'machines-laver': {
-        step2: ['marque', 'modele', 'capacite', 'classeEnergetique'],
-        step3: ['garantie', 'programmes'],
-        step4: []
-      },
-      'lave-vaisselles': {
-        step2: ['marque', 'modele', 'capacite', 'classeEnergetique'],
-        step3: ['garantie'],
-        step4: []
-      },
-      'fours-cuisson': {
-        step2: ['marque', 'modele', 'typeFour', 'capacite'],
-        step3: ['garantie'],
-        step4: []
-      },
-      'chauffage-climatisation': {
-        step2: ['marque', 'modele', 'puissance', 'typeClimatisation'],
-        step3: ['garantie'],
-        step4: []
-      },
-      'televiseurs': {
-        step2: ['marque', 'modele', 'taille', 'resolution', 'smartTV'],
-        step3: ['garantie'],
-        step4: []
-      },
-      'aspirateurs-nettoyeurs': {
-        step2: ['marque', 'modele', 'puissance', 'typeAspirateur'],
-        step3: ['garantie'],
-        step4: []
-      },
-      'repassage': {
-        step2: ['marque', 'modele', 'puissance', 'typeRepassage'],
-        step3: ['garantie'],
-        step4: []
-      },
-      'beaute-hygiene': {
-        step2: ['marque', 'modele', 'typeAppareil'],
-        step3: ['garantie'],
-        step4: []
-      }
-    }
-  },
-
-  // ==================== 4. IMMOBILIER ====================
+  // ==================== IMMOBILIER ====================
   'immobilier': {
-    step2: ['title', 'description', 'etat', 'reference'],
-    step3: ['price', 'typeOffre', 'echange'],
-    step4: ['wilaya', 'commune', 'telephone', 'email', 'quartier'],
-    step5: ['images'],
+    step2: [],
+    step3: [],
+    step4: [],
+    step5: [],
     subCategories: {
-      'vente': {
-        step2: [],
-        step3: [],
-        step4: [],
-        articleTypes: {
-          'appartement': { step2: ['surface', 'chambres', 'sallesBain', 'etage', 'ascenseur'] },
-          'villa': { step2: ['surface', 'chambres', 'sallesBain', 'jardin', 'piscine'] },
-          'terrain': { step2: ['surface', 'typeTerrain', 'viabilise'] },  // ← Sin etage, sin chambres
-          'local': { step2: ['surface', 'typeLocal', 'vitrine'] },
-          'immeuble': { step2: ['surface', 'etages', 'appartements'] },
-          'bungalow': { step2: ['surface', 'chambres'] },
-          'terrain-agricole': { step2: ['surface', 'typeCulture', 'irrigation'] }
-        }
+      'appartement': {
+        step2: ['designation', 'superficie', 'etage', 'pieces', 'chambres', 'sallesBain', 'specs', 'adresse', 'quartier', 'description', 'etat'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
-      'location': {
-        step2: [],
-        step3: ['loyer', 'charges'],
-        step4: [],
-        articleTypes: {
-          'appartement-location': { step2: ['surface', 'chambres', 'sallesBain', 'etage', 'meuble'] },
-          'villa-location': { step2: ['surface', 'chambres', 'sallesBain', 'jardin', 'meuble'] },
-          'local-location': { step2: ['surface', 'typeLocal'] }
-        }
+      'studio': {
+        step2: ['designation', 'superficie', 'etage', 'specs', 'adresse', 'quartier', 'description', 'etat'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
-      'location-vacances': {
-        step2: [],
-        step3: ['prixNuit', 'disponibilite'],
-        step4: [],
-        articleTypes: {
-          'appartement-vacances': { step2: ['surface', 'chambres', 'equipements'] },
-          'villa-vacances': { step2: ['surface', 'chambres', 'piscine', 'jardin'] }
-        }
-      }
-    }
-  },
-
-  // ==================== 5. ALIMENTAIRES ====================
-  'alimentaires': {
-    step2: ['title', 'description', 'reference'],
-    step3: ['price', 'typeOffre', 'unite', 'quantite'],
-    step4: ['wilaya', 'commune', 'telephone'],
-    step5: ['images'],
-    subCategories: {
-      'fruits-legumes': {
-        step2: ['typeProduit', 'origine', 'saison'],
-        step3: ['prixKg', 'quantite'],
-        step4: []
+      'villa': {
+        step2: ['designation', 'superficie', 'jardin', 'piscine', 'pieces', 'chambres', 'sallesBain', 'specs', 'adresse', 'quartier', 'description', 'etat'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
-      'produits-laitiers': {
-        step2: ['typeProduit', 'marque', 'datePeremption'],
-        step3: ['quantite'],
-        step4: []
+      'maison': {
+        step2: ['designation', 'superficie', 'jardin', 'pieces', 'chambres', 'sallesBain', 'specs', 'adresse', 'quartier', 'description', 'etat'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
-      'viandes-poissons': {
-        step2: ['typeViande', 'origine', 'poids'],
-        step3: ['prixKg', 'quantite'],
-        step4: []
+      'terrain': {
+        step2: ['designation', 'superficie', 'typeTerrain', 'viabilise', 'adresse', 'quartier', 'description', 'etat'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
-      'boissons': {
-        step2: ['typeBoisson', 'marque', 'contenance'],
-        step3: ['quantite'],
-        step4: []
-      }
-    }
-  },
-
-  // ==================== 6. INFORMATIQUE ====================
-  'informatique': {
-    step2: ['title', 'description', 'etat', 'reference'],
-    step3: ['price', 'typeOffre', 'echange'],
-    step4: ['wilaya', 'commune', 'telephone'],
-    step5: ['images'],
-    subCategories: {
-      'ordinateurs-portables': {
-        step2: ['marque', 'modele', 'processeur', 'ram', 'stockage', 'tailleEcran'],
-        step3: ['garantie'],
-        step4: []
-      },
-      'ordinateurs-bureau': {
-        step2: ['marque', 'modele', 'processeur', 'ram', 'stockage'],
-        step3: ['garantie'],
-        step4: []
-      },
-      'composants-pc-fixe': {
-        step2: ['marque', 'modele', 'typeComposant', 'specifications'],
-        step3: ['garantie'],
-        step4: []
-      }
-    }
-  },
-
-  // ==================== 7. LOISIRS ====================
-  'loisirs': {
-    step2: ['title', 'description', 'etat', 'reference'],
-    step3: ['price', 'typeOffre', 'echange'],
-    step4: ['wilaya', 'commune', 'telephone'],
-    step5: ['images'],
-    subCategories: {
-      'consoles-jeux-videos': {
-        step2: ['marque', 'modele', 'typeConsole', 'jeuxInclus'],
-        step3: [],
-        step4: []
-      },
-      'instruments-musique': {
-        step2: ['marque', 'modele', 'typeInstrument', 'materiau'],
-        step3: [],
-        step4: []
-      },
-      'livres-magazines': {
-        step2: ['titre', 'auteur', 'editeur', 'genre', 'langue'],
-        step3: [],
-        step4: []
-      },
-      'jouets': {
-        step2: ['marque', 'typeJouet', 'ageRecommandé', 'materiau'],
-        step3: [],
-        step4: []
-      }
-    }
-  },
-
-  // ==================== 8. MATERIAUX ====================
-  'materiaux': {
-    step2: ['title', 'description', 'etat', 'reference'],
-    step3: ['price', 'typeOffre', 'unite', 'quantite'],
-    step4: ['wilaya', 'commune', 'telephone'],
-    step5: ['images'],
-    subCategories: {
-      'materiaux-construction': {
-        step2: ['typeMateriau', 'dimensions', 'resistance'],
-        step3: ['quantite'],
-        step4: []
-      },
-      'outillage-professionnel': {
-        step2: ['marque', 'typeOutil', 'puissance'],
-        step3: ['garantie'],
-        step4: []
-      }
-    }
-  },
-
-  // ==================== 9. MEUBLES ====================
-  'meubles': {
-    step2: ['title', 'description', 'etat', 'reference'],
-    step3: ['price', 'typeOffre', 'echange'],
-    step4: ['wilaya', 'commune', 'telephone'],
-    step5: ['images'],
-    subCategories: {
-      'salon': {
-        step2: ['typeMeuble', 'matiere', 'dimensions', 'couleur'],
-        step3: [],
-        step4: []
-      },
-      'chambres-coucher': {
-        step2: ['typeMeuble', 'matiere', 'dimensions'],
-        step3: [],
-        step4: []
+      'local-commercial': {
+        step2: ['designation', 'superficie', 'vitrine', 'specs', 'adresse', 'quartier', 'description', 'etat'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
       'bureau': {
-        step2: ['typeMeuble', 'matiere', 'dimensions', 'ergonomie'],
-        step3: [],
-        step4: []
+        step2: ['designation', 'superficie', 'etage', 'specs', 'adresse', 'quartier', 'description', 'etat'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'entrepot': {
+        step2: ['designation', 'superficie', 'hauteur', 'specs', 'adresse', 'quartier', 'description', 'etat'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'immeuble': {
+        step2: ['designation', 'superficie', 'nbAppartements', 'nbEtages', 'adresse', 'quartier', 'description', 'etat'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       }
     }
   },
 
-  // ==================== 10. SPORT ====================
-  'sport': {
-    step2: ['title', 'description', 'etat', 'reference'],
-    step3: ['price', 'typeOffre', 'echange'],
-    step4: ['wilaya', 'commune', 'telephone'],
-    step5: ['images'],
+  // ==================== VETEMENTS ====================
+  'vetements': {
+    step2: [],
+    step3: [],
+    step4: [],
+    step5: [],
     subCategories: {
-      'football': {
-        step2: ['marque', 'typeEquipement', 'taille', 'couleur'],
-        step3: [],
-        step4: []
+      'vetements-homme': {
+        step2: ['marque', 'taille', 'couleur', 'matiere', 'genre', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
-      'fitness-musculation': {
-        step2: ['marque', 'typeEquipement', 'poids', 'dimensions'],
-        step3: [],
-        step4: []
+      'vetements-femme': {
+        step2: ['marque', 'taille', 'couleur', 'matiere', 'genre', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
-      'velos-trotinettes': {
-        step2: ['marque', 'modele', 'tailleRoue', 'vitesses', 'couleur'],
-        step3: [],
-        step4: []
+      'chaussures-homme': {
+        step2: ['marque', 'pointure', 'couleur', 'matiere', 'genre', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'chaussures-femme': {
+        step2: ['marque', 'pointure', 'couleur', 'matiere', 'genre', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'garcons': {
+        step2: ['marque', 'taille', 'age', 'couleur', 'matiere', 'genre', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'filles': {
+        step2: ['marque', 'taille', 'age', 'couleur', 'matiere', 'genre', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'bebe': {
+        step2: ['marque', 'taille', 'age', 'couleur', 'matiere', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'montres': {
+        step2: ['marque', 'materiau', 'couleur', 'mecanisme', 'etancheite', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'bijoux': {
+        step2: ['marque', 'materiau', 'pierres', 'poids', 'carats', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'lunettes': {
+        step2: ['marque', 'monture', 'couleur', 'protection', 'typeVerre', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'sacs-valises': {
+        step2: ['marque', 'typeSac', 'couleur', 'matiere', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       }
     }
   },
 
-  // ==================== 11. TELEPHONE ====================
+  // ==================== ELECTROMENAGER ====================
+  'electromenager': {
+    step2: [],
+    step3: [],
+    step4: [],
+    step5: [],
+    subCategories: {
+      'téléviseurs': {
+        step2: ['marque', 'modele', 'taille_ecran', 'resolution', 'smart_tv', 'type_tv', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'audio': {
+        step2: ['marque', 'modele', 'type_audio', 'puissance', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'réfrigérateurs_&_congélateurs': {
+        step2: ['marque', 'modele', 'type_refrigerateur', 'capacite', 'classe_energetique', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'machines_à_laver': {
+        step2: ['marque', 'modele', 'type_machine', 'capacite_kg', 'vitesse_essorage', 'classe_energetique', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'lave_vaisselles': {
+        step2: ['marque', 'modele', 'capacite', 'classe_energetique', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'fours_&_cuisson': {
+        step2: ['marque', 'modele', 'type_four', 'puissance', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'chauffage_&_climatisation': {
+        step2: ['marque', 'modele', 'puissance', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'appareils_de_cuisine': {
+        step2: ['marque', 'modele', 'puissance', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'aspirateurs_&_nettoyeurs': {
+        step2: ['marque', 'modele', 'puissance', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'repassage': {
+        step2: ['marque', 'modele', 'puissance', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'beauté_&_hygiène': {
+        step2: ['marque', 'modele', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'machines_à_coudre': {
+        step2: ['marque', 'modele', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'télécommandes': {
+        step2: ['marque', 'modele', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'sécurité_&_gps': {
+        step2: ['marque', 'modele', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'composants_électroniques': {
+        step2: ['marque', 'modele', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'pièces_de_rechange': {
+        step2: ['marque', 'modele', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'autre': {
+        step2: ['marque', 'modele', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      }
+    }
+  },
+
+  // ==================== TELEPHONE ====================
   'telephone': {
-    step2: ['title', 'description', 'etat', 'reference'],
-    step3: ['price', 'typeOffre', 'echange'],
-    step4: ['wilaya', 'commune', 'telephone'],
-    step5: ['images'],
+    step2: [],
+    step3: [],
+    step4: [],
+    step5: [],
     subCategories: {
       'smartphones': {
-        step2: ['marque', 'modele', 'couleur', 'capaciteStockage', 'ram'],
-        step3: ['garantie', 'camera'],
-        step4: []
+        step2: ['marque', 'modele', 'copie', 'memoire', 'couleur', 'os', 'appareil', 'camerafrontal', 'talleecran', 'ram', 'gigas', 'doublepuces', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
       'tablettes': {
-        step2: ['marque', 'modele', 'couleur', 'capaciteStockage', 'tailleEcran'],
-        step3: ['garantie'],
-        step4: []
+        step2: ['marque', 'modele', 'copie', 'memoire', 'couleur', 'os', 'appareil', 'camerafrontal', 'talleecran', 'ram', 'gigas', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
       'accessoires-telephone': {
-        step2: ['typeAccessoire', 'marque', 'modele', 'couleur'],
-        step3: ['quantite'],
-        step4: []
+        step2: ['marque', 'modele', 'couleur', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       }
     }
   },
 
-  // ==================== 12. SERVICES ====================
+  // ==================== PIECES DETACHEES ====================
+  'pieces-detachees': {
+    step2: [],
+    step3: [],
+    step4: [],
+    step5: [],
+    subCategories: {
+      'pièces_automobiles': {
+        step2: ['marque', 'modele', 'annee', 'type_piece', 'reference_oem', 'compatibilite', 'kilometrage', 'position', 'type_moteur', 'garantie', 'quantite', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'pièces_moto': {
+        step2: ['marque', 'modele', 'annee', 'type_piece', 'compatibilite', 'kilometrage', 'garantie', 'quantite', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'alarme_&_sécurité': {
+        step2: ['marque', 'modele', 'type_alarme', 'garantie', 'quantite', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'nettoyage_&_entretien': {
+        step2: ['marque', 'type_nettoyage', 'quantite', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'outils_de_diagnostics': {
+        step2: ['marque', 'modele', 'type_outil', 'garantie', 'quantite', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'lubrifiants': {
+        step2: ['marque', 'type_lubrifiant', 'viscosite', 'quantite', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'autre': {
+        step2: ['marque', 'modele', 'quantite', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      }
+    }
+  },
+
+  // ==================== MEUBLES ====================
+  'meubles': {
+    step2: [],
+    step3: [],
+    step4: [],
+    step5: [],
+    subCategories: {
+      'meubles_de_maison': {
+        step2: ['marque', 'modele', 'type_meuble', 'matiere', 'couleur', 'dimensions', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'décoration': {
+        step2: ['marque', 'type_decoration', 'matiere', 'couleur', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'vaisselle': {
+        step2: ['marque', 'type_vaisselle', 'matiere_vaisselle', 'nb_pieces', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'meubles_de_bureau': {
+        step2: ['marque', 'modele', 'type_meuble_bureau', 'matiere', 'couleur', 'dimensions', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'rideaux': {
+        step2: ['marque', 'matiere', 'couleur', 'dimensions_rideaux', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'literie_&_linge': {
+        step2: ['marque', 'type_literie', 'taille_literie', 'matiere', 'couleur', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'puériculture': {
+        step2: ['marque', 'modele', 'type_puericulture', 'age_bebe', 'matiere', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'tapis_&_moquettes': {
+        step2: ['marque', 'matiere', 'couleur', 'dimensions_tapis', 'forme_tapis', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'meubles_d_extérieur': {
+        step2: ['marque', 'modele', 'type_meuble', 'matiere', 'couleur', 'dimensions', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'fournitures_et_articles_scolaires': {
+        step2: ['marque', 'type_fourniture', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'luminaire': {
+        step2: ['marque', 'modele', 'couleur', 'matiere', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'autre': {
+        step2: ['marque', 'modele', 'matiere', 'couleur', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      }
+    }
+  },
+
+  // ==================== MATERIAUX ====================
+  'materiaux': {
+    step2: [],
+    step3: [],
+    step4: [],
+    step5: [],
+    subCategories: {
+      'matériel_professionnel': {
+        step2: ['marque', 'modele', 'type_materiel', 'puissance', 'tension', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'outillage_professionnel': {
+        step2: ['marque', 'modele', 'type_outil', 'puissance', 'diametre', 'nb_vitesses', 'tension', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'materiaux_de_construction': {
+        step2: ['marque', 'type_materiau_construction', 'quantite', 'unite_mesure', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'matières_premières': {
+        step2: ['type_matiere_premiere', 'quantite', 'unite_mesure', 'purete', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'produits_d_hygiène': {
+        step2: ['marque', 'type_hygiene', 'volume', 'quantite', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'matériel_agricole': {
+        step2: ['marque', 'modele', 'type_agricole', 'annee', 'puissance', 'heures', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'autre': {
+        step2: ['marque', 'modele', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      }
+    }
+  },
+
+  // ==================== VOYAGES ====================
+  'voyages': {
+    step2: [],
+    step3: [],
+    step4: [],
+    step5: [],
+    subCategories: {
+      'voyage_organise': {
+        step2: ['destination', 'duree', 'date_depart', 'date_retour', 'nombre_personnes', 'transport', 'hebergement', 'activites_incluses', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'location_vacances': {
+        step2: ['destination', 'duree', 'type_hebergement', 'capacite', 'equipements', 'proximite', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'hajj_omra': {
+        step2: ['date_depart', 'date_retour', 'type_pelerinage', 'groupe', 'hotel_makkah', 'hotel_madinah', 'vols', 'transport', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'sejour': {
+        step2: ['destination', 'duree', 'date_depart', 'date_retour', 'type_sejour', 'categorie_hotel', 'nombre_personnes', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'croisiere': {
+        step2: ['destination', 'duree', 'date_depart', 'date_retour', 'nom_bateau', 'cabine', 'nombre_personnes', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'autre': {
+        step2: ['destination', 'duree', 'date_depart', 'date_retour', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      }
+    }
+  },
+
+  // ==================== ALIMENTAIRES ====================
+  'alimentaires': {
+    step2: [],
+    step3: [],
+    step4: [],
+    step5: [],
+    subCategories: {
+      'fruits-legumes': {
+        step2: ['typeProduit', 'origine', 'saison', 'etat', 'description'],
+        step3: ['price', 'typeOffre', 'quantite'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'produits-laitiers': {
+        step2: ['typeProduit', 'marque', 'datePeremption', 'etat', 'description'],
+        step3: ['price', 'typeOffre', 'quantite'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'viandes-poissons': {
+        step2: ['typeViande', 'origine', 'poids', 'etat', 'description'],
+        step3: ['price', 'typeOffre', 'quantite'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'boissons': {
+        step2: ['typeBoisson', 'marque', 'contenance', 'etat', 'description'],
+        step3: ['price', 'typeOffre', 'quantite'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'autre': {
+        step2: ['marque', 'etat', 'description'],
+        step3: ['price', 'typeOffre', 'quantite'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      }
+    }
+  },
+
+  // ==================== INFORMATIQUE ====================
+  'informatique': {
+    step2: [],
+    step3: [],
+    step4: [],
+    step5: [],
+    subCategories: {
+      'ordinateurs-portables': {
+        step2: ['marque', 'modele', 'processeur', 'ram', 'stockage', 'tailleEcran', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'ordinateurs-bureau': {
+        step2: ['marque', 'modele', 'processeur', 'ram', 'stockage', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'composants-pc-fixe': {
+        step2: ['marque', 'modele', 'typeComposant', 'specifications', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'autre': {
+        step2: ['marque', 'modele', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      }
+    }
+  },
+
+  // ==================== LOISIRS ====================
+  'loisirs': {
+    step2: [],
+    step3: [],
+    step4: [],
+    step5: [],
+    subCategories: {
+      'consoles-jeux-videos': {
+        step2: ['marque', 'modele', 'typeConsole', 'jeuxInclus', 'garantie', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'instruments-musique': {
+        step2: ['marque', 'modele', 'typeInstrument', 'materiau', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'livres-magazines': {
+        step2: ['titre', 'auteur', 'editeur', 'genre', 'langue', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'jouets': {
+        step2: ['marque', 'typeJouet', 'ageRecommandé', 'materiau', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'autre': {
+        step2: ['marque', 'modele', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      }
+    }
+  },
+
+  // ==================== SPORT ====================
+  'sport': {
+    step2: [],
+    step3: [],
+    step4: [],
+    step5: [],
+    subCategories: {
+      'football': {
+        step2: ['marque', 'typeEquipement', 'taille', 'couleur', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'fitness-musculation': {
+        step2: ['marque', 'typeEquipement', 'poids', 'dimensions', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'velos-trotinettes': {
+        step2: ['marque', 'modele', 'tailleRoue', 'vitesses', 'couleur', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'autre': {
+        step2: ['marque', 'modele', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      }
+    }
+  },
+
+  // ==================== SERVICES ====================
   'services': {
-    step2: ['title', 'description', 'reference'],
-    step3: ['price', 'typeOffre'],
-    step4: ['wilaya', 'commune', 'telephone', 'email'],
-    step5: ['images'],
+    step2: [],
+    step3: [],
+    step4: [],
+    step5: [],
     subCategories: {
       'construction-travaux': {
-        step2: ['typeTravaux', 'surface', 'duree'],
-        step3: [],
-        step4: []
+        step2: ['typeTravaux', 'surface', 'duree', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
       'reparation-auto-diagnostic': {
-        step2: ['typeReparation', 'marque', 'probleme'],
-        step3: ['delai'],
-        step4: []
+        step2: ['typeReparation', 'marque', 'probleme', 'delai', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'autre': {
+        step2: ['description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       }
     }
   },
 
-  // ==================== 13. SANTE & BEAUTE ====================
+  // ==================== SANTE & BEAUTE ====================
   'santebeaute': {
-    step2: ['title', 'description', 'etat', 'reference'],
-    step3: ['price', 'typeOffre', 'quantite'],
-    step4: ['wilaya', 'commune', 'telephone'],
-    step5: ['images'],
+    step2: [],
+    step3: [],
+    step4: [],
+    step5: [],
     subCategories: {
       'cosmetiques-beaute': {
-        step2: ['marque', 'typeCosmetique', 'typePeau'],
-        step3: ['quantite'],
-        step4: []
+        step2: ['marque', 'typeCosmetique', 'typePeau', 'quantite', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
       'parfums-deodorants': {
-        step2: ['marque', 'typeParfum', 'familleOlfactive'],
-        step3: ['quantite'],
-        step4: []
+        step2: ['marque', 'typeParfum', 'familleOlfactive', 'quantite', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'autre': {
+        step2: ['marque', 'quantite', 'etat', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       }
     }
   },
 
-  // ==================== 14. EMPLOI ====================
+  // ==================== EMPLOI ====================
   'emploi': {
-    step2: ['title', 'description', 'reference'],
-    step3: ['salaire', 'typeContrat'],
-    step4: ['wilaya', 'commune', 'telephone', 'email'],
-    step5: ['images'],
+    step2: [],
+    step3: [],
+    step4: [],
+    step5: [],
     subCategories: {
       'offres-emploi': {
-        step2: ['poste', 'secteur', 'experienceRequise', 'competences'],
-        step3: ['avantages', 'teletravail'],
-        step4: ['nomSociete']
+        step2: ['poste', 'secteur', 'experienceRequise', 'competences', 'avantages', 'teletravail', 'description'],
+        step3: ['salaire', 'typeContrat'],
+        step4: ['wilaya', 'commune', 'telephone', 'email', 'nomSociete'],
+        step5: ['images']
       },
       'demandes-emploi': {
-        step2: ['posteRecherche', 'secteur', 'experience', 'competences'],
-        step3: ['salaireSouhaite', 'mobilite'],
-        step4: []
-      }
-    }
-  },
-
-  // ==================== 15. VOYAGES ====================
-  'voyages': {
-    step2: ['title', 'description', 'reference'],
-    step3: ['price', 'typeOffre'],
-    step4: ['wilaya', 'commune', 'telephone', 'email'],
-    step5: ['images'],
-    subCategories: {
-      'voyage-organise': {
-        step2: ['destination', 'duree', 'transport', 'hotel'],
-        step3: ['inclusions'],
-        step4: []
+        step2: ['posteRecherche', 'secteur', 'experience', 'competences', 'mobilite', 'description'],
+        step3: ['salaireSouhaite'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
-      'hajj-omra': {
-        step2: ['typePelerinage', 'duree', 'transport', 'hotel'],
-        step3: ['guide'],
-        step4: []
+      'autre': {
+        step2: ['description'],
+        step3: ['salaire', 'typeContrat'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       }
     }
   },
 
-  // ==================== 16. PIECES DETACHEES ====================
-  'pieces-detachees': {
-    step2: ['title', 'description', 'etat', 'reference'],
-    step3: ['price', 'typeOffre', 'echange'],
-    step4: ['wilaya', 'commune', 'telephone'],
-    step5: ['images'],
-    subCategories: {
-      'pieces-automobiles': {
-        step2: ['marque', 'modele', 'typePiece', 'compatibilite'],
-        step3: ['garantie'],
-        step4: []
-      },
-      'pieces-moto': {
-        step2: ['marque', 'modele', 'typePiece', 'compatibilite'],
-        step3: ['garantie'],
-        step4: []
-      }
-    }
-  },
-
-  // ==================== 17. BOUTIQUES ====================
+  // ==================== BOUTIQUES ====================
   'boutiques': {
-    step2: ['title', 'description', 'reference'],
-    step3: ['price', 'typeOffre'],
-    step4: ['wilaya', 'commune', 'telephone', 'email'],
-    step5: ['images'],
+    step2: [],
+    step3: [],
+    step4: [],
+    step5: [],
     subCategories: {
       'agences-immobilieres': {
-        step2: ['nomAgence', 'specialite', 'experience'],
-        step3: [],
-        step4: []
+        step2: ['nomAgence', 'specialite', 'experience', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
       'showroom-automobiles': {
-        step2: ['nomShowroom', 'marques', 'services'],
-        step3: [],
-        step4: []
+        step2: ['nomShowroom', 'marques', 'services', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       },
       'magasin-electromenager': {
-        step2: ['nomMagasin', 'marques', 'garantie'],
-        step3: [],
-        step4: []
+        step2: ['nomMagasin', 'marques', 'garantie', 'description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
+      },
+      'autre': {
+        step2: ['description'],
+        step3: ['price', 'typeOffre'],
+        step4: ['wilaya', 'commune', 'telephone', 'email'],
+        step5: ['images']
       }
     }
   }
 };
 
-// ============ FUNCIONES UTILITARIAS ACTUALIZADAS ============
+// ============ FUNCIONES UTILITARIAS ============
 
-/**
- * Obtener campos para una categoría considerando nivel 2 y nivel 3
- * @param {string} mainCategory - Categoría principal (vehicules, vetements, etc.)
- * @param {string} subCategory - Subcategoría (level2)
- * @param {string} articleType - Artículo (level3)
- * @param {number} step - Step actual (2, 3, 4)
- */
 export const getFieldsForCategory = (mainCategory, subCategory = null, step = null, articleType = null) => {
   if (!mainCategory || !DYNAMIC_FIELDS_CONFIG[mainCategory]) {
     console.warn(`⚠️ Categoría no configurada: ${mainCategory}`);
@@ -567,15 +866,11 @@ export const getFieldsForCategory = (mainCategory, subCategory = null, step = nu
   }
 
   const config = DYNAMIC_FIELDS_CONFIG[mainCategory];
-  
-  // Nivel 1: Configuración base de la categoría
   let activeConfig = { ...config };
   
-  // Nivel 2: Buscar en subCategories
   if (subCategory && config.subCategories?.[subCategory]) {
     activeConfig = { ...activeConfig, ...config.subCategories[subCategory] };
     
-    // Nivel 3: Buscar en articleTypes
     if (articleType && activeConfig.articleTypes?.[articleType]) {
       activeConfig = { ...activeConfig, ...activeConfig.articleTypes[articleType] };
     }
@@ -583,14 +878,9 @@ export const getFieldsForCategory = (mainCategory, subCategory = null, step = nu
 
   if (step) {
     const stepKey = `step${step}`;
-    // Combinar campos base + campos del nivel actual
     const baseFields = config[stepKey] || [];
     const levelFields = activeConfig[stepKey] || [];
-    
-    // Unir y eliminar duplicados
     const allFields = [...new Set([...baseFields, ...levelFields])];
-    
-    console.log(`📋 [${mainCategory}/${subCategory}/${articleType}] Step ${step}:`, allFields);
     return allFields;
   }
 

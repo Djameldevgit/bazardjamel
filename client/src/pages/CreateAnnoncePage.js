@@ -734,7 +734,7 @@ const CreateAnnoncePage = () => {
       </motion.div>
 
       <style jsx>{`
-        .step-content { min-height: 400px; padding: 20px; }
+        .step-content { min-height: 400px; padding: 5px; }
         .step-indicator { background: none; border: none; padding: 0; cursor: pointer; transition: all 0.2s ease; }
         .step-indicator.active .step-icon-wrapper { background: #4f46e5; color: white; transform: scale(1.1); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
         .step-indicator:disabled { opacity: 0.5; cursor: not-allowed; }

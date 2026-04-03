@@ -3,8 +3,9 @@ import React from 'react';
 import BaseCategoryField from './BaseCategoryField';
 
 // Campos específicos para alimentaires (si los hay)
-import MarqueField from '../camposComun/MarqueField';
+ 
 import ModeleField from '../camposComun/ModeleField';
+import MarqueModelVehicule from '../camposComun/MarqueModelVehicule';
 
 const SportFields= (props) => {
   // Campos adicionales específicos para alimentaires
@@ -12,7 +13,7 @@ const SportFields= (props) => {
     // Componentes personalizados
     components: {
       'marque': (
-        <MarqueField
+        <MarqueModelVehicule
           key="marque"
           mainCategory={props.mainCategory}
           subCategory={props.subCategory}

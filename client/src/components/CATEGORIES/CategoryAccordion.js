@@ -1,4 +1,3 @@
-// 📂 components/CATEGORIES/CategoryAccordion.js
 import React, { useState, useEffect, useMemo } from 'react';
 import { Accordion, Form, Badge, Card, Button, Spinner, Alert } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +6,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { getCategoriesForAccordion } from '../../redux/actions/categoryAction';
 
 const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => {
-  const { t } = useTranslation(['categories', 'subcategories']);
+ 
   
   const dispatch = useDispatch();
   const { 
@@ -20,7 +19,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
     accordionError: state.category?.accordionError || null
   }));
 
-  // Estados locales
   const [searchTerm, setSearchTerm] = useState('');
   const [activeMainCategory, setActiveMainCategory] = useState(null);
   const [expandedSubcategories, setExpandedSubcategories] = useState({});
@@ -30,21 +28,18 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
     level2: null
   });
   const [isInitialized, setIsInitialized] = useState(false);
-  const [imageErrors, setImageErrors] = useState({}); // 🆕 Estado para errores de imagen
+  const [imageErrors, setImageErrors] = useState({});
 
-  // 🆕 Manejador de error de imagen
   const handleImageError = (itemId) => {
     setImageErrors(prev => ({ ...prev, [itemId]: true }));
   };
 
-  // 🔄 CARGAR CATEGORÍAS
   useEffect(() => {
     if (accordionCategories.length === 0 && !accordionLoading) {
       dispatch(getCategoriesForAccordion());
     }
   }, [dispatch, accordionCategories.length, accordionLoading]);
 
-  // 🎯 TRANSFORMACIÓN SIMPLIFICADA (con soporte para icon)
   const categoryHierarchy = useMemo(() => {
     if (!accordionCategories || accordionCategories.length === 0) return {};
 
@@ -59,26 +54,23 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
       hierarchy[mainCat.slug] = {
         name: mainCat.name,
         emoji: mainCat.emoji || '📦',
-        icon: mainCat.icon, // 🆕 Incluir icon
+        icon: mainCat.icon,
         levels: hasDeepChildren ? 2 : 1,
         level1: 'type',
         requiresLevel2: hasDeepChildren,
         
-        // Nivel 2
         subcategories: hasChildren ? mainCat.children.map(child => ({
           id: child.slug,
           name: child.name,
           emoji: child.emoji || '📄',
-          icon: child.icon, // 🆕 Incluir icon
+          icon: child.icon,
           hasSublevel: child.children && child.children.length > 0
         })) : [],
         
-        // Nivel 3
         subcategories2: {},
         properties: {}
       };
 
-      // Nivel 3
       if (hasDeepChildren) {
         const level3Map = {};
         mainCat.children.forEach(child => {
@@ -87,11 +79,10 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
               id: grandChild.slug,
               name: grandChild.name,
               emoji: grandChild.emoji || '📋',
-              icon: grandChild.icon // 🆕 Incluir icon
+              icon: grandChild.icon
             }));
           }
         });
-
         hierarchy[mainCat.slug].subcategories2 = level3Map;
         hierarchy[mainCat.slug].properties = level3Map;
       }
@@ -100,18 +91,16 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
     return hierarchy;
   }, [accordionCategories]);
 
-  // 🎨 CATEGORÍAS PRINCIPALES (con icon)
   const categories = useMemo(() => {
     if (!accordionCategories || accordionCategories.length === 0) return [];
     return accordionCategories.map(cat => ({
       id: cat.slug,
       name: cat.name,
       emoji: cat.emoji || '📦',
-      icon: cat.icon // 🆕 Incluir icon
+      icon: cat.icon
     }));
   }, [accordionCategories]);
 
-  // 🎯 FUNCIONES PARA OBTENER ITEMS
   const getCategoryItems = (categoryId) => {
     const category = categoryHierarchy[categoryId];
     return category?.subcategories || [];
@@ -122,13 +111,11 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
     return category?.subcategories2?.[level1Id] || category?.properties?.[level1Id] || [];
   };
 
-  // 🔄 INICIALIZAR CON POSTDATA - MEJORADO
   useEffect(() => {
     if (!isInitialized && !accordionLoading && categories.length > 0 && categoryHierarchy) {
       const { categorie, subCategory, articleType } = postData;
       
       if (categorie || subCategory) {
-        // Buscar categoría principal
         let mainCategory = categories.find(cat => cat.id === categorie || cat.name === categorie);
         
         if (mainCategory) {
@@ -140,14 +127,12 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
             let level1Item = null;
             let level2Item = null;
 
-            // Intento 1: buscar nivel2 con subCategory
             if (subCategory) {
               level1Item = level1Items.find(item => 
                 item.id === subCategory || item.name === subCategory
               );
             }
 
-            // Intento 2: si no se encontró nivel2, buscar como nivel3 (artículo)
             if (!level1Item && subCategory) {
               for (const l1 of level1Items) {
                 if (l1.hasSublevel) {
@@ -156,7 +141,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
                     item.id === subCategory || item.name === subCategory
                   );
                   if (level2Item) {
-                    level1Item = l1; // el nivel2 es este
+                    level1Item = l1;
                     break;
                   }
                 }
@@ -170,7 +155,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
                 level2: null
               };
 
-              // Buscar artículo (nivel3) si existe
               if (articleType || (level2Item && level2Item.id)) {
                 const targetArticle = articleType || (level2Item ? level2Item.id : null);
                 if (targetArticle && level1Item.hasSublevel) {
@@ -180,7 +164,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
                   );
                   if (foundLevel2) {
                     newSelected.level2 = foundLevel2.id;
-                    // 🔥 FORZAR EXPANSIÓN DE LA SUBCATEGORÍA
                     setExpandedSubcategories(prev => ({
                       ...prev,
                       [`${mainCategory.id}-${level1Item.id}`]: true
@@ -199,12 +182,10 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
     }
   }, [accordionLoading, categories, categoryHierarchy, postData, isInitialized]);
 
-  // 🎯 HANDLER PARA SUBCATEGORÍA (NIVEL 2)
   const handleSubcategoryClick = (categoryId, level1Id, level1Item) => {
     const category = categoryHierarchy[categoryId];
     if (!category) return;
 
-    // Actualizar selección
     const newSelected = {
       category: categoryId,
       level1: level1Id,
@@ -212,9 +193,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
     };
     setSelectedItems(newSelected);
 
-    // Para categorías SIN subniveles (2 niveles totales)
     if (!level1Item.hasSublevel) {
-      // 🔄 Enviar slugs al padre
       handleChangeInput({ target: { name: 'categorie', value: categoryId } });
       handleChangeInput({ target: { name: 'subCategory', value: level1Id } });
       handleChangeInput({ target: { name: 'articleType', value: level1Id } });
@@ -223,39 +202,33 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
       return;
     }
 
-    // Para categorías CON subniveles (3 niveles)
     const key = `${categoryId}-${level1Id}`;
     setExpandedSubcategories(prev => ({
       ...prev,
       [key]: !prev[key]
     }));
 
-    // Actualizar temporalmente articleType
     handleChangeInput({ target: { name: 'articleType', value: level1Id } });
   };
 
-  // 🎯 HANDLER PARA ARTÍCULO (NIVEL 3)
   const handleLevel2Select = (categoryId, level1Id, level2Id) => {
     const category = categoryHierarchy[categoryId];
     if (!category || !level1Id || !level2Id) return;
 
-    // Actualizar estado local
     setSelectedItems({
       category: categoryId,
       level1: level1Id,
       level2: level2Id
     });
 
-    // 🔥 Asegurar que la subcategoría esté expandida
     setExpandedSubcategories(prev => ({
       ...prev,
       [`${categoryId}-${level1Id}`]: true
     }));
 
-    // 🔄 Enviar slugs al padre
     handleChangeInput({ target: { name: 'categorie', value: categoryId } });
-    handleChangeInput({ target: { name: 'subCategory', value: level1Id } }); // slug nivel 2
-    handleChangeInput({ target: { name: 'articleType', value: level2Id } }); // slug nivel 3
+    handleChangeInput({ target: { name: 'subCategory', value: level1Id } });
+    handleChangeInput({ target: { name: 'articleType', value: level2Id } });
 
     setTimeout(() => onComplete && onComplete(), 150);
   };
@@ -270,7 +243,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
     handleChangeInput({ target: { name: 'articleType', value: '' } });
   };
 
-  // 🎨 RENDERIZAR CONTENIDO
   const renderCategoryContent = (categoryId) => {
     const category = categoryHierarchy[categoryId];
     if (!category) return <div className="text-center p-3 text-muted">Données non disponibles</div>;
@@ -282,21 +254,18 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
       <div className="category-content">
         <div className="subcategories-list">
           {items.map((item) => {
-            const isSelected = selectedItems.category === categoryId &&
-              selectedItems.level1 === item.id;
+            const isSelected = selectedItems.category === categoryId && selectedItems.level1 === item.id;
             const hasSublevel = item.hasSublevel;
             const isExpanded = expandedSubcategories[`${categoryId}-${item.id}`];
 
             return (
               <div key={item.id} className="subcategory-wrapper">
-                {/* NIVEL 2 */}
                 <div
                   className={`subcategory-item ${isSelected ? 'selected' : ''} ${hasSublevel ? 'has-sublevel' : ''}`}
                   onClick={() => handleSubcategoryClick(categoryId, item.id, item)}
                 >
                   <div className="subcategory-content">
                     <div className="subcategory-icon">
-                      {/* 🆕 Imagen si existe, sino emoji */}
                       {item.icon && !imageErrors[item.id] ? (
                         <img 
                           src={item.icon} 
@@ -316,14 +285,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
 
                     <div className="subcategory-info">
                       <div className="subcategory-name">{item.name}</div>
-                      {isSelected && !hasSublevel && (
-                        <div className="selection-hint">
-                          <small className="text-success">
-                            <CheckCircle size={12} className="me-1" />
-                            Prêt pour l'étape 2
-                          </small>
-                        </div>
-                      )}
                     </div>
 
                     <div className="subcategory-actions">
@@ -346,16 +307,9 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
                   )}
                 </div>
 
-                {/* NIVEL 3 */}
                 {hasSublevel && isExpanded && (
                   <div className="level2-container">
                     <div className="level2-content">
-                      <div className="level2-header">
-                        <h6 className="level2-title">
-                          Sélectionnez une option pour <strong>{item.name}</strong>
-                        </h6>
-                      </div>
-
                       {(() => {
                         const level2Items = getLevel2Items(categoryId, item.id);
                         if (level2Items.length === 0) {
@@ -378,7 +332,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
                                 }}
                               >
                                 <div className="level2-item-content">
-                                  {/* 🆕 Imagen si existe, sino emoji */}
                                   {level2Item.icon && !imageErrors[level2Item.id] ? (
                                     <img 
                                       src={level2Item.icon} 
@@ -410,138 +363,17 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
     );
   };
 
-  // 🎨 RENDERIZAR PANEL DE SELECCIÓN
-  const renderSelectionPanel = () => {
-    if (!selectedItems.category) return null;
-
-    const category = categoryHierarchy[selectedItems.category];
-    if (!category) return null;
-
-    const items = getCategoryItems(selectedItems.category);
-    const getLevel1Name = () => {
-      const item = items.find(item => item.id === selectedItems.level1);
-      return item?.name || '';
-    };
-
-    const getLevel2Name = () => {
-      if (!selectedItems.level2) return '';
-      const level2Items = getLevel2Items(selectedItems.category, selectedItems.level1);
-      const item = level2Items.find(item => item.id === selectedItems.level2);
-      return item?.name || '';
-    };
-
-    const categoryName = categories.find(c => c.id === selectedItems.category)?.name;
-
-    return (
-      <div className="selection-panel mt-4">
-        <Card.Header className="selection-header">
-          <div className="d-flex align-items-center justify-content-between">
-            <div className="d-flex align-items-center">
-              <CheckCircle className="text-success me-2" size={18} />
-              <strong>Sélection en cours</strong>
-            </div>
-            <Badge bg={selectedItems.level2 ? 'success' : selectedItems.level1 ? 'warning' : 'secondary'}>
-              {selectedItems.level2 ? 'Complet' : selectedItems.level1 ? 'En cours' : 'Début'}
-            </Badge>
-          </div>
-        </Card.Header>
-
-          <div className="selection-path">
-            <div className="path-step active">
-              <div className="step-icon">
-                {/* Podríamos usar imagen aquí también, pero por simplicidad mantenemos emoji */}
-                {categories.find(c => c.id === selectedItems.category)?.emoji}
-              </div>
-              <div className="step-info">
-                <div className="step-label">Catégorie</div>
-                <div className="step-value">{categoryName}</div>
-              </div>
-            </div>
-
-            {selectedItems.level1 && (
-              <>
-                <div className="path-arrow">→</div>
-                <div className={`path-step ${selectedItems.level2 ? 'active' : 'current'}`}>
-                  <div className="step-icon">
-                    {items.find(item => item.id === selectedItems.level1)?.emoji}
-                  </div>
-                  <div className="step-info">
-                    <div className="step-label">
-                      {category.levels === 1 ? 'Sous-catégorie' : 'Type'}
-                    </div>
-                    <div className="step-value">{getLevel1Name()}</div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {selectedItems.level2 && (
-              <>
-                <div className="path-arrow">→</div>
-                <div className="path-step active final">
-                  <div className="step-icon">
-                    {getLevel2Name() ? '✅' : '📋'}
-                  </div>
-                  <div className="step-info">
-                    <div className="step-label">Sous-catégorie</div>
-                    <div className="step-value">{getLevel2Name()}</div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="completion-status mt-3">
-            {selectedItems.level2 ? (
-              <div className="alert alert-success py-2 mb-0">
-                <div className="d-flex align-items-center">
-                  <CheckCircle className="me-2" size={20} />
-                  <div>
-                    <strong>Sélection complète!</strong>
-                    <div className="small">Prêt pour l'étape 2</div>
-                  </div>
-                </div>
-              </div>
-            ) : selectedItems.level1 ? (
-              <div className="alert alert-warning py-2 mb-0">
-                <div className="d-flex align-items-center">
-                  <ChevronDown className="me-2" />
-                  <div>
-                    <strong>Sélectionnez une option ci-dessus</strong>
-                    <div className="small">Cliquez sur une option pour continuer</div>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          <Button
-            variant="outline-danger"
-            size="sm"
-            onClick={handleResetSelection}
-            className="w-100 mt-3"
-          >
-            <i className="fas fa-times me-2"></i>
-            Changer de catégorie
-          </Button>
-      </div>
-    );
-  };
-
-  // 🔍 FILTRAR CATEGORÍAS
   const filteredCategories = categories.filter(cat =>
     cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cat.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cat.emoji.includes(searchTerm)
   );
 
-  // 🆕 MOSTRAR ESTADOS DE CARGA
   if (accordionLoading && categories.length === 0) {
     return (
       <div className="text-center py-5">
         <Spinner animation="border" variant="primary" />
         <p className="mt-2">Chargement des catégories...</p>
-        <small className="text-muted">Depuis le backend</small>
       </div>
     );
   }
@@ -559,8 +391,7 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
               variant="outline-primary"
               onClick={() => dispatch(getCategoriesForAccordion())}
             >
-              <i className="fas fa-redo me-1"></i>
-              Réessayer
+              <i className="fas fa-redo me-1"></i> Réessayer
             </Button>
           </div>
         </div>
@@ -574,21 +405,18 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
         <div className="empty-icon mb-3">📭</div>
         <h5 className="mb-2">Aucune catégorie disponible</h5>
         <p className="text-muted mb-3">Les catégories n'ont pas pu être chargées</p>
-        <div className="d-flex gap-2 justify-content-center">
-          <Button 
-            variant="primary"
-            onClick={() => dispatch(getCategoriesForAccordion())}
-          >
-            <i className="fas fa-sync-alt me-1"></i> Charger les catégories
-          </Button>
-        </div>
+        <Button 
+          variant="primary"
+          onClick={() => dispatch(getCategoriesForAccordion())}
+        >
+          <i className="fas fa-sync-alt me-1"></i> Charger les catégories
+        </Button>
       </Card>
     );
   }
 
   return (
     <div className="nested-category-accordion">
-      {/* Barra de búsqueda */}
       <div className="search-container mb-4">
         <Form.Control
           type="text"
@@ -599,12 +427,10 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
         />
       </div>
 
-      {/* Contador de categorías */}
       <div className="category-count mb-3 text-muted small">
-        <span className="badge bg-primary rounded-pill">{filteredCategories.length}</span> catégories sur {categories.length}
+        <span className="badge bg-primary rounded-pill">{filteredCategories.length}</span> catégories
       </div>
 
-      {/* Accordion principal */}
       <Accordion activeKey={activeMainCategory} className="main-accordion">
         {filteredCategories.map((category) => (
           <Accordion.Item
@@ -618,7 +444,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
             >
               <div className="main-category-content">
                 <div className="category-main-info">
-                  {/* 🆕 Imagen si existe, sino emoji */}
                   {category.icon && !imageErrors[category.id] ? (
                     <img 
                       src={category.icon} 
@@ -652,19 +477,25 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
         ))}
       </Accordion>
 
-      {/* Panel de selección */}
-      {renderSelectionPanel()}
+      {/* Botón para cambiar de categoría - simplificado */}
+      {selectedItems.category && (
+        <div className="text-center mt-4">
+          <Button
+            variant="outline-danger"
+            size="sm"
+            onClick={handleResetSelection}
+          >
+            <i className="fas fa-times me-2"></i>
+            Changer de catégorie
+          </Button>
+        </div>
+      )}
 
       <style jsx>{`
         .nested-category-accordion {
           width: 100%;
           max-width: 800px;
           margin: 0 auto;
-        }
-        
-        /* Barra de búsqueda */
-        .search-container {
-          position: relative;
         }
         
         .search-input {
@@ -682,10 +513,8 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
         .search-input:focus {
           border-color: #0d6efd;
           box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
-          background-position: 15px center;
         }
         
-        /* Accordion principal */
         .main-accordion {
           border-radius: 10px;
           overflow: hidden;
@@ -705,7 +534,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
         .main-category-header {
           padding: 20px 0;
           background: white;
-          transition: all 0.2s ease;
         }
         
         .main-category-header:hover {
@@ -716,12 +544,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           padding: 0;
           background: transparent;
           box-shadow: none !important;
-          color: inherit;
-        }
-        
-        .main-category-header .accordion-button:not(.collapsed) {
-          background: transparent;
-          color: inherit;
         }
         
         .main-category-content {
@@ -743,7 +565,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           min-width: 40px;
         }
         
-        /* 🆕 Estilos para imágenes */
         .category-image {
           width: 40px;
           height: 40px;
@@ -768,18 +589,12 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           padding: 4px 8px;
         }
         
-        .expand-icon {
-          color: #6c757d;
-          transition: transform 0.3s ease;
-        }
-        
         .main-category-body {
           padding: 0;
           background: #f8f9fa;
           border-top: 1px solid #e9ecef;
         }
         
-        /* Contenido de categoría */
         .category-content {
           padding: 20px 0;
         }
@@ -795,7 +610,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           border-radius: 8px;
           overflow: hidden;
           border: 1px solid #e9ecef;
-          transition: all 0.2s ease;
         }
         
         .subcategory-wrapper:hover {
@@ -807,7 +621,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           padding: 15px 0;
           cursor: pointer;
           position: relative;
-          transition: all 0.2s ease;
         }
         
         .subcategory-item:hover {
@@ -838,7 +651,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           font-size: 1.8rem;
         }
         
-        /* 🆕 Estilos para imágenes de subcategoría */
         .item-image {
           width: 40px;
           height: 40px;
@@ -872,22 +684,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           color: #212529;
         }
         
-        .selection-hint {
-          margin-top: 5px;
-        }
-        
-        .subcategory-actions {
-          color: #6c757d;
-        }
-        
-        .chevron {
-          transition: transform 0.3s ease;
-        }
-        
-        .chevron.expanded {
-          transform: rotate(180deg);
-        }
-        
         .subcategory-badge {
           position: absolute;
           top: 10px;
@@ -899,7 +695,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           padding: 2px 6px;
         }
         
-        /* Nivel 3 - Contenido expandido */
         .level2-container {
           background: #f1f3f4;
           border-top: 1px solid #dee2e6;
@@ -908,19 +703,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
         
         .level2-content {
           padding: 20px 0;
-        }
-        
-        .level2-header {
-          margin-bottom: 15px;
-          padding-bottom: 10px;
-          border-bottom: 1px dashed #dee2e6;
-        }
-        
-        .level2-title {
-          font-size: 0.9rem;
-          font-weight: 600;
-          color: #495057;
-          margin: 0;
         }
         
         .level2-items {
@@ -935,7 +717,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           border-radius: 6px;
           border: 1px solid #e9ecef;
           cursor: pointer;
-          transition: all 0.2s ease;
         }
         
         .level2-item:hover {
@@ -959,7 +740,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           min-width: 30px;
         }
         
-        /* 🆕 Estilos para imágenes de nivel 3 */
         .level2-image {
           width: 30px;
           height: 30px;
@@ -973,77 +753,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           flex-grow: 1;
         }
         
-        /* Panel de selección */
-        .selection-panel {
-          border: 2px solid #0d6efd;
-          animation: fadeIn 0.5s ease;
-        }
-        
-        .selection-header {
-          background: linear-gradient(135deg, #0d6efd, #6610f2);
-          color: white;
-          border: none;
-        }
-        
-        .selection-path {
-          display: flex;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 10px;
-          padding: 15px 0;
-          background: #f8f9fa;
-          border-radius: 8px;
-        }
-        
-        .path-step {
-          display: flex;
-          align-items: center;
-          padding: 10px 0;
-          background: white;
-          border-radius: 6px;
-          border: 1px solid #dee2e6;
-          min-width: 180px;
-        }
-        
-        .path-step.active {
-          border-color: #0d6efd;
-          background: #e3f2fd;
-        }
-        
-        .path-step.current {
-          border-color: #ffc107;
-          background: #fff3cd;
-        }
-        
-        .path-step.final {
-          border-color: #198754;
-          background: #d1e7dd;
-        }
-        
-        .step-icon {
-          font-size: 1.5rem;
-          margin-right: 10px;
-          min-width: 30px;
-        }
-        
-        .step-label {
-          font-size: 0.75rem;
-          color: #6c757d;
-          margin-bottom: 2px;
-        }
-        
-        .step-value {
-          font-size: 0.9rem;
-          font-weight: 500;
-          color: #212529;
-        }
-        
-        .path-arrow {
-          color: #6c757d;
-          font-weight: bold;
-        }
-        
-        /* Animaciones */
         @keyframes slideDown {
           from {
             opacity: 0;
@@ -1057,18 +766,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           }
         }
         
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        /* Responsive */
         @media (max-width: 768px) {
           .main-category-content {
             flex-direction: column;
@@ -1084,20 +781,6 @@ const CategoryAccordion = ({ postData = {}, handleChangeInput, onComplete }) => 
           .category-status {
             width: 100%;
             justify-content: space-between;
-          }
-          
-          .selection-path {
-            flex-direction: column;
-            align-items: stretch;
-          }
-          
-          .path-step {
-            min-width: 100%;
-          }
-          
-          .path-arrow {
-            transform: rotate(90deg);
-            align-self: center;
           }
           
           .subcategory-content {

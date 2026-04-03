@@ -7,7 +7,7 @@ import { getFieldsForCategory } from './FieldConfig';
 // 🆕 IMPORTAR TODOS LOS COMPONENTES ESPECÍFICOS
 import AlimentairesField from './specificFields/AlimentairesFields';
 import VehiculesField from './specificFields/VehiculesFields';
-import ImmobiliersField from './specificFields/ImmobiliersFields';
+import ImmobiliersField from './specificFields/ImmobiliersFields'; 
 import TelephonesField from './specificFields/TelephonesFields';
 import VetementsField from './specificFields/VetementsFields';
 import ElectromenagerField from './specificFields/ElectromenagerFields';
@@ -56,14 +56,18 @@ const formatDisplayName = (id) => {
 };
 
 // Emojis por defecto
+// 📂 components/CATEGORIES/DynamicFieldManager.js
+// CORREGIR la función getDefaultEmoji (línea ~56)
+
+// Emojis por defecto - CORREGIDO
 const getDefaultEmoji = (categoryId) => {
   const emojis = {
     'immobilier': '🏠',
     'vehicules': '🚗',
-    'telephones': '📱',
+    'telephone': '📱',        // ← CAMBIADO: 'telephones' → 'telephone'
     'informatique': '💻',
     'electromenager': '🔌',
-    'piecesDetachees': '⚙️',
+    'pieces-detachees': '⚙️', // ← CAMBIADO: 'piecesDetachees' → 'pieces-detachees'
     'vetements': '👕',
     'alimentaires': '🍎',
     'santebeaute': '💄',
