@@ -24,6 +24,23 @@ const TitleField = ({ postData, handleChangeInput }) => {
   );
 };
 
+// Description
+const DescriptionField = ({ postData, handleChangeInput }) => {
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Description</label>
+      <textarea
+        name="description"
+        className="form-control"
+        rows="4"
+        placeholder="Décrivez votre article..."
+        value={postData?.description || ''}
+        onChange={handleChangeInput}
+      />
+    </div>
+  );
+};
+
 // Marque
 const MarqueField = ({ postData, handleChangeInput }) => {
   const marques = [
@@ -81,8 +98,7 @@ const CouleurField = ({ postData, handleChangeInput }) => {
 const MatiereField = ({ postData, handleChangeInput }) => {
   const matieres = [
     'Coton', 'Polyester', 'Laine', 'Soie', 'Lin', 'Cuir', 'Synthétique',
-    'Nylon', 'Spandex', 'Acrylique', 'Velours', 'Denim', 'Tweed',
-    'Oro', 'Plata', 'Acero', 'Titanio', 'Algodón', 'Piel', 'Plástico'
+    'Nylon', 'Spandex', 'Acrylique', 'Velours', 'Denim', 'Tweed'
   ];
   
   return (
@@ -127,6 +143,146 @@ const EtatField = ({ postData, handleChangeInput }) => {
 };
 
 // ============================================
+// NUEVOS CAMPOS FALTANTES
+// ============================================
+
+// Type de vêtement
+const TypeVetementField = ({ postData, handleChangeInput }) => {
+  const typesVetements = [
+    'T-shirt', 'Chemise', 'Polo', 'Pull', 'Sweat', 'Veste', 'Manteau',
+    'Pantalon', 'Jean', 'Short', 'Jupe', 'Robe', 'Combinaison',
+    'Sous-vêtement', 'Pyjama', 'Sport', 'Costume', 'Blazer', 'Gilet',
+    'Veste en cuir', 'Doudoune', 'Parka', 'Imperméable', 'Legging',
+    'Survêtement', 'Maillot de bain', 'Cravate', 'Écharpe', 'Gants'
+  ];
+  
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Type de vêtement</label>
+      <select
+        name="typeVetement"
+        className="form-control"
+        value={postData?.typeVetement || ''}
+        onChange={handleChangeInput}
+      >
+        <option value="">Sélectionner le type de vêtement</option>
+        {typesVetements.map(type => (
+          <option key={type} value={type}>{type}</option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
+// Type de chaussure
+const TypeChaussureField = ({ postData, handleChangeInput }) => {
+  const typesChaussures = [
+    'Baskets', 'Running', 'Chaussures de ville', 'Bottines', 'Boots',
+    'Sandales', 'Tongs', 'Mocassins', 'Espadrilles', 'Chaussons',
+    'Chaussures de sport', 'Chaussures de randonnée'
+  ];
+  
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Type de chaussure</label>
+      <select
+        name="typeChaussure"
+        className="form-control"
+        value={postData?.typeChaussure || ''}
+        onChange={handleChangeInput}
+      >
+        <option value="">Sélectionner le type</option>
+        {typesChaussures.map(type => (
+          <option key={type} value={type}>{type}</option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
+// Type de lunette
+const TypeLunetteField = ({ postData, handleChangeInput }) => {
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Type de lunette</label>
+      <select
+        name="typeLunette"
+        className="form-control"
+        value={postData?.typeLunette || ''}
+        onChange={handleChangeInput}
+      >
+        <option value="">Sélectionner</option>
+        <option value="Lunettes de soleil">Lunettes de soleil</option>
+        <option value="Lunettes de vue">Lunettes de vue</option>
+        <option value="Lunettes de lecture">Lunettes de lecture</option>
+        <option value="Lunettes de sécurité">Lunettes de sécurité</option>
+      </select>
+    </div>
+  );
+};
+
+// Type de bijou
+const TypeBijouField = ({ postData, handleChangeInput }) => {
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Type de bijou</label>
+      <select
+        name="typeBijou"
+        className="form-control"
+        value={postData?.typeBijou || ''}
+        onChange={handleChangeInput}
+      >
+        <option value="">Sélectionner</option>
+        <option value="Bague">Bague</option>
+        <option value="Collier">Collier</option>
+        <option value="Bracelet">Bracelet</option>
+        <option value="Boucles d'oreilles">Boucles d'oreilles</option>
+        <option value="Broche">Broche</option>
+      </select>
+    </div>
+  );
+};
+
+// Type de tenue professionnelle
+const TypeTenueField = ({ postData, handleChangeInput }) => {
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Type de tenue</label>
+      <select
+        name="typeTenue"
+        className="form-control"
+        value={postData?.typeTenue || ''}
+        onChange={handleChangeInput}
+      >
+        <option value="">Sélectionner</option>
+        <option value="Uniforme médical">Uniforme médical</option>
+        <option value="Uniforme d'école">Uniforme d'école</option>
+        <option value="Tenue de cuisine">Tenue de cuisine</option>
+        <option value="Tenue d'usine">Tenue d'usine</option>
+        <option value="Tenue de bureau">Tenue de bureau</option>
+      </select>
+    </div>
+  );
+};
+
+// Dimensions (sacs, valises)
+const DimensionsField = ({ postData, handleChangeInput }) => {
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Dimensions</label>
+      <input
+        type="text"
+        name="dimensions"
+        className="form-control"
+        placeholder="Ex: 40x30x20 cm"
+        value={postData?.dimensions || ''}
+        onChange={handleChangeInput}
+      />
+    </div>
+  );
+};
+
+// ============================================
 // CAMPOS PARA VÊTEMENTS
 // ============================================
 
@@ -152,7 +308,7 @@ const TailleVetementField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Taille (chaussures)
+// Pointure (chaussures)
 const PointureField = ({ postData, handleChangeInput }) => {
   const pointures = Array.from({ length: 20 }, (_, i) => (i + 35).toString());
   
@@ -462,6 +618,7 @@ const VetementsField = (props) => {
   const customComponents = {
     // Campos comunes
     'title': <TitleField {...props} />,
+    'description': <DescriptionField {...props} />,
     'marque': <MarqueField {...props} />,
     'couleur': <CouleurField {...props} />,
     'matiere': <MatiereField {...props} />,
@@ -469,9 +626,13 @@ const VetementsField = (props) => {
     'genre': <GenreField {...props} />,
     
     // Campos para vêtements
+    'typeVetement': <TypeVetementField {...props} />,
     'taille': <TailleVetementField {...props} />,
-    'pointure': <PointureField {...props} />,
     'age': <AgeField {...props} />,
+    
+    // Campos para chaussures
+    'typeChaussure': <TypeChaussureField {...props} />,
+    'pointure': <PointureField {...props} />,
     
     // Campos para bijoux & montres
     'materiau': <MateriauField {...props} />,
@@ -482,12 +643,18 @@ const VetementsField = (props) => {
     'etancheite': <EtancheiteField {...props} />,
     
     // Campos para lunettes
+    'typeLunette': <TypeLunetteField {...props} />,
     'monture': <MontureField {...props} />,
     'protection': <ProtectionField {...props} />,
     'typeVerre': <TypeVerreField {...props} />,
     
     // Campos para sacs
-    'typeSac': <TypeSacField {...props} />
+    'typeSac': <TypeSacField {...props} />,
+    'dimensions': <DimensionsField {...props} />,
+    
+    // Otros
+    'typeBijou': <TypeBijouField {...props} />,
+    'typeTenue': <TypeTenueField {...props} />
   };
   
   const additionalFields = {

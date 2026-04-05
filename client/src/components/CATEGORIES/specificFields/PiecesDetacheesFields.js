@@ -1,37 +1,102 @@
 // 📂 components/CATEGORIES/specificFields/PiecesDetacheesField.js
 import React from 'react';
+import Select from 'react-select';
 import BaseCategoryField from './BaseCategoryField';
 
 // ============================================
-// CAMPOS ESPECÍFICOS DE PIÈCES DÉTACHÉES (STEP 2)
+// CAMPOS COMUNES PARA TODAS LAS CATEGORÍAS
+// ============================================
+
+// Titre
+const TitleField = ({ postData, handleChangeInput }) => {
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Titre</label>
+      <input
+        type="text"
+        name="title"
+        className="form-control"
+        placeholder="Titre de l'annonce"
+        value={postData?.title || ''}
+        onChange={handleChangeInput}
+      />
+    </div>
+  );
+};
+
+// Description
+const DescriptionField = ({ postData, handleChangeInput }) => {
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">
+        Description <span className="text-danger">*</span>
+      </label>
+      <textarea
+        name="description"
+        className="form-control"
+        rows="4"
+        placeholder="Décrivez la pièce détachée en détail..."
+        value={postData?.description || ''}
+        onChange={handleChangeInput}
+        required
+      />
+      <small className="text-muted">Décrivez l'état, la compatibilité, etc.</small>
+    </div>
+  );
+};
+
+// ============================================
+// CAMPOS ESPECÍFICOS PARA PIÈCES DÉTACHÉES
 // ============================================
 
 // Marque
 const MarqueField = ({ postData, handleChangeInput }) => {
   const marques = [
-    'Renault', 'Peugeot', 'Citroën', 'Volkswagen', 'BMW', 'Mercedes',
-    'Audi', 'Toyota', 'Hyundai', 'Kia', 'Ford', 'Fiat', 'Dacia',
-    'Nissan', 'Honda', 'Mazda', 'Mitsubishi', 'Suzuki', 'Volvo',
-    'Porsche', 'Jaguar', 'Land Rover', 'Mini', 'Smart', 'Opel',
-    'Seat', 'Skoda', 'Alfa Romeo', 'Ferrari', 'Lamborghini',
-    'Yamaha', 'Kawasaki', 'Suzuki Moto', 'Honda Moto', 'BMW Moto',
-    'Ducati', 'Aprilia', 'KTM', 'Harley Davidson', 'Autre'
+    { value: 'Renault', label: 'Renault' },
+    { value: 'Peugeot', label: 'Peugeot' },
+    { value: 'Citroën', label: 'Citroën' },
+    { value: 'Volkswagen', label: 'Volkswagen' },
+    { value: 'BMW', label: 'BMW' },
+    { value: 'Mercedes', label: 'Mercedes' },
+    { value: 'Audi', label: 'Audi' },
+    { value: 'Toyota', label: 'Toyota' },
+    { value: 'Hyundai', label: 'Hyundai' },
+    { value: 'Kia', label: 'Kia' },
+    { value: 'Ford', label: 'Ford' },
+    { value: 'Fiat', label: 'Fiat' },
+    { value: 'Dacia', label: 'Dacia' },
+    { value: 'Nissan', label: 'Nissan' },
+    { value: 'Honda', label: 'Honda' },
+    { value: 'Mazda', label: 'Mazda' },
+    { value: 'Volvo', label: 'Volvo' },
+    { value: 'Porsche', label: 'Porsche' },
+    { value: 'Yamaha', label: 'Yamaha (Moto)' },
+    { value: 'Kawasaki', label: 'Kawasaki (Moto)' },
+    { value: 'Suzuki', label: 'Suzuki' },
+    { value: 'Autre', label: 'Autre' }
   ];
+  
+  const selectedOption = marques.find(opt => opt.value === postData?.marque) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'marque', value: selected?.value || '' }
+    });
+  };
   
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Marque</label>
-      <select
+      <Select
         name="marque"
-        className="form-control"
-        value={postData?.marque || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner la marque</option>
-        {marques.map(m => (
-          <option key={m} value={m}>{m}</option>
-        ))}
-      </select>
+        options={marques}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner la marque..."
+        isClearable
+      />
     </div>
   );
 };
@@ -56,22 +121,29 @@ const ModeleField = ({ postData, handleChangeInput }) => {
 // Année
 const AnneeField = ({ postData, handleChangeInput }) => {
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 30 }, (_, i) => currentYear - i);
+  const years = Array.from({ length: 30 }, (_, i) => ({ value: (currentYear - i).toString(), label: (currentYear - i).toString() }));
+  
+  const selectedOption = years.find(opt => opt.value === postData?.annee) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'annee', value: selected?.value || '' }
+    });
+  };
   
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Année du véhicule</label>
-      <select
+      <Select
         name="annee"
-        className="form-control"
-        value={postData?.annee || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner l'année</option>
-        {years.map(year => (
-          <option key={year} value={year}>{year}</option>
-        ))}
-      </select>
+        options={years}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner l'année..."
+        isClearable
+      />
     </div>
   );
 };
@@ -79,88 +151,144 @@ const AnneeField = ({ postData, handleChangeInput }) => {
 // Type de pièce
 const TypePieceField = ({ postData, handleChangeInput }) => {
   const typesPiece = [
-    'Moteur', 'Boîte de vitesse', 'Embrayage', 'Freins', 'Amortisseurs',
-    'Alternateur', 'Démarreur', 'Batterie', 'Pneu', 'Jante',
-    'Pare-chocs', 'Rétroviseur', 'Phares', 'Feux arrière',
-    'Calandre', 'Capot', 'Porte', 'Vitre', 'Siège', 'Volant',
-    'Tableau de bord', 'Climatisation', 'Radiateur', 'Échappement',
-    'Filtre à huile', 'Filtre à air', 'Courroie de distribution',
-    'Pompe à eau', 'Injecteur', 'Piston', 'Segment', 'Joint de culasse',
-    'Kit de distribution', 'Cardan', 'Rotule', 'Biellette de direction',
-    'Capteur', 'Calculateur', 'Sonde lambda', 'Autre'
+    { value: 'Moteur', label: '🔧 Moteur' },
+    { value: 'Boîte de vitesse', label: '⚙️ Boîte de vitesse' },
+    { value: 'Embrayage', label: '🔧 Embrayage' },
+    { value: 'Freins', label: '🛑 Freins' },
+    { value: 'Amortisseurs', label: '🔧 Amortisseurs' },
+    { value: 'Alternateur', label: '⚡ Alternateur' },
+    { value: 'Démarreur', label: '🔋 Démarreur' },
+    { value: 'Batterie', label: '🔋 Batterie' },
+    { value: 'Pneu', label: '🛞 Pneu' },
+    { value: 'Jante', label: '🛞 Jante' },
+    { value: 'Pare-chocs', label: '🚗 Pare-chocs' },
+    { value: 'Rétroviseur', label: '🪞 Rétroviseur' },
+    { value: 'Phares', label: '💡 Phares' },
+    { value: 'Feux arrière', label: '💡 Feux arrière' },
+    { value: 'Capot', label: '🚗 Capot' },
+    { value: 'Porte', label: '🚪 Porte' },
+    { value: 'Siège', label: '🪑 Siège' },
+    { value: 'Volant', label: '🚗 Volant' },
+    { value: 'Climatisation', label: '❄️ Climatisation' },
+    { value: 'Radiateur', label: '🌡️ Radiateur' },
+    { value: 'Échappement', label: '💨 Échappement' },
+    { value: 'Filtre à huile', label: '🔧 Filtre à huile' },
+    { value: 'Filtre à air', label: '🔧 Filtre à air' },
+    { value: 'Courroie de distribution', label: '⛓️ Courroie de distribution' },
+    { value: 'Calculateur', label: '💻 Calculateur' },
+    { value: 'Autre', label: '📦 Autre' }
   ];
+  
+  const selectedOption = typesPiece.find(opt => opt.value === postData?.typePiece) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typePiece', value: selected?.value || '' }
+    });
+  };
   
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Type de pièce</label>
-      <select
-        name="type_piece"
-        className="form-control"
-        value={postData?.type_piece || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner le type</option>
-        {typesPiece.map(t => (
-          <option key={t} value={t}>{t}</option>
-        ))}
-      </select>
+      <Select
+        name="typePiece"
+        options={typesPiece}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type de pièce..."
+        isClearable
+      />
     </div>
   );
 };
 
 // État
 const EtatField = ({ postData, handleChangeInput }) => {
+  const etatOptions = [
+    { value: 'Neuf', label: '🆕 Neuf' },
+    { value: 'Neuf (emballé)', label: '📦 Neuf (emballé)' },
+    { value: 'Comme neuf', label: '✨ Comme neuf' },
+    { value: 'Très bon état', label: '💪 Très bon état' },
+    { value: 'Bon état', label: '✅ Bon état' },
+    { value: 'État moyen', label: '⚠️ État moyen' },
+    { value: 'Reconditionné', label: '🔧 Reconditionné' },
+    { value: 'Pour réparation', label: '🔨 Pour réparation' }
+  ];
+  
+  const selectedOption = etatOptions.find(opt => opt.value === postData?.etat) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'etat', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">État</label>
-      <select
+      <Select
         name="etat"
-        className="form-control"
-        value={postData?.etat || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Neuf">Neuf</option>
-        <option value="Neuf (emballé)">Neuf (emballé)</option>
-        <option value="Comme neuf">Comme neuf</option>
-        <option value="Très bon état">Très bon état</option>
-        <option value="Bon état">Bon état</option>
-        <option value="État moyen">État moyen</option>
-        <option value="Reconditionné">Reconditionné</option>
-        <option value="Pour réparation">Pour réparation</option>
-      </select>
+        options={etatOptions}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner l'état..."
+        required
+      />
     </div>
   );
 };
 
 // Garantie
 const GarantieField = ({ postData, handleChangeInput }) => {
+  const garantieOptions = [
+    { value: '1 mois', label: '1 mois' },
+    { value: '3 mois', label: '3 mois' },
+    { value: '6 mois', label: '6 mois' },
+    { value: '1 an', label: '1 an' },
+    { value: '2 ans', label: '2 ans' },
+    { value: 'Sans garantie', label: 'Sans garantie' }
+  ];
+  
+  const selectedOption = garantieOptions.find(opt => opt.value === postData?.garantie) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'garantie', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Garantie</label>
-      <input
-        type="text"
+      <Select
         name="garantie"
-        className="form-control"
-        placeholder="Ex: 1 mois, 6 mois, 1 an..."
-        value={postData?.garantie || ''}
-        onChange={handleChangeInput}
+        options={garantieOptions}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner la garantie..."
+        isClearable
       />
     </div>
   );
 };
 
-// Numéro OEM / Référence
+// Référence OEM
 const ReferenceOEMField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Référence OEM</label>
       <input
         type="text"
-        name="reference_oem"
+        name="referenceOem"
         className="form-control"
         placeholder="Ex: 8200123456, 7700101234..."
-        value={postData?.reference_oem || ''}
+        value={postData?.referenceOem || ''}
         onChange={handleChangeInput}
       />
     </div>
@@ -184,7 +312,7 @@ const CompatibiliteField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Kilométrage (pour pièces d'occasion)
+// Kilométrage
 const KilometrageField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
@@ -204,49 +332,75 @@ const KilometrageField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Position (pour pièces)
+// Position
 const PositionField = ({ postData, handleChangeInput }) => {
+  const positions = [
+    { value: 'Avant droit', label: '➡️ Avant droit' },
+    { value: 'Avant gauche', label: '⬅️ Avant gauche' },
+    { value: 'Arrière droit', label: '➡️ Arrière droit' },
+    { value: 'Arrière gauche', label: '⬅️ Arrière gauche' },
+    { value: 'Avant', label: '⬆️ Avant' },
+    { value: 'Arrière', label: '⬇️ Arrière' },
+    { value: 'Intérieur', label: '🚗 Intérieur' },
+    { value: 'Extérieur', label: '🌳 Extérieur' }
+  ];
+  
+  const selectedOption = positions.find(opt => opt.value === postData?.position) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'position', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Position</label>
-      <select
+      <Select
         name="position"
-        className="form-control"
-        value={postData?.position || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Avant droit">Avant droit</option>
-        <option value="Avant gauche">Avant gauche</option>
-        <option value="Arrière droit">Arrière droit</option>
-        <option value="Arrière gauche">Arrière gauche</option>
-        <option value="Avant">Avant</option>
-        <option value="Arrière">Arrière</option>
-        <option value="Intérieur">Intérieur</option>
-        <option value="Extérieur">Extérieur</option>
-      </select>
+        options={positions}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner la position..."
+        isClearable
+      />
     </div>
   );
 };
 
-// Type de moteur (pour pièces moteur)
+// Type de moteur
 const TypeMoteurField = ({ postData, handleChangeInput }) => {
+  const moteurs = [
+    { value: 'Essence', label: '⛽ Essence' },
+    { value: 'Diesel', label: '🛢️ Diesel' },
+    { value: 'GPL', label: '🔵 GPL' },
+    { value: 'Électrique', label: '⚡ Électrique' },
+    { value: 'Hybride', label: '🔋 Hybride' }
+  ];
+  
+  const selectedOption = moteurs.find(opt => opt.value === postData?.typeMoteur) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typeMoteur', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Type de moteur</label>
-      <select
-        name="type_moteur"
-        className="form-control"
-        value={postData?.type_moteur || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Essence">Essence</option>
-        <option value="Diesel">Diesel</option>
-        <option value="GPL">GPL</option>
-        <option value="Électrique">Électrique</option>
-        <option value="Hybride">Hybride</option>
-      </select>
+      <Select
+        name="typeMoteur"
+        options={moteurs}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type de moteur..."
+        isClearable
+      />
     </div>
   );
 };
@@ -269,127 +423,207 @@ const QuantiteField = ({ postData, handleChangeInput }) => {
   );
 };
 
+// ============================================
+// CAMPOS PARA LUBRIFIANTS
+// ============================================
+
 // Type de lubrifiant
 const TypeLubrifiantField = ({ postData, handleChangeInput }) => {
+  const types = [
+    { value: 'Huile moteur', label: '🛢️ Huile moteur' },
+    { value: 'Huile boîte', label: '🛢️ Huile boîte' },
+    { value: 'Liquide frein', label: '🛑 Liquide frein' },
+    { value: 'Liquide refroidissement', label: '❄️ Liquide refroidissement' },
+    { value: 'Liquide lave-glace', label: '💧 Liquide lave-glace' },
+    { value: 'Graisse', label: '🔧 Graisse' },
+    { value: 'Additif', label: '🧪 Additif' }
+  ];
+  
+  const selectedOption = types.find(opt => opt.value === postData?.typeLubrifiant) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typeLubrifiant', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Type de lubrifiant</label>
-      <select
-        name="type_lubrifiant"
-        className="form-control"
-        value={postData?.type_lubrifiant || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Huile moteur">Huile moteur</option>
-        <option value="Huile boîte">Huile boîte</option>
-        <option value="Liquide frein">Liquide frein</option>
-        <option value="Liquide refroidissement">Liquide refroidissement</option>
-        <option value="Liquide lave-glace">Liquide lave-glace</option>
-        <option value="Graisse">Graisse</option>
-        <option value="Additif">Additif</option>
-      </select>
+      <Select
+        name="typeLubrifiant"
+        options={types}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type..."
+        isClearable
+      />
     </div>
   );
 };
 
-// Viscosité (huile)
+// Viscosité
 const ViscositeField = ({ postData, handleChangeInput }) => {
+  const viscosites = [
+    { value: '5W30', label: '5W30' },
+    { value: '5W40', label: '5W40' },
+    { value: '10W40', label: '10W40' },
+    { value: '10W50', label: '10W50' },
+    { value: '15W40', label: '15W40' },
+    { value: '20W50', label: '20W50' },
+    { value: '0W20', label: '0W20' },
+    { value: '0W30', label: '0W30' }
+  ];
+  
+  const selectedOption = viscosites.find(opt => opt.value === postData?.viscosite) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'viscosite', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Viscosité</label>
-      <select
+      <Select
         name="viscosite"
-        className="form-control"
-        value={postData?.viscosite || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="5W30">5W30</option>
-        <option value="5W40">5W40</option>
-        <option value="10W40">10W40</option>
-        <option value="10W50">10W50</option>
-        <option value="15W40">15W40</option>
-        <option value="20W50">20W50</option>
-        <option value="0W20">0W20</option>
-        <option value="0W30">0W30</option>
-      </select>
+        options={viscosites}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner la viscosité..."
+        isClearable
+      />
     </div>
   );
 };
 
+// ============================================
+// CAMPOS PARA OUTILS DE DIAGNOSTIC
+// ============================================
+
 // Type d'outil diagnostic
-const TypeOutilField = ({ postData, handleChangeInput }) => {
+const TypeOutilDiagnosticField = ({ postData, handleChangeInput }) => {
+  const types = [
+    { value: 'Valise diagnostic', label: '📟 Valise diagnostic' },
+    { value: 'Lecteur OBD2', label: '🔌 Lecteur OBD2' },
+    { value: 'Multimètre', label: '📊 Multimètre' },
+    { value: 'Testeur batterie', label: '🔋 Testeur batterie' },
+    { value: 'Testeur compression', label: '🔧 Testeur compression' },
+    { value: 'Pont élévateur', label: '🏗️ Pont élévateur' },
+    { value: 'Chasse-pneu', label: '🛞 Chasse-pneu' }
+  ];
+  
+  const selectedOption = types.find(opt => opt.value === postData?.typeOutilDiagnostic) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typeOutilDiagnostic', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Type d'outil</label>
-      <select
-        name="type_outil"
-        className="form-control"
-        value={postData?.type_outil || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Valise diagnostic">Valise diagnostic</option>
-        <option value="Lecteur OBD2">Lecteur OBD2</option>
-        <option value="Multimètre">Multimètre</option>
-        <option value="Testeur batterie">Testeur batterie</option>
-        <option value="Testeur compression">Testeur compression</option>
-        <option value="Pont élévateur">Pont élévateur</option>
-        <option value="Chasse-pneu">Chasse-pneu</option>
-      </select>
+      <Select
+        name="typeOutilDiagnostic"
+        options={types}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type d'outil..."
+        isClearable
+      />
     </div>
   );
 };
+
+// ============================================
+// CAMPOS PARA ALARME & SÉCURITÉ
+// ============================================
 
 // Type d'alarme
 const TypeAlarmeField = ({ postData, handleChangeInput }) => {
+  const types = [
+    { value: 'Alarme volumétrique', label: '🔊 Alarme volumétrique' },
+    { value: 'Alarme périmétrique', label: '🔒 Alarme périmétrique' },
+    { value: 'Alarme avec GPS', label: '📍 Alarme avec GPS' },
+    { value: 'Système main libre', label: '📱 Système main libre' },
+    { value: 'Antidémarrage', label: '🔑 Antidémarrage' },
+    { value: 'Traceur GPS', label: '🛰️ Traceur GPS' }
+  ];
+  
+  const selectedOption = types.find(opt => opt.value === postData?.typeAlarme) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typeAlarme', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Type d'alarme</label>
-      <select
-        name="type_alarme"
-        className="form-control"
-        value={postData?.type_alarme || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Alarme volumétrique">Alarme volumétrique</option>
-        <option value="Alarme périmétrique">Alarme périmétrique</option>
-        <option value="Alarme avec GPS">Alarme avec GPS</option>
-        <option value="Système main libre">Système main libre</option>
-        <option value="Kit mains libres">Kit mains libres</option>
-        <option value="Antidémarrage">Antidémarrage</option>
-        <option value="Traceur GPS">Traceur GPS</option>
-      </select>
+      <Select
+        name="typeAlarme"
+        options={types}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type d'alarme..."
+        isClearable
+      />
     </div>
   );
 };
 
+// ============================================
+// CAMPOS PARA NETTOYAGE & ENTRETIEN
+// ============================================
+
 // Type de produit nettoyage
 const TypeNettoyageField = ({ postData, handleChangeInput }) => {
+  const types = [
+    { value: 'Shampoing auto', label: '🧼 Shampoing auto' },
+    { value: 'Cire', label: '✨ Cire' },
+    { value: 'Nettoyant vitres', label: '🪟 Nettoyant vitres' },
+    { value: 'Nettoyant jantes', label: '🛞 Nettoyant jantes' },
+    { value: 'Nettoyant cuir', label: '👞 Nettoyant cuir' },
+    { value: 'Décapant', label: '🧪 Décapant' },
+    { value: 'Polish', label: '✨ Polish' },
+    { value: 'Chiffon microfibre', label: '🧽 Chiffon microfibre' },
+    { value: 'Brosse', label: '🪥 Brosse' },
+    { value: 'Nettoyeur haute pression', label: '💦 Nettoyeur haute pression' },
+    { value: 'Aspirateur auto', label: '🧹 Aspirateur auto' }
+  ];
+  
+  const selectedOption = types.find(opt => opt.value === postData?.typeNettoyage) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typeNettoyage', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Type de produit</label>
-      <select
-        name="type_nettoyage"
-        className="form-control"
-        value={postData?.type_nettoyage || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Shampoing auto">Shampoing auto</option>
-        <option value="Cire">Cire</option>
-        <option value="Nettoyant vitres">Nettoyant vitres</option>
-        <option value="Nettoyant jantes">Nettoyant jantes</option>
-        <option value="Nettoyant cuir">Nettoyant cuir</option>
-        <option value="Décapant">Décapant</option>
-        <option value="Polish">Polish</option>
-        <option value="Chiffon microfibre">Chiffon microfibre</option>
-        <option value="Brosse">Brosse</option>
-        <option value="Nettoyeur haute pression">Nettoyeur haute pression</option>
-        <option value="Aspirateur auto">Aspirateur auto</option>
-      </select>
+      <Select
+        name="typeNettoyage"
+        options={types}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type de produit..."
+        isClearable
+      />
     </div>
   );
 };
@@ -399,35 +633,40 @@ const TypeNettoyageField = ({ postData, handleChangeInput }) => {
 // ============================================
 
 const PiecesDetacheesField = (props) => {
-  const { step } = props;
+  const { step, subCategory, articleType } = props;
   
+  // Mapa de TODOS los componentes disponibles
   const customComponents = {
     // Campos comunes
+    'title': <TitleField {...props} />,
+    'description': <DescriptionField {...props} />,
+    
+    // Campos específicos para pièces détachées
     'marque': <MarqueField {...props} />,
     'modele': <ModeleField {...props} />,
     'annee': <AnneeField {...props} />,
-    'type_piece': <TypePieceField {...props} />,
+    'typePiece': <TypePieceField {...props} />,
     'etat': <EtatField {...props} />,
     'garantie': <GarantieField {...props} />,
-    'reference_oem': <ReferenceOEMField {...props} />,
+    'referenceOem': <ReferenceOEMField {...props} />,
     'compatibilite': <CompatibiliteField {...props} />,
     'kilometrage': <KilometrageField {...props} />,
     'position': <PositionField {...props} />,
-    'type_moteur': <TypeMoteurField {...props} />,
+    'typeMoteur': <TypeMoteurField {...props} />,
     'quantite': <QuantiteField {...props} />,
     
     // Lubrifiants
-    'type_lubrifiant': <TypeLubrifiantField {...props} />,
+    'typeLubrifiant': <TypeLubrifiantField {...props} />,
     'viscosite': <ViscositeField {...props} />,
     
     // Outils diagnostics
-    'type_outil': <TypeOutilField {...props} />,
+    'typeOutilDiagnostic': <TypeOutilDiagnosticField {...props} />,
     
     // Alarme & Sécurité
-    'type_alarme': <TypeAlarmeField {...props} />,
+    'typeAlarme': <TypeAlarmeField {...props} />,
     
     // Nettoyage & Entretien
-    'type_nettoyage': <TypeNettoyageField {...props} />
+    'typeNettoyage': <TypeNettoyageField {...props} />
   };
   
   const additionalFields = {

@@ -1,23 +1,93 @@
 // 📂 components/CATEGORIES/specificFields/VoyagesFields.js
 import React from 'react';
+import Select from 'react-select';
 import BaseCategoryField from './BaseCategoryField';
 
 // ============================================
-// CAMPOS ESPECÍFICOS DE VOYAGES (STEP 2)
+// CAMPOS COMUNES PARA TODAS LAS CATEGORÍAS
+// ============================================
+
+// Titre
+const TitleField = ({ postData, handleChangeInput }) => {
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Titre</label>
+      <input
+        type="text"
+        name="title"
+        className="form-control"
+        placeholder="Titre de l'annonce"
+        value={postData?.title || ''}
+        onChange={handleChangeInput}
+      />
+    </div>
+  );
+};
+
+// Description
+const DescriptionField = ({ postData, handleChangeInput }) => {
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">
+        Description <span className="text-danger">*</span>
+      </label>
+      <textarea
+        name="description"
+        className="form-control"
+        rows="4"
+        placeholder="Décrivez votre offre de voyage en détail..."
+        value={postData?.description || ''}
+        onChange={handleChangeInput}
+        required
+      />
+      <small className="text-muted">Décrivez le programme, les prestations incluses, etc.</small>
+    </div>
+  );
+};
+
+// ============================================
+// CAMPOS ESPECÍFICOS PARA VOYAGES
 // ============================================
 
 // Destination
 const DestinationField = ({ postData, handleChangeInput }) => {
+  const destinations = [
+    { value: 'Paris', label: '🇫🇷 Paris' },
+    { value: 'Istanbul', label: '🇹🇷 Istanbul' },
+    { value: 'Dubaï', label: '🇦🇪 Dubaï' },
+    { value: 'Makkah', label: '🇸🇦 Makkah' },
+    { value: 'Madinah', label: '🇸🇦 Madinah' },
+    { value: 'Barcelone', label: '🇪🇸 Barcelone' },
+    { value: 'Rome', label: '🇮🇹 Rome' },
+    { value: 'Londres', label: '🇬🇧 Londres' },
+    { value: 'New York', label: '🇺🇸 New York' },
+    { value: 'Bangkok', label: '🇹🇭 Bangkok' },
+    { value: 'Marrakech', label: '🇲🇦 Marrakech' },
+    { value: 'Tunis', label: '🇹🇳 Tunis' },
+    { value: 'Alger', label: '🇩🇿 Alger' },
+    { value: 'Autre', label: '🌍 Autre destination' }
+  ];
+  
+  const selectedOption = destinations.find(opt => opt.value === postData?.destination) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'destination', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Destination</label>
-      <input
-        type="text"
+      <Select
         name="destination"
-        className="form-control"
-        placeholder="Ex: Paris, Istanbul, Dubaï, Makkah..."
-        value={postData?.destination || ''}
-        onChange={handleChangeInput}
+        options={destinations}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner la destination..."
+        isClearable
       />
     </div>
   );
@@ -25,16 +95,40 @@ const DestinationField = ({ postData, handleChangeInput }) => {
 
 // Durée
 const DureeField = ({ postData, handleChangeInput }) => {
+  const durees = [
+    { value: '1 jour', label: '1 jour' },
+    { value: '2 jours', label: '2 jours' },
+    { value: '3 jours', label: '3 jours' },
+    { value: '4 jours', label: '4 jours' },
+    { value: '5 jours', label: '5 jours' },
+    { value: '6 jours', label: '6 jours' },
+    { value: '7 jours (1 semaine)', label: '7 jours (1 semaine)' },
+    { value: '10 jours', label: '10 jours' },
+    { value: '14 jours (2 semaines)', label: '14 jours (2 semaines)' },
+    { value: '21 jours (3 semaines)', label: '21 jours (3 semaines)' },
+    { value: '1 mois', label: '1 mois' }
+  ];
+  
+  const selectedOption = durees.find(opt => opt.value === postData?.duree) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'duree', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Durée</label>
-      <input
-        type="text"
+      <Select
         name="duree"
-        className="form-control"
-        placeholder="Ex: 7 jours, 2 semaines, 15 nuits..."
-        value={postData?.duree || ''}
-        onChange={handleChangeInput}
+        options={durees}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner la durée..."
+        isClearable
       />
     </div>
   );
@@ -42,14 +136,17 @@ const DureeField = ({ postData, handleChangeInput }) => {
 
 // Date départ
 const DateDepartField = ({ postData, handleChangeInput }) => {
+  const today = new Date().toISOString().split('T')[0];
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Date de départ</label>
       <input
         type="date"
-        name="date_depart"
+        name="dateDepart"
         className="form-control"
-        value={postData?.date_depart || ''}
+        min={today}
+        value={postData?.dateDepart || ''}
         onChange={handleChangeInput}
       />
     </div>
@@ -58,14 +155,17 @@ const DateDepartField = ({ postData, handleChangeInput }) => {
 
 // Date retour
 const DateRetourField = ({ postData, handleChangeInput }) => {
+  const today = new Date().toISOString().split('T')[0];
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Date de retour</label>
       <input
         type="date"
-        name="date_retour"
+        name="dateRetour"
         className="form-control"
-        value={postData?.date_retour || ''}
+        min={today}
+        value={postData?.dateRetour || ''}
         onChange={handleChangeInput}
       />
     </div>
@@ -74,16 +174,36 @@ const DateRetourField = ({ postData, handleChangeInput }) => {
 
 // Nombre de personnes
 const NombrePersonnesField = ({ postData, handleChangeInput }) => {
+  const personnes = [
+    { value: '1', label: '1 personne' },
+    { value: '2', label: '2 personnes' },
+    { value: '3', label: '3 personnes' },
+    { value: '4', label: '4 personnes' },
+    { value: '5', label: '5 personnes' },
+    { value: '6', label: '6 personnes' },
+    { value: '7+', label: '7 personnes ou plus' }
+  ];
+  
+  const selectedOption = personnes.find(opt => opt.value === postData?.nombrePersonnes) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'nombrePersonnes', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Nombre de personnes</label>
-      <input
-        type="number"
-        name="nombre_personnes"
-        className="form-control"
-        placeholder="Ex: 1, 2, 4..."
-        value={postData?.nombre_personnes || ''}
-        onChange={handleChangeInput}
+      <Select
+        name="nombrePersonnes"
+        options={personnes}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le nombre..."
+        isClearable
       />
     </div>
   );
@@ -91,22 +211,36 @@ const NombrePersonnesField = ({ postData, handleChangeInput }) => {
 
 // Transport
 const TransportField = ({ postData, handleChangeInput }) => {
+  const transports = [
+    { value: 'Avion', label: '✈️ Avion' },
+    { value: 'Bus', label: '🚌 Bus' },
+    { value: 'Train', label: '🚂 Train' },
+    { value: 'Voiture', label: '🚗 Voiture' },
+    { value: 'Bateau', label: '⛴️ Bateau' },
+    { value: 'Mixte', label: '🔄 Mixte' }
+  ];
+  
+  const selectedOption = transports.find(opt => opt.value === postData?.transport) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'transport', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Transport</label>
-      <select
+      <Select
         name="transport"
-        className="form-control"
-        value={postData?.transport || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="avion">Avion</option>
-        <option value="bus">Bus</option>
-        <option value="train">Train</option>
-        <option value="voiture">Voiture</option>
-        <option value="mixte">Mixte</option>
-      </select>
+        options={transports}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le transport..."
+        isClearable
+      />
     </div>
   );
 };
@@ -134,52 +268,90 @@ const ActivitesInclusesField = ({ postData, handleChangeInput }) => {
     <div className="mb-3">
       <label className="form-label fw-bold">Activités incluses</label>
       <textarea
-        name="activites_incluses"
+        name="activitesIncluses"
         className="form-control"
         rows="3"
         placeholder="Visites guidées, excursions, repas..."
-        value={postData?.activites_incluses || ''}
+        value={postData?.activitesIncluses || ''}
         onChange={handleChangeInput}
       />
     </div>
   );
 };
 
-// Type d'hébergement (pour location vacances)
+// ============================================
+// CAMPOS PARA LOCATION VACANCES
+// ============================================
+
+// Type d'hébergement
 const TypeHebergementField = ({ postData, handleChangeInput }) => {
+  const types = [
+    { value: 'Appartement', label: '🏢 Appartement' },
+    { value: 'Villa', label: '🏡 Villa' },
+    { value: 'Maison', label: '🏠 Maison' },
+    { value: 'Studio', label: '🏠 Studio' },
+    { value: 'Riad', label: '🕌 Riad' },
+    { value: 'Chalet', label: '🏔️ Chalet' }
+  ];
+  
+  const selectedOption = types.find(opt => opt.value === postData?.typeHebergement) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typeHebergement', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Type d'hébergement</label>
-      <select
-        name="type_hebergement"
-        className="form-control"
-        value={postData?.type_hebergement || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="appartement">Appartement</option>
-        <option value="villa">Villa</option>
-        <option value="maison">Maison</option>
-        <option value="studio">Studio</option>
-        <option value="riad">Riad</option>
-        <option value="chalet">Chalet</option>
-      </select>
+      <Select
+        name="typeHebergement"
+        options={types}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type..."
+        isClearable
+      />
     </div>
   );
 };
 
 // Capacité
 const CapaciteField = ({ postData, handleChangeInput }) => {
+  const capacites = [
+    { value: '1', label: '1 personne' },
+    { value: '2', label: '2 personnes' },
+    { value: '3', label: '3 personnes' },
+    { value: '4', label: '4 personnes' },
+    { value: '5', label: '5 personnes' },
+    { value: '6', label: '6 personnes' },
+    { value: '7', label: '7 personnes' },
+    { value: '8+', label: '8 personnes ou plus' }
+  ];
+  
+  const selectedOption = capacites.find(opt => opt.value === postData?.capacite) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'capacite', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Capacité (personnes)</label>
-      <input
-        type="number"
+      <Select
         name="capacite"
-        className="form-control"
-        placeholder="Ex: 2, 4, 6..."
-        value={postData?.capacite || ''}
-        onChange={handleChangeInput}
+        options={capacites}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner la capacité..."
+        isClearable
       />
     </div>
   );
@@ -187,17 +359,43 @@ const CapaciteField = ({ postData, handleChangeInput }) => {
 
 // Équipements
 const EquipementsField = ({ postData, handleChangeInput }) => {
+  const equipementsList = [
+    { value: 'WiFi', label: '📶 WiFi' },
+    { value: 'Piscine', label: '🏊 Piscine' },
+    { value: 'Climatisation', label: '❄️ Climatisation' },
+    { value: 'Parking', label: '🅿️ Parking' },
+    { value: 'Cuisine équipée', label: '🍳 Cuisine équipée' },
+    { value: 'Lave-linge', label: '🧺 Lave-linge' },
+    { value: 'Télévision', label: '📺 Télévision' },
+    { value: 'Balcon', label: '🏠 Balcon' },
+    { value: 'Jardin', label: '🌳 Jardin' },
+    { value: 'Terrasse', label: '🏠 Terrasse' }
+  ];
+  
+  const selectedValues = postData?.equipements || [];
+  const selectedOptions = equipementsList.filter(opt => selectedValues.includes(opt.value));
+  
+  const handleChange = (selected) => {
+    const values = selected ? selected.map(opt => opt.value) : [];
+    handleChangeInput({
+      target: { name: 'equipements', value: values }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Équipements</label>
-      <textarea
+      <Select
+        isMulti
         name="equipements"
-        className="form-control"
-        rows="3"
-        placeholder="WiFi, piscine, climatisation, parking..."
-        value={postData?.equipements || ''}
-        onChange={handleChangeInput}
+        options={equipementsList}
+        value={selectedOptions}
+        onChange={handleChange}
+        className="basic-multi-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner les équipements..."
       />
+      <small className="text-muted">Vous pouvez sélectionner plusieurs équipements</small>
     </div>
   );
 };
@@ -219,42 +417,72 @@ const ProximiteField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Type de pèlerinage (Hajj/Omra)
+// ============================================
+// CAMPOS POUR HAJJ & OMRA
+// ============================================
+
+// Type de pèlerinage
 const TypePelerinageField = ({ postData, handleChangeInput }) => {
+  const types = [
+    { value: 'Hajj', label: '🕋 Hajj' },
+    { value: 'Omra', label: '🕋 Omra' },
+    { value: 'Hajj + Omra', label: '🕋 Hajj + Omra' }
+  ];
+  
+  const selectedOption = types.find(opt => opt.value === postData?.typePelerinage) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typePelerinage', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Type de pèlerinage</label>
-      <select
-        name="type_pelerinage"
-        className="form-control"
-        value={postData?.type_pelerinage || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="hajj">Hajj</option>
-        <option value="omra">Omra</option>
-        <option value="hajj_omra">Hajj + Omra</option>
-      </select>
+      <Select
+        name="typePelerinage"
+        options={types}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type..."
+        isClearable
+      />
     </div>
   );
 };
 
 // Groupe
 const GroupeField = ({ postData, handleChangeInput }) => {
+  const groupes = [
+    { value: 'Individuel', label: '👤 Individuel' },
+    { value: 'Famille', label: '👨‍👩‍👧‍👦 Famille' },
+    { value: 'Groupe organisé', label: '👥 Groupe organisé' }
+  ];
+  
+  const selectedOption = groupes.find(opt => opt.value === postData?.groupe) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'groupe', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Groupe</label>
-      <select
+      <Select
         name="groupe"
-        className="form-control"
-        value={postData?.groupe || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="individuel">Individuel</option>
-        <option value="famille">Famille</option>
-        <option value="groupe_organise">Groupe organisé</option>
-      </select>
+        options={groupes}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type de groupe..."
+        isClearable
+      />
     </div>
   );
 };
@@ -266,10 +494,10 @@ const HotelMakkahField = ({ postData, handleChangeInput }) => {
       <label className="form-label fw-bold">Hôtel à Makkah</label>
       <input
         type="text"
-        name="hotel_makkah"
+        name="hotelMakkah"
         className="form-control"
         placeholder="Nom et catégorie"
-        value={postData?.hotel_makkah || ''}
+        value={postData?.hotelMakkah || ''}
         onChange={handleChangeInput}
       />
     </div>
@@ -283,10 +511,10 @@ const HotelMadinahField = ({ postData, handleChangeInput }) => {
       <label className="form-label fw-bold">Hôtel à Madinah</label>
       <input
         type="text"
-        name="hotel_madinah"
+        name="hotelMadinah"
         className="form-control"
         placeholder="Nom et catégorie"
-        value={postData?.hotel_madinah || ''}
+        value={postData?.hotelMadinah || ''}
         onChange={handleChangeInput}
       />
     </div>
@@ -295,105 +523,169 @@ const HotelMadinahField = ({ postData, handleChangeInput }) => {
 
 // Vols inclus
 const VolsField = ({ postData, handleChangeInput }) => {
+  const options = [
+    { value: 'Aller-retour inclus', label: '✈️ Aller-retour inclus' },
+    { value: 'Vols non inclus', label: '❌ Vols non inclus' },
+    { value: 'Optionnel', label: '🔘 Optionnel' }
+  ];
+  
+  const selectedOption = options.find(opt => opt.value === postData?.vols) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'vols', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Vols inclus</label>
-      <select
+      <Select
         name="vols"
-        className="form-control"
-        value={postData?.vols || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="aller_retour">Aller-retour inclus</option>
-        <option value="non_inclus">Vols non inclus</option>
-        <option value="optionnel">Optionnel</option>
-      </select>
+        options={options}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner..."
+        isClearable
+      />
     </div>
   );
 };
 
+// ============================================
+// CAMPOS POUR SÉJOUR
+// ============================================
+
 // Type de séjour
 const TypeSejourField = ({ postData, handleChangeInput }) => {
+  const types = [
+    { value: 'Détente', label: '🧘 Détente' },
+    { value: 'Découverte', label: '🗺️ Découverte' },
+    { value: 'Aventure', label: '⛰️ Aventure' },
+    { value: 'Culturel', label: '🏛️ Culturel' },
+    { value: 'Balnéaire', label: '🏖️ Balnéaire' }
+  ];
+  
+  const selectedOption = types.find(opt => opt.value === postData?.typeSejour) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typeSejour', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Type de séjour</label>
-      <select
-        name="type_sejour"
-        className="form-control"
-        value={postData?.type_sejour || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="detente">Détente</option>
-        <option value="decouverte">Découverte</option>
-        <option value="aventure">Aventure</option>
-        <option value="culturel">Culturel</option>
-        <option value="balneaire">Balnéaire</option>
-      </select>
+      <Select
+        name="typeSejour"
+        options={types}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type..."
+        isClearable
+      />
     </div>
   );
 };
 
 // Catégorie hôtel
 const CategorieHotelField = ({ postData, handleChangeInput }) => {
+  const categories = [
+    { value: '2 étoiles', label: '⭐⭐ 2 étoiles' },
+    { value: '3 étoiles', label: '⭐⭐⭐ 3 étoiles' },
+    { value: '4 étoiles', label: '⭐⭐⭐⭐ 4 étoiles' },
+    { value: '5 étoiles', label: '⭐⭐⭐⭐⭐ 5 étoiles' },
+    { value: 'Luxe', label: '👑 Luxe' }
+  ];
+  
+  const selectedOption = categories.find(opt => opt.value === postData?.categorieHotel) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'categorieHotel', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Catégorie d'hôtel</label>
-      <select
-        name="categorie_hotel"
-        className="form-control"
-        value={postData?.categorie_hotel || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="2_etoiles">2 étoiles</option>
-        <option value="3_etoiles">3 étoiles</option>
-        <option value="4_etoiles">4 étoiles</option>
-        <option value="5_etoiles">5 étoiles</option>
-        <option value="luxe">Luxe</option>
-      </select>
+      <Select
+        name="categorieHotel"
+        options={categories}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner la catégorie..."
+        isClearable
+      />
     </div>
   );
 };
 
-// Nom bateau (croisière)
+// ============================================
+// CAMPOS POUR CROISIÈRE
+// ============================================
+
+// Nom bateau
 const NomBateauField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Nom du bateau</label>
       <input
         type="text"
-        name="nom_bateau"
+        name="nomBateau"
         className="form-control"
         placeholder="Nom de la croisière"
-        value={postData?.nom_bateau || ''}
+        value={postData?.nomBateau || ''}
         onChange={handleChangeInput}
       />
     </div>
   );
 };
 
-// Type de cabine (croisière)
+// Type de cabine
 const CabineField = ({ postData, handleChangeInput }) => {
+  const types = [
+    { value: 'Intérieure', label: '🚪 Intérieure' },
+    { value: 'Extérieure', label: '🪟 Extérieure' },
+    { value: 'Avec balcon', label: '🏠 Avec balcon' },
+    { value: 'Suite', label: '👑 Suite' }
+  ];
+  
+  const selectedOption = types.find(opt => opt.value === postData?.cabine) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'cabine', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Type de cabine</label>
-      <select
+      <Select
         name="cabine"
-        className="form-control"
-        value={postData?.cabine || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="interieur">Intérieure</option>
-        <option value="exterieur">Extérieure</option>
-        <option value="balcon">Avec balcon</option>
-        <option value="suite">Suite</option>
-      </select>
+        options={types}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type de cabine..."
+        isClearable
+      />
     </div>
   );
 };
+
+// ============================================
+// CAMPOS POUR RÉSERVATIONS & VISA
+// ============================================
 
 // Compagnie/Agence
 const CompagnieField = ({ postData, handleChangeInput }) => {
@@ -414,22 +706,35 @@ const CompagnieField = ({ postData, handleChangeInput }) => {
 
 // Type de voyage
 const TypeVoyageField = ({ postData, handleChangeInput }) => {
+  const types = [
+    { value: 'Voyage d\'affaires', label: '💼 Voyage d\'affaires' },
+    { value: 'Touristique', label: '🏖️ Touristique' },
+    { value: 'Familial', label: '👨‍👩‍👧‍👦 Familial' },
+    { value: 'Romantique', label: '💕 Romantique' },
+    { value: 'Gastronomique', label: '🍽️ Gastronomique' }
+  ];
+  
+  const selectedOption = types.find(opt => opt.value === postData?.typeVoyage) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typeVoyage', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Type de voyage</label>
-      <select
-        name="type_voyage"
-        className="form-control"
-        value={postData?.type_voyage || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="affaires">Voyage d'affaires</option>
-        <option value="touristique">Touristique</option>
-        <option value="familial">Familial</option>
-        <option value="romantique">Romantique</option>
-        <option value="gastronomique">Gastronomique</option>
-      </select>
+      <Select
+        name="typeVoyage"
+        options={types}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type de voyage..."
+        isClearable
+      />
     </div>
   );
 };
@@ -439,33 +744,48 @@ const TypeVoyageField = ({ postData, handleChangeInput }) => {
 // ============================================
 
 const VoyagesFields = (props) => {
-  const { step } = props;
+  const { step, subCategory, articleType } = props;
   
+  // Mapa de TODOS los componentes disponibles
   const customComponents = {
+    // Campos comunes
+    'title': <TitleField {...props} />,
+    'description': <DescriptionField {...props} />,
+    
     // Campos comunes para todos los viajes
     'destination': <DestinationField {...props} />,
     'duree': <DureeField {...props} />,
-    'date_depart': <DateDepartField {...props} />,
-    'date_retour': <DateRetourField {...props} />,
-    'nombre_personnes': <NombrePersonnesField {...props} />,
+    'dateDepart': <DateDepartField {...props} />,
+    'dateRetour': <DateRetourField {...props} />,
+    'nombrePersonnes': <NombrePersonnesField {...props} />,
     'transport': <TransportField {...props} />,
     'hebergement': <HebergementField {...props} />,
-    'activites_incluses': <ActivitesInclusesField {...props} />,
-    'type_hebergement': <TypeHebergementField {...props} />,
+    'activitesIncluses': <ActivitesInclusesField {...props} />,
+    
+    // Location vacances
+    'typeHebergement': <TypeHebergementField {...props} />,
     'capacite': <CapaciteField {...props} />,
     'equipements': <EquipementsField {...props} />,
     'proximite': <ProximiteField {...props} />,
-    'type_pelerinage': <TypePelerinageField {...props} />,
+    
+    // Hajj & Omra
+    'typePelerinage': <TypePelerinageField {...props} />,
     'groupe': <GroupeField {...props} />,
-    'hotel_makkah': <HotelMakkahField {...props} />,
-    'hotel_madinah': <HotelMadinahField {...props} />,
+    'hotelMakkah': <HotelMakkahField {...props} />,
+    'hotelMadinah': <HotelMadinahField {...props} />,
     'vols': <VolsField {...props} />,
-    'type_sejour': <TypeSejourField {...props} />,
-    'categorie_hotel': <CategorieHotelField {...props} />,
-    'nom_bateau': <NomBateauField {...props} />,
+    
+    // Séjour
+    'typeSejour': <TypeSejourField {...props} />,
+    'categorieHotel': <CategorieHotelField {...props} />,
+    
+    // Croisière
+    'nomBateau': <NomBateauField {...props} />,
     'cabine': <CabineField {...props} />,
+    
+    // Réservations & Visa
     'compagnie': <CompagnieField {...props} />,
-    'type_voyage': <TypeVoyageField {...props} />
+    'typeVoyage': <TypeVoyageField {...props} />
   };
   
   const additionalFields = {

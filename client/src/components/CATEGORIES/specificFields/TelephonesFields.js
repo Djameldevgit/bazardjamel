@@ -2,10 +2,9 @@
 import React from 'react';
 import Select from 'react-select';
 import BaseCategoryField from './BaseCategoryField';
-import MarqueModelTelephone from '../camposComun/MarqueModelTelephone';
 
 // ============================================
-// CAMPOS ESPECÍFICOS DE TELÉFONOS (STEP 2)
+// CAMPOS COMUNES PARA TODAS LAS CATEGORÍAS
 // ============================================
 
 // Titre
@@ -25,6 +24,94 @@ const TitleField = ({ postData, handleChangeInput }) => {
   );
 };
 
+// Description
+const DescriptionField = ({ postData, handleChangeInput }) => {
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">
+        Description <span className="text-danger">*</span>
+      </label>
+      <textarea
+        name="description"
+        className="form-control"
+        rows="4"
+        placeholder="Décrivez votre produit en détail..."
+        value={postData?.description || ''}
+        onChange={handleChangeInput}
+        required
+      />
+      <small className="text-muted">Décrivez les caractéristiques, l'état, etc.</small>
+    </div>
+  );
+};
+
+// ============================================
+// CAMPOS ESPECÍFICOS PARA TÉLÉPHONES
+// ============================================
+
+// Marque
+const MarqueField = ({ postData, handleChangeInput }) => {
+  const marques = [
+    { value: 'Apple', label: '🍎 Apple' },
+    { value: 'Samsung', label: '📱 Samsung' },
+    { value: 'Xiaomi', label: '📱 Xiaomi' },
+    { value: 'Huawei', label: '📱 Huawei' },
+    { value: 'OnePlus', label: '📱 OnePlus' },
+    { value: 'Google', label: '📱 Google Pixel' },
+    { value: 'Nokia', label: '📱 Nokia' },
+    { value: 'Sony', label: '📱 Sony' },
+    { value: 'LG', label: '📱 LG' },
+    { value: 'Motorola', label: '📱 Motorola' },
+    { value: 'Realme', label: '📱 Realme' },
+    { value: 'Oppo', label: '📱 Oppo' },
+    { value: 'Vivo', label: '📱 Vivo' },
+    { value: 'Tecno', label: '📱 Tecno' },
+    { value: 'Infinix', label: '📱 Infinix' },
+    { value: 'Autre', label: '📱 Autre' }
+  ];
+  
+  const selectedOption = marques.find(opt => opt.value === postData?.marque) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'marque', value: selected?.value || '' }
+    });
+  };
+  
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Marque</label>
+      <Select
+        name="marque"
+        options={marques}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner la marque..."
+        isClearable
+      />
+    </div>
+  );
+};
+
+// Modèle
+const ModeleField = ({ postData, handleChangeInput }) => {
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Modèle</label>
+      <input
+        type="text"
+        name="modele"
+        className="form-control"
+        placeholder="Ex: iPhone 14 Pro, Galaxy S23, Xiaomi 13..."
+        value={postData?.modele || ''}
+        onChange={handleChangeInput}
+      />
+    </div>
+  );
+};
+
 // Référence
 const ReferenceField = ({ postData, handleChangeInput }) => {
   return (
@@ -32,37 +119,51 @@ const ReferenceField = ({ postData, handleChangeInput }) => {
       <label className="form-label fw-bold">Référence</label>
       <input
         type="text"
-        name="referencia"
+        name="reference"
         className="form-control"
-        placeholder="Référence"
-        value={postData?.referencia || ''}
+        placeholder="Référence du produit"
+        value={postData?.reference || ''}
         onChange={handleChangeInput}
       />
     </div>
   );
 };
 
-// Copie (Grade)
+// Copie / Grade
 const CopieField = ({ postData, handleChangeInput }) => {
   const options = [
-    'Original', 'Reconditionné', 'Copie Chinois', 'Premium Copy', 
-    'Clone', 'Grade A+', 'Grade A', 'Grade B', 'Grade C'
+    { value: 'Original', label: '✅ Original' },
+    { value: 'Reconditionné', label: '🔄 Reconditionné' },
+    { value: 'Copie Chinois', label: '📱 Copie Chinois' },
+    { value: 'Premium Copy', label: '✨ Premium Copy' },
+    { value: 'Clone', label: '📱 Clone' },
+    { value: 'Grade A+', label: '⭐ Grade A+' },
+    { value: 'Grade A', label: '⭐ Grade A' },
+    { value: 'Grade B', label: '⭐ Grade B' },
+    { value: 'Grade C', label: '⭐ Grade C' }
   ];
+  
+  const selectedOption = options.find(opt => opt.value === postData?.copie) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'copie', value: selected?.value || '' }
+    });
+  };
   
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Copie / Grade</label>
-      <select
+      <Select
         name="copie"
-        className="form-control"
-        value={postData?.copie || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        {options.map(opt => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
-      </select>
+        options={options}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le grade..."
+        isClearable
+      />
     </div>
   );
 };
@@ -70,24 +171,38 @@ const CopieField = ({ postData, handleChangeInput }) => {
 // Mémoire (Stockage)
 const MemoireField = ({ postData, handleChangeInput }) => {
   const options = [
-    '1 TO', '512 GO', '256 GO', '128 GO', '64 GO', '32 GO', 
-    '16 GO', '8 GO', '4 GO', '2 GO', '1 GO', '512 MO', '256 MO'
+    { value: '1 To', label: '1 To' },
+    { value: '512 Go', label: '512 Go' },
+    { value: '256 Go', label: '256 Go' },
+    { value: '128 Go', label: '128 Go' },
+    { value: '64 Go', label: '64 Go' },
+    { value: '32 Go', label: '32 Go' },
+    { value: '16 Go', label: '16 Go' },
+    { value: '8 Go', label: '8 Go' },
+    { value: '4 Go', label: '4 Go' }
   ];
+  
+  const selectedOption = options.find(opt => opt.value === postData?.memoire) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'memoire', value: selected?.value || '' }
+    });
+  };
   
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Mémoire (Stockage)</label>
-      <select
+      <Select
         name="memoire"
-        className="form-control"
-        value={postData?.memoire || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        {options.map(opt => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
-      </select>
+        options={options}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le stockage..."
+        isClearable
+      />
     </div>
   );
 };
@@ -95,26 +210,49 @@ const MemoireField = ({ postData, handleChangeInput }) => {
 // Couleur
 const CouleurField = ({ postData, handleChangeInput }) => {
   const options = [
-    'Blanc', 'Noir', 'Doré', 'Argenté', 'Bleu', 'Bleu nuit', 
-    'Rouge', 'Bordeaux', 'Vert', 'Vert forêt', 'Rose', 'Rose gold', 
-    'Gris', 'Gris sidéral', 'Jaune', 'Orange', 'Violet', 'Lavande', 
-    'Bronze', 'Titanium', 'Autre'
+    { value: 'Blanc', label: '⚪ Blanc' },
+    { value: 'Noir', label: '⚫ Noir' },
+    { value: 'Doré', label: '🟡 Doré' },
+    { value: 'Argenté', label: '⚪ Argenté' },
+    { value: 'Bleu', label: '🔵 Bleu' },
+    { value: 'Bleu nuit', label: '🔵 Bleu nuit' },
+    { value: 'Rouge', label: '🔴 Rouge' },
+    { value: 'Bordeaux', label: '🔴 Bordeaux' },
+    { value: 'Vert', label: '🟢 Vert' },
+    { value: 'Vert forêt', label: '🟢 Vert forêt' },
+    { value: 'Rose', label: '🩷 Rose' },
+    { value: 'Rose gold', label: '🩷 Rose gold' },
+    { value: 'Gris', label: '⬜ Gris' },
+    { value: 'Gris sidéral', label: '⬜ Gris sidéral' },
+    { value: 'Jaune', label: '🟡 Jaune' },
+    { value: 'Orange', label: '🟠 Orange' },
+    { value: 'Violet', label: '🟣 Violet' },
+    { value: 'Lavande', label: '🟣 Lavande' },
+    { value: 'Titanium', label: '⚪ Titanium' },
+    { value: 'Autre', label: '🎨 Autre' }
   ];
+  
+  const selectedOption = options.find(opt => opt.value === postData?.couleur) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'couleur', value: selected?.value || '' }
+    });
+  };
   
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Couleur</label>
-      <select
+      <Select
         name="couleur"
-        className="form-control"
-        value={postData?.couleur || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        {options.map(opt => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
-      </select>
+        options={options}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner la couleur..."
+        isClearable
+      />
     </div>
   );
 };
@@ -122,25 +260,38 @@ const CouleurField = ({ postData, handleChangeInput }) => {
 // État
 const EtatTelephoneField = ({ postData, handleChangeInput }) => {
   const options = [
-    'Neuf jamais utilisé', 'État neuf', 'Comme neuf', 'Reconditionné à neuf',
-    'Bon état', 'État moyen', 'Écran fissuré, fonctionne bien',
-    'Dysfonctionnement partiel', 'Pour pièces détachées'
+    { value: 'Neuf jamais utilisé', label: '🆕 Neuf jamais utilisé' },
+    { value: 'État neuf', label: '✨ État neuf' },
+    { value: 'Comme neuf', label: '👍 Comme neuf' },
+    { value: 'Reconditionné à neuf', label: '🔄 Reconditionné à neuf' },
+    { value: 'Bon état', label: '✅ Bon état' },
+    { value: 'État moyen', label: '⚠️ État moyen' },
+    { value: 'Écran fissuré, fonctionne bien', label: '📱 Écran fissuré, fonctionne bien' },
+    { value: 'Dysfonctionnement partiel', label: '🔧 Dysfonctionnement partiel' },
+    { value: 'Pour pièces détachées', label: '🔨 Pour pièces détachées' }
   ];
+  
+  const selectedOption = options.find(opt => opt.value === postData?.etat) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'etat', value: selected?.value || '' }
+    });
+  };
   
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">État</label>
-      <select
+      <Select
         name="etat"
-        className="form-control"
-        value={postData?.etat || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">État</option>
-        {options.map(opt => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
-      </select>
+        options={options}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner l'état..."
+        required
+      />
     </div>
   );
 };
@@ -148,25 +299,36 @@ const EtatTelephoneField = ({ postData, handleChangeInput }) => {
 // OS / Android
 const OsField = ({ postData, handleChangeInput }) => {
   const options = [
-    'IOS', 'IOS (version spécifique)', 'Android', 'Android (version spécifique)',
-    'Windows Phone', 'BlackBerry OS', 'KaiOS', 'HarmonyOS', 
-    'Ubuntu Touch', 'Sailfish OS', 'Autre'
+    { value: 'iOS', label: '🍎 iOS' },
+    { value: 'iOS (version spécifique)', label: '🍎 iOS (version spécifique)' },
+    { value: 'Android', label: '🤖 Android' },
+    { value: 'Android (version spécifique)', label: '🤖 Android (version spécifique)' },
+    { value: 'Windows Phone', label: '🪟 Windows Phone' },
+    { value: 'HarmonyOS', label: '🔷 HarmonyOS' },
+    { value: 'Autre', label: '📱 Autre' }
   ];
+  
+  const selectedOption = options.find(opt => opt.value === postData?.os) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'os', value: selected?.value || '' }
+    });
+  };
   
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">OS / Android</label>
-      <select
+      <Select
         name="os"
-        className="form-control"
-        value={postData?.os || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        {options.map(opt => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
-      </select>
+        options={options}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner l'OS..."
+        isClearable
+      />
     </div>
   );
 };
@@ -184,6 +346,7 @@ const AppareilField = ({ postData, handleChangeInput }) => {
           placeholder="Mégapixels"
           value={postData?.appareil || ''}
           onChange={handleChangeInput}
+          step="0.1"
         />
         <span className="input-group-text">MP</span>
       </div>
@@ -199,11 +362,12 @@ const CameraFrontalField = ({ postData, handleChangeInput }) => {
       <div className="input-group">
         <input
           type="number"
-          name="camerafrontal"
+          name="cameraFrontal"
           className="form-control"
           placeholder="Mégapixels"
-          value={postData?.camerafrontal || ''}
+          value={postData?.cameraFrontal || ''}
           onChange={handleChangeInput}
+          step="0.1"
         />
         <span className="input-group-text">MP</span>
       </div>
@@ -218,12 +382,13 @@ const TailleEcranField = ({ postData, handleChangeInput }) => {
       <label className="form-label fw-bold">Taille écran</label>
       <div className="input-group">
         <input
-          type="text"
-          name="talleecran"
+          type="number"
+          name="tailleEcran"
           className="form-control"
           placeholder="Taille écran"
-          value={postData?.talleecran || ''}
+          value={postData?.tailleEcran || ''}
           onChange={handleChangeInput}
+          step="0.1"
         />
         <span className="input-group-text">pouces</span>
       </div>
@@ -234,25 +399,42 @@ const TailleEcranField = ({ postData, handleChangeInput }) => {
 // RAM
 const RamField = ({ postData, handleChangeInput }) => {
   const options = [
-    '128 MO', '256 MO', '512 MO', '1 GO', '2 GO', '3 GO', '4 GO', 
-    '6 GO', '8 GO', '12 GO', '16 GO', '24 GO', '32 GO', '64 GO', 
-    '128 GO', '256 GO', '512 GO'
+    { value: '128 Mo', label: '128 Mo' },
+    { value: '256 Mo', label: '256 Mo' },
+    { value: '512 Mo', label: '512 Mo' },
+    { value: '1 Go', label: '1 Go' },
+    { value: '2 Go', label: '2 Go' },
+    { value: '3 Go', label: '3 Go' },
+    { value: '4 Go', label: '4 Go' },
+    { value: '6 Go', label: '6 Go' },
+    { value: '8 Go', label: '8 Go' },
+    { value: '12 Go', label: '12 Go' },
+    { value: '16 Go', label: '16 Go' },
+    { value: '24 Go', label: '24 Go' },
+    { value: '32 Go', label: '32 Go' }
   ];
+  
+  const selectedOption = options.find(opt => opt.value === postData?.ram) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'ram', value: selected?.value || '' }
+    });
+  };
   
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">RAM</label>
-      <select
+      <Select
         name="ram"
-        className="form-control"
-        value={postData?.ram || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        {options.map(opt => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
-      </select>
+        options={options}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner la RAM..."
+        isClearable
+      />
     </div>
   );
 };
@@ -260,23 +442,34 @@ const RamField = ({ postData, handleChangeInput }) => {
 // Connectivité (Gigas)
 const ConnectiviteField = ({ postData, handleChangeInput }) => {
   const options = [
-    'Sans réseau', 'Avec 2G', 'Avec 3G', 'Avec 4G', 'Avec 5G'
+    { value: 'Sans réseau', label: '📡 Sans réseau' },
+    { value: '2G', label: '📶 2G' },
+    { value: '3G', label: '📶 3G' },
+    { value: '4G', label: '📶 4G' },
+    { value: '5G', label: '📶 5G' }
   ];
+  
+  const selectedOption = options.find(opt => opt.value === postData?.connectivite) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'connectivite', value: selected?.value || '' }
+    });
+  };
   
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Connectivité</label>
-      <select
-        name="gigas"
-        className="form-control"
-        value={postData?.gigas || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        {options.map(opt => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
-      </select>
+      <Select
+        name="connectivite"
+        options={options}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner la connectivité..."
+        isClearable
+      />
     </div>
   );
 };
@@ -284,23 +477,76 @@ const ConnectiviteField = ({ postData, handleChangeInput }) => {
 // Double puce
 const DoublePuceField = ({ postData, handleChangeInput }) => {
   const options = [
-    'Avec une seule puce', 'Avec double puce', 'Avec triple puce', 'Avec eSIM + SIM physique'
+    { value: 'Une seule puce', label: '📱 Une seule puce' },
+    { value: 'Double puce', label: '📱📱 Double puce' },
+    { value: 'Triple puce', label: '📱📱📱 Triple puce' },
+    { value: 'eSIM + SIM physique', label: '📱🔷 eSIM + SIM physique' }
   ];
+  
+  const selectedOption = options.find(opt => opt.value === postData?.doublePuce) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'doublePuce', value: selected?.value || '' }
+    });
+  };
   
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Double puce</label>
-      <select
-        name="doublepuces"
-        className="form-control"
-        value={postData?.doublepuces || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        {options.map(opt => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
-      </select>
+      <Select
+        name="doublePuce"
+        options={options}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type de puce..."
+        isClearable
+      />
+    </div>
+  );
+};
+
+// ============================================
+// CAMPOS PARA ACCESSOIRES
+// ============================================
+
+// Type d'accessoire
+const TypeAccessoireField = ({ postData, handleChangeInput }) => {
+  const types = [
+    { value: 'Étui', label: '📱 Étui' },
+    { value: 'Film de protection', label: '🛡️ Film de protection' },
+    { value: 'Protection d\'écran', label: '🛡️ Protection d\'écran' },
+    { value: 'Coque antichoc', label: '🛡️ Coque antichoc' },
+    { value: 'Chargeur', label: '🔌 Chargeur' },
+    { value: 'Câble', label: '🔌 Câble' },
+    { value: 'Écouteurs', label: '🎧 Écouteurs' },
+    { value: 'Support', label: '📱 Support' },
+    { value: 'Power bank', label: '🔋 Power bank' }
+  ];
+  
+  const selectedOption = types.find(opt => opt.value === postData?.typeAccessoire) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typeAccessoire', value: selected?.value || '' }
+    });
+  };
+  
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Type d'accessoire</label>
+      <Select
+        name="typeAccessoire"
+        options={types}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type d'accessoire..."
+        isClearable
+      />
     </div>
   );
 };
@@ -310,24 +556,32 @@ const DoublePuceField = ({ postData, handleChangeInput }) => {
 // ============================================
 
 const TelephonesField = (props) => {
-  const { step } = props;
+  const { step, subCategory, articleType } = props;
   
+  // Mapa de TODOS los componentes disponibles
   const customComponents = {
+    // Campos comunes
     'title': <TitleField {...props} />,
-    'referencia': <ReferenceField {...props} />,
-    'marque': <MarqueModelTelephone {...props} />,
-    'modele': null, // Viene incluido en marque
+    'description': <DescriptionField {...props} />,
+    
+    // Campos específicos para téléphones
+    'marque': <MarqueField {...props} />,
+    'modele': <ModeleField {...props} />,
+    'reference': <ReferenceField {...props} />,
     'copie': <CopieField {...props} />,
     'memoire': <MemoireField {...props} />,
     'couleur': <CouleurField {...props} />,
     'etat': <EtatTelephoneField {...props} />,
     'os': <OsField {...props} />,
     'appareil': <AppareilField {...props} />,
-    'camerafrontal': <CameraFrontalField {...props} />,
-    'talleecran': <TailleEcranField {...props} />,
+    'cameraFrontal': <CameraFrontalField {...props} />,
+    'tailleEcran': <TailleEcranField {...props} />,
     'ram': <RamField {...props} />,
-    'gigas': <ConnectiviteField {...props} />,
-    'doublepuces': <DoublePuceField {...props} />
+    'connectivite': <ConnectiviteField {...props} />,
+    'doublePuce': <DoublePuceField {...props} />,
+    
+    // Campos para accesorios
+    'typeAccessoire': <TypeAccessoireField {...props} />
   };
   
   const additionalFields = {

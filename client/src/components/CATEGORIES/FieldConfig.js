@@ -183,7 +183,7 @@ export const DYNAMIC_FIELDS_CONFIG = {
         },
         // CHERCHE ACHAT
         'cherche-achat': {
-          step2: ['designation', 'descriptionBien', 'superficie', 'pieces', 'chambres', 'sallesBain', 'specs', 'adresse', 'quartier', 'budget', 'description'],
+          step2: ['price', 'designation', 'descriptionBien', 'superficie', 'pieces', 'chambres', 'sallesBain', 'specs', 'adresse', 'quartier', 'budget', 'description'],
           step3: ['typeOffre'],
           step4: ['wilaya', 'commune', 'telephone', 'email'],
           step5: ['images'],
@@ -210,52 +210,55 @@ export const DYNAMIC_FIELDS_CONFIG = {
       step5: [],
       subCategories: {
         'smartphones': {
-          step2: ['marque', 'modele', 'copie', 'memoire', 'couleur', 'os', 'appareil', 'camerafrontal', 'tailleEcran', 'ram', 'gigas', 'doublePuce', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'reference', 'copie', 'memoire', 'couleur', 'etat', 'os', 'appareil', 'cameraFrontal', 'tailleEcran', 'ram', 'connectivite', 'doublePuce', 'description']
         },
         'telephones-cellulaires': {
-          step2: ['marque', 'modele', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'reference', 'copie', 'memoire', 'couleur', 'etat', 'os', 'ram', 'description']
         },
         'tablettes': {
-          step2: ['marque', 'modele', 'memoire', 'couleur', 'os', 'tailleEcran', 'ram', 'gigas', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'reference', 'copie', 'memoire', 'couleur', 'etat', 'os', 'appareil', 'tailleEcran', 'ram', 'description']
         },
         'fixes-fax': {
-          step2: ['marque', 'modele', 'type', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'etat', 'description']
         },
         'smartwatchs': {
-          step2: ['marque', 'modele', 'couleur', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
-        },
-        'accessoires-telephone': {
-          step2: ['typeAccessoire', 'marque', 'modele', 'couleur', 'compatibilite', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'couleur', 'etat', 'description']
         },
         'pieces-rechange-telephone': {
-          step2: ['typePiece', 'marque', 'modele', 'compatibilite', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeAccessoire', 'marque', 'modele', 'etat', 'description']
         },
         'offres-abonnements': {
-          step2: ['operateur', 'typeOffre', 'duree', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'description']
+        },
+        'accessoires-telephone': {
+          step2: ['typeAccessoire', 'marque', 'couleur', 'etat', 'description']
+        },
+        'protection-antichoc': {
+          step2: ['typeAccessoire', 'marque', 'etat', 'description']
+        },
+        'ecouteurs-son': {
+          step2: ['typeAccessoire', 'marque', 'etat', 'description']
+        },
+        'chargeurs-cables': {
+          step2: ['typeAccessoire', 'marque', 'etat', 'description']
+        },
+        'supports-stabilisateurs': {
+          step2: ['typeAccessoire', 'marque', 'etat', 'description']
+        },
+        'manettes-telephone': {
+          step2: ['typeAccessoire', 'marque', 'etat', 'description']
+        },
+        'vr-telephone': {
+          step2: ['typeAccessoire', 'marque', 'etat', 'description']
+        },
+        'power-banks': {
+          step2: ['typeAccessoire', 'marque', 'etat', 'description']
+        },
+        'stylets': {
+          step2: ['typeAccessoire', 'marque', 'etat', 'description']
+        },
+        'cartes-memoire': {
+          step2: ['memoire', 'marque', 'etat', 'description']
         }
       }
     },
@@ -286,13 +289,13 @@ export const DYNAMIC_FIELDS_CONFIG = {
           step5: ['images']
         },
         'chaussures-femme': {
-          step2: ['typeChaussure', 'marque', 'pointure', 'couleur', 'matiere', 'etat', 'description'],
+          step2: [ 'typeChaussure', 'marque', 'pointure', 'couleur', 'matiere', 'etat', 'description'],
           step3: ['price', 'typeOffre'],
           step4: ['wilaya', 'commune', 'telephone', 'email'],
           step5: ['images']
         },
         'garcons': {
-          step2: ['typeVetement', 'marque', 'taille', 'age', 'couleur', 'matiere', 'etat', 'description'],
+          step2: [ 'typeVetement', 'marque', 'taille', 'age', 'couleur', 'matiere', 'etat', 'description'],
           step3: ['price', 'typeOffre'],
           step4: ['wilaya', 'commune', 'telephone', 'email'],
           step5: ['images']
@@ -450,62 +453,58 @@ export const DYNAMIC_FIELDS_CONFIG = {
       step5: [],
       subCategories: {
         'ordinateurs-portables': {
-          step2: ['marque', 'modele', 'processeur', 'ram', 'stockage', 'tailleEcran', 'carteGraphique', 'garantie', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'processeur', 'ram', 'stockage', 'tailleEcran', 'carteGraphique', 'garantie', 'etat', 'description']
         },
         'ordinateurs-bureau': {
-          step2: ['marque', 'modele', 'processeur', 'ram', 'stockage', 'carteGraphique', 'garantie', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'processeur', 'ram', 'stockage', 'carteGraphique', 'garantie', 'etat', 'description']
         },
         'composants-pc-fixe': {
-          step2: ['typeComposant', 'marque', 'modele', 'specifications', 'garantie', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeComposant', 'marque', 'modele', 'garantie', 'etat', 'description']
         },
-        'ecrans': {
-          step2: ['marque', 'modele', 'tailleEcran', 'resolution', 'tempsReponse', 'garantie', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+        'composants-pc-portable': {
+          step2: ['typeComposant', 'marque', 'modele', 'garantie', 'etat', 'description']
+        },
+        'composants-serveur': {
+          step2: ['typeComposant', 'marque', 'modele', 'garantie', 'etat', 'description']
         },
         'imprimantes-cartouches': {
-          step2: ['typeImprimante', 'marque', 'modele', 'garantie', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'garantie', 'etat', 'description']
         },
         'reseau-connexion': {
-          step2: ['typeEquipement', 'marque', 'modele', 'garantie', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'garantie', 'etat', 'description']
         },
-        'claviers-souris': {
-          step2: ['typePeripherique', 'marque', 'modele', 'connectique', 'garantie', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+        'stockage-externe-racks': {
+          step2: ['marque', 'modele', 'garantie', 'etat', 'description']
         },
         'serveurs': {
-          step2: ['marque', 'modele', 'processeur', 'ram', 'stockage', 'garantie', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'processeur', 'ram', 'stockage', 'garantie', 'etat', 'description']
+        },
+        'ecrans': {
+          step2: ['marque', 'modele', 'tailleEcran', 'garantie', 'etat', 'description']
+        },
+        'onduleurs-stabilisateurs': {
+          step2: ['marque', 'modele', 'garantie', 'etat', 'description']
+        },
+        'claviers-souris': {
+          step2: ['typePeripherique', 'marque', 'modele', 'garantie', 'etat', 'description']
+        },
+        'casques-son': {
+          step2: ['typePeripherique', 'marque', 'modele', 'garantie', 'etat', 'description']
+        },
+        'webcam-videoconference': {
+          step2: ['typePeripherique', 'marque', 'modele', 'garantie', 'etat', 'description']
+        },
+        'cables-adaptateurs': {
+          step2: ['typePeripherique', 'marque', 'modele', 'etat', 'description']
+        },
+        'logiciels-abonnements': {
+          step2: ['description']
         },
         'autre-informatique': {
-          step2: ['marque', 'modele', 'garantie', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'etat', 'description']
         }
       }
     },
-  
     // ==================== PIECES DETACHEES ====================
     'pieces-detachees': {
       step2: [],
@@ -514,46 +513,28 @@ export const DYNAMIC_FIELDS_CONFIG = {
       step5: [],
       subCategories: {
         'pieces-automobiles': {
-          step2: ['typePiece', 'marque', 'modele', 'annee', 'referenceOem', 'compatibilite', 'kilometrage', 'position', 'typeMoteur', 'garantie', 'quantite', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'annee', 'typePiece', 'position', 'etat', 'garantie', 'referenceOem', 'compatibilite', 'kilometrage', 'quantite', 'description']
         },
         'pieces-moto': {
-          step2: ['typePiece', 'marque', 'modele', 'annee', 'compatibilite', 'kilometrage', 'garantie', 'quantite', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'annee', 'typePiece', 'etat', 'garantie', 'referenceOem', 'compatibilite', 'quantite', 'description']
         },
-        'alarme-securite': {
-          step2: ['typeAlarme', 'marque', 'modele', 'garantie', 'quantite', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
-        },
-        'nettoyage-entretien': {
-          step2: ['typeProduit', 'marque', 'quantite', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
-        },
-        'outils-diagnostics': {
-          step2: ['typeOutil', 'marque', 'modele', 'garantie', 'quantite', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+        'pieces-bateaux': {
+          step2: ['marque', 'modele', 'annee', 'typePiece', 'etat', 'garantie', 'description']
         },
         'lubrifiants': {
-          step2: ['typeLubrifiant', 'marque', 'viscosite', 'quantite', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'typeLubrifiant', 'viscosite', 'quantite', 'etat', 'description']
+        },
+        'outils-diagnostics': {
+          step2: ['typeOutilDiagnostic', 'marque', 'modele', 'etat', 'garantie', 'description']
+        },
+        'alarme-securite': {
+          step2: ['typeAlarme', 'marque', 'modele', 'etat', 'garantie', 'description']
+        },
+        'nettoyage-entretien': {
+          step2: ['typeNettoyage', 'marque', 'quantite', 'etat', 'description']
         },
         'autres-pieces': {
-          step2: ['typePiece', 'marque', 'modele', 'quantite', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'typePiece', 'etat', 'description']
         }
       }
     },
@@ -566,92 +547,49 @@ export const DYNAMIC_FIELDS_CONFIG = {
       step5: [],
       subCategories: {
         'salon': {
-          step2: ['typeMeuble', 'marque', 'matiere', 'couleur', 'dimensions', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeMeuble', 'marque', 'modele', 'matiere', 'couleur', 'dimensions', 'etat', 'description']
         },
         'chambres-coucher': {
-          step2: ['typeMeuble', 'marque', 'matiere', 'couleur', 'dimensions', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeMeuble', 'marque', 'modele', 'matiere', 'couleur', 'dimensions', 'etat', 'description']
         },
         'tables': {
-          step2: ['typeTable', 'marque', 'matiere', 'couleur', 'dimensions', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeMeuble', 'marque', 'modele', 'matiere', 'couleur', 'dimensions', 'etat', 'description']
+        },
+        'canape': {
+          step2: ['typeMeuble', 'marque', 'modele', 'matiere', 'couleur', 'dimensions', 'etat', 'description']
         },
         'lits': {
-          step2: ['typeLit', 'marque', 'matiere', 'dimensions', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeMeuble', 'marque', 'modele', 'matiere', 'couleur', 'dimensions', 'etat', 'description']
+        },
+        'tables-pc-bureaux': {
+          step2: ['typeMeubleBureau', 'marque', 'modele', 'matiere', 'couleur', 'dimensions', 'etat', 'description']
         },
         'decoration': {
-          step2: ['typeDecoration', 'marque', 'matiere', 'couleur', 'dimensions', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeDecoration', 'marque', 'matiere', 'couleur', 'dimensions', 'etat', 'description']
         },
         'vaisselle': {
-          step2: ['typeVaisselle', 'marque', 'matiere', 'nbPieces', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
-        },
-        'meubles-bureau': {
-          step2: ['typeMeuble', 'marque', 'matiere', 'couleur', 'dimensions', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
-        },
-        'rideaux': {
-          step2: ['marque', 'matiere', 'couleur', 'dimensions', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeVaisselle', 'matiereVaisselle', 'nbPieces', 'etat', 'description']
         },
         'literie-linge': {
-          step2: ['typeLiterie', 'marque', 'taille', 'matiere', 'couleur', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeLiterie', 'tailleLiterie', 'matiere', 'couleur', 'etat', 'description']
         },
         'tapis-moquettes': {
-          step2: ['marque', 'matiere', 'couleur', 'dimensions', 'forme', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['formeTapis', 'matiere', 'couleur', 'dimensions', 'etat', 'description']
         },
         'puericulture': {
-          step2: ['typeArticle', 'marque', 'modele', 'ageBebe', 'matiere', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typePuericulture', 'ageBebe', 'marque', 'modele', 'etat', 'description']
         },
-        'luminaire': {
-          step2: ['typeLuminaire', 'marque', 'couleur', 'matiere', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+        'rideaux': {
+          step2: ['marque', 'matiere', 'couleur', 'dimensions', 'etat', 'description']
         },
         'fournitures-scolaires': {
-          step2: ['typeFourniture', 'marque', 'quantite', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeFourniture', 'marque', 'etat', 'description']
         },
         'autre-meubles': {
-          step2: ['typeMeuble', 'marque', 'matiere', 'couleur', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeMeuble', 'marque', 'modele', 'matiere', 'couleur', 'etat', 'description']
         }
       }
     },
-  
     // ==================== MATERIAUX ====================
     'materiaux': {
       step2: [],
@@ -660,34 +598,25 @@ export const DYNAMIC_FIELDS_CONFIG = {
       step5: [],
       subCategories: {
         'materiel-professionnel': {
-          step2: ['typeMateriel', 'marque', 'modele', 'puissance', 'tension', 'garantie', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'typeMateriel', 'puissance', 'tension', 'garantie', 'etat', 'description']
         },
         'outillage-professionnel': {
-          step2: ['typeOutil', 'marque', 'modele', 'puissance', 'garantie', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'typeOutil', 'diametre', 'nbVitesses', 'garantie', 'etat', 'description']
         },
         'materiel-agricole': {
-          step2: ['typeMateriel', 'marque', 'modele', 'annee', 'puissance', 'heures', 'garantie', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'typeAgricole', 'annee', 'heures', 'garantie', 'etat', 'description']
         },
         'materiaux-construction': {
-          step2: ['typeMateriau', 'marque', 'quantite', 'uniteMesure', 'etat', 'description'],
-          step3: ['price', 'typeOffre', 'quantite'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeMateriauConstruction', 'quantite', 'uniteMesure', 'etat', 'description']
+        },
+        'matieres-premieres': {
+          step2: ['typeMatierePremiere', 'quantite', 'purete', 'etat', 'description']
+        },
+        'produits-hygiene': {
+          step2: ['typeHygiene', 'marque', 'volume', 'quantite', 'etat', 'description']
         },
         'autre-materiaux': {
-          step2: ['typeProduit', 'marque', 'quantite', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'etat', 'description']
         }
       }
     },
@@ -700,80 +629,108 @@ export const DYNAMIC_FIELDS_CONFIG = {
       step5: [],
       subCategories: {
         'voyage-organise': {
-          step2: ['destination', 'duree', 'dateDepart', 'dateRetour', 'nombrePersonnes', 'transport', 'hebergement', 'activitesIncluses', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['destination', 'duree', 'dateDepart', 'dateRetour', 'nombrePersonnes', 'transport', 'hebergement', 'activitesIncluses', 'description']
         },
         'location-vacances-voyages': {
-          step2: ['destination', 'duree', 'typeHebergement', 'capacite', 'equipements', 'proximite', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['destination', 'typeHebergement', 'capacite', 'equipements', 'proximite', 'dateDepart', 'dateRetour', 'description']
         },
         'hajj-omra': {
-          step2: ['dateDepart', 'dateRetour', 'typePelerinage', 'groupe', 'hotelMakkah', 'hotelMadinah', 'vols', 'transport', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typePelerinage', 'destination', 'groupe', 'duree', 'dateDepart', 'hotelMakkah', 'hotelMadinah', 'vols', 'nombrePersonnes', 'description']
+        },
+        'reservations-visa': {
+          step2: ['compagnie', 'destination', 'typeVoyage', 'nombrePersonnes', 'description']
         },
         'sejour': {
-          step2: ['destination', 'duree', 'dateDepart', 'dateRetour', 'typeSejour', 'categorieHotel', 'nombrePersonnes', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['destination', 'typeSejour', 'categorieHotel', 'duree', 'dateDepart', 'dateRetour', 'nombrePersonnes', 'description']
         },
         'croisiere': {
-          step2: ['destination', 'duree', 'dateDepart', 'dateRetour', 'nomBateau', 'cabine', 'nombrePersonnes', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['nomBateau', 'destination', 'cabine', 'duree', 'dateDepart', 'dateRetour', 'nombrePersonnes', 'description']
         },
         'autre-voyages': {
-          step2: ['destination', 'duree', 'dateDepart', 'dateRetour', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['destination', 'duree', 'description']
         }
       }
     },
-  
-    // ==================== ALIMENTAIRES ====================
     'alimentaires': {
-      step2: [],
-      step3: [],
-      step4: [],
-      step5: [],
+      step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description'],
+      step3: ['price', 'typeOffre'],
+      step4: ['wilaya', 'commune', 'telephone', 'email'],
+      step5: ['images'],
       subCategories: {
-        'fruits-legumes': {
-          step2: ['typeProduit', 'origine', 'saison', 'conditionnement', 'description'],
-          step3: ['price', 'typeOffre', 'quantite'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
-        },
         'produits-laitiers': {
-          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'description'],
-          step3: ['price', 'typeOffre', 'quantite'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
         },
-        'viandes-poissons': {
-          step2: ['typeViande', 'origine', 'poids', 'decoupe', 'description'],
-          step3: ['price', 'typeOffre', 'quantite'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+        'fruits-secs': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'graines-riz-cereales': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'sucres-produits-sucres': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
         },
         'boissons': {
-          step2: ['typeBoisson', 'marque', 'contenance', 'description'],
-          step3: ['price', 'typeOffre', 'quantite'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'viandes-poissons': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'cafe-the-infusion': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'complements-alimentaires': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'miel-derives': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'fruits-legumes': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'ble-farine': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'bonbons-chocolat': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'boulangerie-viennoiserie': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'ingredients-cuisine-patisserie': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'noix-graines': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'plats-cuisines': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'sauces-epices-condiments': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'oeufs': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'huiles': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'pates': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'gateaux': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'emballage': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'aliments-bebe': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
+        },
+        'aliments-dietetiques': {
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
         },
         'autre-alimentaires': {
-          step2: ['typeProduit', 'marque', 'conditionnement', 'description'],
-          step3: ['price', 'typeOffre', 'quantite'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeProduit', 'marque', 'datePeremption', 'conditionnement', 'poidsQuantite', 'composition', 'certifications', 'description']
         }
       }
     },
@@ -786,26 +743,16 @@ export const DYNAMIC_FIELDS_CONFIG = {
       step5: [],
       subCategories: {
         'offres-emploi': {
-          step2: ['poste', 'secteur', 'experienceRequise', 'competences', 'avantages', 'teletravail', 'description'],
-          step3: ['salaire', 'typeContrat'],
-          step4: ['wilaya', 'commune', 'telephone', 'email', 'nomSociete'],
-          step5: ['images']
+          step2: ['poste', 'typeContrat', 'secteurActivite', 'experienceRequise', 'niveauEtudes', 'competences', 'salaire', 'avantages', 'lieuTravail', 'horaires', 'description']
         },
         'demandes-emploi': {
-          step2: ['posteRecherche', 'secteur', 'experience', 'competences', 'mobilite', 'description'],
-          step3: ['salaireSouhaite'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['nomCandidat', 'poste', 'secteurActivite', 'experienceRequise', 'competences', 'disponibilite', 'mobilite', 'pretentionsSalariales', 'description']
         },
         'autres-services-emploi': {
-          step2: ['typeService', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeService', 'description']
         }
       }
     },
-  
     // ==================== LOISIRS ====================
     'loisirs': {
       step2: [],
@@ -814,40 +761,43 @@ export const DYNAMIC_FIELDS_CONFIG = {
       step5: [],
       subCategories: {
         'consoles-jeux-videos': {
-          step2: ['typeConsole', 'marque', 'modele', 'jeuxInclus', 'accessoires', 'garantie', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'typeConsole', 'genreJeu', 'etat', 'description']
         },
         'instruments-musique': {
-          step2: ['typeInstrument', 'marque', 'modele', 'materiau', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'typeInstrument', 'etat', 'description']
         },
         'livres-magazines': {
-          step2: ['titre', 'auteur', 'editeur', 'genre', 'langue', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
-        },
-        'jouets': {
-          step2: ['typeJouet', 'marque', 'ageRecommande', 'materiau', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['auteur', 'genreLitteraire', 'etat', 'description']
         },
         'animalerie': {
-          step2: ['typeAnimal', 'typeProduit', 'marque', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeAnimal', 'etat', 'description']
+        },
+        'jardinage': {
+          step2: ['marque', 'modele', 'typeProduitLoisir', 'etat', 'description']
+        },
+        'barbecue-grillades': {
+          step2: ['marque', 'modele', 'typeProduitLoisir', 'etat', 'description']
+        },
+        'jouets': {
+          step2: ['marque', 'modele', 'etat', 'description']
+        },
+        'chasse-peche': {
+          step2: ['marque', 'modele', 'etat', 'description']
+        },
+        'jeux-loisirs': {
+          step2: ['marque', 'modele', 'etat', 'description']
+        },
+        'vapes-chichas': {
+          step2: ['marque', 'modele', 'etat', 'description']
+        },
+        'produits-accessoires-ete': {
+          step2: ['marque', 'modele', 'etat', 'description']
+        },
+        'antiquites-collections': {
+          step2: ['etat', 'description']
         },
         'autre-loisirs': {
-          step2: ['typeLoisir', 'marque', 'modele', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'etat', 'description']
         }
       }
     },
@@ -860,28 +810,37 @@ export const DYNAMIC_FIELDS_CONFIG = {
       step5: [],
       subCategories: {
         'football': {
-          step2: ['typeEquipement', 'marque', 'taille', 'couleur', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeProduitFootball', 'marque', 'modele', 'tailleChaussure', 'tailleVetementSport', 'etat', 'description']
+        },
+        'hand-voley-basket': {
+          step2: ['marque', 'modele', 'tailleChaussure', 'tailleVetementSport', 'etat', 'description']
+        },
+        'sport-combat': {
+          step2: ['typeEquipementCombat', 'marque', 'modele', 'tailleVetementSport', 'etat', 'description']
         },
         'fitness-musculation': {
-          step2: ['typeEquipement', 'marque', 'poids', 'dimensions', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeEquipementFitness', 'marque', 'modele', 'poids', 'etat', 'description']
+        },
+        'natation': {
+          step2: ['typeEquipementNatation', 'marque', 'tailleVetementSport', 'etat', 'description']
         },
         'velos-trotinettes': {
-          step2: ['typeVehicule', 'marque', 'modele', 'tailleRoue', 'vitesses', 'couleur', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeVelo', 'marque', 'modele', 'tailleVelo', 'etat', 'description']
+        },
+        'sports-raquette': {
+          step2: ['typeSportRaquette', 'marque', 'modele', 'etat', 'description']
+        },
+        'sport-aquatiques': {
+          step2: ['marque', 'modele', 'etat', 'description']
+        },
+        'equitation': {
+          step2: ['marque', 'modele', 'tailleVetementSport', 'etat', 'description']
+        },
+        'petanque': {
+          step2: ['marque', 'modele', 'etat', 'description']
         },
         'autres-sports': {
-          step2: ['typeSport', 'marque', 'modele', 'etat', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['marque', 'modele', 'etat', 'description']
         }
       }
     },
@@ -894,25 +853,107 @@ export const DYNAMIC_FIELDS_CONFIG = {
       step5: [],
       subCategories: {
         'construction-travaux': {
-          step2: ['typeTravaux', 'surface', 'duree', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeService', 'zoneIntervention', 'experience', 'diplomes', 'materielUtilise', 'garantieService', 'references', 'dureeService', 'disponibiliteService', 'description']
+        },
+        'ecoles-formations': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'diplomes', 'langues', 'horaires', 'description']
+        },
+        'industrie-fabrication-services': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'materielUtilise', 'dureeService', 'description']
+        },
+        'transport-demenagement': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'materielUtilise', 'description']
+        },
+        'decoration-amenagement': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'references', 'dureeService', 'description']
+        },
+        'publicite-communication': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'references', 'description']
+        },
+        'nettoyage-jardinage': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'materielUtilise', 'dureeService', 'description']
+        },
+        'froid-climatisation': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'materielUtilise', 'garantieService', 'description']
+        },
+        'traiteurs-gateaux': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'references', 'description']
+        },
+        'medecine-sante': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'diplomes', 'langues', 'horaires', 'description']
         },
         'reparation-auto-diagnostic': {
-          step2: ['typeReparation', 'marque', 'probleme', 'delai', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeService', 'zoneIntervention', 'experience', 'materielUtilise', 'garantieService', 'description']
+        },
+        'securite-alarme': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'materielUtilise', 'garantieService', 'description']
+        },
+        'projets-etudes': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'diplomes', 'references', 'description']
+        },
+        'bureautique-internet': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'langues', 'horaires', 'description']
+        },
+        'location-vehicules': {
+          step2: ['typeService', 'zoneIntervention', 'description']
+        },
+        'menuiserie-meubles': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'references', 'dureeService', 'description']
+        },
+        'impression-edition': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'description']
+        },
+        'hotellerie-restauration-salles': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'description']
+        },
+        'esthetique-beaute': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'diplomes', 'horaires', 'description']
+        },
+        'image-son': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'materielUtilise', 'description']
+        },
+        'comptabilite-economie': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'diplomes', 'description']
+        },
+        'couture-confection': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'references', 'dureeService', 'description']
+        },
+        'maintenance-informatique': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'materielUtilise', 'garantieService', 'description']
+        },
+        'reparation-electromenager': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'materielUtilise', 'garantieService', 'description']
+        },
+        'evenements-divertissement': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'references', 'description']
+        },
+        'paraboles-demos': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'materielUtilise', 'description']
+        },
+        'reparation-electronique': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'materielUtilise', 'garantieService', 'description']
+        },
+        'services-etranger': {
+          step2: ['typeService', 'zoneIntervention', 'langues', 'description']
+        },
+        'flashage-reparation-telephones': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'materielUtilise', 'garantieService', 'description']
+        },
+        'flashage-installation-jeux': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'description']
+        },
+        'juridique': {
+          step2: ['typeService', 'zoneIntervention', 'experience', 'diplomes', 'langues', 'description']
         },
         'autres-services': {
-          step2: ['typeService', 'description'],
-          step3: ['price', 'typeOffre'],
-          step4: ['wilaya', 'commune', 'telephone', 'email'],
-          step5: ['images']
+          step2: ['typeService', 'zoneIntervention', 'description']
         }
       }
     },
+
+
+
+    
   
     // ==================== SANTE & BEAUTE ====================
     'sante-beaute': {

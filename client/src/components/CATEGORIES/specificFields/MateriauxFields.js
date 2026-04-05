@@ -1,36 +1,100 @@
 // 📂 components/CATEGORIES/specificFields/MateriauxField.js
 import React from 'react';
+import Select from 'react-select';
 import BaseCategoryField from './BaseCategoryField';
 
 // ============================================
-// CAMPOS ESPECÍFICOS DE MATÉRIAUX & ÉQUIPEMENT (STEP 2)
+// CAMPOS COMUNES PARA TODAS LAS CATEGORÍAS
+// ============================================
+
+// Titre
+const TitleField = ({ postData, handleChangeInput }) => {
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Titre</label>
+      <input
+        type="text"
+        name="title"
+        className="form-control"
+        placeholder="Titre de l'annonce"
+        value={postData?.title || ''}
+        onChange={handleChangeInput}
+      />
+    </div>
+  );
+};
+
+// Description
+const DescriptionField = ({ postData, handleChangeInput }) => {
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">
+        Description <span className="text-danger">*</span>
+      </label>
+      <textarea
+        name="description"
+        className="form-control"
+        rows="4"
+        placeholder="Décrivez votre produit en détail..."
+        value={postData?.description || ''}
+        onChange={handleChangeInput}
+        required
+      />
+      <small className="text-muted">Décrivez les caractéristiques techniques, l'état, etc.</small>
+    </div>
+  );
+};
+
+// ============================================
+// CAMPOS ESPECÍFICOS PARA MATÉRIAUX & ÉQUIPEMENT
 // ============================================
 
 // Marque
 const MarqueField = ({ postData, handleChangeInput }) => {
   const marques = [
-    'Bosch', 'Makita', 'Dewalt', 'Black+Decker', 'Stanley', 'Facom',
-    'Mac Allister', 'Einhell', 'Ryobi', 'Milwaukee', 'Hilti', 'Metabo',
-    'Hitachi', 'Ferm', 'Parkside', 'Lidl', 'Aldi', 'Caterpillar',
-    'JCB', 'Kubota', 'John Deere', 'New Holland', 'Claas', 'Massey Ferguson',
-    'Lafarge', 'Holcim', 'Vicat', 'Ciments Calcia', 'Point P',
-    'Leroy Merlin', 'Castorama', 'Brico Dépôt', 'Autre'
+    { value: 'Bosch', label: 'Bosch' },
+    { value: 'Makita', label: 'Makita' },
+    { value: 'Dewalt', label: 'Dewalt' },
+    { value: 'Black+Decker', label: 'Black+Decker' },
+    { value: 'Stanley', label: 'Stanley' },
+    { value: 'Facom', label: 'Facom' },
+    { value: 'Einhell', label: 'Einhell' },
+    { value: 'Ryobi', label: 'Ryobi' },
+    { value: 'Milwaukee', label: 'Milwaukee' },
+    { value: 'Hilti', label: 'Hilti' },
+    { value: 'Metabo', label: 'Metabo' },
+    { value: 'Hitachi', label: 'Hitachi' },
+    { value: 'Caterpillar', label: 'Caterpillar' },
+    { value: 'JCB', label: 'JCB' },
+    { value: 'John Deere', label: 'John Deere' },
+    { value: 'Lafarge', label: 'Lafarge' },
+    { value: 'Holcim', label: 'Holcim' },
+    { value: 'Leroy Merlin', label: 'Leroy Merlin' },
+    { value: 'Castorama', label: 'Castorama' },
+    { value: 'Autre', label: 'Autre' }
   ];
+  
+  const selectedOption = marques.find(opt => opt.value === postData?.marque) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'marque', value: selected?.value || '' }
+    });
+  };
   
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Marque</label>
-      <select
+      <Select
         name="marque"
-        className="form-control"
-        value={postData?.marque || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner la marque</option>
-        {marques.map(m => (
-          <option key={m} value={m}>{m}</option>
-        ))}
-      </select>
+        options={marques}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner la marque..."
+        isClearable
+      />
     </div>
   );
 };
@@ -54,41 +118,73 @@ const ModeleField = ({ postData, handleChangeInput }) => {
 
 // État
 const EtatField = ({ postData, handleChangeInput }) => {
+  const etatOptions = [
+    { value: 'Neuf (emballé)', label: '🆕 Neuf (emballé)' },
+    { value: 'Neuf (sans emballage)', label: '📦 Neuf (sans emballage)' },
+    { value: 'Comme neuf', label: '✨ Comme neuf' },
+    { value: 'Très bon état', label: '💪 Très bon état' },
+    { value: 'Bon état', label: '✅ Bon état' },
+    { value: 'État moyen', label: '⚠️ État moyen' },
+    { value: 'À réviser', label: '🔧 À réviser' },
+    { value: 'Pour pièces', label: '⚙️ Pour pièces' }
+  ];
+  
+  const selectedOption = etatOptions.find(opt => opt.value === postData?.etat) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'etat', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">État</label>
-      <select
+      <Select
         name="etat"
-        className="form-control"
-        value={postData?.etat || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Neuf (emballé)">Neuf (emballé)</option>
-        <option value="Neuf (sans emballage)">Neuf (sans emballage)</option>
-        <option value="Comme neuf">Comme neuf</option>
-        <option value="Très bon état">Très bon état</option>
-        <option value="Bon état">Bon état</option>
-        <option value="État moyen">État moyen</option>
-        <option value="À réviser">À réviser</option>
-        <option value="Pour pièces">Pour pièces</option>
-      </select>
+        options={etatOptions}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner l'état..."
+        required
+      />
     </div>
   );
 };
 
 // Garantie
 const GarantieField = ({ postData, handleChangeInput }) => {
+  const garantieOptions = [
+    { value: '3 mois', label: '3 mois' },
+    { value: '6 mois', label: '6 mois' },
+    { value: '1 an', label: '1 an' },
+    { value: '2 ans', label: '2 ans' },
+    { value: '3 ans', label: '3 ans' },
+    { value: 'Sans garantie', label: 'Sans garantie' }
+  ];
+  
+  const selectedOption = garantieOptions.find(opt => opt.value === postData?.garantie) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'garantie', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Garantie</label>
-      <input
-        type="text"
+      <Select
         name="garantie"
-        className="form-control"
-        placeholder="Ex: 6 mois, 1 an, 2 ans..."
-        value={postData?.garantie || ''}
-        onChange={handleChangeInput}
+        options={garantieOptions}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner la garantie..."
+        isClearable
       />
     </div>
   );
@@ -100,27 +196,40 @@ const GarantieField = ({ postData, handleChangeInput }) => {
 
 // Type de matériel
 const TypeMaterielField = ({ postData, handleChangeInput }) => {
+  const types = [
+    { value: 'Matériel BTP', label: '🏗️ Matériel BTP' },
+    { value: 'Matériel de chantier', label: '🚧 Matériel de chantier' },
+    { value: 'Matériel industriel', label: '🏭 Matériel industriel' },
+    { value: 'Matériel de manutention', label: '📦 Matériel de manutention' },
+    { value: 'Matériel de levage', label: '🏗️ Matériel de levage' },
+    { value: 'Matériel de nettoyage', label: '🧹 Matériel de nettoyage' },
+    { value: 'Matériel de soudure', label: '⚡ Matériel de soudure' },
+    { value: 'Matériel de menuiserie', label: '🪚 Matériel de menuiserie' },
+    { value: 'Matériel de plomberie', label: '🔧 Matériel de plomberie' },
+    { value: 'Matériel d\'électricité', label: '⚡ Matériel d\'électricité' }
+  ];
+  
+  const selectedOption = types.find(opt => opt.value === postData?.typeMateriel) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typeMateriel', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Type de matériel</label>
-      <select
-        name="type_materiel"
-        className="form-control"
-        value={postData?.type_materiel || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Matériel BTP">Matériel BTP</option>
-        <option value="Matériel de chantier">Matériel de chantier</option>
-        <option value="Matériel industriel">Matériel industriel</option>
-        <option value="Matériel de manutention">Matériel de manutention</option>
-        <option value="Matériel de levage">Matériel de levage</option>
-        <option value="Matériel de nettoyage">Matériel de nettoyage</option>
-        <option value="Matériel de soudure">Matériel de soudure</option>
-        <option value="Matériel de menuiserie">Matériel de menuiserie</option>
-        <option value="Matériel de plomberie">Matériel de plomberie</option>
-        <option value="Matériel d'électricité">Matériel d'électricité</option>
-      </select>
+      <Select
+        name="typeMateriel"
+        options={types}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type..."
+        isClearable
+      />
     </div>
   );
 };
@@ -147,62 +256,88 @@ const PuissanceField = ({ postData, handleChangeInput }) => {
 
 // Tension / Voltage
 const TensionField = ({ postData, handleChangeInput }) => {
+  const tensions = [
+    { value: '12V', label: '12V' },
+    { value: '24V', label: '24V' },
+    { value: '220V', label: '220V' },
+    { value: '380V (triphasé)', label: '380V (triphasé)' },
+    { value: 'Sans fil (batterie)', label: '🔋 Sans fil (batterie)' },
+    { value: 'Pneumatique', label: '💨 Pneumatique' },
+    { value: 'Thermique', label: '🔥 Thermique' }
+  ];
+  
+  const selectedOption = tensions.find(opt => opt.value === postData?.tension) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'tension', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Tension / Voltage</label>
-      <select
+      <Select
         name="tension"
-        className="form-control"
-        value={postData?.tension || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="12V">12V</option>
-        <option value="24V">24V</option>
-        <option value="220V">220V</option>
-        <option value="380V">380V (triphasé)</option>
-        <option value="Sans fil (batterie)">Sans fil (batterie)</option>
-        <option value="Pneumatique">Pneumatique</option>
-        <option value="Thermique">Thermique</option>
-      </select>
+        options={tensions}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner la tension..."
+        isClearable
+      />
     </div>
   );
 };
 
 // ============================================
-// CAMPOS POUR OUTILLAGE PROFESSIONNEL
+// CAMPOS PARA OUTILLAGE PROFESSIONNEL
 // ============================================
 
 // Type d'outil
 const TypeOutilField = ({ postData, handleChangeInput }) => {
+  const types = [
+    { value: 'Perceuse', label: '🔨 Perceuse' },
+    { value: 'Visseuse', label: '🔧 Visseuse' },
+    { value: 'Perforateur', label: '⚡ Perforateur' },
+    { value: 'Scie circulaire', label: '🪚 Scie circulaire' },
+    { value: 'Scie sauteuse', label: '🪚 Scie sauteuse' },
+    { value: 'Meuleuse', label: '⚙️ Meuleuse' },
+    { value: 'Ponceuse', label: '🔨 Ponceuse' },
+    { value: 'Défonceuse', label: '🔧 Défonceuse' },
+    { value: 'Rabot', label: '🪚 Rabot' },
+    { value: 'Aspirateur chantier', label: '🧹 Aspirateur chantier' },
+    { value: 'Nettoyeur haute pression', label: '💦 Nettoyeur haute pression' },
+    { value: 'Compresseur', label: '💨 Compresseur' },
+    { value: 'Pistolet à peinture', label: '🎨 Pistolet à peinture' },
+    { value: 'Poste à souder', label: '⚡ Poste à souder' },
+    { value: 'Multimètre', label: '📊 Multimètre' },
+    { value: 'Coffret à outils', label: '🧰 Coffret à outils' },
+    { value: 'Lot d\'outillage', label: '📦 Lot d\'outillage' }
+  ];
+  
+  const selectedOption = types.find(opt => opt.value === postData?.typeOutil) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typeOutil', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Type d'outil</label>
-      <select
-        name="type_outil"
-        className="form-control"
-        value={postData?.type_outil || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Perceuse">Perceuse</option>
-        <option value="Visseuse">Visseuse</option>
-        <option value="Perforateur">Perforateur</option>
-        <option value="Scie circulaire">Scie circulaire</option>
-        <option value="Scie sauteuse">Scie sauteuse</option>
-        <option value="Meuleuse">Meuleuse</option>
-        <option value="Ponceuse">Ponceuse</option>
-        <option value="Défonceuse">Défonceuse</option>
-        <option value="Rabot">Rabot</option>
-        <option value="Aspirateur chantier">Aspirateur chantier</option>
-        <option value="Nettoyeur haute pression">Nettoyeur haute pression</option>
-        <option value="Compresseur">Compresseur</option>
-        <option value="Pistolet à peinture">Pistolet à peinture</option>
-        <option value="Poste à souder">Poste à souder</option>
-        <option value="Multimètre">Multimètre</option>
-        <option value="Coffret à outils">Coffret à outils</option>
-        <option value="Lot d'outillage">Lot d'outillage</option>
-      </select>
+      <Select
+        name="typeOutil"
+        options={types}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type d'outil..."
+        isClearable
+      />
     </div>
   );
 };
@@ -229,62 +364,88 @@ const DiametreField = ({ postData, handleChangeInput }) => {
 
 // Nombre de vitesses
 const NbVitessesField = ({ postData, handleChangeInput }) => {
+  const vitesses = [
+    { value: '1', label: '1 vitesse' },
+    { value: '2', label: '2 vitesses' },
+    { value: '3', label: '3 vitesses' },
+    { value: '4', label: '4 vitesses' },
+    { value: 'Variable', label: 'Variable' }
+  ];
+  
+  const selectedOption = vitesses.find(opt => opt.value === postData?.nbVitesses) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'nbVitesses', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Nombre de vitesses</label>
-      <select
-        name="nb_vitesses"
-        className="form-control"
-        value={postData?.nb_vitesses || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="1">1 vitesse</option>
-        <option value="2">2 vitesses</option>
-        <option value="3">3 vitesses</option>
-        <option value="4">4 vitesses</option>
-        <option value="Variable">Variable</option>
-      </select>
+      <Select
+        name="nbVitesses"
+        options={vitesses}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner..."
+        isClearable
+      />
     </div>
   );
 };
 
 // ============================================
-// CAMPOS POUR MATÉRIAUX DE CONSTRUCTION
+// CAMPOS PARA MATÉRIAUX DE CONSTRUCTION
 // ============================================
 
 // Type de matériau
 const TypeMateriauConstructionField = ({ postData, handleChangeInput }) => {
+  const types = [
+    { value: 'Ciment', label: '🏗️ Ciment' },
+    { value: 'Sable', label: '🏖️ Sable' },
+    { value: 'Gravier', label: '🪨 Gravier' },
+    { value: 'Parpaing', label: '🧱 Parpaing' },
+    { value: 'Brique', label: '🧱 Brique' },
+    { value: 'Carreau de plâtre', label: '🔲 Carreau de plâtre' },
+    { value: 'Plâtre', label: '⚪ Plâtre' },
+    { value: 'Enduit', label: '🎨 Enduit' },
+    { value: 'Peinture', label: '🎨 Peinture' },
+    { value: 'Carrelage', label: '🔲 Carrelage' },
+    { value: 'Parquet', label: '🪵 Parquet' },
+    { value: 'Stratifié', label: '📋 Stratifié' },
+    { value: 'Bois', label: '🪵 Bois' },
+    { value: 'Acier', label: '⚙️ Acier' },
+    { value: 'Aluminium', label: '🥤 Aluminium' },
+    { value: 'PVC', label: '🔵 PVC' },
+    { value: 'Isolant', label: '🧣 Isolant' },
+    { value: 'Tuile', label: '🏠 Tuile' },
+    { value: 'Ardoise', label: '🪨 Ardoise' }
+  ];
+  
+  const selectedOption = types.find(opt => opt.value === postData?.typeMateriauConstruction) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typeMateriauConstruction', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Type de matériau</label>
-      <select
-        name="type_materiau_construction"
-        className="form-control"
-        value={postData?.type_materiau_construction || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Ciment">Ciment</option>
-        <option value="Sable">Sable</option>
-        <option value="Gravier">Gravier</option>
-        <option value="Parpaing">Parpaing</option>
-        <option value="Brique">Brique</option>
-        <option value="Carreau de plâtre">Carreau de plâtre</option>
-        <option value="Plâtre">Plâtre</option>
-        <option value="Enduit">Enduit</option>
-        <option value="Peinture">Peinture</option>
-        <option value="Carrelage">Carrelage</option>
-        <option value="Parquet">Parquet</option>
-        <option value="Stratifié">Stratifié</option>
-        <option value="Bois">Bois</option>
-        <option value="Acier">Acier</option>
-        <option value="Aluminium">Aluminium</option>
-        <option value="PVC">PVC</option>
-        <option value="Isolant">Isolant</option>
-        <option value="Tuile">Tuile</option>
-        <option value="Ardoise">Ardoise</option>
-      </select>
+      <Select
+        name="typeMateriauConstruction"
+        options={types}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type..."
+        isClearable
+      />
     </div>
   );
 };
@@ -311,59 +472,85 @@ const QuantiteField = ({ postData, handleChangeInput }) => {
 
 // Unité de mesure
 const UniteMesureField = ({ postData, handleChangeInput }) => {
+  const unites = [
+    { value: 'mètre', label: 'mètre (m)' },
+    { value: 'mètre carré', label: 'mètre carré (m²)' },
+    { value: 'mètre cube', label: 'mètre cube (m³)' },
+    { value: 'kilogramme', label: 'kilogramme (kg)' },
+    { value: 'tonne', label: 'tonne (t)' },
+    { value: 'litre', label: 'litre (L)' },
+    { value: 'sac', label: 'sac' },
+    { value: 'palette', label: 'palette' },
+    { value: 'rouleau', label: 'rouleau' }
+  ];
+  
+  const selectedOption = unites.find(opt => opt.value === postData?.uniteMesure) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'uniteMesure', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Unité de mesure</label>
-      <select
-        name="unite_mesure"
-        className="form-control"
-        value={postData?.unite_mesure || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="mètre">mètre (m)</option>
-        <option value="mètre carré">mètre carré (m²)</option>
-        <option value="mètre cube">mètre cube (m³)</option>
-        <option value="kilogramme">kilogramme (kg)</option>
-        <option value="tonne">tonne (t)</option>
-        <option value="litre">litre (L)</option>
-        <option value="sac">sac</option>
-        <option value="palette">palette</option>
-        <option value="rouleau">rouleau</option>
-      </select>
+      <Select
+        name="uniteMesure"
+        options={unites}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner l'unité..."
+        isClearable
+      />
     </div>
   );
 };
 
 // ============================================
-// CAMPOS POUR MATIÈRES PREMIÈRES
+// CAMPOS PARA MATIÈRES PREMIÈRES
 // ============================================
 
 // Type de matière première
 const TypeMatierePremiereField = ({ postData, handleChangeInput }) => {
+  const types = [
+    { value: 'Métal', label: '⚙️ Métal' },
+    { value: 'Plastique', label: '🧴 Plastique' },
+    { value: 'Bois', label: '🪵 Bois' },
+    { value: 'Textile', label: '🧵 Textile' },
+    { value: 'Cuir', label: '👞 Cuir' },
+    { value: 'Caoutchouc', label: '⚫ Caoutchouc' },
+    { value: 'Verre', label: '🥛 Verre' },
+    { value: 'Papier', label: '📄 Papier' },
+    { value: 'Carton', label: '📦 Carton' },
+    { value: 'Chimique', label: '🧪 Chimique' },
+    { value: 'Alimentaire', label: '🍎 Alimentaire' },
+    { value: 'Pharmaceutique', label: '💊 Pharmaceutique' }
+  ];
+  
+  const selectedOption = types.find(opt => opt.value === postData?.typeMatierePremiere) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typeMatierePremiere', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Type de matière première</label>
-      <select
-        name="type_matiere_premiere"
-        className="form-control"
-        value={postData?.type_matiere_premiere || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Métal">Métal</option>
-        <option value="Plastique">Plastique</option>
-        <option value="Bois">Bois</option>
-        <option value="Textile">Textile</option>
-        <option value="Cuir">Cuir</option>
-        <option value="Caoutchouc">Caoutchouc</option>
-        <option value="Verre">Verre</option>
-        <option value="Papier">Papier</option>
-        <option value="Carton">Carton</option>
-        <option value="Chimique">Chimique</option>
-        <option value="Alimentaire">Alimentaire</option>
-        <option value="Pharmaceutique">Pharmaceutique</option>
-      </select>
+      <Select
+        name="typeMatierePremiere"
+        options={types}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type..."
+        isClearable
+      />
     </div>
   );
 };
@@ -390,37 +577,50 @@ const PureteField = ({ postData, handleChangeInput }) => {
 };
 
 // ============================================
-// CAMPOS POUR PRODUITS D'HYGIÈNE
+// CAMPOS PARA PRODUITS D'HYGIÈNE
 // ============================================
 
 // Type de produit d'hygiène
-const TypeHygièneField = ({ postData, handleChangeInput }) => {
+const TypeHygieneField = ({ postData, handleChangeInput }) => {
+  const types = [
+    { value: 'Désinfectant', label: '🧴 Désinfectant' },
+    { value: 'Détergent', label: '🧼 Détergent' },
+    { value: 'Savon liquide', label: '🧼 Savon liquide' },
+    { value: 'Gel hydroalcoolique', label: '🧴 Gel hydroalcoolique' },
+    { value: 'Papier toilette', label: '🧻 Papier toilette' },
+    { value: 'Essuie-tout', label: '📄 Essuie-tout' },
+    { value: 'Mouchoirs', label: '🤧 Mouchoirs' },
+    { value: 'Produit nettoyant', label: '🧹 Produit nettoyant' },
+    { value: 'Lessive', label: '🧺 Lessive' },
+    { value: 'Adoucissant', label: '🌸 Adoucissant' },
+    { value: 'Produit vaisselle', label: '🍽️ Produit vaisselle' },
+    { value: 'Balai', label: '🧹 Balai' },
+    { value: 'Serpillière', label: '🧽 Serpillière' },
+    { value: 'Seau', label: '🪣 Seau' },
+    { value: 'Gants ménagers', label: '🧤 Gants ménagers' }
+  ];
+  
+  const selectedOption = types.find(opt => opt.value === postData?.typeHygiene) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typeHygiene', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Type de produit</label>
-      <select
-        name="type_hygiene"
-        className="form-control"
-        value={postData?.type_hygiene || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Désinfectant">Désinfectant</option>
-        <option value="Détergent">Détergent</option>
-        <option value="Savon liquide">Savon liquide</option>
-        <option value="Gel hydroalcoolique">Gel hydroalcoolique</option>
-        <option value="Papier toilette">Papier toilette</option>
-        <option value="Essuie-tout">Essuie-tout</option>
-        <option value="Mouchoirs">Mouchoirs</option>
-        <option value="Produit nettoyant">Produit nettoyant</option>
-        <option value="Lessive">Lessive</option>
-        <option value="Adoucissant">Adoucissant</option>
-        <option value="Produit vaisselle">Produit vaisselle</option>
-        <option value="Balai">Balai</option>
-        <option value="Serpillière">Serpillière</option>
-        <option value="Seau">Seau</option>
-        <option value="Gants ménagers">Gants ménagers</option>
-      </select>
+      <Select
+        name="typeHygiene"
+        options={types}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type..."
+        isClearable
+      />
     </div>
   );
 };
@@ -446,35 +646,48 @@ const VolumeField = ({ postData, handleChangeInput }) => {
 };
 
 // ============================================
-// CAMPOS POUR MATÉRIEL AGRICOLE
+// CAMPOS PARA MATÉRIEL AGRICOLE
 // ============================================
 
 // Type de matériel agricole
 const TypeAgricoleField = ({ postData, handleChangeInput }) => {
+  const types = [
+    { value: 'Tracteur', label: '🚜 Tracteur' },
+    { value: 'Moissonneuse', label: '🌾 Moissonneuse' },
+    { value: 'Labour', label: '🪚 Labour' },
+    { value: 'Herse', label: '🔧 Herse' },
+    { value: 'Semoir', label: '🌱 Semoir' },
+    { value: 'Pulvérisateur', label: '💦 Pulvérisateur' },
+    { value: 'Faucheuse', label: '✂️ Faucheuse' },
+    { value: 'Presse à balles', label: '📦 Presse à balles' },
+    { value: 'Remorque agricole', label: '🚛 Remorque agricole' },
+    { value: 'Matériel d\'irrigation', label: '💧 Matériel d\'irrigation' },
+    { value: 'Matériel d\'élevage', label: '🐄 Matériel d\'élevage' },
+    { value: 'Outils agricoles', label: '🔧 Outils agricoles' },
+    { value: 'Pièces agricoles', label: '⚙️ Pièces agricoles' }
+  ];
+  
+  const selectedOption = types.find(opt => opt.value === postData?.typeAgricole) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typeAgricole', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Type de matériel</label>
-      <select
-        name="type_agricole"
-        className="form-control"
-        value={postData?.type_agricole || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Tracteur">Tracteur</option>
-        <option value="Moissonneuse">Moissonneuse</option>
-        <option value="Labour">Labour</option>
-        <option value="Herse">Herse</option>
-        <option value="Semoir">Semoir</option>
-        <option value="Pulvérisateur">Pulvérisateur</option>
-        <option value="Faucheuse">Faucheuse</option>
-        <option value="Presse à balles">Presse à balles</option>
-        <option value="Remorque agricole">Remorque agricole</option>
-        <option value="Matériel d'irrigation">Matériel d'irrigation</option>
-        <option value="Matériel d'élevage">Matériel d'élevage</option>
-        <option value="Outils agricoles">Outils agricoles</option>
-        <option value="Pièces agricoles">Pièces agricoles</option>
-      </select>
+      <Select
+        name="typeAgricole"
+        options={types}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner le type..."
+        isClearable
+      />
     </div>
   );
 };
@@ -482,22 +695,29 @@ const TypeAgricoleField = ({ postData, handleChangeInput }) => {
 // Année (pour tracteurs)
 const AnneeField = ({ postData, handleChangeInput }) => {
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 30 }, (_, i) => currentYear - i);
+  const years = Array.from({ length: 30 }, (_, i) => ({ value: (currentYear - i).toString(), label: (currentYear - i).toString() }));
+  
+  const selectedOption = years.find(opt => opt.value === postData?.annee) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'annee', value: selected?.value || '' }
+    });
+  };
   
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Année de fabrication</label>
-      <select
+      <Select
         name="annee"
-        className="form-control"
-        value={postData?.annee || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner l'année</option>
-        {years.map(year => (
-          <option key={year} value={year}>{year}</option>
-        ))}
-      </select>
+        options={years}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner l'année..."
+        isClearable
+      />
     </div>
   );
 };
@@ -527,40 +747,45 @@ const HeuresField = ({ postData, handleChangeInput }) => {
 // ============================================
 
 const MateriauxField = (props) => {
-  const { step } = props;
+  const { step, subCategory, articleType } = props;
   
+  // Mapa de TODOS los componentes disponibles
   const customComponents = {
     // Campos comunes
+    'title': <TitleField {...props} />,
+    'description': <DescriptionField {...props} />,
+    
+    // Campos específicos para matériaux
     'marque': <MarqueField {...props} />,
     'modele': <ModeleField {...props} />,
     'etat': <EtatField {...props} />,
     'garantie': <GarantieField {...props} />,
     
     // Matériel professionnel
-    'type_materiel': <TypeMaterielField {...props} />,
+    'typeMateriel': <TypeMaterielField {...props} />,
     'puissance': <PuissanceField {...props} />,
     'tension': <TensionField {...props} />,
     
     // Outillage professionnel
-    'type_outil': <TypeOutilField {...props} />,
+    'typeOutil': <TypeOutilField {...props} />,
     'diametre': <DiametreField {...props} />,
-    'nb_vitesses': <NbVitessesField {...props} />,
+    'nbVitesses': <NbVitessesField {...props} />,
     
     // Matériaux de construction
-    'type_materiau_construction': <TypeMateriauConstructionField {...props} />,
+    'typeMateriauConstruction': <TypeMateriauConstructionField {...props} />,
     'quantite': <QuantiteField {...props} />,
-    'unite_mesure': <UniteMesureField {...props} />,
+    'uniteMesure': <UniteMesureField {...props} />,
     
     // Matières premières
-    'type_matiere_premiere': <TypeMatierePremiereField {...props} />,
+    'typeMatierePremiere': <TypeMatierePremiereField {...props} />,
     'purete': <PureteField {...props} />,
     
     // Produits d'hygiène
-    'type_hygiene': <TypeHygièneField {...props} />,
+    'typeHygiene': <TypeHygieneField {...props} />,
     'volume': <VolumeField {...props} />,
     
     // Matériel agricole
-    'type_agricole': <TypeAgricoleField {...props} />,
+    'typeAgricole': <TypeAgricoleField {...props} />,
     'annee': <AnneeField {...props} />,
     'heures': <HeuresField {...props} />
   };

@@ -1,4 +1,6 @@
+// 📂 components/CATEGORIES/specificFields/ImmobiliersFields.js
 import React from 'react';
+import Select from 'react-select';
 import BaseCategoryField from './BaseCategoryField';
 
 // ============================================
@@ -87,231 +89,361 @@ const EtageField = ({ postData, handleChangeInput }) => {
 
 // Nombre de pièces
 const PiecesField = ({ postData, handleChangeInput }) => {
+  const piecesOptions = [
+    { value: '1', label: '1 pièce' },
+    { value: '2', label: '2 pièces' },
+    { value: '3', label: '3 pièces' },
+    { value: '4', label: '4 pièces' },
+    { value: '5', label: '5 pièces' },
+    { value: '6', label: '6+ pièces' }
+  ];
+  
+  const selectedOption = piecesOptions.find(opt => opt.value === postData?.pieces) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'pieces', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Nombre de pièces</label>
-      <select
+      <Select
         name="pieces"
-        className="form-control"
-        value={postData?.pieces || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="1">1 pièce</option>
-        <option value="2">2 pièces</option>
-        <option value="3">3 pièces</option>
-        <option value="4">4 pièces</option>
-        <option value="5">5 pièces</option>
-        <option value="6">6+ pièces</option>
-      </select>
+        options={piecesOptions}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner..."
+        isClearable
+      />
     </div>
   );
 };
 
 // Nombre de chambres
 const ChambresField = ({ postData, handleChangeInput }) => {
+  const chambresOptions = [
+    { value: '1', label: '1 chambre' },
+    { value: '2', label: '2 chambres' },
+    { value: '3', label: '3 chambres' },
+    { value: '4', label: '4 chambres' },
+    { value: '5', label: '5+ chambres' }
+  ];
+  
+  const selectedOption = chambresOptions.find(opt => opt.value === postData?.chambres) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'chambres', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Nombre de chambres</label>
-      <select
+      <Select
         name="chambres"
-        className="form-control"
-        value={postData?.chambres || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="1">1 chambre</option>
-        <option value="2">2 chambres</option>
-        <option value="3">3 chambres</option>
-        <option value="4">4 chambres</option>
-        <option value="5">5+ chambres</option>
-      </select>
+        options={chambresOptions}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner..."
+        isClearable
+      />
     </div>
   );
 };
 
 // Salles de bain
 const SallesBainField = ({ postData, handleChangeInput }) => {
+  const sallesBainOptions = [
+    { value: '1', label: '1' },
+    { value: '2', label: '2' },
+    { value: '3', label: '3' },
+    { value: '4', label: '4+' }
+  ];
+  
+  const selectedOption = sallesBainOptions.find(opt => opt.value === postData?.sallesBain) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'sallesBain', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Salles de bain</label>
-      <select
+      <Select
         name="sallesBain"
-        className="form-control"
-        value={postData?.sallesBain || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4">4+</option>
-      </select>
+        options={sallesBainOptions}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner..."
+        isClearable
+      />
     </div>
   );
 };
 
 // Jardin
 const JardinField = ({ postData, handleChangeInput }) => {
+  const jardinOptions = [
+    { value: 'oui', label: 'Oui' },
+    { value: 'non', label: 'Non' }
+  ];
+  
+  const selectedOption = jardinOptions.find(opt => opt.value === postData?.jardin) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'jardin', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Jardin</label>
-      <select
+      <Select
         name="jardin"
-        className="form-control"
-        value={postData?.jardin || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="oui">Oui</option>
-        <option value="non">Non</option>
-      </select>
+        options={jardinOptions}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner..."
+        isClearable
+      />
     </div>
   );
 };
 
 // Piscine
 const PiscineField = ({ postData, handleChangeInput }) => {
+  const piscineOptions = [
+    { value: 'oui', label: 'Oui' },
+    { value: 'non', label: 'Non' }
+  ];
+  
+  const selectedOption = piscineOptions.find(opt => opt.value === postData?.piscine) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'piscine', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Piscine</label>
-      <select
+      <Select
         name="piscine"
-        className="form-control"
-        value={postData?.piscine || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="oui">Oui</option>
-        <option value="non">Non</option>
-      </select>
+        options={piscineOptions}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner..."
+        isClearable
+      />
     </div>
   );
 };
 
-// Spécifications (MULTISELECT)
+// Spécifications (MULTISELECT con react-select)
 const SpecsImmobilierField = ({ postData, handleChangeInput }) => {
   const optionsList = [
-    'Meublé', 'Non meublé', 'Ascenseur', 'Parking', 'Jardin', 
-    'Balcon', 'Terrasse', 'Cave', 'Garde', 'Interphone', 
-    'Vidéosurveillance', 'Chauffage central', 'Climatisation', 
-    'Piscine', 'Salle de sport', 'Cuisine équipée', 'Double vitrage'
+    { value: 'Meublé', label: 'Meublé' },
+    { value: 'Non meublé', label: 'Non meublé' },
+    { value: 'Ascenseur', label: 'Ascenseur' },
+    { value: 'Parking', label: 'Parking' },
+    { value: 'Jardin', label: 'Jardin' },
+    { value: 'Balcon', label: 'Balcon' },
+    { value: 'Terrasse', label: 'Terrasse' },
+    { value: 'Cave', label: 'Cave' },
+    { value: 'Garde', label: 'Garde' },
+    { value: 'Interphone', label: 'Interphone' },
+    { value: 'Vidéosurveillance', label: 'Vidéosurveillance' },
+    { value: 'Chauffage central', label: 'Chauffage central' },
+    { value: 'Climatisation', label: 'Climatisation' },
+    { value: 'Piscine', label: 'Piscine' },
+    { value: 'Salle de sport', label: 'Salle de sport' },
+    { value: 'Cuisine équipée', label: 'Cuisine équipée' },
+    { value: 'Double vitrage', label: 'Double vitrage' }
   ];
   
-  const handleOptionChange = (e) => {
-    const selected = Array.from(e.target.selectedOptions, option => option.value);
+  const selectedValues = postData?.specs || [];
+  const selectedOptions = optionsList.filter(opt => selectedValues.includes(opt.value));
+  
+  const handleChange = (selected) => {
+    const values = selected ? selected.map(opt => opt.value) : [];
     handleChangeInput({
-      target: { name: 'specs', value: selected }
+      target: { name: 'specs', value: values }
     });
   };
   
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Spécifications</label>
-      <select
+      <Select
+        isMulti
         name="specs"
-        multiple
-        className="form-control"
-        value={postData?.specs || []}
-        onChange={handleOptionChange}
-        style={{ height: '150px' }}
-      >
-        {optionsList.map(option => (
-          <option key={option} value={option}>{option}</option>
-        ))}
-      </select>
-      <small className="text-muted">Maintenez Ctrl pour sélectionner plusieurs options</small>
+        options={optionsList}
+        value={selectedOptions}
+        onChange={handleChange}
+        className="basic-multi-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner les options..."
+        noOptionsMessage={() => "Aucune option disponible"}
+      />
+      <small className="text-muted">Vous pouvez sélectionner plusieurs options</small>
     </div>
   );
 };
 
 // Transaction - Requerido
 const TransactionField = ({ postData, handleChangeInput }) => {
+  const transactionOptions = [
+    { value: 'Vente', label: 'Vente' },
+    { value: 'Location', label: 'Location' },
+    { value: 'Location vacances', label: 'Location vacances' }
+  ];
+  
+  const selectedOption = transactionOptions.find(opt => opt.value === postData?.transaction) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'transaction', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">
         Transaction <span className="text-danger">*</span>
       </label>
-      <select
+      <Select
         name="transaction"
-        className="form-control"
-        value={postData?.transaction || ''}
-        onChange={handleChangeInput}
+        options={transactionOptions}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner..."
         required
-      >
-        <option value="">Sélectionner</option>
-        <option value="Vente">Vente</option>
-        <option value="Location">Location</option>
-        <option value="Location vacances">Location vacances</option>
-      </select>
+      />
     </div>
   );
 };
 
 // Type de vente - Requerido
 const TypeVenteField = ({ postData, handleChangeInput }) => {
+  const typeVenteOptions = [
+    { value: 'Particulier', label: 'Particulier' },
+    { value: 'Professionnel', label: 'Professionnel' },
+    { value: 'Agence', label: 'Agence immobilière' },
+    { value: 'Promoteur', label: 'Promoteur' }
+  ];
+  
+  const selectedOption = typeVenteOptions.find(opt => opt.value === postData?.typeVente) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typeVente', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">
         Type de vente <span className="text-danger">*</span>
       </label>
-      <select
+      <Select
         name="typeVente"
-        className="form-control"
-        value={postData?.typeVente || ''}
-        onChange={handleChangeInput}
+        options={typeVenteOptions}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner..."
         required
-      >
-        <option value="">Sélectionner</option>
-        <option value="Particulier">Particulier</option>
-        <option value="Professionnel">Professionnel</option>
-        <option value="Agence">Agence immobilière</option>
-        <option value="Promoteur">Promoteur</option>
-      </select>
+      />
     </div>
   );
 };
 
 // Papiers
 const PapiersImmobilierField = ({ postData, handleChangeInput }) => {
+  const papiersOptions = [
+    { value: 'Titre de propriété', label: 'Titre de propriété' },
+    { value: 'Acte de vente', label: 'Acte de vente' },
+    { value: 'Permis de construire', label: 'Permis de construire' },
+    { value: 'Diagnostic technique', label: 'Diagnostic technique' },
+    { value: 'Aucun', label: 'Aucun' }
+  ];
+  
+  const selectedOption = papiersOptions.find(opt => opt.value === postData?.papiers) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'papiers', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Papiers</label>
-      <select
+      <Select
         name="papiers"
-        className="form-control"
-        value={postData?.papiers || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Titre de propriété">Titre de propriété</option>
-        <option value="Acte de vente">Acte de vente</option>
-        <option value="Permis de construire">Permis de construire</option>
-        <option value="Diagnostic technique">Diagnostic technique</option>
-        <option value="Aucun">Aucun</option>
-      </select>
+        options={papiersOptions}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner..."
+        isClearable
+      />
     </div>
   );
 };
 
 // Conditions de paiement
 const ConditionsPaiementField = ({ postData, handleChangeInput }) => {
+  const conditionsOptions = [
+    { value: 'Comptant', label: 'Comptant' },
+    { value: 'Crédit', label: 'Crédit' },
+    { value: 'Crédit bancaire', label: 'Crédit bancaire' },
+    { value: 'Crédit vendeur', label: 'Crédit vendeur' },
+    { value: 'Échange', label: 'Échange' }
+  ];
+  
+  const selectedOption = conditionsOptions.find(opt => opt.value === postData?.conditionsPaiement) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'conditionsPaiement', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Conditions de paiement</label>
-      <select
+      <Select
         name="conditionsPaiement"
-        className="form-control"
-        value={postData?.conditionsPaiement || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Comptant">Comptant</option>
-        <option value="Crédit">Crédit</option>
-        <option value="Crédit bancaire">Crédit bancaire</option>
-        <option value="Crédit vendeur">Crédit vendeur</option>
-        <option value="Échange">Échange</option>
-      </select>
+        options={conditionsOptions}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner..."
+        isClearable
+      />
     </div>
   );
 };
@@ -372,58 +504,97 @@ const QuartierField = ({ postData, handleChangeInput }) => {
 
 // Type de terrain
 const TypeTerrainField = ({ postData, handleChangeInput }) => {
+  const terrainOptions = [
+    { value: 'Constructible', label: 'Constructible' },
+    { value: 'Non constructible', label: 'Non constructible' },
+    { value: 'Agricole', label: 'Agricole' }
+  ];
+  
+  const selectedOption = terrainOptions.find(opt => opt.value === postData?.typeTerrain) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'typeTerrain', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Type de terrain</label>
-      <select
+      <Select
         name="typeTerrain"
-        className="form-control"
-        value={postData?.typeTerrain || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Constructible">Constructible</option>
-        <option value="Non constructible">Non constructible</option>
-        <option value="Agricole">Agricole</option>
-      </select>
+        options={terrainOptions}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner..."
+        isClearable
+      />
     </div>
   );
 };
 
 // Viabilisé
 const ViabiliseField = ({ postData, handleChangeInput }) => {
+  const viabiliseOptions = [
+    { value: 'oui', label: 'Oui' },
+    { value: 'non', label: 'Non' }
+  ];
+  
+  const selectedOption = viabiliseOptions.find(opt => opt.value === postData?.viabilise) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'viabilise', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Viabilisé</label>
-      <select
+      <Select
         name="viabilise"
-        className="form-control"
-        value={postData?.viabilise || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="oui">Oui</option>
-        <option value="non">Non</option>
-      </select>
+        options={viabiliseOptions}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner..."
+        isClearable
+      />
     </div>
   );
 };
 
 // Vitrine
 const VitrineField = ({ postData, handleChangeInput }) => {
+  const vitrineOptions = [
+    { value: 'oui', label: 'Oui' },
+    { value: 'non', label: 'Non' }
+  ];
+  
+  const selectedOption = vitrineOptions.find(opt => opt.value === postData?.vitrine) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'vitrine', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Vitrine</label>
-      <select
+      <Select
         name="vitrine"
-        className="form-control"
-        value={postData?.vitrine || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="oui">Oui</option>
-        <option value="non">Non</option>
-      </select>
+        options={vitrineOptions}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner..."
+        isClearable
+      />
     </div>
   );
 };
@@ -484,13 +655,13 @@ const NbEtagesField = ({ postData, handleChangeInput }) => {
 };
 
 // ============================================
-// COMPONENTE PRINCIPAL (MISMA ESTRUCTURA QUE VEHICULES)
+// COMPONENTE PRINCIPAL (MISMA ESTRUCTURA)
 // ============================================
 
 const ImmobiliersFields = (props) => {
   const { step } = props;
   
-  // Mapeo de campos específicos (SOLO los que son únicos de inmobiliario)
+  // Mapeo de campos específicos
   const customComponents = {
     'designation': <DesignationField {...props} />,
     'descriptionBien': <DescriptionBienField {...props} />,
