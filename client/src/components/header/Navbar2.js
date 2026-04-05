@@ -443,9 +443,14 @@ const handleLogout = () => {
                   style={{ color: 'white' }}
                 />
               </Link>
-            )}
 
-            {/* Notificaciones - Solo para usuarios autenticados */}
+ 
+
+            )}
+ 
+ 
+ 
+      {/* Notificaciones - Solo para usuarios autenticados */}
             {auth.user && (
               <div
                 className="position-relative icon-button"
@@ -577,7 +582,9 @@ const handleLogout = () => {
                     </div>
 
                     <NavDropdown.Divider />
-
+                    <MenuItem icon={FaUserCircle} iconColor="#667eea" to='/admin/posts'>
+                   aprobar posts
+                    </MenuItem>
                     <MenuItem icon={FaUserCircle} iconColor="#667eea" to={`/profile/${auth.user._id}`}>
                       {t('profile') || 'Mi Perfil'}
                     </MenuItem>

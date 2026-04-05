@@ -12,10 +12,9 @@ import {
   Eye,
   Clock,
   Image as ImageIcon,
-  GeoAlt,
-  PersonCircle
+  GeoAlt
 } from 'react-bootstrap-icons';
-import { Modal, Button } from 'react-bootstrap'; // ← Importamos Modal y Button
+import { Modal, Button } from 'react-bootstrap';
 import { likePost, unLikePost, savePost, unSavePost } from '../redux/actions/postAction';
 import ImageWithFallback from './ImageWithFallback';
 import moment from 'moment';
@@ -23,48 +22,38 @@ import 'moment/locale/fr';
 
 moment.locale('fr');
 
-const PostThumb = ({ posts, result }) => {
+const PostThumb = ({ posts }) => {
     const { auth } = useSelector(state => state);
     const dispatch = useDispatch();
     
-    const [hoveredPost, setHoveredPost] = useState(null);
     const [likedPosts, setLikedPosts] = useState({});
     const [savedPosts, setSavedPosts] = useState({});
     const [carouselIndexes, setCarouselIndexes] = useState({});
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-    const [showModal, setShowModal] = useState(false); // ← Estado para el modal
+    const [showModal, setShowModal] = useState(false);
 
-    // Detectar tamaño de pantalla
     useEffect(() => {
-        const handleResize = () => {
-            setWindowWidth(window.innerWidth);
-        };
-        
+        const handleResize = () => setWindowWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     const isMobile = windowWidth <= 768;
 
-    // Inicializar likes y guardados
     useEffect(() => {
         if (!Array.isArray(posts)) return;
-
         const initialLikes = {};
         const initialSaved = {};
         const initialCarousel = {};
         
         posts.forEach(post => {
             if (!post || !post._id) return;
-            
             if (post.likes?.some(like => like._id === auth.user?._id)) {
                 initialLikes[post._id] = true;
             }
-            
             if (auth.user?.saved?.includes(post._id)) {
                 initialSaved[post._id] = true;
             }
-            
             initialCarousel[post._id] = 0;
         });
         
@@ -73,16 +62,13 @@ const PostThumb = ({ posts, result }) => {
         setCarouselIndexes(initialCarousel);
     }, [posts, auth.user]);
 
-    // Formatear precio
     const formatPrice = (price) => {
         if (!price && price !== 0) return null;
         return `${price?.toLocaleString()} DA`;
     };
 
-    // Obtener imágenes del post
     const getPostImages = (post) => {
         if (!post) return [];
-        
         if (Array.isArray(post.images) && post.images.length > 0) {
             return post.images.map(img => {
                 if (typeof img === 'string') return img;
@@ -91,16 +77,13 @@ const PostThumb = ({ posts, result }) => {
                 return null;
             }).filter(Boolean);
         }
-        
         if (post.image) {
             if (typeof post.image === 'string') return [post.image];
             if (post.image.url) return [post.image.url];
         }
-        
         return [];
     };
 
-    // Obtener título
     const getDisplayTitle = (post) => {
         if (post.title) return post.title;
         if (post.subCategory && post.articleType) {
@@ -109,7 +92,6 @@ const PostThumb = ({ posts, result }) => {
         return post.subCategory || post.articleType || 'Annonce';
     };
 
-    // Obtener ubicación
     const getLocation = (post) => {
         const wilaya = post.wilaya || post.location?.wilaya;
         const commune = post.commune || post.location?.commune;
@@ -117,18 +99,16 @@ const PostThumb = ({ posts, result }) => {
         return `${wilaya || ''} ${commune ? `- ${commune}` : ''}`;
     };
 
-    // Handlers
     const handleLike = async (post, e) => {
         e.preventDefault();
         e.stopPropagation();
         if (!auth.token) {
-            setShowModal(true); // ← Mostrar modal si no hay token
+            setShowModal(true);
             return;
         }
         
         const postId = post._id;
         const wasLiked = likedPosts[postId];
-        
         setLikedPosts(prev => ({ ...prev, [postId]: !wasLiked }));
         
         try {
@@ -146,13 +126,12 @@ const PostThumb = ({ posts, result }) => {
         e.preventDefault();
         e.stopPropagation();
         if (!auth.token) {
-            setShowModal(true); // ← Mostrar modal si no hay token
+            setShowModal(true);
             return;
         }
         
         const postId = post._id;
         const wasSaved = savedPosts[postId];
-        
         setSavedPosts(prev => ({ ...prev, [postId]: !wasSaved }));
         
         try {
@@ -169,7 +148,6 @@ const PostThumb = ({ posts, result }) => {
     const handleCarouselPrev = (postId, images, e) => {
         e.preventDefault();
         e.stopPropagation();
-        
         setCarouselIndexes(prev => {
             const currentIndex = prev[postId] || 0;
             const newIndex = currentIndex === 0 ? images.length - 1 : currentIndex - 1;
@@ -180,7 +158,6 @@ const PostThumb = ({ posts, result }) => {
     const handleCarouselNext = (postId, images, e) => {
         e.preventDefault();
         e.stopPropagation();
-        
         setCarouselIndexes(prev => {
             const currentIndex = prev[postId] || 0;
             const newIndex = currentIndex === images.length - 1 ? 0 : currentIndex + 1;
@@ -189,16 +166,11 @@ const PostThumb = ({ posts, result }) => {
     };
 
     if (!Array.isArray(posts) || posts.length === 0) {
-        return (
-            <div className="text-center py-5">
-                <ImageIcon size={48} color="#9ca3af" className="mb-3" />
-                <p style={{ color: '#6b7280' }}>Aucune publication à afficher</p>
-            </div>
-        );
+        return null;
     }
 
     return (
-        <div className="post-thumb-grid">
+        <div className="post-thumb-horizontal">
             {posts.map((post) => {
                 if (!post || !post._id) return null;
                 
@@ -206,144 +178,101 @@ const PostThumb = ({ posts, result }) => {
                 const currentImageIndex = carouselIndexes[post._id] || 0;
                 const hasMultipleImages = images.length > 1;
                 const currentImage = images[currentImageIndex];
-                const isHovered = hoveredPost === post._id;
                 
                 return (
-                    <div 
-                        key={post._id}
-                        className="post-thumb-wrapper"
-                        onMouseEnter={() => setHoveredPost(post._id)}
-                        onMouseLeave={() => setHoveredPost(null)}
-                    >
-                        <Link 
-                            to={`/post/${post._id}`}
-                            className="post-thumb-link"
-                        >
-                            <div className="post-thumb-card">
-                                {/* Contenedor de imagen */}
-                                <div className="post-thumb-image-container">
+                    <div key={post._id} className="post-thumb-horizontal-item">
+                        <Link to={`/post/${post._id}`} className="post-thumb-horizontal-link">
+                            <div className="post-thumb-horizontal-card">
+                                {/* Imagen */}
+                                <div className="post-thumb-horizontal-image-container">
                                     {currentImage ? (
                                         <>
                                             <ImageWithFallback
                                                 src={currentImage}
                                                 alt={getDisplayTitle(post)}
-                                                className="post-thumb-image"
-                                                fallbackSrc={`https://via.placeholder.com/300x200/e5e7eb/9ca3af?text=Image`}
+                                                className="post-thumb-horizontal-image"
+                                                fallbackSrc="https://via.placeholder.com/120x120/e5e7eb/9ca3af?text=Image"
                                             />
                                             
-                                            {/* Controles del carrusel (solo en hover) */}
-                                            {hasMultipleImages && isHovered && (
+                                            {hasMultipleImages && (
                                                 <>
                                                     <button
-                                                        className="post-thumb-carousel-btn post-thumb-carousel-prev"
+                                                        className="post-thumb-horizontal-carousel-btn prev"
                                                         onClick={(e) => handleCarouselPrev(post._id, images, e)}
                                                     >
-                                                        <ChevronLeft size={isMobile ? 14 : 16} color="#4b5563" />
+                                                        <ChevronLeft size={14} />
                                                     </button>
-                                                    
                                                     <button
-                                                        className="post-thumb-carousel-btn post-thumb-carousel-next"
+                                                        className="post-thumb-horizontal-carousel-btn next"
                                                         onClick={(e) => handleCarouselNext(post._id, images, e)}
                                                     >
-                                                        <ChevronRight size={isMobile ? 14 : 16} color="#4b5563" />
+                                                        <ChevronRight size={14} />
                                                     </button>
+                                                    <div className="post-thumb-horizontal-image-counter">
+                                                        {currentImageIndex + 1}/{images.length}
+                                                    </div>
                                                 </>
-                                            )}
-                                            
-                                            {/* Contador de imágenes */}
-                                            {hasMultipleImages && (
-                                                <div className="post-thumb-image-counter">
-                                                    {currentImageIndex + 1}/{images.length}
-                                                </div>
-                                            )}
-                                            
-                                            {/* Botón de guardar */}
-                                            <button
-                                                className="post-thumb-save-btn"
-                                                onClick={(e) => handleSave(post, e)}
-                                                style={{
-                                                    backgroundColor: savedPosts[post._id] ? '#e5e7eb' : '#ffffff'
-                                                }}
-                                            >
-                                                {savedPosts[post._id] ? (
-                                                    <BookmarkFill size={isMobile ? 12 : 14} color="#4b5563" />
-                                                ) : (
-                                                    <Bookmark size={isMobile ? 12 : 14} color="#6b7280" />
-                                                )}
-                                            </button>
-                                            
-                                            {/* Botón de like */}
-                                            <button
-                                                className="post-thumb-like-btn"
-                                                onClick={(e) => handleLike(post, e)}
-                                                style={{
-                                                    backgroundColor: likedPosts[post._id] ? '#fee2e2' : '#ffffff'
-                                                }}
-                                            >
-                                                {likedPosts[post._id] ? (
-                                                    <HeartFill size={isMobile ? 12 : 14} color="#dc2626" />
-                                                ) : (
-                                                    <Heart size={isMobile ? 12 : 14} color="#6b7280" />
-                                                )}
-                                            </button>
-                                            
-                                            {/* Contador de likes */}
-                                            {post.likes?.length > 0 && (
-                                                <div className="post-thumb-likes-counter">
-                                                    <HeartFill size={8} color="#dc2626" />
-                                                    <span>{post.likes.length}</span>
-                                                </div>
                                             )}
                                         </>
                                     ) : (
-                                        <div className="post-thumb-no-image">
-                                            <ImageIcon size={32} color="#9ca3af" />
-                                            <span>Pas d'image</span>
+                                        <div className="post-thumb-horizontal-no-image">
+                                            <ImageIcon size={24} />
                                         </div>
                                     )}
+                                    
+                                    <button
+                                        className="post-thumb-horizontal-save-btn"
+                                        onClick={(e) => handleSave(post, e)}
+                                    >
+                                        {savedPosts[post._id] ? (
+                                            <BookmarkFill size={12} color="#4b5563" />
+                                        ) : (
+                                            <Bookmark size={12} color="#6b7280" />
+                                        )}
+                                    </button>
                                 </div>
 
-                                {/* Footer del post */}
-                                <div className="post-thumb-footer">
-                                    {/* FILA 1: Título */}
-                                    <div className="post-thumb-row">
-                                        <span className="post-thumb-title">
-                                            {getDisplayTitle(post)}
-                                        </span>
+                                {/* Información */}
+                                <div className="post-thumb-horizontal-info">
+                                    <div className="post-thumb-horizontal-title">
+                                        {getDisplayTitle(post)}
                                     </div>
-
-                                    {/* FILA 2: Precio */}
                                     {formatPrice(post.price) && (
-                                        <div className="post-thumb-row">
-                                            <span className="post-thumb-price">
-                                                {formatPrice(post.price)}
-                                            </span>
+                                        <div className="post-thumb-horizontal-price">
+                                            {formatPrice(post.price)}
                                         </div>
                                     )}
-
-                                    {/* FILA 3: Ubicación */}
-                                    {getLocation(post) && (
-                                        <div className="post-thumb-row">
-                                            <span className="post-thumb-location">
-                                                <GeoAlt size={10} color="#9ca3af" className="me-1" />
-                                                {getLocation(post)}
-                                            </span>
-                                        </div>
-                                    )}
-
-                                    {/* FILA 4: Fecha y vistas */}
-                                    <div className="post-thumb-row d-flex justify-content-between">
-                                        <span className="post-thumb-date">
-                                            <Clock size={10} color="#9ca3af" className="me-1" />
-                                            {moment(post.createdAt).fromNow()}
+                                    <div className="post-thumb-horizontal-meta">
+                                        <span className="location">
+                                            <GeoAlt size={10} /> {getLocation(post) || 'Algérie'}
                                         </span>
-                                        <span className="post-thumb-views">
-                                            <Eye size={10} color="#9ca3af" className="me-1" />
-                                            {post.views || 0}
+                                        <span className="date">
+                                            <Clock size={10} /> {moment(post.createdAt).fromNow()}
                                         </span>
                                     </div>
-
-                                  
+                                    <div className="post-thumb-horizontal-actions">
+                                        <button
+                                            className="action-btn like-btn"
+                                            onClick={(e) => handleLike(post, e)}
+                                        >
+                                            {likedPosts[post._id] ? (
+                                                <HeartFill size={12} color="#dc2626" />
+                                            ) : (
+                                                <Heart size={12} />
+                                            )}
+                                            <span>{post.likes?.length || 0}</span>
+                                        </button>
+                                        <button
+                                            className="action-btn save-btn"
+                                            onClick={(e) => handleSave(post, e)}
+                                        >
+                                            {savedPosts[post._id] ? (
+                                                <BookmarkFill size={12} color="#4b5563" />
+                                            ) : (
+                                                <Bookmark size={12} />
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </Link>
@@ -351,255 +280,205 @@ const PostThumb = ({ posts, result }) => {
                 );
             })}
 
-            {/* Modal de autenticación */}
             <Modal show={showModal} onHide={() => setShowModal(false)} centered size="sm">
                 <Modal.Header closeButton>
-                    <Modal.Title style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Heart size={18} color="#dc2626" />
-                        <span>Authentification requise</span>
-                    </Modal.Title>
+                    <Modal.Title>Authentification requise</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <p style={{ color: '#6b7280', marginBottom: '12px' }}>
-                        Vous devez vous connecter ou vous inscrire pour aimer ou sauvegarder une annonce.
-                    </p>
+                    <p>Connectez-vous pour aimer ou sauvegarder cette annonce.</p>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                        <Button 
-                            variant="primary" 
-                            size="sm" 
-                            style={{ flex: 1 }}
-                            onClick={() => window.location.href = '/login'}
-                        >
+                        <Button variant="primary" size="sm" onClick={() => window.location.href = '/login'}>
                             Se connecter
                         </Button>
-                        <Button 
-                            variant="success" 
-                            size="sm" 
-                            style={{ flex: 1 }}
-                            onClick={() => window.location.href = '/register'}
-                        >
+                        <Button variant="success" size="sm" onClick={() => window.location.href = '/register'}>
                             S'inscrire
                         </Button>
                     </div>
                 </Modal.Body>
             </Modal>
 
-            {/* Estilos CSS (se mantienen igual) */}
             <style jsx="true">{`
-                .post-thumb-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-                    gap: 20px;
-                    padding: 16px 0;
+                .post-thumb-horizontal {
+                    display: flex;
+                    flex-direction: row;
+                    gap: 1rem;
+                    overflow-x: auto;
+                    overflow-y: hidden;
+                    padding: 0.5rem 0;
+                    scrollbar-width: thin;
                 }
                 
-                .post-thumb-wrapper {
-                    width: 100%;
+                .post-thumb-horizontal-item {
+                    flex: 0 0 auto;
+                    width: 280px;
                 }
                 
-                .post-thumb-link {
+                .post-thumb-horizontal-link {
                     text-decoration: none;
-                    display: block;
-                    height: 100%;
                 }
                 
-                .post-thumb-card {
+                .post-thumb-horizontal-card {
+                    background: white;
                     border: 1px solid #e5e7eb;
                     border-radius: 12px;
                     overflow: hidden;
-                    background-color: #ffffff;
-                    height: 100%;
-                    display: flex;
-                    flex-direction: column;
+                    transition: all 0.2s ease;
                 }
                 
-                /* Contenedor de imagen */
-                .post-thumb-image-container {
+                .post-thumb-horizontal-card:hover {
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                    transform: translateY(-2px);
+                }
+                
+                .post-thumb-horizontal-image-container {
                     position: relative;
-                    height: ${isMobile ? '180px' : '200px'};
-                    background-color: #f9fafb;
+                    height: 160px;
+                    background: #f9fafb;
                     overflow: hidden;
                 }
                 
-                .post-thumb-image {
+                .post-thumb-horizontal-image {
                     width: 100%;
                     height: 100%;
                     object-fit: cover;
                 }
                 
-                .post-thumb-no-image {
-                    width: 100%;
-                    height: 100%;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    color: #9ca3af;
-                    font-size: 12px;
-                    gap: 8px;
-                }
-                
-                /* Botones de carrusel */
-                .post-thumb-carousel-btn {
+                .post-thumb-horizontal-carousel-btn {
                     position: absolute;
                     top: 50%;
                     transform: translateY(-50%);
-                    width: ${isMobile ? '28px' : '32px'};
-                    height: ${isMobile ? '28px' : '32px'};
+                    width: 24px;
+                    height: 24px;
                     border: 1px solid #e5e7eb;
                     border-radius: 50%;
-                    background-color: #ffffff;
+                    background: white;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     cursor: pointer;
-                    z-index: 5;
+                    z-index: 2;
                 }
                 
-                .post-thumb-carousel-prev {
-                    left: 8px;
+                .post-thumb-horizontal-carousel-btn.prev {
+                    left: 4px;
                 }
                 
-                .post-thumb-carousel-next {
-                    right: 8px;
+                .post-thumb-horizontal-carousel-btn.next {
+                    right: 4px;
                 }
                 
-                /* Contador de imágenes */
-                .post-thumb-image-counter {
+                .post-thumb-horizontal-image-counter {
                     position: absolute;
-                    bottom: 8px;
-                    right: 8px;
-                    background-color: rgba(0,0,0,0.5);
-                    color: #ffffff;
-                    padding: 2px 8px;
-                    border-radius: 12px;
-                    font-size: ${isMobile ? '10px' : '11px'};
-                    z-index: 4;
+                    bottom: 4px;
+                    right: 4px;
+                    background: rgba(0,0,0,0.5);
+                    color: white;
+                    padding: 2px 6px;
+                    border-radius: 10px;
+                    font-size: 10px;
                 }
                 
-                /* Botones de acción */
-                .post-thumb-save-btn,
-                .post-thumb-like-btn {
+                .post-thumb-horizontal-save-btn {
                     position: absolute;
-                    width: ${isMobile ? '30px' : '32px'};
-                    height: ${isMobile ? '30px' : '32px'};
+                    top: 4px;
+                    right: 4px;
+                    width: 28px;
+                    height: 28px;
                     border: 1px solid #e5e7eb;
                     border-radius: 50%;
-                    background-color: #ffffff;
+                    background: white;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     cursor: pointer;
-                    z-index: 5;
                 }
                 
-                .post-thumb-save-btn {
-                    top: 8px;
-                    right: 8px;
-                }
-                
-                .post-thumb-like-btn {
-                    top: 8px;
-                    left: 8px;
-                }
-                
-                .post-thumb-likes-counter {
-                    position: absolute;
-                    bottom: 8px;
-                    left: 8px;
-                    background-color: rgba(0,0,0,0.5);
-                    color: #ffffff;
-                    padding: 2px 8px;
-                    border-radius: 12px;
-                    font-size: ${isMobile ? '10px' : '11px'};
+                .post-thumb-horizontal-no-image {
+                    width: 100%;
+                    height: 100%;
                     display: flex;
                     align-items: center;
-                    gap: 4px;
-                    z-index: 4;
+                    justify-content: center;
+                    color: #9ca3af;
                 }
                 
-                /* Footer */
-                .post-thumb-footer {
-                    padding: 12px;
-                    background-color: #ffffff;
-                    flex: 1;
+                .post-thumb-horizontal-info {
+                    padding: 10px;
                 }
                 
-                .post-thumb-row {
-                    margin: 2px 0;
-                    line-height: 1.4;
-                }
-                
-                .post-thumb-title {
-                    font-size: ${isMobile ? '14px' : '15px'};
+                .post-thumb-horizontal-title {
+                    font-size: 14px;
                     font-weight: 600;
                     color: #111827;
-                    display: block;
+                    margin-bottom: 4px;
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
                 }
                 
-                .post-thumb-price {
-                    font-size: ${isMobile ? '13px' : '14px'};
+                .post-thumb-horizontal-price {
+                    font-size: 13px;
                     font-weight: 600;
                     color: #dc2626;
+                    margin-bottom: 6px;
                 }
                 
-                .post-thumb-location {
-                    font-size: ${isMobile ? '11px' : '12px'};
+                .post-thumb-horizontal-meta {
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 10px;
                     color: #6b7280;
-                    display: flex;
-                    align-items: center;
+                    margin-bottom: 8px;
                 }
                 
-                .post-thumb-date,
-                .post-thumb-views {
-                    font-size: ${isMobile ? '10px' : '11px'};
-                    color: #9ca3af;
+                .post-thumb-horizontal-meta .location,
+                .post-thumb-horizontal-meta .date {
                     display: flex;
                     align-items: center;
+                    gap: 3px;
                 }
                 
-                .post-thumb-seller {
+                .post-thumb-horizontal-actions {
                     display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    margin-top: 8px;
-                    padding-top: 8px;
+                    gap: 12px;
+                    padding-top: 6px;
                     border-top: 1px solid #f3f4f6;
                 }
                 
-                .post-thumb-seller-avatar {
-                    width: ${isMobile ? '20px' : '22px'};
-                    height: ${isMobile ? '20px' : '22px'};
-                    border-radius: 50%;
-                    object-fit: cover;
+                .action-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    background: none;
+                    border: none;
+                    font-size: 11px;
+                    color: #6b7280;
+                    cursor: pointer;
+                    padding: 4px 8px;
+                    border-radius: 6px;
+                    transition: all 0.2s;
                 }
                 
-                .post-thumb-seller-name {
-                    font-size: ${isMobile ? '11px' : '12px'};
-                    font-weight: 500;
-                    color: #4b5563;
+                .action-btn:hover {
+                    background: #f3f4f6;
                 }
                 
-                /* Responsive */
-                @media (max-width: 768px) {
-                    .post-thumb-grid {
-                        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-                        gap: 12px;
-                    }
+                .like-btn span {
+                    font-size: 11px;
                 }
                 
-                @media (max-width: 480px) {
-                    .post-thumb-grid {
-                        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-                        gap: 8px;
-                    }
-                    
-                    .post-thumb-footer {
-                        padding: 8px;
-                    }
+                .post-thumb-horizontal::-webkit-scrollbar {
+                    height: 6px;
+                }
+                
+                .post-thumb-horizontal::-webkit-scrollbar-track {
+                    background: #f1f1f1;
+                    border-radius: 10px;
+                }
+                
+                .post-thumb-horizontal::-webkit-scrollbar-thumb {
+                    background: #cbd5e0;
+                    border-radius: 10px;
                 }
             `}</style>
         </div>

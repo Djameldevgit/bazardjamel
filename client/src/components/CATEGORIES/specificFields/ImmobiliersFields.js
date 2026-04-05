@@ -1,8 +1,11 @@
-// 📂 components/CATEGORIES/specificFields/ImmobiliersField.js
 import React from 'react';
 import BaseCategoryField from './BaseCategoryField';
 
-// Désignation
+// ============================================
+// CAMPOS ESPECÍFICOS DE INMOBILIARIO (STEP 2)
+// ============================================
+
+// Désignation - Requerido
 const DesignationField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
@@ -22,7 +25,7 @@ const DesignationField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Description du bien
+// Description du bien - Requerido
 const DescriptionBienField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
@@ -42,7 +45,7 @@ const DescriptionBienField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Superficie
+// Superficie - Requerido
 const SuperficieField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
@@ -186,7 +189,7 @@ const PiscineField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Spécifications
+// Spécifications (MULTISELECT)
 const SpecsImmobilierField = ({ postData, handleChangeInput }) => {
   const optionsList = [
     'Meublé', 'Non meublé', 'Ascenseur', 'Parking', 'Jardin', 
@@ -222,7 +225,7 @@ const SpecsImmobilierField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Transaction
+// Transaction - Requerido
 const TransactionField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
@@ -245,7 +248,7 @@ const TransactionField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Type de vente
+// Type de vente - Requerido
 const TypeVenteField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
@@ -313,11 +316,11 @@ const ConditionsPaiementField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Description
+// Description Extra
 const DescriptionExtraField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
-      <label className="form-label fw-bold">Description</label>
+      <label className="form-label fw-bold">Description complémentaire</label>
       <textarea
         name="descriptionExtra"
         className="form-control"
@@ -330,12 +333,12 @@ const DescriptionExtraField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Adresse du bien
+// Adresse du bien - Requerido
 const AdresseBienField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">
-        Adresse du bien <span className="text-danger">* (obligatoire)</span>
+        Adresse du bien <span className="text-danger">*</span>
       </label>
       <input
         type="text"
@@ -425,7 +428,7 @@ const VitrineField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Hauteur
+// Hauteur sous plafond
 const HauteurField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
@@ -481,12 +484,13 @@ const NbEtagesField = ({ postData, handleChangeInput }) => {
 };
 
 // ============================================
-// COMPONENTE PRINCIPAL
+// COMPONENTE PRINCIPAL (MISMA ESTRUCTURA QUE VEHICULES)
 // ============================================
 
 const ImmobiliersFields = (props) => {
   const { step } = props;
   
+  // Mapeo de campos específicos (SOLO los que son únicos de inmobiliario)
   const customComponents = {
     'designation': <DesignationField {...props} />,
     'descriptionBien': <DescriptionBienField {...props} />,

@@ -1,4 +1,4 @@
-// 📂 redux/reducers/postReducer.js - VERSIÓN CORREGIDA
+// 📂 redux/reducers/postReducer.js - VERSIÓN CORREGIDA CON FILTRO pendiente
 
 import { POST_TYPES } from '../actions/postAction';
 import { GLOBALTYPES } from '../actions/globalTypes';
@@ -10,7 +10,7 @@ const initialState = {
   result: 0,
   page: 1,
   detailPost: null,
-  postToEdit: null,  // ✅ AÑADIR: Para almacenar el post a editar
+  postToEdit: null,
   error: null,
   filters: {
     categoryId: null,
@@ -21,7 +21,7 @@ const initialState = {
   },
   
   // Posts similares - UNIFICADO
-  similarPosts: [],  // ✅ UNIFICAR: usar solo similarPosts
+  similarPosts: [],
   similarPostsTotal: 0,
   similarPostsPage: 1,
   similarPostsTotalPages: 1,
@@ -34,7 +34,7 @@ const initialState = {
   loadingMorePosts: false,
   postsError: null,
   hasMorePosts: true,
-  postsLastUpdate: null,  // ✅ Para forzar refrescos
+  postsLastUpdate: null,
   pagination: {
     currentPage: 1,
     totalPages: 1,
@@ -60,10 +60,12 @@ const postReducer = (state = initialState, action) => {
 
     case POST_TYPES.LOAD_MORE_POSTS_SUCCESS: {
       const payloadPagination = action.payload.pagination || {};
+      // 🔥 FILTRAR posts pendientes
+      const filteredNewPosts = (action.payload.posts || []).filter(post => post.pendiente === false);
       return {
         ...state,
         loadingMorePosts: false,
-        posts: [...state.posts, ...(action.payload.posts || [])],
+        posts: [...state.posts, ...filteredNewPosts],
         hasMorePosts: payloadPagination.hasMore ?? false,
         pagination: {
           currentPage: payloadPagination.currentPage || state.pagination.currentPage,
@@ -93,6 +95,10 @@ const postReducer = (state = initialState, action) => {
       return { ...state, loading: action.payload };
 
     case POST_TYPES.CREATE_POST:
+      // 🔥 NO agregar posts pendientes al home
+      if (action.payload.pendiente === true) {
+        return state;
+      }
       return { 
         ...state, 
         posts: [action.payload, ...state.posts], 
@@ -101,9 +107,11 @@ const postReducer = (state = initialState, action) => {
       };
 
     case POST_TYPES.GET_POSTS:
+      // 🔥 FILTRAR posts pendientes
+      const filteredPosts = (action.payload.posts || []).filter(post => post.pendiente === false);
       return {
         ...state,
-        posts: action.payload.posts || [],
+        posts: filteredPosts,
         result: action.payload.total || 0,
         page: action.payload.page || 1,
         loading: false
@@ -117,6 +125,7 @@ const postReducer = (state = initialState, action) => {
       console.log('🔄 REDUCER UPDATE_POST:', {
         id: action.payload?._id,
         title: action.payload?.title,
+        pendiente: action.payload?.pendiente,
         categoryChanged: action.payload?._categoryChanged
       });
 
@@ -148,6 +157,12 @@ const postReducer = (state = initialState, action) => {
           post._id === action.payload._id ? action.payload : post
         );
       }
+      
+      // 🔥 Si el post se volvió pendiente (después de editar), lo quitamos de la lista
+      if (action.payload.pendiente === true && oldPost?.pendiente === false) {
+        updatedPosts = updatedPosts.filter(post => post._id !== action.payload._id);
+        console.log('🗑️ Post removido porque ahora está pendiente');
+      }
 
       // 5. Si el post que se está editando es el postToEdit, actualizarlo también
       const newPostToEdit = state.postToEdit?._id === action.payload._id
@@ -158,7 +173,7 @@ const postReducer = (state = initialState, action) => {
         ...state,
         posts: updatedPosts,
         detailPost: newDetailPost,
-        postToEdit: newPostToEdit,  // ✅ Actualizar también el post en edición
+        postToEdit: newPostToEdit,
         postsLastUpdate: Date.now()
       };
     }
@@ -206,7 +221,7 @@ const postReducer = (state = initialState, action) => {
       if (newPage === 1 || newCurrentPostId !== state.currentSimilarPostId) {
         return {
           ...state,
-          similarPosts: safeSimilarPosts,  // ✅ USAR similarPosts (no similarPostsArray)
+          similarPosts: safeSimilarPosts,
           similarPostsTotal: newTotal,
           similarPostsPage: newPage,
           similarPostsTotalPages: newTotalPages,
@@ -220,7 +235,7 @@ const postReducer = (state = initialState, action) => {
       // Agregar más posts (paginación)
       return {
         ...state,
-        similarPosts: [...state.similarPosts, ...safeSimilarPosts],  // ✅ Concatenar en similarPosts
+        similarPosts: [...state.similarPosts, ...safeSimilarPosts],
         similarPostsTotal: newTotal,
         similarPostsPage: newPage,
         similarPostsTotalPages: newTotalPages,
@@ -232,7 +247,7 @@ const postReducer = (state = initialState, action) => {
     case POST_TYPES.CLEAR_SIMILAR_POSTS:
       return {
         ...state,
-        similarPosts: [],  // ✅ Limpiar similarPosts
+        similarPosts: [],
         similarPostsTotal: 0,
         similarPostsPage: 1,
         similarPostsTotalPages: 1,

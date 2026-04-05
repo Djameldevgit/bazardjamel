@@ -354,7 +354,7 @@ const TypeQuadField = ({ postData, handleChangeInput }) => (
 // COMPONENTE PRINCIPAL
 // ============================================
 
-const VehiculesField = (props) => {
+const VehiculesFields = (props) => {
   const { step } = props;
   
   const customComponents = { 
@@ -400,4 +400,4 @@ const VehiculesField = (props) => {
   return null;
 };
 
-export default VehiculesField;
+export default VehiculesFields;

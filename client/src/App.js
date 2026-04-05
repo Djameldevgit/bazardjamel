@@ -33,6 +33,7 @@ import ProfileSaved from './pages/users/ProfileSaved';
 import CreateBoutiqueProductPage from './pages/boutiqueProduct/CreateBoutiqueProductPage';
 //import CreateImageHomeCarousel from './pages/carousel/CreateImageHomeCarousel';
 import MesProduitsBoutiquePage from './pages/boutiqueProduct/MesProduitsBoutiqueDashborad';
+import AdminPostsPage from './pages/AdminPostsPage';
 
  
 function App() {
@@ -66,6 +67,8 @@ function App() {
   <Route exact path="/" component={Home} />
   <Route exact path="/register" component={Register} />
   <Route exact path="/login" component={Login} />
+
+  <Route path="/admin/posts" component={AdminPostsPage} />
 
   {/* ============ RUTAS DE BOUTIQUES - PRIMERO LAS MÁS ESPECÍFICAS ============ */}
   <Route exact path="/boutique/:boutiqueId/products/new" component={CreateBoutiqueProductPage} />

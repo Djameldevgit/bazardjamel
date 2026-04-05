@@ -1,10 +1,11 @@
 // components/UserPosts/UserPosts.js
 import React, { useState, useEffect } from 'react';
-import PostThumb from './PostThumb';
-import LoadIcon from '../images/loading.gif';
-import LoadMoreBtn from './LoadMoreBtn';
-
-// Función auxiliar para peticiones GET sin autenticación
+import LoadMoreBtn from '../../components/LoadMoreBtn';
+import PostThumb from '../../components/PostThumb';
+ 
+import LoadIcon from '../../images/loading.gif';
+ 
+ 
 const fetchPublicAPI = async (url) => {
   const response = await fetch(`${process.env.REACT_APP_API_URL}/api/${url}`);
   if (!response.ok) {

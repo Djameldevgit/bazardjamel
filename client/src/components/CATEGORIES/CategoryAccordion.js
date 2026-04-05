@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Accordion, Form, Badge, Card, Button, Spinner, Alert } from 'react-bootstrap';
-import { useTranslation } from 'react-i18next';
+ 
 import { ChevronRight, ChevronDown, ChevronUp, CheckCircle, ArrowRightCircle } from 'react-bootstrap-icons';
 import { useSelector, useDispatch } from 'react-redux';
 import { getCategoriesForAccordion } from '../../redux/actions/categoryAction';

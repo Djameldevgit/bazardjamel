@@ -126,8 +126,13 @@ const postSchema = new mongoose.Schema(
       type: String,
       unique: true,
       index: true
+      
     },
-
+    pendiente: {
+      type: Boolean,
+      default: true,
+      index: true
+    },
     // 🔒 Estado
     isActive: {
       type: Boolean,

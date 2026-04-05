@@ -95,7 +95,7 @@ const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
     cat.hasChildren = cat.children.length > 0;
   }
 
-  // ================= POSTS CON FILTRO pendiente: false =================
+  // ================= POSTS =================
 
   if (incluirPosts) {
     const todosIds = []
@@ -103,11 +103,9 @@ const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
       .concat(nivel2.map(c => c._id))
       .concat(nivel3.map(c => c._id));
 
-    // 🔥 FILTRO: Solo posts aprobados (pendiente: false)
     const posts = await Post.find({
       category: { $in: todosIds },
-      isActive: true,
-      pendiente: false  // ✅ AÑADIDO
+      $or: [{ isActive: true }, { status: 'active' }],
     })
       .sort({ createdAt: -1 })
       .limit(300)
@@ -178,6 +176,7 @@ const obtenerCategoriasPrincipales = asyncHandler(async (req, res) => {
 
   return res.json(respuesta);
 });
+ 
 
 const obtenerCategoriasParaSlider = asyncHandler(async (req, res) => {
   try {
@@ -207,7 +206,17 @@ const obtenerCategoriasParaSlider = asyncHandler(async (req, res) => {
   }
 });
 
-const getCategoryMetadata = asyncHandler(async (req, res) => {
+ // 📂 controllers/categoryController.js
+
+// 📂 controllers/categoryController.js
+// 📂 controllers/categoryCtrl.js - AGREGAR NUEVO CONTROLADOR
+
+/**
+ * GET /api/categories/:slug/metadata
+ * Obtiene SOLO metadata para filtros (wilayas, priceRange, children)
+ * SIN MODIFICAR el estado de posts en Redux
+ */
+ const getCategoryMetadata = asyncHandler(async (req, res) => {
   try {
     const { slug } = req.params;
     const { sub: subSlug, article: articleSlug } = req.query;
@@ -294,11 +303,10 @@ const getCategoryMetadata = asyncHandler(async (req, res) => {
       articles: articlesByParent[String(child._id)] || []
     }));
 
-    // 5. Obtener metadata de filtros (solo posts aprobados)
-    // 🔥 FILTRO: Solo posts aprobados (pendiente: false)
+    // 5. Obtener metadata de filtros (sin afectar posts)
+    // Construir query base para obtener rangos
     let baseFilter = {
       isActive: true,
-      pendiente: false,  // ✅ AÑADIDO
       $or: [
         { category: level1Category._id },
         { categorie: { $regex: new RegExp(level1Category.name, 'i') } }
@@ -350,7 +358,7 @@ const getCategoryMetadata = asyncHandler(async (req, res) => {
           min: priceRange.minPrice || 0,
           max: priceRange.maxPrice || 1000000
         },
-        communes: [],
+        communes: [], // Puedes agregar communes si las necesitas
         appliedFilters: {
           sub: subSlug || null,
           article: articleSlug || null
@@ -374,7 +382,6 @@ const getCategoryMetadata = asyncHandler(async (req, res) => {
     });
   }
 });
-
 const getPostsByCategory = asyncHandler(async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -441,6 +448,7 @@ const getPostsByCategory = asyncHandler(async (req, res) => {
     // 2. Obtener la categoría nivel 1 (para el filtro base)
     let level1Category = categoryDoc;
     if (categoryDoc.level !== 1) {
+      // Buscar la categoría raíz
       let parent = categoryDoc.parent;
       while (parent) {
         const parentCat = await Category.findById(parent).lean();
@@ -458,10 +466,9 @@ const getPostsByCategory = asyncHandler(async (req, res) => {
       Category.find({ level: 3, isActive: true }).lean()
     ]);
 
-    // 4. FILTRO BASE - 🔥 SOLO posts aprobados (pendiente: false)
+    // 4. FILTRO BASE
     let filter = {
       isActive: true,
-      pendiente: false,  // ✅ AÑADIDO
       $and: [
         {
           $or: [
@@ -481,6 +488,7 @@ const getPostsByCategory = asyncHandler(async (req, res) => {
     let andConditions = [];
 
     // ============ FILTROS DE NAVEGACIÓN (slider) ============
+    // Si hay subSlug, filtrar por esa subcategoría
     if (subSlug) {
       const subCategoryDoc = allSubCategories.find(
         sub => sub.slug === subSlug || sub.name.toLowerCase() === subSlug.toLowerCase()
@@ -503,6 +511,7 @@ const getPostsByCategory = asyncHandler(async (req, res) => {
           ]
         });
       } else {
+        // Si no se encuentra, buscar por slug directamente
         andConditions.push({
           $or: [
             { subCategory: subSlug },
@@ -512,6 +521,7 @@ const getPostsByCategory = asyncHandler(async (req, res) => {
       }
     }
 
+    // Si hay articleSlug, filtrar por ese artículo
     if (articleSlug) {
       const articleDoc = allArticles.find(
         article => article.slug === articleSlug || article.name.toLowerCase() === articleSlug.toLowerCase()
@@ -601,7 +611,7 @@ const getPostsByCategory = asyncHandler(async (req, res) => {
         .sort(sort)
         .skip(skip)
         .limit(limit)
-        .select('_id title price images createdAt wilaya commune description etat views categorie subCategory articleType category location score pendiente')
+        .select('_id title price images createdAt wilaya commune description etat views categorie subCategory articleType category location score')
         .populate('user', 'username avatar')
         .lean(),
       Post.countDocuments(filter)
@@ -679,6 +689,7 @@ const getPostsByCategory = asyncHandler(async (req, res) => {
   }
 });
 
+ 
 const obtenerCategoriaPorId = asyncHandler(async (req, res) => {
   const { identifier } = req.params;
   const incluirHijos = req.query.children === 'true' || req.query.children === 'deep';
@@ -704,7 +715,7 @@ const obtenerCategoriaPorId = asyncHandler(async (req, res) => {
     }
   }
 
-  // Posts con paginación - 🔥 Solo aprobados
+  // Posts con paginación
   if (incluirPosts) {
     let todasCategoriasIds = [categoria._id];
 
@@ -736,6 +747,7 @@ const obtenerCategoriaPorId = asyncHandler(async (req, res) => {
   res.json({ success: true, category: datosRespuesta, children: datosRespuesta.children || [], posts: datosRespuesta.posts || [] });
 });
 
+ 
 const obtenerArbolDeCategorias = asyncHandler(async (req, res) => {
   const todas = await Category.find({ isActive: true }).sort({ order: 1 }).lean();
   const mapa = {};
@@ -753,6 +765,7 @@ const obtenerArbolDeCategorias = asyncHandler(async (req, res) => {
   res.json({ success: true, tree: raices, totalLevels: 3 });
 });
 
+ 
 const buscarCategorias = asyncHandler(async (req, res) => {
   const { query } = req.params;
   const limit = parseInt(req.query.limit) || 10;
@@ -767,33 +780,41 @@ const buscarCategorias = asyncHandler(async (req, res) => {
   res.json({ success: true, categories: categorias, totalResults: categorias.length });
 });
 
+// 📂 controllers/categoryController.js - ACTUALIZAR getCategoriesForAccordion
+// 📂 controllers/categoryController.js - ACTUALIZAR getCategoriesForAccordion
 const getCategoriesForAccordion = asyncHandler(async (req, res) => {
   try {
     console.log('🔄 Obteniendo categorías para accordion...');
     
+    // Obtener TODAS las categorías con level y parent
     const categories = await Category.find({ isActive: true })
-      .select('_id name slug emoji parent level icon description')
+      .select('_id name slug emoji parent level icon description') // AÑADIR level
       .lean();
     
     console.log(`📊 Total categorías encontradas: ${categories.length}`);
     
+    // DEBUG: Verificar que tenemos level
     console.log('🔍 Verificando niveles de categorías:');
     categories.slice(0, 5).forEach(cat => {
       console.log(`- ${cat.name}: level=${cat.level}, parent=${cat.parent}`);
     });
     
+    // Crear mapa para acceso rápido
     const categoryMap = {};
     categories.forEach(cat => {
       categoryMap[cat._id] = { ...cat, children: [] };
     });
     
+    // Construir jerarquía
     const hierarchy = [];
     
+    // 1. Agregar nivel 1 (sin parent)
     const level1Categories = categories.filter(cat => cat.level === 1);
     level1Categories.forEach(cat => {
       hierarchy.push(categoryMap[cat._id]);
     });
     
+    // 2. Agregar nivel 2 a sus padres
     const level2Categories = categories.filter(cat => cat.level === 2);
     level2Categories.forEach(cat => {
       if (cat.parent && categoryMap[cat.parent]) {
@@ -801,9 +822,11 @@ const getCategoriesForAccordion = asyncHandler(async (req, res) => {
       }
     });
     
+    // 3. Agregar nivel 3 a sus padres
     const level3Categories = categories.filter(cat => cat.level === 3);
     level3Categories.forEach(cat => {
       if (cat.parent && categoryMap[cat.parent]) {
+        // Encontrar el padre (nivel 2)
         const parentCat = categoryMap[cat.parent];
         if (parentCat) {
           parentCat.children.push(categoryMap[cat._id]);
@@ -811,6 +834,7 @@ const getCategoriesForAccordion = asyncHandler(async (req, res) => {
       }
     });
     
+    // Verificar estructura
     console.log('📋 Estructura resultante:');
     hierarchy.forEach((cat, i) => {
       console.log(`[${i}] ${cat.name} (level: ${cat.level}) - Hijos: ${cat.children.length || 0}`);
@@ -863,42 +887,6 @@ const obtenerEstadisticasDeCategorias = asyncHandler(async (req, res) => {
   res.json(respuesta);
 });
 
-// Función auxiliar para obtener hijos
-async function getChildren(parentId, level = null) {
-  const query = { parent: parentId, isActive: true };
-  if (level) query.level = level;
-  return await Category.find(query)
-    .select('_id name slug icon emoji order hasChildren isLeaf')
-    .sort({ order: 1 })
-    .lean();
-}
-
-// Función auxiliar para obtener posts por categorías
-async function getPostsByCategoryIds(categoryIds, limit, page) {
-  const skip = (page - 1) * limit;
-  
-  // 🔥 Solo posts aprobados
-  const filter = { 
-    category: { $in: categoryIds }, 
-    isActive: true,
-    pendiente: false  // ✅ AÑADIDO
-  };
-  
-  const [posts, total] = await Promise.all([
-    Post.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .select('_id title price images createdAt wilaya commune')
-      .lean(),
-    Post.countDocuments(filter)
-  ]);
-  
-  const hasMore = page * limit < total;
-  
-  return { posts, total, hasMore };
-}
-
 module.exports = {
   obtenerCategoriasParaSlider,
   obtenerCategoriasPrincipales,
@@ -909,4 +897,5 @@ module.exports = {
   getCategoriesForAccordion,
   getPostsByCategory,
   getCategoryMetadata
+
 };

@@ -74,7 +74,7 @@ const CardFooterCategory = ({ post }) => {
           {post.wilaya || ''} {post.commune ? `- ${post.commune}` : ''}
         </span>
       </div>
-
+     
       {/* FILA 4: Fecha relativa */}
       <div className="card-footer-category-row">
         <span className="card-footer-category-date">
