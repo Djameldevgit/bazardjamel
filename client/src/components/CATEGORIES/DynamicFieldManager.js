@@ -21,26 +21,25 @@ import SportField from './specificFields/SportFields';
 import VoyagesField from './specificFields/VoyagesFields';
 import EmploiField from './specificFields/EmploiFields';
 import PiecesDetacheesField from './specificFields/PiecesDetacheesFields';
- 
 
 // Mapa de categorías a componentes específicos
 const CATEGORY_COMPONENTS = {
   'alimentaires': AlimentairesField,
   'vehicules': VehiculesField,
   'immobilier': ImmobiliersField,
-  'telephone': TelephonesField,        // ← Cambiado: 'telephones' → 'telephone'
+  'telephone': TelephonesField,
   'vetements': VetementsField,
   'electromenager': ElectromenagerField,
   'informatique': InformatiqueField,
   'loisirs': LoisirsField,
   'services': ServicesField,
-  'santebeaute': SanteBeauteField,     // ← Correcto: 'santebeaute'
+  'sante-beaute': SanteBeauteField,
   'meubles': MeublesField,
   'materiaux': MateriauxField,
   'sport': SportField,
   'voyages': VoyagesField,
   'emploi': EmploiField,
-  'pieces-detachees': PiecesDetacheesField  // ← Cambiado: 'piecesDetachees' → 'pieces-detachees'
+  'pieces-detachees': PiecesDetacheesField
 };
 
 // Función para formatear un string a ID
@@ -56,21 +55,17 @@ const formatDisplayName = (id) => {
 };
 
 // Emojis por defecto
-// 📂 components/CATEGORIES/DynamicFieldManager.js
-// CORREGIR la función getDefaultEmoji (línea ~56)
-
-// Emojis por defecto - CORREGIDO
 const getDefaultEmoji = (categoryId) => {
   const emojis = {
     'immobilier': '🏠',
     'vehicules': '🚗',
-    'telephone': '📱',        // ← CAMBIADO: 'telephones' → 'telephone'
+    'telephone': '📱',
     'informatique': '💻',
     'electromenager': '🔌',
-    'pieces-detachees': '⚙️', // ← CAMBIADO: 'piecesDetachees' → 'pieces-detachees'
+    'pieces-detachees': '⚙️',
     'vetements': '👕',
     'alimentaires': '🍎',
-    'santebeaute': '💄',
+    'sante-beaute': '💄',
     'meubles': '🛋️',
     'services': '🛠️',
     'materiaux': '🧱',
@@ -316,7 +311,7 @@ const DynamicFieldManager = ({
       <div className="step-content">
         {mainCategory && (
           <div className="category-path-card mb-4">
-            <div className="d-flex align-items-center justify-content-between">
+            <div className="d-flex align-items-center justify-content-between flex-wrap">
               <div className="d-flex align-items-center flex-wrap">
                 <span className="path-step">
                   <span className="path-emoji">{categoryInfo.categoryEmoji}</span>
@@ -350,7 +345,7 @@ const DynamicFieldManager = ({
 
               {isEdit && (
                 <button
-                  className="btn btn-sm btn-outline-warning"
+                  className="btn btn-sm btn-outline-warning mt-2 mt-sm-0"
                   onClick={() => onStepChange && onStepChange(1)}
                 >
                   <i className="fas fa-edit me-1"></i> Changer
@@ -360,7 +355,6 @@ const DynamicFieldManager = ({
           </div>
         )}
 
-        {/* 🎯 PASAR EL STEP AL COMPONENTE ESPECÍFICO */}
         <SpecificCategoryComponent
           mainCategory={mainCategory}
           subCategory={subCategory}
@@ -369,7 +363,7 @@ const DynamicFieldManager = ({
           handleChangeInput={handleChangeInput}
           isRTL={isRTL}
           t={t}
-          step={currentStep}        // ← CLAVE: pasar el step actual
+          step={currentStep}
           isEdit={isEdit}
         />
       </div>
@@ -400,17 +394,17 @@ const DynamicFieldManager = ({
 
   return (
     <div className="dynamic-field-manager">
-      <div className="step-header mb-4">
-        <div className="d-flex align-items-center justify-content-between">
+      <div className="step-header mb-3">
+        <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
           <div>
-            <h4 className="mb-1">
+            <h4 className="mb-1 fs-5 fs-md-4">
               {currentStep === 1 && (isEdit ? '✏️ Catégorie' : '✅ Catégorie')}
               {currentStep === 2 && '📝 Détails'}
               {currentStep === 3 && '💰 Prix'}
               {currentStep === 4 && '📍 Contact'}
               {currentStep === 5 && '🖼️ Images'}
             </h4>
-            <small className="text-muted">
+            <small className="text-muted d-block">
               {mainCategory && (
                 <div className="d-flex align-items-center flex-wrap">
                   <span className="category-badge me-2 mb-1">
@@ -440,48 +434,48 @@ const DynamicFieldManager = ({
             {isEdit ? '✏️' : ''} Étape {currentStep}/5
           </span>
         </div>
-        <div className="progress mt-3" style={{ height: '5px' }}>
+        <div className="progress mt-2" style={{ height: '4px' }}>
           <div className={`progress-bar ${isEdit ? 'bg-warning' : 'bg-primary'}`} style={{ width: `${(currentStep / 5) * 100}%` }} />
         </div>
       </div>
 
-      <div style={{ minHeight: currentStep > 1 && !SpecificCategoryComponent ? '150px' : 'auto', transition: 'min-height 0.3s ease', display: 'flex', flexDirection: 'column' }}>
+      <div className="step-content-wrapper">
         {renderStepContent()}
       </div>
 
       {showNavigation && (
-        <div className="step-navigation mt-4 pt-3 border-top">
-          <div className="d-flex justify-content-between">
+        <div className="step-navigation mt-3 pt-2 border-top">
+          <div className="d-flex justify-content-between flex-wrap gap-2">
             <div>
               {currentStep > 1 ? (
-                <button className="btn btn-outline-secondary" onClick={() => onStepChange && onStepChange(currentStep - 1)}>
-                  <i className="fas fa-arrow-left me-2"></i> Précédent
+                <button className="btn btn-outline-secondary btn-sm btn-md" onClick={() => onStepChange && onStepChange(currentStep - 1)}>
+                  <i className="fas fa-arrow-left me-1 me-md-2"></i> Précédent
                 </button>
               ) : isEdit && (
-                <button className="btn btn-outline-warning" onClick={() => onStepChange && onStepChange(currentStep - 1)}>
-                  <i className="fas fa-edit me-2"></i> Modifier catégorie
+                <button className="btn btn-outline-warning btn-sm btn-md" onClick={() => onStepChange && onStepChange(currentStep - 1)}>
+                  <i className="fas fa-edit me-1 me-md-2"></i> Modifier catégorie
                 </button>
               )}
             </div>
 
             <button
-              className={`btn ${isEdit ? 'btn-warning' : 'btn-primary'}`}
+              className={`btn ${isEdit ? 'btn-warning' : 'btn-primary'} btn-sm btn-md`}
               onClick={() => { if (currentStep < 5) onStepChange && onStepChange(currentStep + 1); }}
               disabled={!canContinue()}
             >
               {currentStep < 5 ? (
-                <>{isEdit ? 'Continuer' : 'Suivant'} <i className="fas fa-arrow-right ms-2"></i></>
+                <>{isEdit ? 'Continuer' : 'Suivant'} <i className="fas fa-arrow-right ms-1 ms-md-2"></i></>
               ) : (
-                <>Continuer <i className="fas fa-arrow-right ms-2"></i></>
+                <>Continuer <i className="fas fa-arrow-right ms-1 ms-md-2"></i></>
               )}
             </button>
           </div>
 
           {!canContinue() && currentStep !== 5 && (
-            <div className="alert alert-warning mt-3 py-2 mb-0">
+            <div className="alert alert-warning mt-2 py-1 mb-0">
               <small>
                 <i className="fas fa-exclamation-circle me-1"></i>
-                {currentStep === 2 && 'Complétez la description'}
+                {currentStep === 2 && 'Complétez le titre et la description'}
                 {currentStep === 3 && 'Indiquez un prix'}
                 {currentStep === 4 && 'Renseignez le téléphone et la wilaya'}
               </small>
@@ -493,24 +487,36 @@ const DynamicFieldManager = ({
       <style jsx>{`
         .dynamic-field-manager {
           background: white;
-          padding: 25px;
+          padding: 12px;
           border-radius: 10px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
           transition: all 0.3s ease;
           display: flex;
           flex-direction: column;
+          width: 100%;
+          max-width: 100%;
+          overflow-x: auto;
         }
         .step-header {
-          padding-bottom: 15px;
+          padding-bottom: 10px;
           border-bottom: 1px solid #eee;
           flex-shrink: 0;
+        }
+        .step-content-wrapper {
+          flex: 1;
+          min-height: auto;
+          width: 100%;
+        }
+        .step-content {
+          width: 100%;
+          animation: fadeIn 0.3s ease;
         }
         .category-badge {
           background: #f8f9fa;
           padding: 2px 8px;
           border-radius: 4px;
           border: 1px solid #dee2e6;
-          font-size: 0.85rem;
+          font-size: 0.8rem;
           white-space: nowrap;
           display: inline-flex;
           align-items: center;
@@ -518,31 +524,88 @@ const DynamicFieldManager = ({
         }
         .category-path-card {
           background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-          padding: 15px;
+          padding: 10px 12px;
           border-radius: 8px;
           border: 1px solid #dee2e6;
+          width: 100%;
         }
         .path-step {
           display: inline-flex;
           align-items: center;
           background: white;
-          padding: 5px 12px;
+          padding: 4px 10px;
           border-radius: 6px;
           border: 1px solid #dee2e6;
-          margin-bottom: 5px;
+          margin-bottom: 4px;
         }
-        .path-emoji { margin-right: 8px; font-size: 1.2rem; }
-        .path-name { font-weight: 500; font-size: 0.9rem; }
+        .path-emoji { margin-right: 6px; font-size: 1rem; }
+        .path-name { font-weight: 500; font-size: 0.85rem; }
         .path-arrow { color: #6c757d; }
+        
+        /* Estilos para inputs en móvil - expansión horizontal */
+        .step-content :global(.form-control),
+        .step-content :global(.form-select),
+        .step-content :global(.css-13cymwt-control),
+        .step-content :global(.css-1dimb5e-singleValue),
+        .step-content :global(input),
+        .step-content :global(select),
+        .step-content :global(textarea) {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+        
+        .step-content :global(.form-control),
+        .step-content :global(.form-select),
+        .step-content :global(input),
+        .step-content :global(select) {
+          font-size: 16px !important; /* Previene zoom en iOS */
+        }
+        
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
+          from { opacity: 0; transform: translateY(5px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        .step-content { animation: fadeIn 0.3s ease; }
+        
         @media (max-width: 768px) {
-          .dynamic-field-manager { padding: 15px; }
-          .category-path-card { padding: 10px; }
-          .path-step { padding: 3px 8px; font-size: 0.8rem; }
+          .dynamic-field-manager { 
+            padding: 10px; 
+            border-radius: 8px;
+          }
+          .category-path-card { 
+            padding: 8px 10px; 
+          }
+          .path-step { 
+            padding: 3px 8px; 
+            font-size: 0.75rem; 
+          }
+          .step-header h4 {
+            font-size: 1rem;
+          }
+          .btn-sm, .btn-md {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .dynamic-field-manager { 
+            padding: 8px; 
+          }
+          .category-path-card {
+            padding: 6px 8px;
+          }
+          .path-step {
+            padding: 2px 6px;
+            font-size: 0.7rem;
+          }
+          .path-emoji {
+            font-size: 0.8rem;
+            margin-right: 4px;
+          }
+          .btn-sm, .btn-md {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+          }
         }
       `}</style>
     </div>

@@ -1,6 +1,6 @@
 // components/CATEGORIES/camposComun/MarqueModelTelephone.js
 import React, { useState, useEffect } from 'react';
-import telefonosData from './json/telefonos.json';
+import telefonosData from './json/vehicules.json';
 
 const MarqueModelTelephone = ({
   postData,

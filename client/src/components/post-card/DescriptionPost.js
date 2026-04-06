@@ -42,11 +42,9 @@ const DescriptionPost = ({ post }) => {
                 setMainImage(imageUrl);
                 setSelectedImageIndex(0);
                 setIsImageLoaded(false);
-                // Limpiar timeout anterior
                 if (imageLoadTimeoutRef.current) {
                     clearTimeout(imageLoadTimeoutRef.current);
                 }
-                // Timeout para evitar loading infinito
                 imageLoadTimeoutRef.current = setTimeout(() => {
                     setIsImageLoaded(true);
                 }, 3000);
@@ -65,7 +63,6 @@ const DescriptionPost = ({ post }) => {
         setMainImage(imageUrl);
         setSelectedImageIndex(index);
         
-        // Timeout para evitar loading infinito
         if (imageLoadTimeoutRef.current) {
             clearTimeout(imageLoadTimeoutRef.current);
         }
@@ -110,13 +107,11 @@ const DescriptionPost = ({ post }) => {
         }
     }, [post, selectedImageIndex]);
 
-    // Scroll manual para miniaturas
     const handleThumbnailScroll = useCallback((e) => {
         const container = e.currentTarget;
         const isAtEnd = container.scrollWidth - container.scrollLeft - container.clientWidth < 10;
         if (isAtEnd && !isLoadingMore) {
-            // Si está al final, no hacer nada
-            console.log('Fin del scroll de miniaturas');
+            console.log('Fin du scroll de miniatures');
         }
     }, [isLoadingMore]);
 
@@ -325,8 +320,6 @@ const DescriptionPost = ({ post }) => {
     const hasImages = post?.images && post.images.length > 0;
     const imagesList = post?.images || [];
     const hasMultipleImages = imagesList.length > 1;
-
-    // Determinar si el scroll es necesario (más de 4 miniaturas en móvil, más de 6 en desktop)
     const needsScroll = imagesList.length > (window.innerWidth < 768 ? 4 : 6);
 
     return (
@@ -387,7 +380,6 @@ const DescriptionPost = ({ post }) => {
                                     )}
                                 </div>
                                 
-                                {/* Miniaturas - Solo mostrar si hay más de 1 imagen */}
                                 {hasMultipleImages && (
                                     <div 
                                         className={`thumbnail-container ${needsScroll ? 'has-scroll' : ''}`}
@@ -422,8 +414,7 @@ const DescriptionPost = ({ post }) => {
                 </Card.Body>
             </Card>
 
-            {/* Resto del código igual... */}
-            {/* DÉTAILS DE L'ANNONCE - Estilo UserInfo */}
+            {/* DÉTAILS DE L'ANNONCE */}
             <Card className="border-0 shadow-sm mb-4">
                 <Card.Header className="bg-white border-bottom py-3">
                     <h5 className="mb-0 fw-bold text-dark">
@@ -439,12 +430,24 @@ const DescriptionPost = ({ post }) => {
                                 <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
                                     <i className="fas fa-heading"></i>
                                 </div>
-                                <span className="text-muted me-2">Titre:</span>
                             </div>
                             <span className="fw-bold text-dark">{postData.title || 'Annonce'}</span>
                         </div>
                     </div>
                     
+                    {/* Categoría */}
+                    <div className="p-3 border-bottom">
+                        <div className="d-flex align-items-center justify-content-between">
+                            <div className="d-flex align-items-center">
+                                <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
+                                    <i className="fas fa-folder-open"></i>
+                                </div>
+                                <span className="me-2" style={{ color: '#1a5bbf', fontWeight: '500' }}>Catégorie:</span>
+                            </div>
+                            <span className="fw-bold text-dark">{getCategoryDisplay() || postData.categorie}</span>
+                        </div>
+                    </div>
+                   
                     {/* Precio */}
                     {postData.price !== undefined && postData.price !== null && (
                         <div className="p-3 border-bottom">
@@ -453,7 +456,7 @@ const DescriptionPost = ({ post }) => {
                                     <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
                                         <i className="fas fa-tag"></i>
                                     </div>
-                                    <span className="text-muted me-2">Prix:</span>
+                                    <span className="me-2" style={{ color: '#1a5bbf', fontWeight: '500' }}>Prix:</span>
                                 </div>
                                 <span className="fw-bold text-dark" style={{ color: '#dc2626', fontSize: '1.25rem' }}>
                                     {new Intl.NumberFormat('fr-DZ').format(postData.price)} DA
@@ -470,7 +473,7 @@ const DescriptionPost = ({ post }) => {
                                     <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
                                         <i className="fas fa-star"></i>
                                     </div>
-                                    <span className="text-muted me-2">État:</span>
+                                    <span className="me-2" style={{ color: '#1a5bbf', fontWeight: '500' }}>État:</span>
                                 </div>
                                 <Badge bg="secondary" className="fw-bold">
                                     {postData.etat === 'neuf' ? 'Neuf' : 
@@ -478,49 +481,6 @@ const DescriptionPost = ({ post }) => {
                                      postData.etat === 'bon' ? 'Bon état' :
                                      postData.etat === 'occasion' ? 'Occasion' : postData.etat}
                                 </Badge>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {/* Categoría */}
-                    <div className="p-3 border-bottom">
-                        <div className="d-flex align-items-center justify-content-between">
-                            <div className="d-flex align-items-center">
-                                <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
-                                    <i className="fas fa-folder-open"></i>
-                                </div>
-                                <span className="text-muted me-2">Catégorie:</span>
-                            </div>
-                            <span className="fw-bold text-dark">{getCategoryDisplay() || postData.categorie}</span>
-                        </div>
-                    </div>
-                    
-                    {/* Vendedor */}
-                    <div className="p-3 border-bottom">
-                        <div className="d-flex align-items-center justify-content-between">
-                            <div className="d-flex align-items-center">
-                                <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
-                                    <i className="fas fa-user"></i>
-                                </div>
-                                <span className="text-muted me-2">Vendeur:</span>
-                            </div>
-                            <span className="fw-bold text-dark">{sellerInfo?.name || 'Annonceur'}</span>
-                        </div>
-                    </div>
-                    
-                    {/* Ubicación del vendedor */}
-                    {sellerInfo?.wilaya && (
-                        <div className="p-3 border-bottom">
-                            <div className="d-flex align-items-center justify-content-between">
-                                <div className="d-flex align-items-center">
-                                    <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
-                                        <i className="fas fa-map-marker-alt"></i>
-                                    </div>
-                                    <span className="text-muted me-2">Localisation:</span>
-                                </div>
-                                <span className="fw-bold text-dark">
-                                    {sellerInfo.wilaya}{sellerInfo.commune ? `, ${sellerInfo.commune}` : ''}
-                                </span>
                             </div>
                         </div>
                     )}
@@ -533,27 +493,10 @@ const DescriptionPost = ({ post }) => {
                                     <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
                                         <i className="fas fa-phone"></i>
                                     </div>
-                                    <span className="text-muted me-2">Téléphone:</span>
+                                    <span className="me-2" style={{ color: '#1a5bbf', fontWeight: '500' }}>Téléphone:</span>
                                 </div>
                                 <a href={`tel:${sellerInfo.phone}`} className="fw-bold text-dark text-decoration-none">
                                     {sellerInfo.phone}
-                                </a>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {/* Email */}
-                    {sellerInfo?.email && (
-                        <div className="p-3 border-bottom">
-                            <div className="d-flex align-items-center justify-content-between">
-                                <div className="d-flex align-items-center">
-                                    <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
-                                        <i className="fas fa-envelope"></i>
-                                    </div>
-                                    <span className="text-muted me-2">Email:</span>
-                                </div>
-                                <a href={`mailto:${sellerInfo.email}`} className="fw-bold text-dark text-decoration-none">
-                                    {sellerInfo.email}
                                 </a>
                             </div>
                         </div>
@@ -566,7 +509,7 @@ const DescriptionPost = ({ post }) => {
                                 <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
                                     <i className="fas fa-eye"></i>
                                 </div>
-                                <span className="text-muted me-2">Vues:</span>
+                                <span className="me-2" style={{ color: '#1a5bbf', fontWeight: '500' }}>Vues:</span>
                             </div>
                             <span className="fw-bold text-dark">{postData.views || 0}</span>
                         </div>
@@ -579,7 +522,7 @@ const DescriptionPost = ({ post }) => {
                                 <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
                                     <i className="fas fa-calendar-alt"></i>
                                 </div>
-                                <span className="text-muted me-2">Publié le:</span>
+                                <span className="me-2" style={{ color: '#1a5bbf', fontWeight: '500' }}>Publié le:</span>
                             </div>
                             <span className="fw-bold text-dark">{moment(post.createdAt).format('DD/MM/YYYY')}</span>
                         </div>
@@ -607,7 +550,7 @@ const DescriptionPost = ({ post }) => {
                                             <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
                                                 {getFieldIcon(field)}
                                             </div>
-                                            <span className="text-muted">{translateField(field)}:</span>
+                                            <span className="text-muted" style={{ color: '#1a5bbf !important', fontWeight: '500' }}>{translateField(field)}:</span>
                                         </div>
                                         <span className="fw-bold text-dark">{value}</span>
                                     </div>
@@ -618,88 +561,22 @@ const DescriptionPost = ({ post }) => {
                 </Card>
             )}
 
-            {/* LOCALISATION */}
-            {(postData.wilaya || postData.commune || postData.address) && (
-                <Card className="border-0 shadow-sm mb-4">
-                    <Card.Header className="bg-white border-bottom py-3">
-                        <h5 className="mb-0 fw-bold text-dark">
-                            <i className="fas fa-map-marker-alt text-primary me-2"></i>
-                            Localisation
-                        </h5>
-                    </Card.Header>
-                    <Card.Body className="p-0">
-                        {postData.wilaya && (
-                            <div className="p-3 border-bottom">
-                                <div className="d-flex align-items-center justify-content-between">
-                                    <div className="d-flex align-items-center">
-                                        <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
-                                            <i className="fas fa-map-pin"></i>
-                                        </div>
-                                        <span className="text-muted">Wilaya:</span>
-                                    </div>
-                                    <span className="fw-bold text-dark">{postData.wilaya}</span>
-                                </div>
-                            </div>
-                        )}
-                        {postData.commune && (
-                            <div className="p-3 border-bottom">
-                                <div className="d-flex align-items-center justify-content-between">
-                                    <div className="d-flex align-items-center">
-                                        <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
-                                            <i className="fas fa-building"></i>
-                                        </div>
-                                        <span className="text-muted">Commune:</span>
-                                    </div>
-                                    <span className="fw-bold text-dark">{postData.commune}</span>
-                                </div>
-                            </div>
-                        )}
-                        {postData.address && (
-                            <div className="p-3">
-                                <div className="d-flex align-items-center justify-content-between">
-                                    <div className="d-flex align-items-center">
-                                        <div className="me-2" style={{ fontSize: '1.2rem', color: '#6c757d', width: '24px' }}>
-                                            <i className="fas fa-home"></i>
-                                        </div>
-                                        <span className="text-muted">Adresse:</span>
-                                    </div>
-                                    <span className="fw-bold text-dark">{postData.address}</span>
-                                </div>
-                            </div>
-                        )}
-                    </Card.Body>
-                </Card>
-            )}
-
             {/* DESCRIPTION */}
             {postData.description && (
                 <Card className="border-0 shadow-sm mb-4">
-                    <Card.Header className="bg-white border-bottom py-3">
-                        <h5 className="mb-0 fw-bold text-dark">
+                    <Card.Header className="bg-white border-bottom py-2">
+                        <h5 className="mb-0 fw-bold">
                             <i className="fas fa-align-left text-primary me-2"></i>
                             Description
                         </h5>
                     </Card.Header>
                     <Card.Body>
-                        <p className="text-muted mb-0" style={{ lineHeight: '1.6', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                        <p className="mb-0" style={{ lineHeight: '1.6', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                             {postData.description}
                         </p>
                     </Card.Body>
                 </Card>
             )}
-
-            {/* BOTÓN DE RETORNO */}
-            <div className="d-flex justify-content-center mt-4">
-                <Button 
-                    variant="outline-secondary"
-                    onClick={() => history.goBack()}
-                    className="px-4 py-2"
-                    style={{ borderRadius: '40px' }}
-                >
-                    <i className="fas fa-arrow-left me-2"></i>
-                    Retour aux annonces
-                </Button>
-            </div>
 
             {/* ESTILOS ADICIONALES */}
             <style>{`

@@ -4,48 +4,6 @@ import Select from 'react-select';
 import BaseCategoryField from './BaseCategoryField';
 
 // ============================================
-// CAMPOS COMUNES PARA TODAS LAS CATEGORÍAS
-// ============================================
-
-// Titre
-const TitleField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Titre</label>
-      <input
-        type="text"
-        name="title"
-        className="form-control"
-        placeholder="Titre de l'annonce"
-        value={postData?.title || ''}
-        onChange={handleChangeInput}
-      />
-    </div>
-  );
-};
-
-// Description
-const DescriptionField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">
-        Description <span className="text-danger">*</span>
-      </label>
-      <textarea
-        name="description"
-        className="form-control"
-        rows="4"
-        placeholder="Décrivez votre article de loisirs en détail..."
-        value={postData?.description || ''}
-        onChange={handleChangeInput}
-        required
-      />
-      <small className="text-muted">Décrivez l'état, les caractéristiques, etc.</small>
-    </div>
-  );
-};
-
-// ============================================
 // CAMPOS ESPECÍFICOS PARA LOISIRS
 // ============================================
 
@@ -105,43 +63,6 @@ const ModeleField = ({ postData, handleChangeInput }) => {
         placeholder="Ex: PlayStation 5, Xbox Series X, Nintendo Switch..."
         value={postData?.modele || ''}
         onChange={handleChangeInput}
-      />
-    </div>
-  );
-};
-
-// État
-const EtatField = ({ postData, handleChangeInput }) => {
-  const etatOptions = [
-    { value: 'Neuf jamais utilisé', label: '🆕 Neuf jamais utilisé' },
-    { value: 'État neuf', label: '✨ État neuf' },
-    { value: 'Comme neuf', label: '👍 Comme neuf' },
-    { value: 'Très bon état', label: '💪 Très bon état' },
-    { value: 'Bon état', label: '✅ Bon état' },
-    { value: 'État moyen', label: '⚠️ État moyen' },
-    { value: 'À restaurer', label: '🔧 À restaurer' }
-  ];
-  
-  const selectedOption = etatOptions.find(opt => opt.value === postData?.etat) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'etat', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">État</label>
-      <Select
-        name="etat"
-        options={etatOptions}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner l'état..."
-        required
       />
     </div>
   );
@@ -426,18 +347,13 @@ const TypeAnimalField = ({ postData, handleChangeInput }) => {
 // ============================================
 
 const LoisirsFields = (props) => {
-  const { step, subCategory, articleType } = props;
+  const { step } = props;
   
-  // Mapa de TODOS los componentes disponibles
+  // SOLO campos específicos (sin title, description, etat)
   const customComponents = {
-    // Campos comunes
-    'title': <TitleField {...props} />,
-    'description': <DescriptionField {...props} />,
-    
-    // Campos específicos para loisirs
+    // Marque al principio
     'marque': <MarqueField {...props} />,
     'modele': <ModeleField {...props} />,
-    'etat': <EtatField {...props} />,
     
     // Campos para jeux vidéo & consoles
     'typeConsole': <TypeConsoleField {...props} />,

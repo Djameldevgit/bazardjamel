@@ -12,26 +12,20 @@ const GridPostsSimilar = ({
   if (!categorie || !subCategory) return null;
 
   return (
-    <div className="mb-5">
-      <div className="mb-4">
-        <div className="d-flex justify-content-between align-items-center mb-3">
+    <div className="mb-2">
+      <div className="mb-2">
+        <div className="d-flex justify-content-between align-items-center mb-2">
           <h5 className="fw-bold mb-0" style={{ fontSize: '1.4rem', color: '#2c3e50' }}>
             🔍 Publications similaires
           </h5>
-          {similarPosts.length > 0 && !loading && (
-            <Badge bg="info" className="px-3 py-2">
-              {similarPosts.length} résultat{similarPosts.length > 1 ? 's' : ''}
-            </Badge>
-          )}
+        
         </div>
-        <p className="text-muted mb-4">
-          Découvrez d'autres annonces similaires dans la même catégorie
-        </p>
+     
       </div>
 
       {/* Loading state */}
       {loading && (
-        <div className="text-center py-5" style={{
+        <div className="text-center py-4" style={{
           background: '#f8f9fa',
           borderRadius: '10px'
         }}>

@@ -36,15 +36,17 @@ const PostCard = ({ post }) => {
   );
 
   const renderFooter = () => {
+    // 🔥 NO mostrar footer en la página de detalle
+    if (isDetailPage) return null;
+    
     if (isHomePage) return <CardFooterHome post={post} />;
     if (isCategoryPage) return <CardFooterCategory post={post} />;
-    if (isDetailPage) return <CardFooterCategory post={post} isDetailPage />;
     return <CardFooterHome post={post} />;
   };
 
   return (
     <Card
-      className={`border-0 shadow-sm overflow-hidden mb-4 ${
+      className={`border-0 shadow-sm overflow-hidden mb-1 ${
         isDetailPage ? 'detail-view' : 'grid-view'
       } ${theme === 'dark' ? 'bg-dark' : 'bg-white'}`}
       style={{
@@ -71,7 +73,7 @@ const PostCard = ({ post }) => {
         </>
       )}
 
-      {/* Footer dinámico */}
+      {/* Footer dinámico - NO se muestra en detalle */}
       {renderFooter()}
 
       {/* Estilos mínimos para la card y tema oscuro */}
@@ -100,4 +102,4 @@ const PostCard = ({ post }) => {
   );
 };
 
-export default  PostCard;
+export default PostCard;

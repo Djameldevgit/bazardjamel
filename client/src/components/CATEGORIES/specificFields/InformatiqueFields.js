@@ -4,48 +4,6 @@ import Select from 'react-select';
 import BaseCategoryField from './BaseCategoryField';
 
 // ============================================
-// CAMPOS COMUNES PARA TODAS LAS CATEGORÍAS
-// ============================================
-
-// Titre
-const TitleField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Titre</label>
-      <input
-        type="text"
-        name="title"
-        className="form-control"
-        placeholder="Titre de l'annonce"
-        value={postData?.title || ''}
-        onChange={handleChangeInput}
-      />
-    </div>
-  );
-};
-
-// Description
-const DescriptionField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">
-        Description <span className="text-danger">*</span>
-      </label>
-      <textarea
-        name="description"
-        className="form-control"
-        rows="4"
-        placeholder="Décrivez votre produit informatique en détail..."
-        value={postData?.description || ''}
-        onChange={handleChangeInput}
-        required
-      />
-      <small className="text-muted">Décrivez les caractéristiques techniques, l'état, etc.</small>
-    </div>
-  );
-};
-
-// ============================================
 // CAMPOS ESPECÍFICOS PARA INFORMATIQUE
 // ============================================
 
@@ -357,48 +315,11 @@ const GarantieField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// État
-const EtatField = ({ postData, handleChangeInput }) => {
-  const etatOptions = [
-    { value: 'Neuf jamais utilisé', label: '🆕 Neuf jamais utilisé' },
-    { value: 'État neuf', label: '✨ État neuf' },
-    { value: 'Comme neuf', label: '👍 Comme neuf' },
-    { value: 'Très bon état', label: '💪 Très bon état' },
-    { value: 'Bon état', label: '✅ Bon état' },
-    { value: 'État moyen', label: '⚠️ État moyen' },
-    { value: 'Pour pièces détachées', label: '🔧 Pour pièces détachées' }
-  ];
-  
-  const selectedOption = etatOptions.find(opt => opt.value === postData?.etat) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'etat', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">État</label>
-      <Select
-        name="etat"
-        options={etatOptions}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner l'état..."
-        required
-      />
-    </div>
-  );
-};
-
 // ============================================
 // CAMPOS ADICIONALES
 // ============================================
 
-// Type de composant
+// Type de composant (para componentes de PC)
 const TypeComposantField = ({ postData, handleChangeInput }) => {
   const typeComposants = [
     { value: 'Carte mère', label: 'Carte mère' },
@@ -480,15 +401,11 @@ const TypePeripheriqueField = ({ postData, handleChangeInput }) => {
 // ============================================
 
 const InformatiqueFields = (props) => {
-  const { step, subCategory, articleType } = props;
+  const { step } = props;
   
-  // Mapa de TODOS los componentes disponibles
+  // SOLO campos específicos (sin title, description, etat)
   const customComponents = {
-    // Campos comunes
-    'title': <TitleField {...props} />,
-    'description': <DescriptionField {...props} />,
-    
-    // Campos específicos para informatique
+    // Marque al principio
     'marque': <MarqueField {...props} />,
     'modele': <ModeleField {...props} />,
     'processeur': <ProcesseurField {...props} />,
@@ -497,7 +414,6 @@ const InformatiqueFields = (props) => {
     'tailleEcran': <TailleEcranField {...props} />,
     'carteGraphique': <CarteGraphiqueField {...props} />,
     'garantie': <GarantieField {...props} />,
-    'etat': <EtatField {...props} />,
     
     // Campos adicionales
     'typeComposant': <TypeComposantField {...props} />,

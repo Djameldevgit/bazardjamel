@@ -4,107 +4,8 @@ import Select from 'react-select';
 import BaseCategoryField from './BaseCategoryField';
 
 // ============================================
-// CAMPOS COMUNES PARA TODAS LAS CATEGORÍAS
-// ============================================
-
-// Titre
-const TitleField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Titre</label>
-      <input
-        type="text"
-        name="title"
-        className="form-control"
-        placeholder="Titre de l'annonce"
-        value={postData?.title || ''}
-        onChange={handleChangeInput}
-      />
-    </div>
-  );
-};
-
-// Description
-const DescriptionField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">
-        Description <span className="text-danger">*</span>
-      </label>
-      <textarea
-        name="description"
-        className="form-control"
-        rows="4"
-        placeholder="Décrivez votre produit alimentaire..."
-        value={postData?.description || ''}
-        onChange={handleChangeInput}
-        required
-      />
-      <small className="text-muted">Décrivez les caractéristiques, la composition, etc.</small>
-    </div>
-  );
-};
-
-// ============================================
 // CAMPOS ESPECÍFICOS PARA ALIMENTAIRES
 // ============================================
-
-// Type de produit
-const TypeProduitField = ({ postData, handleChangeInput }) => {
-  const typeProduits = [
-    { value: 'Produits laitiers', label: '🥛 Produits laitiers' },
-    { value: 'Fruits secs', label: '🍇 Fruits secs' },
-    { value: 'Graines - Riz - Céréales', label: '🌾 Graines - Riz - Céréales' },
-    { value: 'Sucres & Produits sucrés', label: '🍯 Sucres & Produits sucrés' },
-    { value: 'Boissons', label: '🥤 Boissons' },
-    { value: 'Viandes & Poissons', label: '🍖 Viandes & Poissons' },
-    { value: 'Café - Thé - Infusion', label: '☕ Café - Thé - Infusion' },
-    { value: 'Compléments alimentaires', label: '💊 Compléments alimentaires' },
-    { value: 'Miel & Dérivés', label: '🍯 Miel & Dérivés' },
-    { value: 'Fruits & Légumes', label: '🍎 Fruits & Légumes' },
-    { value: 'Blé & Farine', label: '🌾 Blé & Farine' },
-    { value: 'Bonbons & Chocolat', label: '🍬 Bonbons & Chocolat' },
-    { value: 'Boulangerie & Viennoiserie', label: '🥖 Boulangerie & Viennoiserie' },
-    { value: 'Ingrédients cuisine', label: '🍳 Ingrédients cuisine' },
-    { value: 'Noix & Graines', label: '🥜 Noix & Graines' },
-    { value: 'Plats cuisinés', label: '🍲 Plats cuisinés' },
-    { value: 'Sauces - Epices - Condiments', label: '🌶️ Sauces - Epices - Condiments' },
-    { value: 'Œufs', label: '🥚 Œufs' },
-    { value: 'Huiles', label: '🫒 Huiles' },
-    { value: 'Pâtes', label: '🍝 Pâtes' },
-    { value: 'Gateaux', label: '🍰 Gateaux' },
-    { value: 'Emballage', label: '📦 Emballage' },
-    { value: 'Aliments pour bébé', label: '👶 Aliments pour bébé' },
-    { value: 'Aliments diététiques', label: '🥗 Aliments diététiques' },
-    { value: 'Autre', label: '📦 Autre' }
-  ];
-  
-  const selectedOption = typeProduits.find(opt => opt.value === postData?.typeProduit) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'typeProduit', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">
-        Type de produit <span className="text-danger">*</span>
-      </label>
-      <Select
-        name="typeProduit"
-        options={typeProduits}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner le type de produit..."
-        required
-      />
-    </div>
-  );
-};
 
 // Marque (opcional para alimentaires)
 const MarqueField = ({ postData, handleChangeInput }) => {
@@ -330,16 +231,11 @@ const CertificationsField = ({ postData, handleChangeInput }) => {
 // ============================================
 
 const AlimentairesFields = (props) => {
-  const { step, subCategory, articleType } = props;
+  const { step } = props;
   
-  // Mapa de TODOS los componentes disponibles
+  // SOLO campos específicos (sin title, description, typeProduit)
   const customComponents = {
-    // Campos comunes
-    'title': <TitleField {...props} />,
-    'description': <DescriptionField {...props} />,
-    
-    // Campos específicos para alimentaires
-    'typeProduit': <TypeProduitField {...props} />,
+    // Marque al principio
     'marque': <MarqueField {...props} />,
     'datePeremption': <DatePeremptionField {...props} />,
     'conditionnement': <ConditionnementField {...props} />,

@@ -1,37 +1,60 @@
-// 📂 components/CATEGORIES/specificFields/TelephonesField.js
+// 📂 components/CATEGORIES/specificFields/SanteBeauteFields.js
 import React from 'react';
 import BaseCategoryField from './BaseCategoryField';
 
-// Importar campos específicos
-import MarcaModeloField from '../camposComun/MarqueModelTelephone';
+// ============================================
+// CAMPOS ESPECÍFICOS PARA SANTÉ & BEAUTÉ
+// ============================================
+
+// Marque
+const MarqueField = ({ postData, handleChangeInput }) => {
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Marque</label>
+      <input
+        type="text"
+        name="marque"
+        className="form-control"
+        placeholder="Ex: Nivea, L'Oréal, Garnier, Vichy..."
+        value={postData?.marque || ''}
+        onChange={handleChangeInput}
+      />
+    </div>
+  );
+};
+
+// Modèle / Référence
+const ModeleField = ({ postData, handleChangeInput }) => {
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Modèle / Référence</label>
+      <input
+        type="text"
+        name="modele"
+        className="form-control"
+        placeholder="Ex: Crème hydratante, Shampoing, Parfum..."
+        value={postData?.modele || ''}
+        onChange={handleChangeInput}
+      />
+    </div>
+  );
+};
+
+// ============================================
+// COMPONENTE PRINCIPAL
+// ============================================
 
 const SanteBeauteFields = (props) => {
-  const { step, mainCategory, subCategory, postData, handleChangeInput, isRTL, t } = props;
+  const { step } = props;
   
-  console.log(`📱 TelephonesField - Step: ${step}, SubCategory: ${subCategory}`);
+  // SOLO campos específicos (sin title, sin etat, sin description)
+  const customComponents = {
+    'marque': <MarqueField {...props} />,
+    'modele': <ModeleField {...props} />
+  };
   
-  // 🔥 CAMPOS ADICIONALES ESPECÍFICOS PARA TELÉFONOS
   const additionalFields = {
-    components: {
-      'marque': (
-        <MarcaModeloField
-          key="marque"
-          mainCategory={mainCategory}
-          subCategory={subCategory}
-          postData={postData}
-          handleChangeInput={handleChangeInput}
-          isRTL={isRTL}
-          t={t}
-          brandField="marque"
-          modelField="modele"
-        />
-      )
-    },
-    
-    // Campos adicionales por step
-    step2: ['marque'],  // 'marque' se añade al step2
-    step3: [],          // No añadir nada al step3
-    step4: []           // No añadir nada al step4
+    components: customComponents,
   };
   
   if (step) {
@@ -46,5 +69,5 @@ const SanteBeauteFields = (props) => {
   
   return null;
 };
- 
+
 export default SanteBeauteFields;

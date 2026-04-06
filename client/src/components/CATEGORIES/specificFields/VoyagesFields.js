@@ -4,69 +4,199 @@ import Select from 'react-select';
 import BaseCategoryField from './BaseCategoryField';
 
 // ============================================
-// CAMPOS COMUNES PARA TODAS LAS CATEGORÍAS
-// ============================================
-
-// Titre
-const TitleField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Titre</label>
-      <input
-        type="text"
-        name="title"
-        className="form-control"
-        placeholder="Titre de l'annonce"
-        value={postData?.title || ''}
-        onChange={handleChangeInput}
-      />
-    </div>
-  );
-};
-
-// Description
-const DescriptionField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">
-        Description <span className="text-danger">*</span>
-      </label>
-      <textarea
-        name="description"
-        className="form-control"
-        rows="4"
-        placeholder="Décrivez votre offre de voyage en détail..."
-        value={postData?.description || ''}
-        onChange={handleChangeInput}
-        required
-      />
-      <small className="text-muted">Décrivez le programme, les prestations incluses, etc.</small>
-    </div>
-  );
-};
-
-// ============================================
 // CAMPOS ESPECÍFICOS PARA VOYAGES
 // ============================================
 
-// Destination
-const DestinationField = ({ postData, handleChangeInput }) => {
+// Destination LOCALE (Algérie)
+const DestinationLocaleField = ({ postData, handleChangeInput }) => {
+  const destinations = [
+    // Grandes villes
+    { value: 'Alger', label: '🇩🇿 Alger' },
+    { value: 'Oran', label: '🇩🇿 Oran' },
+    { value: 'Constantine', label: '🇩🇿 Constantine' },
+    { value: 'Annaba', label: '🇩🇿 Annaba' },
+    { value: 'Tlemcen', label: '🇩🇿 Tlemcen' },
+    { value: 'Sétif', label: '🇩🇿 Sétif' },
+    { value: 'Béjaïa', label: '🇩🇿 Béjaïa' },
+    { value: 'Mostaganem', label: '🇩🇿 Mostaganem' },
+    { value: 'Blida', label: '🇩🇿 Blida' },
+    { value: 'Boumerdès', label: '🇩🇿 Boumerdès' },
+    { value: 'Tipaza', label: '🇩🇿 Tipaza' },
+    { value: 'Chlef', label: '🇩🇿 Chlef' },
+    { value: 'Médéa', label: '🇩🇿 Médéa' },
+    { value: 'Tizi Ouzou', label: '🇩🇿 Tizi Ouzou' },
+    { value: 'Batna', label: '🇩🇿 Batna' },
+    { value: 'Biskra', label: '🇩🇿 Biskra' },
+    { value: 'Djelfa', label: '🇩🇿 Djelfa' },
+    { value: 'Souk Ahras', label: '🇩🇿 Souk Ahras' },
+    { value: 'Skikda', label: '🇩🇿 Skikda' },
+    { value: 'Mila', label: '🇩🇿 Mila' },
+    
+    // Désert & Sud
+    { value: 'Tamanrasset', label: '🏜️ Tamanrasset (Ahaggar)' },
+    { value: 'Djanet', label: '🏜️ Djanet (Tassili)' },
+    { value: 'Illizi', label: '🏜️ Illizi' },
+    { value: 'Ghardaïa', label: '🏛️ Ghardaïa (M\'zab)' },
+    { value: 'Timimoun', label: '🏜️ Timimoun' },
+    { value: 'Adrar', label: '🏜️ Adrar' },
+    { value: 'Béchar', label: '🏜️ Béchar' },
+    { value: 'Tindouf', label: '🏜️ Tindouf' },
+    { value: 'El Oued', label: '🏜️ El Oued' },
+    { value: 'Touggourt', label: '🏜️ Touggourt' },
+    { value: 'Ouargla', label: '🏜️ Ouargla' },
+    { value: 'Hassi Messaoud', label: '🛢️ Hassi Messaoud' },
+    { value: 'In Salah', label: '🏜️ In Salah' },
+    { value: 'In Guezzam', label: '🏜️ In Guezzam' },
+    { value: 'Bordj Badji Mokhtar', label: '🏜️ Bordj Badji Mokhtar' },
+    
+    // Sites historiques & romains
+    { value: 'Djemila', label: '🏛️ Djemila (Cuicul)' },
+    { value: 'Timgad', label: '🏛️ Timgad (Thamugadi)' },
+    { value: 'Tipaza', label: '🏛️ Tipaza (Site romain)' },
+    { value: 'Tiddis', label: '🏛️ Tiddis' },
+    { value: 'Lambaesis', label: '🏛️ Lambaesis' },
+    { value: 'Calama', label: '🏛️ Calama (Guelma)' },
+    { value: 'Hippone', label: '🏛️ Hippone (Annaba)' },
+    { value: 'Cherchell', label: '🏛️ Cherchell (Césarée)' },
+    
+    // Côtiers & plages
+    { value: 'El Kala', label: '🏖️ El Kala' },
+    { value: 'Collo', label: '🏖️ Collo' },
+    { value: 'Jijel', label: '🏖️ Jijel' },
+    { value: 'Azeffoun', label: '🏖️ Azeffoun' },
+    { value: 'Zéralda', label: '🏖️ Zéralda' },
+    { value: 'Sidi Fredj', label: '🏖️ Sidi Fredj' },
+    { value: 'Ténès', label: '🏖️ Ténès' },
+    { value: 'Marsa Ben M\'hidi', label: '🏖️ Marsa Ben M\'hidi' },
+    
+    // Montagnes & forêts
+    { value: 'Chréa', label: '🏔️ Chréa (Blida)' },
+    { value: 'Tikjda', label: '🏔️ Tikjda (Béjaïa)' },
+    { value: 'Theniet El Had', label: '🏔️ Theniet El Had' },
+    { value: 'Gouraya', label: '🏔️ Gouraya (Béjaïa)' },
+    { value: 'Tala Guilef', label: '🏔️ Tala Guilef (Tizi Ouzou)' },
+    { value: 'Lalla Khedidja', label: '🏔️ Lalla Khedidja (Tizi Ouzou)' },
+    
+    // Sources thermales
+    { value: 'Hammam Bou Hadjar', label: '♨️ Hammam Bou Hadjar' },
+    { value: 'Hammam Righa', label: '♨️ Hammam Righa' },
+    { value: 'Hammam Melouane', label: '♨️ Hammam Melouane' },
+    { value: 'Guelma', label: '♨️ Guelma (Hammam Debagh)' },
+    { value: 'Bou Hanifia', label: '♨️ Bou Hanifia' },
+    
+    // Autres
+    { value: 'Tassili n\'Ajjer', label: '🏜️ Tassili n\'Ajjer' },
+    { value: 'M\'zab', label: '🏛️ Vallée du M\'zab' },
+    { value: 'Beni Abbes', label: '🏜️ Beni Abbes' },
+    { value: 'Taghit', label: '🏜️ Taghit' },
+    { value: 'Béni Abbès', label: '🏜️ Béni Abbès' },
+    { value: 'Autre', label: '📍 Autre destination' }
+  ];
+  
+  const selectedOption = destinations.find(opt => opt.value === postData?.destination) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'destination', value: selected?.value || '' }
+    });
+  };
+  
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Destination</label>
+      <Select
+        name="destination"
+        options={destinations}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner la destination..."
+        isClearable
+      />
+    </div>
+  );
+};
+
+// Destination INTERNATIONALE
+const DestinationInternationaleField = ({ postData, handleChangeInput }) => {
   const destinations = [
     { value: 'Paris', label: '🇫🇷 Paris' },
+    { value: 'Nice', label: '🇫🇷 Nice' },
+    { value: 'Lyon', label: '🇫🇷 Lyon' },
+    { value: 'Marseille', label: '🇫🇷 Marseille' },
     { value: 'Istanbul', label: '🇹🇷 Istanbul' },
+    { value: 'Antalya', label: '🇹🇷 Antalya' },
     { value: 'Dubaï', label: '🇦🇪 Dubaï' },
-    { value: 'Makkah', label: '🇸🇦 Makkah' },
-    { value: 'Madinah', label: '🇸🇦 Madinah' },
     { value: 'Barcelone', label: '🇪🇸 Barcelone' },
+    { value: 'Madrid', label: '🇪🇸 Madrid' },
     { value: 'Rome', label: '🇮🇹 Rome' },
+    { value: 'Milan', label: '🇮🇹 Milan' },
     { value: 'Londres', label: '🇬🇧 Londres' },
-    { value: 'New York', label: '🇺🇸 New York' },
-    { value: 'Bangkok', label: '🇹🇭 Bangkok' },
-    { value: 'Marrakech', label: '🇲🇦 Marrakech' },
     { value: 'Tunis', label: '🇹🇳 Tunis' },
-    { value: 'Alger', label: '🇩🇿 Alger' },
+    { value: 'Djerba', label: '🇹🇳 Djerba' },
+    { value: 'Marrakech', label: '🇲🇦 Marrakech' },
+    { value: 'Casablanca', label: '🇲🇦 Casablanca' },
+    { value: 'Le Caire', label: '🇪🇬 Le Caire' },
+    { value: 'Bangkok', label: '🇹🇭 Bangkok' },
+    { value: 'Kuala Lumpur', label: '🇲🇾 Kuala Lumpur' },
+    { value: 'Tokyo', label: '🇯🇵 Tokyo' },
+    { value: 'New York', label: '🇺🇸 New York' },
+    { value: 'Montréal', label: '🇨🇦 Montréal' },
     { value: 'Autre', label: '🌍 Autre destination' }
   ];
+  
+  const selectedOption = destinations.find(opt => opt.value === postData?.destination) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'destination', value: selected?.value || '' }
+    });
+  };
+  
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Destination</label>
+      <Select
+        name="destination"
+        options={destinations}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner la destination..."
+        isClearable
+      />
+    </div>
+  );
+};
+
+// Destination HAJJ & OMRA (Arabie Saoudite)
+const DestinationArabieField = ({ postData, handleChangeInput }) => {
+  const destinations = [
+    { value: 'Makkah', label: '🕋 Makkah' },
+    { value: 'Madinah', label: '🕌 Madinah' },
+    { value: 'Jeddah', label: '✈️ Jeddah' },
+    { value: 'Riyad', label: '🏛️ Riyad' },
+    { value: 'Arafat', label: '🏔️ Mont Arafat' },
+    { value: 'Mina', label: '🏕️ Mina' },
+    { value: 'Muzdalifah', label: '🌙 Muzdalifah' },
+    { value: 'Badr', label: '⚔️ Badr' },
+    { value: 'Khaybar', label: '🏰 Khaybar' },
+    { value: 'Taïf', label: '🌹 Taïf' },
+    { value: 'Yanbu', label: '🏖️ Yanbu' },
+    { value: 'AlUla', label: '🏛️ AlUla' },
+    { value: 'Dhahran', label: '🛢️ Dhahran' },
+    { value: 'Dammam', label: '🏙️ Dammam' },
+    { value: 'Abha', label: '🏔️ Abha' },
+    { value: 'Khamis Mushait', label: '🏔️ Khamis Mushait' },
+    { value: 'Najran', label: '🏛️ Najran' },
+    { value: 'Hail', label: '🏜️ Hail' },
+    { value: 'Jizan', label: '🏖️ Jizan' },
+    { value: 'Tabuk', label: '🏔️ Tabuk' },
+    { value: 'AlQassim', label: '🌾 Al Qassim' }
+  ];
+  
   
   const selectedOption = destinations.find(opt => opt.value === postData?.destination) || null;
   
@@ -247,16 +377,40 @@ const TransportField = ({ postData, handleChangeInput }) => {
 
 // Hébergement
 const HebergementField = ({ postData, handleChangeInput }) => {
+  const hebergements = [
+    { value: 'Hôtel 1*', label: '⭐ Hôtel 1*' },
+    { value: 'Hôtel 2*', label: '⭐⭐ Hôtel 2*' },
+    { value: 'Hôtel 3*', label: '⭐⭐⭐ Hôtel 3*' },
+    { value: 'Hôtel 4*', label: '⭐⭐⭐⭐ Hôtel 4*' },
+    { value: 'Hôtel 5*', label: '⭐⭐⭐⭐⭐ Hôtel 5*' },
+    { value: 'Appartement', label: '🏢 Appartement' },
+    { value: 'Villa', label: '🏡 Villa' },
+    { value: 'Riad', label: '🕌 Riad' },
+    { value: 'Chalet', label: '🏔️ Chalet' },
+    { value: 'Camping', label: '🏕️ Camping' },
+    { value: 'Non inclus', label: '❌ Non inclus' }
+  ];
+  
+  const selectedOption = hebergements.find(opt => opt.value === postData?.hebergement) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'hebergement', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Hébergement</label>
-      <input
-        type="text"
+      <Select
         name="hebergement"
-        className="form-control"
-        placeholder="Ex: Hôtel 4*, Riad, Appartement..."
-        value={postData?.hebergement || ''}
-        onChange={handleChangeInput}
+        options={hebergements}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner l'hébergement..."
+        isClearable
       />
     </div>
   );
@@ -279,11 +433,31 @@ const ActivitesInclusesField = ({ postData, handleChangeInput }) => {
   );
 };
 
+// Prix par personne
+const PrixParPersonneField = ({ postData, handleChangeInput }) => {
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Prix par personne</label>
+      <div className="input-group">
+        <span className="input-group-text">💰</span>
+        <input
+          type="number"
+          name="prixParPersonne"
+          className="form-control"
+          placeholder="Prix"
+          value={postData?.prixParPersonne || ''}
+          onChange={handleChangeInput}
+        />
+        <span className="input-group-text">DA</span>
+      </div>
+    </div>
+  );
+};
+
 // ============================================
 // CAMPOS PARA LOCATION VACANCES
 // ============================================
 
-// Type d'hébergement
 const TypeHebergementField = ({ postData, handleChangeInput }) => {
   const types = [
     { value: 'Appartement', label: '🏢 Appartement' },
@@ -319,8 +493,7 @@ const TypeHebergementField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Capacité
-const CapaciteField = ({ postData, handleChangeInput }) => {
+const CapaciteHebergementField = ({ postData, handleChangeInput }) => {
   const capacites = [
     { value: '1', label: '1 personne' },
     { value: '2', label: '2 personnes' },
@@ -357,19 +530,20 @@ const CapaciteField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Équipements
-const EquipementsField = ({ postData, handleChangeInput }) => {
+const EquipementsHebergementField = ({ postData, handleChangeInput }) => {
   const equipementsList = [
     { value: 'WiFi', label: '📶 WiFi' },
     { value: 'Piscine', label: '🏊 Piscine' },
     { value: 'Climatisation', label: '❄️ Climatisation' },
+    { value: 'Chauffage', label: '🔥 Chauffage' },
     { value: 'Parking', label: '🅿️ Parking' },
     { value: 'Cuisine équipée', label: '🍳 Cuisine équipée' },
     { value: 'Lave-linge', label: '🧺 Lave-linge' },
     { value: 'Télévision', label: '📺 Télévision' },
     { value: 'Balcon', label: '🏠 Balcon' },
     { value: 'Jardin', label: '🌳 Jardin' },
-    { value: 'Terrasse', label: '🏠 Terrasse' }
+    { value: 'Terrasse', label: '🏠 Terrasse' },
+    { value: 'Barbecue', label: '🔥 Barbecue' }
   ];
   
   const selectedValues = postData?.equipements || [];
@@ -395,33 +569,14 @@ const EquipementsField = ({ postData, handleChangeInput }) => {
         classNamePrefix="select"
         placeholder="Sélectionner les équipements..."
       />
-      <small className="text-muted">Vous pouvez sélectionner plusieurs équipements</small>
-    </div>
-  );
-};
-
-// Proximité
-const ProximiteField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Proximité</label>
-      <input
-        type="text"
-        name="proximite"
-        className="form-control"
-        placeholder="Ex: Centre ville 5min, Plage 200m..."
-        value={postData?.proximite || ''}
-        onChange={handleChangeInput}
-      />
     </div>
   );
 };
 
 // ============================================
-// CAMPOS POUR HAJJ & OMRA
+// CAMPOS PARA HAJJ & OMRA
 // ============================================
 
-// Type de pèlerinage
 const TypePelerinageField = ({ postData, handleChangeInput }) => {
   const types = [
     { value: 'Hajj', label: '🕋 Hajj' },
@@ -454,86 +609,84 @@ const TypePelerinageField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Groupe
-const GroupeField = ({ postData, handleChangeInput }) => {
-  const groupes = [
-    { value: 'Individuel', label: '👤 Individuel' },
-    { value: 'Famille', label: '👨‍👩‍👧‍👦 Famille' },
-    { value: 'Groupe organisé', label: '👥 Groupe organisé' }
+const HotelMakkahField = ({ postData, handleChangeInput }) => {
+  const hotels = [
+    { value: 'Hôtel 3*', label: '⭐⭐⭐ Hôtel 3*' },
+    { value: 'Hôtel 4*', label: '⭐⭐⭐⭐ Hôtel 4*' },
+    { value: 'Hôtel 5*', label: '⭐⭐⭐⭐⭐ Hôtel 5*' },
+    { value: 'Appartement', label: '🏢 Appartement' }
   ];
   
-  const selectedOption = groupes.find(opt => opt.value === postData?.groupe) || null;
+  const selectedOption = hotels.find(opt => opt.value === postData?.hotelMakkah) || null;
   
   const handleChange = (selected) => {
     handleChangeInput({
-      target: { name: 'groupe', value: selected?.value || '' }
+      target: { name: 'hotelMakkah', value: selected?.value || '' }
     });
   };
   
   return (
     <div className="mb-3">
-      <label className="form-label fw-bold">Groupe</label>
+      <label className="form-label fw-bold">Hôtel à Makkah</label>
       <Select
-        name="groupe"
-        options={groupes}
+        name="hotelMakkah"
+        options={hotels}
         value={selectedOption}
         onChange={handleChange}
         className="basic-single-select"
         classNamePrefix="select"
-        placeholder="Sélectionner le type de groupe..."
+        placeholder="Sélectionner l'hôtel..."
         isClearable
       />
     </div>
   );
 };
 
-// Hôtel Makkah
-const HotelMakkahField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Hôtel à Makkah</label>
-      <input
-        type="text"
-        name="hotelMakkah"
-        className="form-control"
-        placeholder="Nom et catégorie"
-        value={postData?.hotelMakkah || ''}
-        onChange={handleChangeInput}
-      />
-    </div>
-  );
-};
-
-// Hôtel Madinah
 const HotelMadinahField = ({ postData, handleChangeInput }) => {
+  const hotels = [
+    { value: 'Hôtel 3*', label: '⭐⭐⭐ Hôtel 3*' },
+    { value: 'Hôtel 4*', label: '⭐⭐⭐⭐ Hôtel 4*' },
+    { value: 'Hôtel 5*', label: '⭐⭐⭐⭐⭐ Hôtel 5*' },
+    { value: 'Appartement', label: '🏢 Appartement' }
+  ];
+  
+  const selectedOption = hotels.find(opt => opt.value === postData?.hotelMadinah) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'hotelMadinah', value: selected?.value || '' }
+    });
+  };
+  
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Hôtel à Madinah</label>
-      <input
-        type="text"
+      <Select
         name="hotelMadinah"
-        className="form-control"
-        placeholder="Nom et catégorie"
-        value={postData?.hotelMadinah || ''}
-        onChange={handleChangeInput}
+        options={hotels}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner l'hôtel..."
+        isClearable
       />
     </div>
   );
 };
 
-// Vols inclus
-const VolsField = ({ postData, handleChangeInput }) => {
+const VolsInclusField = ({ postData, handleChangeInput }) => {
   const options = [
     { value: 'Aller-retour inclus', label: '✈️ Aller-retour inclus' },
     { value: 'Vols non inclus', label: '❌ Vols non inclus' },
     { value: 'Optionnel', label: '🔘 Optionnel' }
   ];
   
-  const selectedOption = options.find(opt => opt.value === postData?.vols) || null;
+  const selectedOption = options.find(opt => opt.value === postData?.volsInclus) || null;
   
   const handleChange = (selected) => {
     handleChangeInput({
-      target: { name: 'vols', value: selected?.value || '' }
+      target: { name: 'volsInclus', value: selected?.value || '' }
     });
   };
   
@@ -541,7 +694,39 @@ const VolsField = ({ postData, handleChangeInput }) => {
     <div className="mb-3">
       <label className="form-label fw-bold">Vols inclus</label>
       <Select
-        name="vols"
+        name="volsInclus"
+        options={options}
+        value={selectedOption}
+        onChange={handleChange}
+        className="basic-single-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner..."
+        isClearable
+      />
+    </div>
+  );
+};
+
+const VisaField = ({ postData, handleChangeInput }) => {
+  const options = [
+    { value: 'Visa inclus', label: '✅ Visa inclus' },
+    { value: 'Visa non inclus', label: '❌ Visa non inclus' },
+    { value: 'Assistance visa', label: '🛂 Assistance visa' }
+  ];
+  
+  const selectedOption = options.find(opt => opt.value === postData?.visa) || null;
+  
+  const handleChange = (selected) => {
+    handleChangeInput({
+      target: { name: 'visa', value: selected?.value || '' }
+    });
+  };
+  
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Visa</label>
+      <Select
+        name="visa"
         options={options}
         value={selectedOption}
         onChange={handleChange}
@@ -555,205 +740,14 @@ const VolsField = ({ postData, handleChangeInput }) => {
 };
 
 // ============================================
-// CAMPOS POUR SÉJOUR
-// ============================================
-
-// Type de séjour
-const TypeSejourField = ({ postData, handleChangeInput }) => {
-  const types = [
-    { value: 'Détente', label: '🧘 Détente' },
-    { value: 'Découverte', label: '🗺️ Découverte' },
-    { value: 'Aventure', label: '⛰️ Aventure' },
-    { value: 'Culturel', label: '🏛️ Culturel' },
-    { value: 'Balnéaire', label: '🏖️ Balnéaire' }
-  ];
-  
-  const selectedOption = types.find(opt => opt.value === postData?.typeSejour) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'typeSejour', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type de séjour</label>
-      <Select
-        name="typeSejour"
-        options={types}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner le type..."
-        isClearable
-      />
-    </div>
-  );
-};
-
-// Catégorie hôtel
-const CategorieHotelField = ({ postData, handleChangeInput }) => {
-  const categories = [
-    { value: '2 étoiles', label: '⭐⭐ 2 étoiles' },
-    { value: '3 étoiles', label: '⭐⭐⭐ 3 étoiles' },
-    { value: '4 étoiles', label: '⭐⭐⭐⭐ 4 étoiles' },
-    { value: '5 étoiles', label: '⭐⭐⭐⭐⭐ 5 étoiles' },
-    { value: 'Luxe', label: '👑 Luxe' }
-  ];
-  
-  const selectedOption = categories.find(opt => opt.value === postData?.categorieHotel) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'categorieHotel', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Catégorie d'hôtel</label>
-      <Select
-        name="categorieHotel"
-        options={categories}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner la catégorie..."
-        isClearable
-      />
-    </div>
-  );
-};
-
-// ============================================
-// CAMPOS POUR CROISIÈRE
-// ============================================
-
-// Nom bateau
-const NomBateauField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Nom du bateau</label>
-      <input
-        type="text"
-        name="nomBateau"
-        className="form-control"
-        placeholder="Nom de la croisière"
-        value={postData?.nomBateau || ''}
-        onChange={handleChangeInput}
-      />
-    </div>
-  );
-};
-
-// Type de cabine
-const CabineField = ({ postData, handleChangeInput }) => {
-  const types = [
-    { value: 'Intérieure', label: '🚪 Intérieure' },
-    { value: 'Extérieure', label: '🪟 Extérieure' },
-    { value: 'Avec balcon', label: '🏠 Avec balcon' },
-    { value: 'Suite', label: '👑 Suite' }
-  ];
-  
-  const selectedOption = types.find(opt => opt.value === postData?.cabine) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'cabine', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type de cabine</label>
-      <Select
-        name="cabine"
-        options={types}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner le type de cabine..."
-        isClearable
-      />
-    </div>
-  );
-};
-
-// ============================================
-// CAMPOS POUR RÉSERVATIONS & VISA
-// ============================================
-
-// Compagnie/Agence
-const CompagnieField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Compagnie/Agence</label>
-      <input
-        type="text"
-        name="compagnie"
-        className="form-control"
-        placeholder="Nom de la compagnie ou agence"
-        value={postData?.compagnie || ''}
-        onChange={handleChangeInput}
-      />
-    </div>
-  );
-};
-
-// Type de voyage
-const TypeVoyageField = ({ postData, handleChangeInput }) => {
-  const types = [
-    { value: 'Voyage d\'affaires', label: '💼 Voyage d\'affaires' },
-    { value: 'Touristique', label: '🏖️ Touristique' },
-    { value: 'Familial', label: '👨‍👩‍👧‍👦 Familial' },
-    { value: 'Romantique', label: '💕 Romantique' },
-    { value: 'Gastronomique', label: '🍽️ Gastronomique' }
-  ];
-  
-  const selectedOption = types.find(opt => opt.value === postData?.typeVoyage) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'typeVoyage', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type de voyage</label>
-      <Select
-        name="typeVoyage"
-        options={types}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner le type de voyage..."
-        isClearable
-      />
-    </div>
-  );
-};
-
-// ============================================
-// COMPONENTE PRINCIPAL
+// COMPONENTE PRINCIPAL INTELIGENTE
 // ============================================
 
 const VoyagesFields = (props) => {
-  const { step, subCategory, articleType } = props;
+  const { step, subCategory } = props;
   
-  // Mapa de TODOS los componentes disponibles
-  const customComponents = {
-    // Campos comunes
-    'title': <TitleField {...props} />,
-    'description': <DescriptionField {...props} />,
-    
-    // Campos comunes para todos los viajes
-    'destination': <DestinationField {...props} />,
+  // Campos comunes para todos los viajes
+  const commonComponents = {
     'duree': <DureeField {...props} />,
     'dateDepart': <DateDepartField {...props} />,
     'dateRetour': <DateRetourField {...props} />,
@@ -761,32 +755,67 @@ const VoyagesFields = (props) => {
     'transport': <TransportField {...props} />,
     'hebergement': <HebergementField {...props} />,
     'activitesIncluses': <ActivitesInclusesField {...props} />,
-    
-    // Location vacances
-    'typeHebergement': <TypeHebergementField {...props} />,
-    'capacite': <CapaciteField {...props} />,
-    'equipements': <EquipementsField {...props} />,
-    'proximite': <ProximiteField {...props} />,
-    
-    // Hajj & Omra
-    'typePelerinage': <TypePelerinageField {...props} />,
-    'groupe': <GroupeField {...props} />,
-    'hotelMakkah': <HotelMakkahField {...props} />,
-    'hotelMadinah': <HotelMadinahField {...props} />,
-    'vols': <VolsField {...props} />,
-    
-    // Séjour
-    'typeSejour': <TypeSejourField {...props} />,
-    'categorieHotel': <CategorieHotelField {...props} />,
-    
-    // Croisière
-    'nomBateau': <NomBateauField {...props} />,
-    'cabine': <CabineField {...props} />,
-    
-    // Réservations & Visa
-    'compagnie': <CompagnieField {...props} />,
-    'typeVoyage': <TypeVoyageField {...props} />
+    'prixParPersonne': <PrixParPersonneField {...props} />
   };
+  
+  // Campos según subcategoría
+  const getSpecificComponents = () => {
+    switch (subCategory) {
+      case 'voyage-organise':
+        return {
+          'destination': <DestinationInternationaleField {...props} />,
+          ...commonComponents
+        };
+      
+      case 'location-vacances-voyages':
+        return {
+          'destination': <DestinationLocaleField {...props} />,
+          'typeHebergement': <TypeHebergementField {...props} />,
+          'capacite': <CapaciteHebergementField {...props} />,
+          'equipements': <EquipementsHebergementField {...props} />
+        };
+      
+      case 'hajj-omra':
+        return {
+          'destination': <DestinationArabieField {...props} />,
+          'typePelerinage': <TypePelerinageField {...props} />,
+          'hotelMakkah': <HotelMakkahField {...props} />,
+          'hotelMadinah': <HotelMadinahField {...props} />,
+          'volsInclus': <VolsInclusField {...props} />,
+          ...commonComponents
+        };
+      
+      case 'reservations-visa':
+        return {
+          'destination': <DestinationInternationaleField {...props} />,
+          'compagnie': <VolsInclusField {...props} />,
+          'visa': <VisaField {...props} />
+        };
+      
+      case 'sejour':
+        return {
+          'destination': <DestinationInternationaleField {...props} />,
+          ...commonComponents
+        };
+      
+      case 'croisiere':
+        return {
+          'destination': <DestinationInternationaleField {...props} />,
+          'nomBateau': <VolsInclusField {...props} />,
+          'cabine': <HebergementField {...props} />,
+          ...commonComponents
+        };
+      
+      case 'autre-voyages':
+      default:
+        return {
+          'destination': <DestinationInternationaleField {...props} />,
+          ...commonComponents
+        };
+    }
+  };
+  
+  const customComponents = getSpecificComponents();
   
   const additionalFields = {
     components: customComponents,

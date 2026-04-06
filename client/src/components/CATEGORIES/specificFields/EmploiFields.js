@@ -223,6 +223,15 @@ const NiveauEtudesField = ({ postData, handleChangeInput }) => {
 // Compétences
 const CompetencesField = ({ postData, handleChangeInput }) => {
   const competencesOptions = [
+    { value: 'Marketing digital', label: 'Marketing digital' },
+    { value: 'Comptabilité', label: 'Comptabilité' },
+    { value: 'Gestion de projet', label: 'Gestion de projet' },
+    { value: 'Communication', label: 'Communication' },
+    { value: 'Vente', label: 'Vente' },
+    { value: 'Négociation', label: 'Négociation' },
+    { value: 'Service client', label: 'Service client' },
+    { value: 'Leadership', label: 'Leadership' },
+    { value: 'Travail en équipe', label: 'Travail en équipe' },
     { value: 'PHP', label: 'PHP' },
     { value: 'JavaScript', label: 'JavaScript' },
     { value: 'React', label: 'React' },
@@ -232,16 +241,8 @@ const CompetencesField = ({ postData, handleChangeInput }) => {
     { value: 'C++', label: 'C++' },
     { value: 'SQL', label: 'SQL' },
     { value: 'WordPress', label: 'WordPress' },
-    { value: 'SEO', label: 'SEO' },
-    { value: 'Marketing digital', label: 'Marketing digital' },
-    { value: 'Comptabilité', label: 'Comptabilité' },
-    { value: 'Gestion de projet', label: 'Gestion de projet' },
-    { value: 'Communication', label: 'Communication' },
-    { value: 'Vente', label: 'Vente' },
-    { value: 'Négociation', label: 'Négociation' },
-    { value: 'Service client', label: 'Service client' },
-    { value: 'Leadership', label: 'Leadership' },
-    { value: 'Travail en équipe', label: 'Travail en équipe' }
+    { value: 'SEO', label: 'SEO' }
+    
   ];
   
   const selectedValues = postData?.competences || [];

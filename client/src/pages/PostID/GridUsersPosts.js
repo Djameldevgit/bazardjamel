@@ -79,8 +79,8 @@ const GridUserPosts = ({ userId, auth, excludePostId, limit = 6 }) => {
   };
 
   return (
-    <div className="mb-5">
-      <div className="mb-4">
+    <div  >
+      <div  >
         <h5 className="fw-bold" style={{ fontSize: '1.4rem', color: '#2c3e50' }}>
           👤 Autres publications du vendeur
         </h5>

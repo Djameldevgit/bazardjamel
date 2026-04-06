@@ -1,118 +1,10 @@
 // 📂 components/CATEGORIES/specificFields/TelephonesField.js
 import React from 'react';
 import Select from 'react-select';
+import MarqueModelTelephone from '../camposComun/MarqueModelTelephone';
 import BaseCategoryField from './BaseCategoryField';
 
-// ============================================
-// CAMPOS COMUNES PARA TODAS LAS CATEGORÍAS
-// ============================================
-
-// Titre
-const TitleField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Titre</label>
-      <input
-        type="text"
-        name="title"
-        className="form-control"
-        placeholder="Titre de l'annonce"
-        value={postData?.title || ''}
-        onChange={handleChangeInput}
-      />
-    </div>
-  );
-};
-
-// Description
-const DescriptionField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">
-        Description <span className="text-danger">*</span>
-      </label>
-      <textarea
-        name="description"
-        className="form-control"
-        rows="4"
-        placeholder="Décrivez votre produit en détail..."
-        value={postData?.description || ''}
-        onChange={handleChangeInput}
-        required
-      />
-      <small className="text-muted">Décrivez les caractéristiques, l'état, etc.</small>
-    </div>
-  );
-};
-
-// ============================================
-// CAMPOS ESPECÍFICOS PARA TÉLÉPHONES
-// ============================================
-
-// Marque
-const MarqueField = ({ postData, handleChangeInput }) => {
-  const marques = [
-    { value: 'Apple', label: '🍎 Apple' },
-    { value: 'Samsung', label: '📱 Samsung' },
-    { value: 'Xiaomi', label: '📱 Xiaomi' },
-    { value: 'Huawei', label: '📱 Huawei' },
-    { value: 'OnePlus', label: '📱 OnePlus' },
-    { value: 'Google', label: '📱 Google Pixel' },
-    { value: 'Nokia', label: '📱 Nokia' },
-    { value: 'Sony', label: '📱 Sony' },
-    { value: 'LG', label: '📱 LG' },
-    { value: 'Motorola', label: '📱 Motorola' },
-    { value: 'Realme', label: '📱 Realme' },
-    { value: 'Oppo', label: '📱 Oppo' },
-    { value: 'Vivo', label: '📱 Vivo' },
-    { value: 'Tecno', label: '📱 Tecno' },
-    { value: 'Infinix', label: '📱 Infinix' },
-    { value: 'Autre', label: '📱 Autre' }
-  ];
-  
-  const selectedOption = marques.find(opt => opt.value === postData?.marque) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'marque', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Marque</label>
-      <Select
-        name="marque"
-        options={marques}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner la marque..."
-        isClearable
-      />
-    </div>
-  );
-};
-
-// Modèle
-const ModeleField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Modèle</label>
-      <input
-        type="text"
-        name="modele"
-        className="form-control"
-        placeholder="Ex: iPhone 14 Pro, Galaxy S23, Xiaomi 13..."
-        value={postData?.modele || ''}
-        onChange={handleChangeInput}
-      />
-    </div>
-  );
-};
-
-// Référence
+ 
 const ReferenceField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
@@ -561,12 +453,8 @@ const TelephonesField = (props) => {
   // Mapa de TODOS los componentes disponibles
   const customComponents = {
     // Campos comunes
-    'title': <TitleField {...props} />,
-    'description': <DescriptionField {...props} />,
-    
-    // Campos específicos para téléphones
-    'marque': <MarqueField {...props} />,
-    'modele': <ModeleField {...props} />,
+   
+    'marque': <MarqueModelTelephone {...props} brandField="marque" modelField="modele" />,
     'reference': <ReferenceField {...props} />,
     'copie': <CopieField {...props} />,
     'memoire': <MemoireField {...props} />,

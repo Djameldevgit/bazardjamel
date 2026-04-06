@@ -8,24 +8,7 @@ import BaseCategoryField from './BaseCategoryField';
 // ============================================
 
 // Désignation - Requerido
-const DesignationField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">
-        Désignation <span className="text-danger">*</span>
-      </label>
-      <input
-        type="text"
-        name="designation"
-        className="form-control"
-        placeholder="Ex: Magnifique appartement F3"
-        value={postData?.designation || ''}
-        onChange={handleChangeInput}
-        required
-      />
-    </div>
-  );
-};
+ 
 
 // Description du bien - Requerido
 const DescriptionBienField = ({ postData, handleChangeInput }) => {
@@ -47,7 +30,7 @@ const DescriptionBienField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Superficie - Requerido
+// Superficie - Requerido (para todos)
 const SuperficieField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
@@ -70,7 +53,7 @@ const SuperficieField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Étage
+// Étage (solo para appartement, local, bureau, studio, duplex, etc. - NO para terrain, villa, maison)
 const EtageField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
@@ -87,7 +70,7 @@ const EtageField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Nombre de pièces
+// Nombre de pièces (solo para appartement, villa, maison, etc. - NO para terrain, local commercial)
 const PiecesField = ({ postData, handleChangeInput }) => {
   const piecesOptions = [
     { value: '1', label: '1 pièce' },
@@ -123,7 +106,7 @@ const PiecesField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Nombre de chambres
+// Nombre de chambres (solo para appartement, villa, maison, etc.)
 const ChambresField = ({ postData, handleChangeInput }) => {
   const chambresOptions = [
     { value: '1', label: '1 chambre' },
@@ -158,7 +141,7 @@ const ChambresField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Salles de bain
+// Salles de bain (solo para appartement, villa, maison, etc.)
 const SallesBainField = ({ postData, handleChangeInput }) => {
   const sallesBainOptions = [
     { value: '1', label: '1' },
@@ -307,41 +290,6 @@ const SpecsImmobilierField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Transaction - Requerido
-const TransactionField = ({ postData, handleChangeInput }) => {
-  const transactionOptions = [
-    { value: 'Vente', label: 'Vente' },
-    { value: 'Location', label: 'Location' },
-    { value: 'Location vacances', label: 'Location vacances' }
-  ];
-  
-  const selectedOption = transactionOptions.find(opt => opt.value === postData?.transaction) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'transaction', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">
-        Transaction <span className="text-danger">*</span>
-      </label>
-      <Select
-        name="transaction"
-        options={transactionOptions}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner..."
-        required
-      />
-    </div>
-  );
-};
-
 // Type de vente - Requerido
 const TypeVenteField = ({ postData, handleChangeInput }) => {
   const typeVenteOptions = [
@@ -447,23 +395,7 @@ const ConditionsPaiementField = ({ postData, handleChangeInput }) => {
     </div>
   );
 };
-
-// Description Extra
-const DescriptionExtraField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Description complémentaire</label>
-      <textarea
-        name="descriptionExtra"
-        className="form-control"
-        rows="3"
-        placeholder="Informations complémentaires..."
-        value={postData?.descriptionExtra || ''}
-        onChange={handleChangeInput}
-      />
-    </div>
-  );
-};
+ 
 
 // Adresse du bien - Requerido
 const AdresseBienField = ({ postData, handleChangeInput }) => {
@@ -502,7 +434,7 @@ const QuartierField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Type de terrain
+// Type de terrain (solo para terrain)
 const TypeTerrainField = ({ postData, handleChangeInput }) => {
   const terrainOptions = [
     { value: 'Constructible', label: 'Constructible' },
@@ -535,7 +467,7 @@ const TypeTerrainField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Viabilisé
+// Viabilisé (solo para terrain)
 const ViabiliseField = ({ postData, handleChangeInput }) => {
   const viabiliseOptions = [
     { value: 'oui', label: 'Oui' },
@@ -567,7 +499,7 @@ const ViabiliseField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Vitrine
+// Vitrine (solo pour local commercial)
 const VitrineField = ({ postData, handleChangeInput }) => {
   const vitrineOptions = [
     { value: 'oui', label: 'Oui' },
@@ -599,7 +531,7 @@ const VitrineField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Hauteur sous plafond
+// Hauteur sous plafond (solo pour local commercial, bureau)
 const HauteurField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
@@ -620,7 +552,7 @@ const HauteurField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Nombre d'appartements
+// Nombre d'appartements (solo para immeuble)
 const NbAppartementsField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
@@ -637,7 +569,7 @@ const NbAppartementsField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Nombre d'étages
+// Nombre d'étages (solo para immeuble)
 const NbEtagesField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
@@ -655,38 +587,89 @@ const NbEtagesField = ({ postData, handleChangeInput }) => {
 };
 
 // ============================================
-// COMPONENTE PRINCIPAL (MISMA ESTRUCTURA)
+// COMPONENTE PRINCIPAL CON CAMPOS CONDICIONALES
 // ============================================
 
 const ImmobiliersFields = (props) => {
-  const { step } = props;
+  const { step, articleType } = props;
   
-  // Mapeo de campos específicos
-  const customComponents = {
-    'designation': <DesignationField {...props} />,
-    'descriptionBien': <DescriptionBienField {...props} />,
-    'superficie': <SuperficieField {...props} />,
-    'etage': <EtageField {...props} />,
-    'pieces': <PiecesField {...props} />,
-    'chambres': <ChambresField {...props} />,
-    'sallesBain': <SallesBainField {...props} />,
-    'jardin': <JardinField {...props} />,
-    'piscine': <PiscineField {...props} />,
-    'specs': <SpecsImmobilierField {...props} />,
-    'transaction': <TransactionField {...props} />,
-    'typeVente': <TypeVenteField {...props} />,
-    'papiers': <PapiersImmobilierField {...props} />,
-    'conditionsPaiement': <ConditionsPaiementField {...props} />,
-    'descriptionExtra': <DescriptionExtraField {...props} />,
-    'adresse': <AdresseBienField {...props} />,
-    'quartier': <QuartierField {...props} />,
-    'typeTerrain': <TypeTerrainField {...props} />,
-    'viabilise': <ViabiliseField {...props} />,
-    'vitrine': <VitrineField {...props} />,
-    'hauteur': <HauteurField {...props} />,
-    'nbAppartements': <NbAppartementsField {...props} />,
-    'nbEtages': <NbEtagesField {...props} />
+  // Definir qué campos mostrar según el tipo de artículo (articleType del accordion)
+  const getConditionalFields = () => {
+    // Tipos que NO son terrain (tienen étage, pieces, chambres, sallesBain)
+    const typesAvecEtagePieces = [
+      'appartement', 'villa', 'maison', 'studio', 'duplex', 
+      'local commercial', 'bureau', 'magasin'
+    ];
+    
+    // Tipos que son terrain (solo para terrenos)
+    const typesTerrain = ['terrain', 'terrains'];
+    
+    // Tipos que son locaux commerciaux (tienen vitrine)
+    const typesAvecVitrine = ['local commercial', 'magasin', 'boutique'];
+    
+    // Tipos que son immeubles (tienen nbAppartements, nbEtages)
+    const typesImmeuble = ['immeuble', 'building'];
+    
+    // Tipos que son locaux/bureaux (tienen hauteur)
+    const typesAvecHauteur = ['local commercial', 'bureau', 'entrepôt', 'warehouse'];
+    
+    const isTerrain = typesTerrain.includes(articleType?.toLowerCase());
+    const hasEtagePieces = typesAvecEtagePieces.includes(articleType?.toLowerCase());
+    const hasVitrine = typesAvecVitrine.includes(articleType?.toLowerCase());
+    const isImmeuble = typesImmeuble.includes(articleType?.toLowerCase());
+    const hasHauteur = typesAvecHauteur.includes(articleType?.toLowerCase());
+    
+    // Construir objeto de componentes condicionales
+    const conditionalComponents = {
+      // Campos comunes para TODOS los tipos
+    
+      'descriptionBien': <DescriptionBienField {...props} />,
+      'superficie': <SuperficieField {...props} />,
+      'jardin': <JardinField {...props} />,
+      'piscine': <PiscineField {...props} />,
+      'specs': <SpecsImmobilierField {...props} />,
+      'typeVente': <TypeVenteField {...props} />,
+      'papiers': <PapiersImmobilierField {...props} />,
+      'conditionsPaiement': <ConditionsPaiementField {...props} />,
+   
+      'adresse': <AdresseBienField {...props} />,
+      'quartier': <QuartierField {...props} />
+    };
+    
+    // Campos para tipos que NO son terrain (appartement, villa, maison, etc.)
+    if (hasEtagePieces && !isTerrain) {
+      conditionalComponents['etage'] = <EtageField {...props} />;
+      conditionalComponents['pieces'] = <PiecesField {...props} />;
+      conditionalComponents['chambres'] = <ChambresField {...props} />;
+      conditionalComponents['sallesBain'] = <SallesBainField {...props} />;
+    }
+    
+    // Campos específicos para terrain
+    if (isTerrain) {
+      conditionalComponents['typeTerrain'] = <TypeTerrainField {...props} />;
+      conditionalComponents['viabilise'] = <ViabiliseField {...props} />;
+    }
+    
+    // Campos para locaux commerciaux
+    if (hasVitrine) {
+      conditionalComponents['vitrine'] = <VitrineField {...props} />;
+    }
+    
+    // Campos para immeubles
+    if (isImmeuble) {
+      conditionalComponents['nbAppartements'] = <NbAppartementsField {...props} />;
+      conditionalComponents['nbEtages'] = <NbEtagesField {...props} />;
+    }
+    
+    // Campos para locales con altura
+    if (hasHauteur) {
+      conditionalComponents['hauteur'] = <HauteurField {...props} />;
+    }
+    
+    return conditionalComponents;
   };
+  
+  const customComponents = getConditionalFields();
   
   const additionalFields = {
     components: customComponents,

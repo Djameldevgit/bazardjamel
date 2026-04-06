@@ -48,7 +48,7 @@ const CreateAnnoncePage = () => {
   const [isLoadingEditData, setIsLoadingEditData] = useState(true);
   const [hasManuallyGoneBack, setHasManuallyGoneBack] = useState(false);
   const [editDataLoaded, setEditDataLoaded] = useState(false);
-  
+
   // Estado para el título generado (para mostrar preview)
   const [generatedTitle, setGeneratedTitle] = useState('');
 
@@ -103,12 +103,12 @@ const CreateAnnoncePage = () => {
 
           if (loadedCategoryData.subCategory && !loadedCategoryData.articleType) {
             const categories = categoryState.accordionCategories || [];
-            const mainCat = categories.find(c => 
+            const mainCat = categories.find(c =>
               c.slug === loadedCategoryData.categorie || c.name === loadedCategoryData.categorie
             );
             if (mainCat) {
               for (const level1 of mainCat.children || []) {
-                const level2 = level1.children?.find(ch => 
+                const level2 = level1.children?.find(ch =>
                   ch.slug === loadedCategoryData.subCategory || ch.name === loadedCategoryData.subCategory
                 );
                 if (level2) {
@@ -192,8 +192,7 @@ const CreateAnnoncePage = () => {
         const stillHasCategory = categoryData.categorie && categoryData.subCategory;
         if (stillHasCategory && currentStep === 1 && !hasManuallyGoneBack) {
           setCurrentStep(2);
-          setAlert({ show: true, message: "✅ Catégorie sélectionnée. Complétez les détails.", variant: "success" });
-        }
+         }
       }, 500);
     }
 
@@ -268,12 +267,12 @@ const CreateAnnoncePage = () => {
   const canProceedToNextStep = () => {
     switch (currentStep) {
       case 1: return categoryData.categorie && categoryData.subCategory;
-      case 2: 
+      case 2:
         // Solo description es obligatoria (el título se genera automáticamente)
         return commonData.description && commonData.description.trim() !== '';
       case 3: return commonData.price && commonData.price.toString().trim() !== '';
-      case 4: return commonData.wilaya && commonData.wilaya.toString().trim() !== '' && 
-                     commonData.commune && commonData.commune.toString().trim() !== '';
+      case 4: return commonData.wilaya && commonData.wilaya.toString().trim() !== '' &&
+        commonData.commune && commonData.commune.toString().trim() !== '';
       case 5: return images.length > 0;
       default: return true;
     }
@@ -300,7 +299,7 @@ const CreateAnnoncePage = () => {
     try {
       // 🎯 GENERAR TÍTULO AUTOMÁTICAMENTE
       const autoTitle = generateTitle(categoryData, specificData, commonData);
-      
+
       console.log('🎯 Título generado automáticamente:', autoTitle);
       console.log('📊 Datos específicos:', specificData);
       console.log('📋 Datos comunes:', commonData);
@@ -478,20 +477,6 @@ const CreateAnnoncePage = () => {
                   </div>
                 )}
 
-                {/* 🎯 VISTA PREVIA DEL TÍTULO GENERADO */}
-                {currentStep === 2 && categoryData.categorie && (
-                  <div className="alert alert-info mb-3 py-2">
-                    <div className="d-flex align-items-center">
-                      <i className="fas fa-magic me-2 text-info"></i>
-                      <div>
-                        <small className="fw-bold d-block">Titre généré automatiquement:</small>
-                        <small className="text-muted">
-                          {generatedTitle || 'En attente des informations...'}
-                        </small>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 <div className="mb-3 p-2 bg-light rounded">
                   <div className="d-flex align-items-center">

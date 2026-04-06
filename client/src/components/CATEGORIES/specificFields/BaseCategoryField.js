@@ -12,12 +12,14 @@ import UniteField from '../camposComun/UniteField';
 import TypeOffreField from '../camposComun/TypeOffreField';
 import EchangeField from '../camposComun/EchangeField';
 import GrossDetailField from '../camposComun/GrossDetailField';
-import WilayaField from '../camposComun/WilayaCommuneField';
+ 
 import TelephoneField from '../camposComun/PhoneField';
 import EtatField from '../camposComun/EtatField';
 
 // Importar configuración
 import { getFieldsForCategory } from '../FieldConfig';
+import WilayaCommuneField from '../camposComun/WilayaCommuneField';
+import EmailField from '../camposComun/EmailField';
 
 const BaseCategoryField = ({ 
   fieldName,
@@ -187,7 +189,7 @@ const BaseCategoryField = ({
     ),
     
     'wilaya': (
-      <WilayaField
+      <WilayaCommuneField
         key="wilaya"
         mainCategory={mainCategory}
         subCategory={subCategory}
@@ -198,7 +200,18 @@ const BaseCategoryField = ({
         t={t}
       />
     ),
-    
+    'email': (
+      <EmailField
+        key="email"
+        mainCategory={mainCategory}
+        subCategory={subCategory}
+        postData={postData}
+        handleChangeInput={handleChangeInput}
+        fieldName="email"
+        isRTL={isRTL}
+        t={t}
+      />
+    ),
     'telephone': (
       <TelephoneField
         key="telephone"

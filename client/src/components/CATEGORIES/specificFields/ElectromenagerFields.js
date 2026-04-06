@@ -4,42 +4,8 @@ import Select from 'react-select';
 import BaseCategoryField from './BaseCategoryField';
 
 // ============================================
-// CAMPOS COMUNES PARA TODAS LAS CATEGORÍAS
+// CAMPOS ESPECÍFICOS PARA ÉLECTROMÉNAGER
 // ============================================
-
-// Titre
-const TitleField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Titre</label>
-      <input
-        type="text"
-        name="title"
-        className="form-control"
-        placeholder="Titre de l'annonce"
-        value={postData?.title || ''}
-        onChange={handleChangeInput}
-      />
-    </div>
-  );
-};
-
-// Description
-const DescriptionField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Description</label>
-      <textarea
-        name="description"
-        className="form-control"
-        rows="4"
-        placeholder="Décrivez votre article..."
-        value={postData?.description || ''}
-        onChange={handleChangeInput}
-      />
-    </div>
-  );
-};
 
 // Marque
 const MarqueField = ({ postData, handleChangeInput }) => {
@@ -82,31 +48,6 @@ const ModeleField = ({ postData, handleChangeInput }) => {
         value={postData?.modele || ''}
         onChange={handleChangeInput}
       />
-    </div>
-  );
-};
-
-// État
-const EtatField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">État</label>
-      <select
-        name="etat"
-        className="form-control"
-        value={postData?.etat || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner l'état</option>
-        <option value="Neuf jamais utilisé">Neuf jamais utilisé</option>
-        <option value="État neuf">État neuf</option>
-        <option value="Comme neuf">Comme neuf</option>
-        <option value="Très bon état">Très bon état</option>
-        <option value="Bon état">Bon état</option>
-        <option value="État moyen">État moyen</option>
-        <option value="À réviser">À réviser</option>
-        <option value="Pour pièces détachées">Pour pièces détachées</option>
-      </select>
     </div>
   );
 };
@@ -192,29 +133,6 @@ const SmartTvField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Type de TV
-const TypeTvField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type d'écran</label>
-      <select
-        name="typeTv"
-        className="form-control"
-        value={postData?.typeTv || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="LED">LED</option>
-        <option value="OLED">OLED</option>
-        <option value="QLED">QLED</option>
-        <option value="Neo QLED">Neo QLED</option>
-        <option value="Plasma">Plasma</option>
-        <option value="LCD">LCD</option>
-      </select>
-    </div>
-  );
-};
-
 // ============================================
 // CAMPOS POUR RÉFRIGÉRATEURS & CONGÉLATEURS
 // ============================================
@@ -258,29 +176,6 @@ const ClasseEnergetiqueField = ({ postData, handleChangeInput }) => {
         <option value="B">B</option>
         <option value="C">C</option>
         <option value="D">D</option>
-      </select>
-    </div>
-  );
-};
-
-// Type de réfrigérateur
-const TypeRefrigerateurField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type</label>
-      <select
-        name="typeRefrigerateur"
-        className="form-control"
-        value={postData?.typeRefrigerateur || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Congélateur">Congélateur</option>
-        <option value="Réfrigérateur">Réfrigérateur</option>
-        <option value="Réfrigérateur congélateur">Réfrigérateur congélateur</option>
-        <option value="Réfrigérateur américain">Réfrigérateur américain</option>
-        <option value="Mini réfrigérateur">Mini réfrigérateur</option>
-        <option value="Cave à vin">Cave à vin</option>
       </select>
     </div>
   );
@@ -331,53 +226,9 @@ const VitesseEssorageField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Type de machine
-const TypeMachineField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type</label>
-      <select
-        name="typeMachine"
-        className="form-control"
-        value={postData?.typeMachine || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Lavage frontal">Lavage frontal</option>
-        <option value="Lavage par le haut">Lavage par le haut</option>
-        <option value="Séchant intégré">Séchant intégré</option>
-        <option value="Lave-linge séchant">Lave-linge séchant</option>
-      </select>
-    </div>
-  );
-};
-
 // ============================================
 // CAMPOS POUR FOURS & CUISSON
 // ============================================
-
-// Type de four
-const TypeFourField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type de four</label>
-      <select
-        name="typeFour"
-        className="form-control"
-        value={postData?.typeFour || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Gaz">Gaz</option>
-        <option value="Électrique">Électrique</option>
-        <option value="Micro-ondes">Micro-ondes</option>
-        <option value="Four combiné">Four combiné</option>
-        <option value="Friteuse sans huile">Friteuse sans huile</option>
-        <option value="Four à pizza">Four à pizza</option>
-      </select>
-    </div>
-  );
-};
 
 // Puissance
 const PuissanceField = ({ postData, handleChangeInput }) => {
@@ -400,103 +251,8 @@ const PuissanceField = ({ postData, handleChangeInput }) => {
 };
 
 // ============================================
-// CAMPOS POUR AUDIO
+// CAMPOS ADICIONALES
 // ============================================
-
-// Type d'audio
-const TypeAudioField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type d'appareil</label>
-      <select
-        name="typeAudio"
-        className="form-control"
-        value={postData?.typeAudio || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Casque audio">Casque audio</option>
-        <option value="Écouteurs">Écouteurs</option>
-        <option value="Enceinte Bluetooth">Enceinte Bluetooth</option>
-        <option value="Barre de son">Barre de son</option>
-        <option value="Home Cinéma">Home Cinéma</option>
-        <option value="Amplificateur">Amplificateur</option>
-        <option value="Chaîne Hi-Fi">Chaîne Hi-Fi</option>
-      </select>
-    </div>
-  );
-};
-
-// ============================================
-// CAMPOS ADICIONALES FALTANTES
-// ============================================
-
-// Type d'appareil (pour appareils cuisine)
-const TypeAppareilField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type d'appareil</label>
-      <select
-        name="typeAppareil"
-        className="form-control"
-        value={postData?.typeAppareil || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Robot de cuisine">Robot de cuisine</option>
-        <option value="Mixeur">Mixeur</option>
-        <option value="Blender">Blender</option>
-        <option value="Extracteur de jus">Extracteur de jus</option>
-        <option value="Grille-pain">Grille-pain</option>
-        <option value="Bouilloire">Bouilloire</option>
-        <option value="Cafetière">Cafetière</option>
-      </select>
-    </div>
-  );
-};
-
-// Type d'aspirateur
-const TypeAspirateurField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type d'aspirateur</label>
-      <select
-        name="typeAspirateur"
-        className="form-control"
-        value={postData?.typeAspirateur || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Traîneau">Traîneau</option>
-        <option value="Balai">Balai</option>
-        <option value="Robot">Robot</option>
-        <option value="Centralisé">Centralisé</option>
-        <option value="À main">À main</option>
-      </select>
-    </div>
-  );
-};
-
-// Type de fer à repasser
-const TypeFerField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type de fer</label>
-      <select
-        name="typeFer"
-        className="form-control"
-        value={postData?.typeFer || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Fer à repasser classique">Fer à repasser classique</option>
-        <option value="Fer vapeur">Fer vapeur</option>
-        <option value="Centrale vapeur">Centrale vapeur</option>
-        <option value="Défroisseur vapeur">Défroisseur vapeur</option>
-      </select>
-    </div>
-  );
-};
 
 // Compatibilité (télécommandes)
 const CompatibiliteField = ({ postData, handleChangeInput }) => {
@@ -515,105 +271,38 @@ const CompatibiliteField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Type (sécurité/GPS)
-const TypeSecuriteField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type</label>
-      <select
-        name="type"
-        className="form-control"
-        value={postData?.type || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Caméra de surveillance">Caméra de surveillance</option>
-        <option value="Kit alarme">Kit alarme</option>
-        <option value="Détecteur de mouvement">Détecteur de mouvement</option>
-        <option value="GPS voiture">GPS voiture</option>
-        <option value="GPS moto">GPS moto</option>
-        <option value="Traceur GPS">Traceur GPS</option>
-      </select>
-    </div>
-  );
-};
-
-// Type de machine à coudre
-const TypeMachineCoudreField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type de machine</label>
-      <select
-        name="typeMachine"
-        className="form-control"
-        value={postData?.typeMachine || ''}
-        onChange={handleChangeInput}
-      >
-        <option value="">Sélectionner</option>
-        <option value="Mécanique">Mécanique</option>
-        <option value="Électronique">Électronique</option>
-        <option value="Informatique">Informatique</option>
-        <option value="Surjeteuse">Surjeteuse</option>
-        <option value="Recouvreuse">Recouvreuse</option>
-      </select>
-    </div>
-  );
-};
-
 // ============================================
-// COMPONENTE PRINCIPAL INTELIGENTE
+// COMPONENTE PRINCIPAL
 // ============================================
 
 const ElectromenagerField = (props) => {
-  const { step, subCategory, articleType } = props;
+  const { step } = props;
   
-  // Mapa de TODOS los componentes disponibles
+  // SOLO campos específicos (sin title, description, etat, sin types d'article)
   const customComponents = {
-    // Campos comunes
-    'title': <TitleField {...props} />,
-    'description': <DescriptionField {...props} />,
+    // Marque al principio
     'marque': <MarqueField {...props} />,
     'modele': <ModeleField {...props} />,
-    'etat': <EtatField {...props} />,
     'garantie': <GarantieField {...props} />,
     
     // TV & Multimédia
     'tailleEcran': <TailleEcranField {...props} />,
     'resolution': <ResolutionField {...props} />,
     'smartTv': <SmartTvField {...props} />,
-    'typeTv': <TypeTvField {...props} />,
     
     // Réfrigérateurs
     'capacite': <CapaciteField {...props} />,
     'classeEnergetique': <ClasseEnergetiqueField {...props} />,
-    'typeRefrigerateur': <TypeRefrigerateurField {...props} />,
     
     // Machines à laver
     'capaciteKg': <CapaciteKgField {...props} />,
     'vitesseEssorage': <VitesseEssorageField {...props} />,
-    'typeMachine': <TypeMachineField {...props} />,
     
-    // Fours
-    'typeFour': <TypeFourField {...props} />,
+    // Fours & cuisson
     'puissance': <PuissanceField {...props} />,
     
-    // Audio
-    'typeAudio': <TypeAudioField {...props} />,
-    
-    // Appareils cuisine
-    'typeAppareil': <TypeAppareilField {...props} />,
-    
-    // Aspirateurs
-    'typeAspirateur': <TypeAspirateurField {...props} />,
-    
-    // Repassage
-    'typeFer': <TypeFerField {...props} />,
-    
     // Télécommandes
-    'compatibilite': <CompatibiliteField {...props} />,
-    
-    // Sécurité/GPS
-    'type': <TypeSecuriteField {...props} />
+    'compatibilite': <CompatibiliteField {...props} />
   };
   
   const additionalFields = {

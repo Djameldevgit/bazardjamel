@@ -4,94 +4,8 @@ import Select from 'react-select';
 import BaseCategoryField from './BaseCategoryField';
 
 // ============================================
-// CAMPOS COMUNES PARA TODAS LAS CATEGORÍAS
+// CAMPOS GENERALES PARA TODOS LOS SERVICIOS
 // ============================================
-
-// Titre
-const TitleField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Titre</label>
-      <input
-        type="text"
-        name="title"
-        className="form-control"
-        placeholder="Titre de l'annonce"
-        value={postData?.title || ''}
-        onChange={handleChangeInput}
-      />
-    </div>
-  );
-};
-
-// Description
-const DescriptionField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">
-        Description du service <span className="text-danger">*</span>
-      </label>
-      <textarea
-        name="description"
-        className="form-control"
-        rows="5"
-        placeholder="Décrivez votre service en détail..."
-        value={postData?.description || ''}
-        onChange={handleChangeInput}
-        required
-      />
-      <small className="text-muted">Décrivez les prestations, les délais, la zone d'intervention, etc.</small>
-    </div>
-  );
-};
-
-// ============================================
-// CAMPOS ESPECÍFICOS PARA SERVICES
-// ============================================
-
-// Type de service
-const TypeServiceField = ({ postData, handleChangeInput }) => {
-  const types = [
-    { value: 'Construction', label: '🏗️ Construction' },
-    { value: 'Rénovation', label: '🔨 Rénovation' },
-    { value: 'Plomberie', label: '🚰 Plomberie' },
-    { value: 'Électricité', label: '⚡ Électricité' },
-    { value: 'Peinture', label: '🎨 Peinture' },
-    { value: 'Carrelage', label: '🔲 Carrelage' },
-    { value: 'Menuiserie', label: '🪚 Menuiserie' },
-    { value: 'Jardinage', label: '🌿 Jardinage' },
-    { value: 'Nettoyage', label: '🧹 Nettoyage' },
-    { value: 'Cours particulier', label: '📚 Cours particulier' },
-    { value: 'Traiteur', label: '🍽️ Traiteur' },
-    { value: 'Photographie', label: '📷 Photographie' },
-    { value: 'Informatique', label: '💻 Informatique' },
-    { value: 'Autre', label: '📦 Autre' }
-  ];
-  
-  const selectedOption = types.find(opt => opt.value === postData?.typeService) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'typeService', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type de service</label>
-      <Select
-        name="typeService"
-        options={types}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner le type de service..."
-        required
-      />
-    </div>
-  );
-};
 
 // Zone d'intervention
 const ZoneInterventionField = ({ postData, handleChangeInput }) => {
@@ -100,8 +14,6 @@ const ZoneInterventionField = ({ postData, handleChangeInput }) => {
     { value: 'Alger Est', label: '📍 Alger Est' },
     { value: 'Alger Ouest', label: '📍 Alger Ouest' },
     { value: 'Toute l\'Algérie', label: '🇩🇿 Toute l\'Algérie' },
-    { value: 'Régionale', label: '📍 Régionale' },
-    { value: 'Locale', label: '📍 Locale' },
     { value: 'À domicile', label: '🏠 À domicile' },
     { value: 'En ligne', label: '💻 En ligne' }
   ];
@@ -131,83 +43,24 @@ const ZoneInterventionField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Durée du service
-const DureeServiceField = ({ postData, handleChangeInput }) => {
-  const durees = [
-    { value: '1 heure', label: '1 heure' },
-    { value: '2 heures', label: '2 heures' },
-    { value: '3 heures', label: '3 heures' },
-    { value: '4 heures', label: '4 heures' },
-    { value: '1 journée', label: '1 journée' },
-    { value: '2-3 jours', label: '2-3 jours' },
-    { value: '1 semaine', label: '1 semaine' },
-    { value: '2 semaines', label: '2 semaines' },
-    { value: '1 mois', label: '1 mois' },
-    { value: 'À discuter', label: '📅 À discuter' }
-  ];
-  
-  const selectedOption = durees.find(opt => opt.value === postData?.dureeService) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'dureeService', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Durée du service</label>
-      <Select
-        name="dureeService"
-        options={durees}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner la durée..."
-        isClearable
-      />
-    </div>
-  );
-};
-
 // Disponibilité
-const DisponibiliteServiceField = ({ postData, handleChangeInput }) => {
-  const disponibilites = [
-    { value: 'Immédiate', label: '⚡ Immédiate' },
-    { value: '24h-48h', label: '📅 24h-48h' },
-    { value: '1 semaine', label: '📅 1 semaine' },
-    { value: '2 semaines', label: '📅 2 semaines' },
-    { value: 'Sur rendez-vous', label: '📅 Sur rendez-vous' },
-    { value: 'À discuter', label: '💬 À discuter' }
-  ];
-  
-  const selectedOption = disponibilites.find(opt => opt.value === postData?.disponibiliteService) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'disponibiliteService', value: selected?.value || '' }
-    });
-  };
-  
+const DisponibiliteField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Disponibilité</label>
-      <Select
-        name="disponibiliteService"
-        options={disponibilites}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner la disponibilité..."
-        isClearable
+      <input
+        type="text"
+        name="disponibilite"
+        className="form-control"
+        placeholder="Ex: Tous les jours, Week-end, Sur rendez-vous..."
+        value={postData?.disponibilite || ''}
+        onChange={handleChangeInput}
       />
     </div>
   );
 };
 
-// Expérience (années)
+// Expérience
 const ExperienceField = ({ postData, handleChangeInput }) => {
   const experiences = [
     { value: 'Moins de 1 an', label: 'Moins de 1 an' },
@@ -259,231 +112,365 @@ const DiplomesField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Matériel utilisé
-const MaterielUtiliseField = ({ postData, handleChangeInput }) => {
+// ============================================
+// CAMPOS PARA SALLES DE FÊTES / ÉVÉNEMENTS
+// ============================================
+
+const CapaciteField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
-      <label className="form-label fw-bold">Matériel utilisé</label>
-      <input
-        type="text"
-        name="materielUtilise"
-        className="form-control"
-        placeholder="Ex: Outillage professionnel, Matériel de marque..."
-        value={postData?.materielUtilise || ''}
-        onChange={handleChangeInput}
-      />
+      <label className="form-label fw-bold">Capacité</label>
+      <div className="input-group">
+        <input
+          type="number"
+          name="capacite"
+          className="form-control"
+          placeholder="Nombre de personnes"
+          value={postData?.capacite || ''}
+          onChange={handleChangeInput}
+        />
+        <span className="input-group-text">personnes</span>
+      </div>
     </div>
   );
 };
 
-// Garantie du service
-const GarantieServiceField = ({ postData, handleChangeInput }) => {
-  const garanties = [
-    { value: 'Aucune garantie', label: '❌ Aucune garantie' },
-    { value: '1 mois', label: '✅ 1 mois' },
-    { value: '3 mois', label: '✅ 3 mois' },
-    { value: '6 mois', label: '✅ 6 mois' },
-    { value: '1 an', label: '✅ 1 an' },
-    { value: 'Satisfait ou remboursé', label: '🔄 Satisfait ou remboursé' }
+const SuperficieSalleField = ({ postData, handleChangeInput }) => {
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Superficie</label>
+      <div className="input-group">
+        <input
+          type="number"
+          name="superficieSalle"
+          className="form-control"
+          placeholder="Superficie"
+          value={postData?.superficieSalle || ''}
+          onChange={handleChangeInput}
+        />
+        <span className="input-group-text">m²</span>
+      </div>
+    </div>
+  );
+};
+
+const EquipementsSalleField = ({ postData, handleChangeInput }) => {
+  const equipements = [
+    { value: 'Climatisation', label: '❄️ Climatisation' },
+    { value: 'Chauffage', label: '🔥 Chauffage' },
+    { value: 'Sonorisation', label: '🔊 Sonorisation' },
+    { value: 'Écran géant', label: '📺 Écran géant' },
+    { value: 'Scène', label: '🎭 Scène' },
+    { value: 'Piste de danse', label: '💃 Piste de danse' },
+    { value: 'Parking', label: '🅿️ Parking' },
+    { value: 'Cuisine équipée', label: '🍳 Cuisine équipée' },
+    { value: 'Espace extérieur', label: '🌳 Espace extérieur' },
+    { value: 'Wifi', label: '📶 Wifi' }
   ];
   
-  const selectedOption = garanties.find(opt => opt.value === postData?.garantieService) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'garantieService', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Garantie du service</label>
-      <Select
-        name="garantieService"
-        options={garanties}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner la garantie..."
-        isClearable
-      />
-    </div>
-  );
-};
-
-// Références / Portfolio
-const ReferencesField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Références / Portfolio</label>
-      <textarea
-        name="references"
-        className="form-control"
-        rows="2"
-        placeholder="Décrivez vos réalisations, projets précédents..."
-        value={postData?.references || ''}
-        onChange={handleChangeInput}
-      />
-    </div>
-  );
-};
-
-// Langues parlées
-const LanguesField = ({ postData, handleChangeInput }) => {
-  const langues = [
-    { value: 'Arabe', label: '🇩🇿 Arabe' },
-    { value: 'Français', label: '🇫🇷 Français' },
-    { value: 'Anglais', label: '🇬🇧 Anglais' },
-    { value: 'Espagnol', label: '🇪🇸 Espagnol' },
-    { value: 'Allemand', label: '🇩🇪 Allemand' },
-    { value: 'Italien', label: '🇮🇹 Italien' },
-    { value: 'Turc', label: '🇹🇷 Turc' }
-  ];
-  
-  const selectedValues = postData?.langues || [];
-  const selectedOptions = langues.filter(opt => selectedValues.includes(opt.value));
+  const selectedValues = postData?.equipementsSalle || [];
+  const selectedOptions = equipements.filter(opt => selectedValues.includes(opt.value));
   
   const handleChange = (selected) => {
     const values = selected ? selected.map(opt => opt.value) : [];
     handleChangeInput({
-      target: { name: 'langues', value: values }
+      target: { name: 'equipementsSalle', value: values }
     });
   };
   
   return (
     <div className="mb-3">
-      <label className="form-label fw-bold">Langues parlées</label>
+      <label className="form-label fw-bold">Équipements</label>
       <Select
         isMulti
-        name="langues"
-        options={langues}
+        name="equipementsSalle"
+        options={equipements}
         value={selectedOptions}
         onChange={handleChange}
         className="basic-multi-select"
         classNamePrefix="select"
-        placeholder="Sélectionner les langues..."
-      />
-      <small className="text-muted">Vous pouvez sélectionner plusieurs langues</small>
-    </div>
-  );
-};
-
-// Horaires
-const HorairesField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Horaires</label>
-      <input
-        type="text"
-        name="horaires"
-        className="form-control"
-        placeholder="Ex: 9h-18h, Flexible, Sur rendez-vous..."
-        value={postData?.horaires || ''}
-        onChange={handleChangeInput}
+        placeholder="Sélectionner les équipements..."
       />
     </div>
   );
 };
 
-// Moyens de paiement acceptés
-const MoyensPaiementField = ({ postData, handleChangeInput }) => {
-  const moyens = [
-    { value: 'Espèces', label: '💰 Espèces' },
-    { value: 'Virement bancaire', label: '🏦 Virement bancaire' },
-    { value: 'CPL', label: '📱 CPL' },
-    { value: 'Chèque', label: '📝 Chèque' },
-    { value: 'Carte bancaire', label: '💳 Carte bancaire' },
-    { value: 'PayPal', label: '🌐 PayPal' }
+const FormulesField = ({ postData, handleChangeInput }) => {
+  const formules = [
+    { value: 'Mariage', label: '💍 Mariage' },
+    { value: 'Anniversaire', label: '🎂 Anniversaire' },
+    { value: 'Séminaire', label: '💼 Séminaire' },
+    { value: 'Conférence', label: '🎤 Conférence' },
+    { value: 'Soirée privée', label: '🎉 Soirée privée' },
+    { value: 'Banquet', label: '🍽️ Banquet' },
+    { value: 'Cocktail', label: '🍸 Cocktail' }
   ];
   
-  const selectedValues = postData?.moyensPaiement || [];
-  const selectedOptions = moyens.filter(opt => selectedValues.includes(opt.value));
+  const selectedValues = postData?.formules || [];
+  const selectedOptions = formules.filter(opt => selectedValues.includes(opt.value));
   
   const handleChange = (selected) => {
     const values = selected ? selected.map(opt => opt.value) : [];
     handleChangeInput({
-      target: { name: 'moyensPaiement', value: values }
+      target: { name: 'formules', value: values }
     });
   };
   
   return (
     <div className="mb-3">
-      <label className="form-label fw-bold">Moyens de paiement acceptés</label>
+      <label className="form-label fw-bold">Formules disponibles</label>
       <Select
         isMulti
-        name="moyensPaiement"
-        options={moyens}
+        name="formules"
+        options={formules}
         value={selectedOptions}
         onChange={handleChange}
         className="basic-multi-select"
         classNamePrefix="select"
-        placeholder="Sélectionner les moyens de paiement..."
+        placeholder="Sélectionner les formules..."
       />
     </div>
   );
 };
 
-// Tarif (prix du service)
 const TarifField = ({ postData, handleChangeInput }) => {
   return (
     <div className="mb-3">
       <label className="form-label fw-bold">Tarif</label>
-      <div className="input-group">
-        <input
-          type="number"
-          name="tarif"
-          className="form-control"
-          placeholder="Tarif"
-          value={postData?.tarif || ''}
-          onChange={handleChangeInput}
-        />
-        <select
-          name="uniteTarif"
-          className="form-select"
-          value={postData?.uniteTarif || 'prestation'}
-          onChange={handleChangeInput}
-          style={{ width: '120px' }}
-        >
-          <option value="prestation">/ prestation</option>
-          <option value="heure">/ heure</option>
-          <option value="jour">/ jour</option>
-          <option value="mois">/ mois</option>
-          <option value="m2">/ m²</option>
-          <option value="personne">/ personne</option>
-        </select>
+      <div className="row g-2">
+        <div className="col-6">
+          <input
+            type="number"
+            name="tarif"
+            className="form-control"
+            placeholder="Montant"
+            value={postData?.tarif || ''}
+            onChange={handleChangeInput}
+          />
+        </div>
+        <div className="col-6">
+          <select
+            name="uniteTarif"
+            className="form-select"
+            value={postData?.uniteTarif || 'forfait'}
+            onChange={handleChangeInput}
+          >
+            <option value="forfait">Forfait</option>
+            <option value="personne">Par personne</option>
+            <option value="heure">Par heure</option>
+            <option value="jour">Par jour</option>
+          </select>
+        </div>
       </div>
     </div>
   );
 };
 
 // ============================================
-// COMPONENTE PRINCIPAL
+// CAMPOS PARA TRAITEURS
+// ============================================
+
+const TypeCuisineField = ({ postData, handleChangeInput }) => {
+  const cuisines = [
+    { value: 'Algérienne', label: '🍲 Algérienne' },
+    { value: 'Orientale', label: '🥙 Orientale' },
+    { value: 'Européenne', label: '🍝 Européenne' },
+    { value: 'Asiatique', label: '🍜 Asiatique' },
+    { value: 'Méditerranéenne', label: '🥗 Méditerranéenne' },
+    { value: 'Fusion', label: '🍣 Fusion' }
+  ];
+  
+  const selectedValues = postData?.typeCuisine || [];
+  const selectedOptions = cuisines.filter(opt => selectedValues.includes(opt.value));
+  
+  const handleChange = (selected) => {
+    const values = selected ? selected.map(opt => opt.value) : [];
+    handleChangeInput({
+      target: { name: 'typeCuisine', value: values }
+    });
+  };
+  
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Type de cuisine</label>
+      <Select
+        isMulti
+        name="typeCuisine"
+        options={cuisines}
+        value={selectedOptions}
+        onChange={handleChange}
+        className="basic-multi-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner les types de cuisine..."
+      />
+    </div>
+  );
+};
+
+const NombrePersonnesMaxField = ({ postData, handleChangeInput }) => {
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Nombre de personnes max</label>
+      <input
+        type="number"
+        name="nombrePersonnesMax"
+        className="form-control"
+        placeholder="Nombre de personnes"
+        value={postData?.nombrePersonnesMax || ''}
+        onChange={handleChangeInput}
+      />
+    </div>
+  );
+};
+
+// ============================================
+// CAMPOS PARA TRANSPORT & DÉMÉNAGEMENT
+// ============================================
+
+const TypeVehiculeField = ({ postData, handleChangeInput }) => {
+  const vehicules = [
+    { value: 'Camion 10m³', label: '🚚 Camion 10m³' },
+    { value: 'Camion 20m³', label: '🚛 Camion 20m³' },
+    { value: 'Fourgon', label: '🚐 Fourgon' },
+    { value: 'Utilitaire', label: '🚙 Utilitaire' },
+    { value: 'Camionnette', label: '🚗 Camionnette' }
+  ];
+  
+  const selectedValues = postData?.typeVehicule || [];
+  const selectedOptions = vehicules.filter(opt => selectedValues.includes(opt.value));
+  
+  const handleChange = (selected) => {
+    const values = selected ? selected.map(opt => opt.value) : [];
+    handleChangeInput({
+      target: { name: 'typeVehicule', value: values }
+    });
+  };
+  
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Type de véhicule</label>
+      <Select
+        isMulti
+        name="typeVehicule"
+        options={vehicules}
+        value={selectedOptions}
+        onChange={handleChange}
+        className="basic-multi-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner les véhicules..."
+      />
+    </div>
+  );
+};
+
+const ServiceInclusField = ({ postData, handleChangeInput }) => {
+  const services = [
+    { value: 'Emballage', label: '📦 Emballage' },
+    { value: 'Montage/Démontage', label: '🔧 Montage/Démontage' },
+    { value: 'Assurance', label: '🛡️ Assurance' },
+    { value: 'Main d\'œuvre', label: '👷 Main d\'œuvre' }
+  ];
+  
+  const selectedValues = postData?.serviceInclus || [];
+  const selectedOptions = services.filter(opt => selectedValues.includes(opt.value));
+  
+  const handleChange = (selected) => {
+    const values = selected ? selected.map(opt => opt.value) : [];
+    handleChangeInput({
+      target: { name: 'serviceInclus', value: values }
+    });
+  };
+  
+  return (
+    <div className="mb-3">
+      <label className="form-label fw-bold">Services inclus</label>
+      <Select
+        isMulti
+        name="serviceInclus"
+        options={services}
+        value={selectedOptions}
+        onChange={handleChange}
+        className="basic-multi-select"
+        classNamePrefix="select"
+        placeholder="Sélectionner les services inclus..."
+      />
+    </div>
+  );
+};
+
+// ============================================
+// COMPONENTE PRINCIPAL INTELIGENTE
 // ============================================
 
 const ServicesFields = (props) => {
-  const { step, subCategory, articleType } = props;
+  const { step, subCategory } = props;
   
-  // Mapa de TODOS los componentes disponibles
-  const customComponents = {
-    // Campos comunes
-    'title': <TitleField {...props} />,
-    'description': <DescriptionField {...props} />,
-    
-    // Campos específicos para servicios
-    'typeService': <TypeServiceField {...props} />,
+  // Campos comunes para todos los servicios
+  const commonComponents = {
     'zoneIntervention': <ZoneInterventionField {...props} />,
-    'dureeService': <DureeServiceField {...props} />,
-    'disponibiliteService': <DisponibiliteServiceField {...props} />,
-    'experience': <ExperienceField {...props} />,
-    'diplomes': <DiplomesField {...props} />,
-    'materielUtilise': <MaterielUtiliseField {...props} />,
-    'garantieService': <GarantieServiceField {...props} />,
-    'references': <ReferencesField {...props} />,
-    'langues': <LanguesField {...props} />,
-    'horaires': <HorairesField {...props} />,
-    'moyensPaiement': <MoyensPaiementField {...props} />,
-    'tarif': <TarifField {...props} />
+    'disponibilite': <DisponibiliteField {...props} />
+  };
+  
+  // Campos específicos según la subcategoría
+  const getSpecificComponents = () => {
+    switch (subCategory) {
+      // Hôtellerie, Restauration & Salles (salles de fêtes)
+      case 'hotellerie-restauration-salles':
+        return {
+          'capacite': <CapaciteField {...props} />,
+          'superficieSalle': <SuperficieSalleField {...props} />,
+          'equipementsSalle': <EquipementsSalleField {...props} />,
+          'formules': <FormulesField {...props} />,
+          'tarif': <TarifField {...props} />
+        };
+      
+      // Traiteurs & Gateaux
+      case 'traiteurs-gateaux':
+        return {
+          'typeCuisine': <TypeCuisineField {...props} />,
+          'nombrePersonnesMax': <NombrePersonnesMaxField {...props} />,
+          'tarif': <TarifField {...props} />
+        };
+      
+      // Transport et déménagement
+      case 'transport-demenagement':
+        return {
+          'typeVehicule': <TypeVehiculeField {...props} />,
+          'serviceInclus': <ServiceInclusField {...props} />,
+          'zoneIntervention': <ZoneInterventionField {...props} />
+        };
+      
+      // Construction & Travaux / Réparation (necesitan experiencia y diplomas)
+      case 'construction-travaux':
+      case 'reparation-auto-diagnostic':
+      case 'reparation-electromenager':
+      case 'reparation-electronique':
+      case 'flashage-reparation-telephones':
+      case 'maintenance-informatique':
+        return {
+          'experience': <ExperienceField {...props} />,
+          'diplomes': <DiplomesField {...props} />
+        };
+      
+      // Médecine & Santé / Esthétique & Beauté / Ecoles & Formations
+      case 'medecine-sante':
+      case 'esthetique-beaute':
+      case 'ecoles-formations':
+        return {
+          'diplomes': <DiplomesField {...props} />,
+          'experience': <ExperienceField {...props} />
+        };
+      
+      // Cas por defecto: solo campos comunes
+      default:
+        return {};
+    }
+  };
+  
+  // Combinar campos comunes + específicos
+  const customComponents = {
+    ...commonComponents,
+    ...getSpecificComponents()
   };
   
   const additionalFields = {

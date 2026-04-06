@@ -4,48 +4,6 @@ import Select from 'react-select';
 import BaseCategoryField from './BaseCategoryField';
 
 // ============================================
-// CAMPOS COMUNES PARA TODAS LAS CATEGORÍAS
-// ============================================
-
-// Titre
-const TitleField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Titre</label>
-      <input
-        type="text"
-        name="title"
-        className="form-control"
-        placeholder="Titre de l'annonce"
-        value={postData?.title || ''}
-        onChange={handleChangeInput}
-      />
-    </div>
-  );
-};
-
-// Description
-const DescriptionField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">
-        Description <span className="text-danger">*</span>
-      </label>
-      <textarea
-        name="description"
-        className="form-control"
-        rows="4"
-        placeholder="Décrivez votre produit en détail..."
-        value={postData?.description || ''}
-        onChange={handleChangeInput}
-        required
-      />
-      <small className="text-muted">Décrivez les caractéristiques, l'état, etc.</small>
-    </div>
-  );
-};
-
-// ============================================
 // CAMPOS ESPECÍFICOS PARA MEUBLES & MAISON
 // ============================================
 
@@ -200,43 +158,6 @@ const CouleurField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// État
-const EtatField = ({ postData, handleChangeInput }) => {
-  const etatOptions = [
-    { value: 'Neuf (avec emballage)', label: '🆕 Neuf (avec emballage)' },
-    { value: 'Neuf (sans emballage)', label: '📦 Neuf (sans emballage)' },
-    { value: 'Comme neuf', label: '✨ Comme neuf' },
-    { value: 'Très bon état', label: '💪 Très bon état' },
-    { value: 'Bon état', label: '✅ Bon état' },
-    { value: 'État moyen', label: '⚠️ État moyen' },
-    { value: 'À restaurer', label: '🔧 À restaurer' }
-  ];
-  
-  const selectedOption = etatOptions.find(opt => opt.value === postData?.etat) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'etat', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">État</label>
-      <Select
-        name="etat"
-        options={etatOptions}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner l'état..."
-        required
-      />
-    </div>
-  );
-};
-
 // ============================================
 // CAMPOS PARA MEUBLES
 // ============================================
@@ -282,139 +203,9 @@ const DimensionsField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Type de meuble
-const TypeMeubleField = ({ postData, handleChangeInput }) => {
-  const types = [
-    { value: 'Canapé', label: '🛋️ Canapé' },
-    { value: 'Fauteuil', label: '🪑 Fauteuil' },
-    { value: 'Table', label: '🪵 Table' },
-    { value: 'Chaise', label: '🪑 Chaise' },
-    { value: 'Armoire', label: '🗄️ Armoire' },
-    { value: 'Commode', label: '🗄️ Commode' },
-    { value: 'Buffet', label: '🍽️ Buffet' },
-    { value: 'Bibliothèque', label: '📚 Bibliothèque' },
-    { value: 'Étagère', label: '📚 Étagère' },
-    { value: 'Bureau', label: '📝 Bureau' },
-    { value: 'Lit', label: '🛏️ Lit' },
-    { value: 'Matelas', label: '🛏️ Matelas' },
-    { value: 'Table de nuit', label: '🌙 Table de nuit' },
-    { value: 'Meuble TV', label: '📺 Meuble TV' }
-  ];
-  
-  const selectedOption = types.find(opt => opt.value === postData?.typeMeuble) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'typeMeuble', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type de meuble</label>
-      <Select
-        name="typeMeuble"
-        options={types}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner le type de meuble..."
-        isClearable
-      />
-    </div>
-  );
-};
-
-// ============================================
-// CAMPOS PARA DÉCORATION
-// ============================================
-
-// Type de décoration
-const TypeDecorationField = ({ postData, handleChangeInput }) => {
-  const types = [
-    { value: 'Cadre', label: '🖼️ Cadre' },
-    { value: 'Tableau', label: '🎨 Tableau' },
-    { value: 'Miroir', label: '🪞 Miroir' },
-    { value: 'Horloge', label: '⏰ Horloge' },
-    { value: 'Vase', label: '🏺 Vase' },
-    { value: 'Bougie', label: '🕯️ Bougie' },
-    { value: 'Luminaire', label: '💡 Luminaire' },
-    { value: 'Coussin', label: '🛋️ Coussin' },
-    { value: 'Plaid', label: '🧣 Plaid' },
-    { value: 'Rideau', label: '🪟 Rideau' },
-    { value: 'Tapis', label: '🧶 Tapis' },
-    { value: 'Statue', label: '🗿 Statue' }
-  ];
-  
-  const selectedOption = types.find(opt => opt.value === postData?.typeDecoration) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'typeDecoration', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type de décoration</label>
-      <Select
-        name="typeDecoration"
-        options={types}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner le type..."
-        isClearable
-      />
-    </div>
-  );
-};
-
 // ============================================
 // CAMPOS PARA VAISSELLE
 // ============================================
-
-// Type de vaisselle
-const TypeVaisselleField = ({ postData, handleChangeInput }) => {
-  const types = [
-    { value: 'Assiette', label: '🍽️ Assiette' },
-    { value: 'Bol', label: '🥣 Bol' },
-    { value: 'Verre', label: '🥛 Verre' },
-    { value: 'Tasse', label: '☕ Tasse' },
-    { value: 'Mug', label: '☕ Mug' },
-    { value: 'Couverts', label: '🍴 Couverts' },
-    { value: 'Casserole', label: '🍲 Casserole' },
-    { value: 'Poêle', label: '🍳 Poêle' },
-    { value: 'Service à thé', label: '🍵 Service à thé' },
-    { value: 'Service à café', label: '☕ Service à café' }
-  ];
-  
-  const selectedOption = types.find(opt => opt.value === postData?.typeVaisselle) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'typeVaisselle', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type de vaisselle</label>
-      <Select
-        name="typeVaisselle"
-        options={types}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner le type..."
-        isClearable
-      />
-    </div>
-  );
-};
 
 // Matière vaisselle
 const MatiereVaisselleField = ({ postData, handleChangeInput }) => {
@@ -512,87 +303,9 @@ const TailleLiterieField = ({ postData, handleChangeInput }) => {
   );
 };
 
-// Type de literie
-const TypeLiterieField = ({ postData, handleChangeInput }) => {
-  const types = [
-    { value: 'Draps', label: '🛏️ Draps' },
-    { value: 'Housse de couette', label: '🛏️ Housse de couette' },
-    { value: 'Taies d\'oreiller', label: '🛏️ Taies d\'oreiller' },
-    { value: 'Couverture', label: '🧣 Couverture' },
-    { value: 'Couette', label: '🛏️ Couette' },
-    { value: 'Oreiller', label: '🛏️ Oreiller' },
-    { value: 'Surmatelas', label: '🛏️ Surmatelas' },
-    { value: 'Serviettes', label: '🧺 Serviettes' },
-    { value: 'Nappe', label: '🍽️ Nappe' }
-  ];
-  
-  const selectedOption = types.find(opt => opt.value === postData?.typeLiterie) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'typeLiterie', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type de literie</label>
-      <Select
-        name="typeLiterie"
-        options={types}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner le type..."
-        isClearable
-      />
-    </div>
-  );
-};
-
 // ============================================
 // CAMPOS PARA PUÉRICULTURE
 // ============================================
-
-// Type de produit puériculture
-const TypePuericultureField = ({ postData, handleChangeInput }) => {
-  const types = [
-    { value: 'Lit bébé', label: '🛏️ Lit bébé' },
-    { value: 'Table à langer', label: '🍼 Table à langer' },
-    { value: 'Chaise haute', label: '🪑 Chaise haute' },
-    { value: 'Poussette', label: '👶 Poussette' },
-    { value: 'Siège auto', label: '🚗 Siège auto' },
-    { value: 'Baignoire', label: '🛁 Baignoire' },
-    { value: 'Parc bébé', label: '🔲 Parc bébé' },
-    { value: 'Moniteur bébé', label: '📻 Moniteur bébé' },
-    { value: 'Biberons', label: '🍼 Biberons' }
-  ];
-  
-  const selectedOption = types.find(opt => opt.value === postData?.typePuericulture) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'typePuericulture', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type de produit</label>
-      <Select
-        name="typePuericulture"
-        options={types}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner le type..."
-        isClearable
-      />
-    </div>
-  );
-};
 
 // Âge bébé
 const AgeBebeField = ({ postData, handleChangeInput }) => {
@@ -672,135 +385,35 @@ const FormeTapisField = ({ postData, handleChangeInput }) => {
 };
 
 // ============================================
-// CAMPOS PARA MEUBLES DE BUREAU
-// ============================================
-
-// Type de meuble bureau
-const TypeMeubleBureauField = ({ postData, handleChangeInput }) => {
-  const types = [
-    { value: 'Bureau', label: '📝 Bureau' },
-    { value: 'Fauteuil de bureau', label: '🪑 Fauteuil de bureau' },
-    { value: 'Chaise de bureau', label: '🪑 Chaise de bureau' },
-    { value: 'Armoire de bureau', label: '🗄️ Armoire de bureau' },
-    { value: 'Classeur', label: '📁 Classeur' },
-    { value: 'Table de réunion', label: '📋 Table de réunion' }
-  ];
-  
-  const selectedOption = types.find(opt => opt.value === postData?.typeMeubleBureau) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'typeMeubleBureau', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type de mobilier</label>
-      <Select
-        name="typeMeubleBureau"
-        options={types}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner le type..."
-        isClearable
-      />
-    </div>
-  );
-};
-
-// ============================================
-// CAMPOS PARA FOURNITURES SCOLAIRES
-// ============================================
-
-// Type de fourniture
-const TypeFournitureField = ({ postData, handleChangeInput }) => {
-  const types = [
-    { value: 'Cartable', label: '🎒 Cartable' },
-    { value: 'Sac à dos', label: '🎒 Sac à dos' },
-    { value: 'Trousse', label: '✏️ Trousse' },
-    { value: 'Cahier', label: '📓 Cahier' },
-    { value: 'Stylo', label: '✒️ Stylo' },
-    { value: 'Crayon', label: '✏️ Crayon' },
-    { value: 'Calculatrice', label: '🧮 Calculatrice' },
-    { value: 'Lot de fournitures', label: '📦 Lot de fournitures' }
-  ];
-  
-  const selectedOption = types.find(opt => opt.value === postData?.typeFourniture) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'typeFourniture', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Type de fourniture</label>
-      <Select
-        name="typeFourniture"
-        options={types}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner le type..."
-        isClearable
-      />
-    </div>
-  );
-};
-
-// ============================================
 // COMPONENTE PRINCIPAL
 // ============================================
 
 const MeublesFields = (props) => {
-  const { step, subCategory, articleType } = props;
+  const { step } = props;
   
-  // Mapa de TODOS los componentes disponibles
+  // SOLO campos específicos (sin title, description, etat, sin types d'article)
   const customComponents = {
-    // Campos comunes
-    'title': <TitleField {...props} />,
-    'description': <DescriptionField {...props} />,
-    
-    // Campos específicos para meubles
+    // Marque al principio
     'marque': <MarqueField {...props} />,
     'modele': <ModeleField {...props} />,
     'matiere': <MatiereField {...props} />,
     'couleur': <CouleurField {...props} />,
-    'etat': <EtatField {...props} />,
     
     // Meubles
     'dimensions': <DimensionsField {...props} />,
-    'typeMeuble': <TypeMeubleField {...props} />,
-    
-    // Décoration
-    'typeDecoration': <TypeDecorationField {...props} />,
     
     // Vaisselle
-    'typeVaisselle': <TypeVaisselleField {...props} />,
     'matiereVaisselle': <MatiereVaisselleField {...props} />,
     'nbPieces': <NbPiecesField {...props} />,
     
     // Literie
     'tailleLiterie': <TailleLiterieField {...props} />,
-    'typeLiterie': <TypeLiterieField {...props} />,
     
     // Puériculture
-    'typePuericulture': <TypePuericultureField {...props} />,
     'ageBebe': <AgeBebeField {...props} />,
     
     // Tapis
-    'formeTapis': <FormeTapisField {...props} />,
-    
-    // Bureau
-    'typeMeubleBureau': <TypeMeubleBureauField {...props} />,
-    
-    // Fournitures scolaires
-    'typeFourniture': <TypeFournitureField {...props} />
+    'formeTapis': <FormeTapisField {...props} />
   };
   
   const additionalFields = {
