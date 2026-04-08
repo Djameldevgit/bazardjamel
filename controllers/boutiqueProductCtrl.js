@@ -1,7 +1,7 @@
 // controllers/boutiqueProductCtrl.js - VERSIÓN COMPLETAMENTE MIGRADA A BOUTIQUEPRODUCT
 
 const Boutique = require('../models/boutiqueModel');
-const BoutiqueProduct = require('../models/BoutiqueProduct'); // ← Así debe ser
+const BoutiqueProduct = require('../models/boutiqueProductModel'); // ← Así debe ser
 const Category = require('../models/categoryModel');
 
 const boutiqueProductCtrl = {
