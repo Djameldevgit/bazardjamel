@@ -34,7 +34,147 @@ const userCtrl = {
 
 
 
+// 📂 controllers/userCtrl.js - AÑADIR estos métodos
 
+// ============================================
+// ASIGNAR CATEGORÍAS A MODERADOR
+// ============================================
+assignCategoriesToModerator: async (req, res) => {
+  try {
+      const { id } = req.params;
+      const { assignedCategories } = req.body;
+      
+      // Verificar permisos (solo admin puede asignar)
+      if (req.user.role !== 'admin') {
+          return res.status(403).json({ 
+              success: false, 
+              message: "Non autorisé. Seul un administrateur peut assigner des catégories." 
+          });
+      }
+      
+      const user = await Users.findById(id);
+      if (!user) {
+          return res.status(404).json({ 
+              success: false, 
+              message: "Utilisateur non trouvé" 
+          });
+      }
+      
+      // Solo moderadores pueden tener categorías asignadas
+      if (user.role !== 'moderator') {
+          return res.status(400).json({ 
+              success: false, 
+              message: "Seuls les modérateurs peuvent avoir des catégories assignées" 
+          });
+      }
+      
+      // Actualizar categorías asignadas
+      user.assignedCategories = assignedCategories || [];
+      user.updatedAt = Date.now();
+      await user.save();
+      
+      res.json({ 
+          success: true, 
+          message: "Catégories assignées avec succès",
+          user: {
+              _id: user._id,
+              username: user.username,
+              role: user.role,
+              assignedCategories: user.assignedCategories
+          }
+      });
+      
+  } catch (err) {
+      console.error('❌ Error assignCategoriesToModerator:', err);
+      res.status(500).json({ success: false, error: err.message });
+  }
+},
+// 📂 controllers/userCtrl.js - AÑADIR este método
+
+// ============================================
+// ASIGNAR CATEGORÍAS A MODERADOR
+// ============================================
+// 📂 controllers/userCtrl.js - AÑADIR este método
+
+assignCategoriesToModerator: async (req, res) => {
+  try {
+      const { id } = req.params;
+      const { assignedCategories } = req.body;
+      
+      console.log('📝 Asignando categorías a:', id);
+      
+      if (!req.user || req.user.role !== 'admin') {
+          return res.status(403).json({ success: false, message: "Non autorisé" });
+      }
+      
+      const user = await Users.findById(id);
+      if (!user) {
+          return res.status(404).json({ success: false, message: "Utilisateur non trouvé" });
+      }
+      
+      user.assignedCategories = assignedCategories || [];
+      await user.save();
+      
+      res.json({ success: true, message: "Catégories assignées", user });
+  } catch (err) {
+      console.error('Error:', err);
+      res.status(500).json({ success: false, error: err.message });
+  }
+},
+getModeratorCategories: async (req, res) => {
+  try {
+      const { id } = req.params;
+      
+      const user = await User.findById(id).select('assignedCategories role canApproveAllCategories');
+      if (!user) {
+          return res.status(404).json({ success: false, message: "Utilisateur non trouvé" });
+      }
+      
+      if (user.role !== 'moderator') {
+          return res.status(400).json({ 
+              success: false, 
+              message: "Cet utilisateur n'est pas un modérateur" 
+          });
+      }
+      
+      res.json({
+          success: true,
+          canApproveAll: user.canApproveAllCategories,
+          categories: user.assignedCategories
+      });
+      
+  } catch (err) {
+      console.error('❌ Error getModeratorCategories:', err);
+      res.status(500).json({ success: false, error: err.message });
+  }
+},
+
+// ============================================
+// VERIFICAR SI MODERADOR PUEDE APROBAR POST
+// ============================================
+checkModeratorPermission: async (req, res) => {
+  try {
+      const { userId, categorySlug, subCategorySlug } = req.params;
+      
+      const user = await User.findById(userId);
+      if (!user) {
+          return res.status(404).json({ success: false, message: "Utilisateur non trouvé" });
+      }
+      
+      const canModerate = user.canModerateCategory(categorySlug, subCategorySlug);
+      
+      res.json({
+          success: true,
+          canModerate,
+          role: user.role,
+          permissionLevel: user.permissionLevel
+      });
+      
+  } catch (err) {
+      console.error('❌ Error checkModeratorPermission:', err);
+      res.status(500).json({ success: false, error: err.message });
+  }
+},
 
 
 

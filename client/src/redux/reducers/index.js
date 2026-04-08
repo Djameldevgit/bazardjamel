@@ -31,6 +31,8 @@ import posts from './postReducer'
 import category from './categoryReducer'
 import { accordionReducer } from './accordionReducer'
 import boutiqueProduct  from './boutiqueProductReducer'
+import boutiqueAprove from './boutiqueAproveReducer'; // 🔥 NUEVO
+import productAprove from './productAproveReducer';   // 🔥 NUEVO
  import boutique from './boutiqueReducer'
 import   filter   from './filterReducer.'
 import carousel from './carouselReducer'
@@ -45,6 +47,8 @@ export default combineReducers({
     profile,
     status,
     postAprove,
+    boutiqueAprove,   
+    productAprove,
     modal,
     detailPost,
     discover,

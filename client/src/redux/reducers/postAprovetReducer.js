@@ -9,7 +9,8 @@ const initialState = {
   page: 1,
   limit: 10,
   totalPages: 1,
-  hasMore: false
+  hasMore: false,
+  filters: {} // 🔥 NUEVO: almacenar filtros aplicados
 };
 
 const postAproveReducer = (state = initialState, action) => {
@@ -17,18 +18,18 @@ const postAproveReducer = (state = initialState, action) => {
     case POST_TYPES_APROVE.LOADING_POST:
       return { ...state, loading: action.payload };
       
-    case POST_TYPES_APROVE.GET_POSTS_PENDIENTES:
-      return {
-        ...state,
-        postsPendientes: action.payload.posts,
-        total: action.payload.total,
-        page: action.payload.page,
-        limit: action.payload.limit,
-        totalPages: action.payload.totalPages,
-        hasMore: action.payload.hasMore,
-        loading: false
-      };
-      
+      case POST_TYPES_APROVE.GET_POSTS_PENDIENTES:
+        return {
+          ...state,
+          postsPendientes: action.payload.posts,
+          total: action.payload.total,
+          page: action.payload.page,
+          limit: action.payload.limit,
+          totalPages: action.payload.totalPages,
+          hasMore: action.payload.hasMore,
+          filters: action.payload.filters || {},
+          loading: false
+        };
     case POST_TYPES_APROVE.LOAD_MORE_PENDIENTES:
       return {
         ...state,

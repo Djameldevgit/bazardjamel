@@ -10,6 +10,11 @@ router.get('/users/search', auth, userCtrl.searchUser)
 router.post('/contact-support', auth, userCtrl.contactMailSupport)
  
  
+router.get('/users/:id/moderator-categories', auth, userCtrl.getModeratorCategories);
+
+// ✅ Ruta para asignar categorías a moderador
+
+router.put('/users/:id/assign-categories', auth,   userCtrl.assignCategoriesToModerator);
 // Rutas de usuarios
 router.get('/users', auth, userCtrl.getUsersAction)
 

@@ -10,12 +10,8 @@ const postSchema = new mongoose.Schema(
       index: true
     },
 
-    // 🏬 Boutique (relación)
-    boutique: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Boutique",
-      index: true
-    },
+    // ❌ ELIMINAR boutique - ya no se usa aquí
+    // boutique: { ... }  ← ELIMINAR ESTE CAMPO
 
     // 🗂️ Categorías
     categorie: {
@@ -95,7 +91,7 @@ const postSchema = new mongoose.Schema(
       default: {}
     },
 
-    // 🖼️ Imágenes (estructura PRO)
+    // 🖼️ Imágenes
     images: [
       {
         url: String,
@@ -126,13 +122,14 @@ const postSchema = new mongoose.Schema(
       type: String,
       unique: true,
       index: true
-      
     },
+
     pendiente: {
       type: Boolean,
       default: true,
       index: true
     },
+
     // 🔒 Estado
     isActive: {
       type: Boolean,
@@ -150,15 +147,44 @@ postSchema.methods.calculateScore = function () {
   const views = this.views || 0;
   const likes = this.likes.length || 0;
   const freshness = (Date.now() - this.createdAt) / (1000 * 60 * 60 * 24);
-
   return (likes * 3) + (views * 0.5) - freshness;
 };
 
-// 🔍 ÍNDICES PRO
+// ============================================
+// 🔥 ÍNDICES OPTIMIZADOS (sin referencia a boutique)
+// ============================================
+
+// 1️⃣ Índice principal para filtrar posts aprobados
+postSchema.index({ pendiente: 1, isActive: 1, createdAt: -1 });
+
+// 2️⃣ Para la página principal - posts recientes aprobados
+postSchema.index({ pendiente: 1, createdAt: -1 });
+
+// 3️⃣ Para filtrar por categoría + aprobación
+postSchema.index({ category: 1, pendiente: 1, createdAt: -1 });
+
+// 4️⃣ Para filtrar por usuario + aprobación
+postSchema.index({ user: 1, pendiente: 1, createdAt: -1 });
+
+// 5️⃣ Para admin - ver posts pendientes
+postSchema.index({ pendiente: 1, createdAt: -1 });
+
+// 6️⃣ Para búsquedas con múltiples filtros
+postSchema.index({ category: 1, wilaya: 1, pendiente: 1 });
+
+// 7️⃣ Para ordenar por score (posts populares)
+postSchema.index({ pendiente: 1, score: -1 });
+
+// 8️⃣ Para filtros de precio + aprobación
+postSchema.index({ pendiente: 1, price: 1, category: 1 });
+
+// 9️⃣ Para búsqueda por texto
+postSchema.index({ title: "text", description: "text", categorie: "text", subCategory: "text" });
+
+// 🔟 Índices existentes útiles
 postSchema.index({ category: 1, createdAt: -1 });
 postSchema.index({ wilaya: 1, category: 1 });
 postSchema.index({ categorie: 1, subCategory: 1 });
-postSchema.index({ boutique: 1, isActive: 1, createdAt: -1 });
 postSchema.index({ score: -1, createdAt: -1 });
 
 module.exports = mongoose.model("Post", postSchema);

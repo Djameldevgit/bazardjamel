@@ -52,11 +52,23 @@ export const aprovarPostPendiente = ({ post, estado, auth, socket }) => async (d
 };
 
 // 🔥 GET POSTS PENDIENTES CON PAGINACIÓN
-export const getPostsPendientes = (token, page = 1, limit = 10) => async (dispatch) => {
+// 📂 redux/actions/postAproveAction.js - MODIFICAR getPostsPendientes
+
+// 🔥 GET POSTS PENDIENTES CON PAGINACIÓN Y FILTROS
+export const getPostsPendientes = (token, page = 1, limit = 10, filters = {}) => async (dispatch) => {
   try {
     dispatch({ type: POST_TYPES_APROVE.LOADING_POST, payload: true });
     
-    const res = await getDataAPI(`posts/pendientes?page=${page}&limit=${limit}`, token);
+    // Construir URL con filtros
+    let url = `posts/admin/pendientes?page=${page}&limit=${limit}`;
+    if (filters.categorie) {
+      url += `&categorie=${encodeURIComponent(filters.categorie)}`;
+    }
+    if (filters.subCategory) {
+      url += `&subCategory=${encodeURIComponent(filters.subCategory)}`;
+    }
+    
+    const res = await getDataAPI(url, token);
 
     dispatch({
       type: POST_TYPES_APROVE.GET_POSTS_PENDIENTES,
@@ -66,7 +78,8 @@ export const getPostsPendientes = (token, page = 1, limit = 10) => async (dispat
         page: res.data.page,
         limit: res.data.limit,
         totalPages: res.data.totalPages,
-        hasMore: res.data.hasMore
+        hasMore: res.data.hasMore,
+        filters: res.data.filters || {}
       }
     });
 
@@ -80,12 +93,16 @@ export const getPostsPendientes = (token, page = 1, limit = 10) => async (dispat
   }
 };
 
+// 🔥 RESET FILTERS
+export const resetPostsFilters = () => (dispatch) => {
+  dispatch({ type: POST_TYPES_APROVE.RESET_FILTERS });
+};
 // 🔥 CARGAR MÁS POSTS (INFINITE SCROLL)
 export const loadMorePendientes = (token, page, limit = 10) => async (dispatch) => {
   try {
     dispatch({ type: POST_TYPES_APROVE.LOADING_POST, payload: true });
     
-    const res = await getDataAPI(`posts/pendientes?page=${page}&limit=${limit}`, token);
+    const res = await getDataAPI(`posts/admin/pendientes?page=${page}&limit=${limit}`, token);
 
     dispatch({
       type: POST_TYPES_APROVE.LOAD_MORE_PENDIENTES,

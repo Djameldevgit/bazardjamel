@@ -18,6 +18,14 @@ router.delete('/boutique/:boutiqueId', auth, boutiqueCtrl.deleteBoutique);
 router.patch('/boutique/:boutiqueId/headerimages', auth, boutiqueCtrl.updateBoutiqueHeaderImages);
 router.delete('/boutique/:boutiqueId/headerimages/:imageId', auth, boutiqueCtrl.deleteBoutiqueHeaderImage);
 
+
+
+router.get('/boutiques/admin/pendientes', auth, boutiqueCtrl.getBoutiquesPendientes);
+router.get('/boutiques/admin/pendientes/count', auth, boutiqueCtrl.getBoutiquesPendientesCount);
+router.put('/boutiques/admin/aprobar/:id', auth, boutiqueCtrl.aprobarBoutique);
+router.get('/boutiques/admin/pendientes/count', auth, boutiqueCtrl.getBoutiquesPendientesCount);
+
+
 // Follow y Like
 router.patch('/boutique/:boutiqueId/follow', auth, boutiqueCtrl.followBoutique);
 router.post('/boutique/:boutiqueId/follow', auth, boutiqueCtrl.followBoutique);
@@ -31,4 +39,11 @@ router.get('/boutique/:boutiqueId/likes', boutiqueCtrl.getBoutiqueLikes);
 router.get('/boutique/:boutiqueId/viewers', boutiqueCtrl.getViewersList);
 router.get('/boutique/:boutiqueId/followers/list', boutiqueCtrl.getFollowersList);
 router.get('/boutique/:boutiqueId/likes/list', boutiqueCtrl.getLikesList);
+
+
+//router.get('/boutiques/admin/pendientes/count', auth, boutiqueCtrl.getBoutiquesPendientesCount);
+router.get('/boutiques/admin/pendientes', auth, boutiqueCtrl.getBoutiquesPendientes);
+router.put('/boutiques/admin/aprobar/:id', auth, boutiqueCtrl.aprobarBoutique);
+router.delete('/boutiques/admin/rechazar/:id', auth, boutiqueCtrl.rechazarBoutique);
+
 module.exports = router;

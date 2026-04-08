@@ -1,7 +1,7 @@
 import React from 'react';
 import { Form } from 'react-bootstrap';
 
-const PhoneField = ({ postData, handleChangeInput, isRTL, name = 'contactPhone', label = 'contact_phone' }) => {
+const PhoneField = ({ postData, handleChangeInput, isRTL, name = 'phone', label = 'phone' }) => {
   
   const handlePhoneChange = (e) => {
     // Permitir solo números y los caracteres +, -, espacio

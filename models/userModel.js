@@ -1,13 +1,11 @@
-const mongoose = require('mongoose')
-
+const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
+    // ============ INFORMACIÓN BÁSICA ============
     fullname: {
         type: String,
-       
         trim: true,
-        maxlength: 25,
-        
+        maxlength: 25
     },
     username: {
         type: String,
@@ -20,57 +18,131 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
         trim: true,
-        unique: true
+        unique: true,
+        lowercase: true
     },
     password: {
         type: String,
         required: true
     },
+    
+    // ============ ROLES Y PERMISOS ============
     role: {
         type: String,
-        enum: ['Utilisateur-No-authentifié', 'user', 'Super-utilisateur', 'moderador', 'admin'],
+        enum: ['user', 'moderator', 'admin'],
         default: 'user'
-      },
-
-      avatar: {
+    },
+    
+    // ✅ SIMPLIFICADO: Categorías asignadas como array de strings (slugs)
+    assignedCategories: {
+        type: [String],
+        default: [],
+        index: true
+    },
+    
+    // ✅ SIMPLIFICADO: Subcategorías asignadas como array de strings
+    assignedSubCategories: {
+        type: [String],
+        default: [],
+        index: true
+    },
+    
+    // ============ PERFIL ============
+    avatar: {
         type: String,
         default: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1739586000/avatar/default_user_avatar.jpg'
-      },
-
-      
+    },
+    
     language: {
         type: String,
-        enum: ['fr', 'ar', 'kab'],
-        default: 'ar'
-      },
-
-      isVerified: { type: Boolean, default: false },
-      isActive: { type: Boolean, default: true },
-      loginType: { type: String, enum: ['local', 'google', 'facebook'], default: 'local' },
-      lastDisconnectedAt: { type: Date, default: null },
-      lastOnline: { type: Date },
-      isOnline: { type: Boolean, default: false },
-      // --- FECHAS ---
-      createdAt: { type: Date, default: Date.now },
-
-
-
-    role: {type: String, default: 'user'},
-  
-    mobile: {type: String, default: ''},
-    address: {type: String, default: ''},
+        enum: ['fr', 'ar', 'en'],
+        default: 'fr'
+    },
+    
+    mobile: {
+        type: String,
+        default: ''
+    },
+    
+    address: {
+        type: String,
+        default: ''
+    },
+    
     story: {
-        type: String, 
+        type: String,
         default: '',
         maxlength: 200
     },
-    website: {type: String, default: ''},
-    followers: [{type: mongoose.Types.ObjectId, ref: 'user'}],
-    following: [{type: mongoose.Types.ObjectId, ref: 'user'}],
-    saved: [{type: mongoose.Types.ObjectId, ref: 'user'}]
+    
+    website: {
+        type: String,
+        default: ''
+    },
+    
+    // ============ ESTADO ============
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+    
+    isActive: {
+        type: Boolean,
+        default: true,
+        index: true
+    },
+    
+    // ============ INTERACCIONES ============
+    followers: [{
+        type: mongoose.Types.ObjectId,
+        ref: 'user'
+    }],
+    
+    following: [{
+        type: mongoose.Types.ObjectId,
+        ref: 'user'
+    }],
+    
+    saved: [{
+        type: mongoose.Types.ObjectId,
+        ref: 'user'
+    }]
+    
 }, {
     timestamps: true
-})
+});
 
+// ============ ÍNDICES ============
+userSchema.index({ role: 1, isActive: 1 });
+userSchema.index({ assignedCategories: 1 });
+userSchema.index({ assignedSubCategories: 1 });
+userSchema.index({ username: 1 });
+userSchema.index({ email: 1 });
 
-module.exports = mongoose.model('user', userSchema)
+// ============ MÉTODO PARA VERIFICAR PERMISOS ============
+userSchema.methods.canModerate = function(categorySlug, subCategorySlug = null) {
+    // Admin puede todo
+    if (this.role === 'admin') return true;
+    
+    // Moderador: verificar si tiene la categoría o subcategoría asignada
+    if (this.role === 'moderator') {
+        if (subCategorySlug && this.assignedSubCategories.includes(subCategorySlug)) {
+            return true;
+        }
+        if (categorySlug && this.assignedCategories.includes(categorySlug)) {
+            return true;
+        }
+    }
+    
+    return false;
+};
+
+// ============ MÉTODO PARA OBTENER CATEGORÍAS ASIGNADAS ============
+userSchema.methods.getAssignedData = function() {
+    return {
+        categories: this.assignedCategories,
+        subCategories: this.assignedSubCategories
+    };
+};
+
+module.exports = mongoose.model('user', userSchema);

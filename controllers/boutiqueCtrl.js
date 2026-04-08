@@ -323,20 +323,266 @@ const boutiqueCtrl = {
       });
     }
   },
+// En boutiqueCtrl.js - AÑADIR este método
 
-  // controllers/boutiqueCtrl.js
-// controllers/boutiqueCtrl.js
+// 📂 controllers/boutiqueCtrl.js - AÑADIR ESTOS MÉTODOS
+
+// ============================================
+// GET BOUTIQUES PENDIENTES (CON PAGINACIÓN)
+// ============================================
+getBoutiquesPendientes: async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const { categorie } = req.query;
+    
+    // Verificar permisos
+    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
+      return res.status(403).json({ success: false, message: "Non autorisé. Admin requis." });
+    }
+    
+    // Query base
+    let query = { pendiente: true, isActive: true };
+    
+    // Filtrar por categoría
+    if (categorie && categorie !== 'undefined' && categorie !== 'null') {
+      query.categorie = { $regex: new RegExp(categorie, 'i') };
+    }
+    
+    console.log('📡 Query boutiques pendientes:', JSON.stringify(query));
+    
+    const [boutiques, total] = await Promise.all([
+      Boutique.find(query)
+        .populate('user', 'username email avatar name')
+        .sort('-createdAt')
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Boutique.countDocuments(query)
+    ]);
+    
+    const totalPages = Math.ceil(total / limit);
+    const hasMore = page < totalPages;
+    
+    res.json({
+      success: true,
+      boutiques,
+      total,
+      page,
+      limit,
+      totalPages,
+      hasMore
+    });
+  } catch (err) {
+    console.error('❌ Error en getBoutiquesPendientes:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+},
+
+// ============================================
+// APROBAR BOUTIQUE
+// ============================================
+aprobarBoutique: async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
+      return res.status(403).json({ success: false, message: "Non autorisé. Admin requis." });
+    }
+    
+    const boutique = await Boutique.findById(id);
+    if (!boutique) {
+      return res.status(404).json({ success: false, message: "Boutique non trouvée" });
+    }
+    
+    if (!boutique.pendiente) {
+      return res.status(400).json({ success: false, message: "Cette boutique est déjà approuvée" });
+    }
+    
+    boutique.pendiente = false;
+    await boutique.save();
+    
+    res.json({
+      success: true,
+      message: "Boutique approuvée avec succès",
+      boutique: {
+        _id: boutique._id,
+        nom_boutique: boutique.nom_boutique,
+        pendiente: boutique.pendiente
+      }
+    });
+  } catch (err) {
+    console.error('❌ Error en aprobarBoutique:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+},
+getBoutiquesPendientesCount: async (req, res) => {
+  try {
+    // Verificar permisos
+    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'moderator')) {
+      return res.status(403).json({ success: false, message: "Non autorisé" });
+    }
+    
+    const count = await Boutique.countDocuments({ 
+      pendiente: true, 
+      isActive: true 
+    });
+    
+    console.log(`📊 Count boutiques pendientes: ${count}`);
+    
+    res.json({ success: true, count });
+  } catch (err) {
+    console.error('❌ Error en getBoutiquesPendientesCount:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+},
+// 📂 controllers/boutiqueCtrl.js - AÑADIR/VERIFICAR este método
+
+// ============================================
+// GET BOUTIQUES PENDIENTES (CON PAGINACIÓN)
+// ============================================
+getBoutiquesPendientes: async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const { categorie } = req.query;
+    
+    // Verificar permisos
+    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'moderator')) {
+      return res.status(403).json({ success: false, message: "Non autorisé. Admin requis." });
+    }
+    
+    let query = { pendiente: true, isActive: true };
+    
+    if (categorie && categorie !== 'undefined' && categorie !== 'null' && categorie !== '') {
+      query.categorie = { $regex: new RegExp(categorie, 'i') };
+    }
+    
+    console.log('📡 Query boutiques pendientes:', JSON.stringify(query));
+    
+    const [boutiques, total] = await Promise.all([
+      Boutique.find(query)
+        .populate('user', 'username email avatar name')
+        .sort('-createdAt')
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Boutique.countDocuments(query)
+    ]);
+    
+    const totalPages = Math.ceil(total / limit);
+    const hasMore = page < totalPages;
+    
+    res.json({
+      success: true,
+      boutiques: boutiques || [],
+      total: total || 0,
+      page: page,
+      limit: limit,
+      totalPages: totalPages || 1,
+      hasMore: hasMore || false
+    });
+  } catch (err) {
+    console.error('❌ Error en getBoutiquesPendientes:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+},
+rechazarBoutique: async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
+      return res.status(403).json({ success: false, message: "Non autorisé. Admin requis." });
+    }
+    
+    const boutique = await Boutique.findById(id);
+    if (!boutique) {
+      return res.status(404).json({ success: false, message: "Boutique non trouvée" });
+    }
+    
+    // Opcional: eliminar o marcar como inactiva
+    await Boutique.findByIdAndDelete(id);
+    
+    res.json({
+      success: true,
+      message: "Boutique rejetée avec succès"
+    });
+  } catch (err) {
+    console.error('❌ Error en rechazarBoutique:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+},
+
+// ============================================
+// GET CONTADOR DE BOUTIQUES PENDIENTES
+// ============================================
+getBoutiquesPendientesCount: async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
+      return res.status(403).json({ success: false, message: "Non autorisé" });
+    }
+    
+    const count = await Boutique.countDocuments({ pendiente: true, isActive: true });
+    
+    res.json({ success: true, count });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+},
+
+// 🔥 APROBAR BOUTIQUE
+aprobarBoutique: async function(req, res) {
+  try {
+    const { id } = req.params;
+    
+    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Non autorisé. Admin requis.' 
+      });
+    }
+    
+    const boutique = await Boutique.findById(id);
+    if (!boutique) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Boutique non trouvée' 
+      });
+    }
+    
+    if (!boutique.pendiente) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Cette boutique est déjà approuvée' 
+      });
+    }
+    
+    boutique.pendiente = false;
+    await boutique.save();
+    
+    res.json({
+      success: true,
+      message: 'Boutique approuvée avec succès',
+      boutique: {
+        _id: boutique._id,
+        nom_boutique: boutique.nom_boutique,
+        pendiente: boutique.pendiente
+      }
+    });
+    
+  } catch (err) {
+    console.error('❌ Error en aprobarBoutique:', err);
+    res.status(500).json({ msg: err.message });
+  }
+},
+
 getBoutique: async function(req, res) {
   try {
     var id = req.params.id;
-    // ✅ Validación segura para req.user (puede ser undefined)
     var userId = req.user ? req.user._id : null;
-
-    console.log('🔍 getBoutique llamado:', { 
-      boutiqueId: id, 
-      userId: userId || 'guest',
-      isAuthenticated: !!userId 
-    });
+    var userRole = req.user ? req.user.role : null;
 
     var boutique = await Boutique.findById(id)
       .populate('user', 'name username avatar email mobile')
@@ -349,76 +595,43 @@ getBoutique: async function(req, res) {
       });
     }
 
-    // ✅ Validación segura para arrays y objetos que pueden ser undefined
-    var followersCount = (boutique.followers && boutique.followers.length) ? boutique.followers.length : 0;
-    var likesCount = (boutique.likes && boutique.likes.length) ? boutique.likes.length : 0;
-    var viewsCount = (boutique.views !== undefined && boutique.views !== null) ? boutique.views : 0;
+    // 🔥 VERIFICACIÓN CON pendiente (misma lógica que Post)
+    const isAdmin = userRole === 'admin' || userRole === 'moderator';
+    const isOwner = userId && boutique.user && boutique.user._id.toString() === userId.toString();
     
-    // Contadores de stats con validación segura
-    var produitsCount = (boutique.stats && boutique.stats.produits) ? boutique.stats.produits : 0;
-    var notesCount = (boutique.stats && boutique.stats.notes) ? boutique.stats.notes : 0;
-    var avisCount = (boutique.stats && boutique.stats.avis) ? boutique.stats.avis : 0;
-    var vuesCount = (boutique.stats && boutique.stats.vues) ? boutique.stats.vues : 0;
+    // Si está pendiente, solo admin/moderator o dueño pueden verla
+    if (boutique.pendiente === true && !isAdmin && !isOwner) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Cette boutique est en attente de validation.' 
+      });
+    }
 
-    // ✅ ESTADO DE INTERACCIÓN (solo para usuarios autenticados)
+    // Contadores seguros
+    var followersCount = (boutique.followers || []).length;
+    var likesCount = (boutique.likes || []).length;
+    var produitsCount = (boutique.stats && boutique.stats.produits) || 0;
+
+    // Estado de interacción
     var isFollowing = false;
     var isLiked = false;
     
     if (userId) {
-      // Validar que followers y likes existan antes de usar some
-      if (boutique.followers && boutique.followers.length > 0) {
-        isFollowing = boutique.followers.some(function(f) {
-          return f.toString() === userId.toString();
-        });
-      }
-      
-      if (boutique.likes && boutique.likes.length > 0) {
-        isLiked = boutique.likes.some(function(l) {
-          return l.toString() === userId.toString();
-        });
-      }
-      
-      console.log('👤 Usuario autenticado:', { 
-        userId: userId.toString(), 
-        isFollowing: isFollowing, 
-        isLiked: isLiked 
-      });
-    } else {
-      console.log('👤 Usuario invitado - sin estado de interacción');
+      isFollowing = (boutique.followers || []).some(f => f.toString() === userId.toString());
+      isLiked = (boutique.likes || []).some(l => l.toString() === userId.toString());
     }
 
-    // ✅ CONSTRUIR OBJETO DE RESPUESTA CON TODOS LOS DATOS
     var boutiqueData = {
       ...boutique,
-      // Contadores globales (siempre presentes)
       followersCount: followersCount,
       likesCount: likesCount,
-      views: viewsCount,
-      // Stats
       stats: {
         ...(boutique.stats || {}),
-        produits: produitsCount,
-        notes: notesCount,
-        avis: avisCount,
-        vues: vuesCount,
-        followersCount: followersCount,
-        likesCount: likesCount
+        produits: produitsCount
       },
-      // Estado de interacción (false para invitados)
       isFollowing: isFollowing,
       isLiked: isLiked
     };
-
-    console.log('📊 Datos enviados al frontend:', {
-      boutiqueId: boutiqueData._id,
-      nom_boutique: boutiqueData.nom_boutique,
-      views: boutiqueData.views,
-      likesCount: boutiqueData.likesCount,
-      followersCount: boutiqueData.followersCount,
-      isFollowing: boutiqueData.isFollowing,
-      isLiked: boutiqueData.isLiked,
-      isAuthenticated: !!userId
-    });
 
     res.json({
       success: true,
@@ -532,6 +745,7 @@ getBoutique: async function(req, res) {
   },
 
  // 📂 controllers/boutiqueController.js - MODIFICAR filterBoutiques
+// ctrls/boutiqueCtrl.js - filterBoutiques con campo pendiente
 
 filterBoutiques: async function(req, res) {
   try {
@@ -543,8 +757,6 @@ filterBoutiques: async function(req, res) {
     var subSlug = req.query.sub;
     var wilaya = req.query.wilaya;
     var commune = req.query.commune;
-    var minPrice = req.query.minPrice;
-    var maxPrice = req.query.maxPrice;
     var sortBy = req.query.sortBy;
 
     // Validar categoría principal
@@ -562,8 +774,21 @@ filterBoutiques: async function(req, res) {
       return res.status(404).json({ success: false, message: 'Categoría Boutiques no encontrada' });
     }
 
-    // Construir filtro base para BOUTIQUES
-    var filter = { category: categoryDoc._id, isActive: true };
+    // 🔥 FILTRO BASE: usar pendiente igual que en Post
+    const user = req.user || null;
+    let filter = { 
+      category: categoryDoc._id, 
+      isActive: true
+    };
+
+    // 🔥 MISMA LÓGICA QUE POSTS
+    if (user && (user.role === 'admin' || user.role === 'moderator')) {
+      // Admin/Moderador: ver todas las boutiques (incluyendo pendientes)
+      // No añadir filtro de pendiente
+    } else {
+      // Usuarios normales: SOLO boutiques aprobadas
+      filter.pendiente = false;
+    }
 
     // Filtrado por subcategoría (tipo de boutique)
     if (subSlug && subSlug !== 'undefined' && subSlug !== 'null') {
@@ -618,37 +843,24 @@ filterBoutiques: async function(req, res) {
       }
     }
 
-    // ✅ FILTRO GEOGRÁFICO - SÍ aplica a boutiques
+    // ✅ FILTRO GEOGRÁFICO
     if (wilaya && wilaya !== '') {
-      filter.wilaya = { $regex: new RegExp(`^${wilaya}$`, 'i') };
+      filter['proprietaire.wilaya'] = { $regex: new RegExp(`^${wilaya}$`, 'i') };
     }
     if (commune && commune !== '') {
-      filter.commune = { $regex: new RegExp(commune, 'i') };
-    }
-
-    // ⚠️ PRECIO - NO aplicar a boutiques, ignorar estos parámetros
-    // Si se pasan minPrice o maxPrice, se IGNORAN para boutiques
-    if (minPrice || maxPrice) {
-      console.log('⚠️ Filtros de precio ignorados para boutiques (las boutiques no tienen precio)');
-      // No añadir filter.price
+      filter['proprietaire.commune'] = { $regex: new RegExp(commune, 'i') };
     }
 
     // Ordenamiento para boutiques
     var sort = { createdAt: -1 };
     if (sortBy === 'name_asc') {
-      sort = { name: 1 };
+      sort = { nom_boutique: 1 };
     }
     if (sortBy === 'name_desc') {
-      sort = { name: -1 };
-    }
-    if (sortBy === 'price_asc' || sortBy === 'price_desc') {
-      // Si ordenan por precio, ignorar y usar orden por nombre
-      console.log('⚠️ Ordenamiento por precio ignorado para boutiques');
-      sort = { name: 1 };
+      sort = { nom_boutique: -1 };
     }
 
     console.log('🎯 Filtro final BOUTIQUES:', JSON.stringify(filter, null, 2));
-    console.log('📌 Ordenamiento:', sort);
 
     // Obtener boutiques
     var boutiques = await Boutique.find(filter)
@@ -660,7 +872,22 @@ filterBoutiques: async function(req, res) {
 
     var total = await Boutique.countDocuments(filter);
 
-    // Obtener subcategorías hijas para slider
+    // Obtener wilayas disponibles (solo boutiques aprobadas para el público)
+    let wilayasDisponibles = [];
+    if (user && (user.role === 'admin' || user.role === 'moderator')) {
+      wilayasDisponibles = await Boutique.distinct('proprietaire.wilaya', { 
+        category: categoryDoc._id, 
+        isActive: true 
+      });
+    } else {
+      wilayasDisponibles = await Boutique.distinct('proprietaire.wilaya', { 
+        category: categoryDoc._id, 
+        isActive: true,
+        pendiente: false 
+      });
+    }
+
+    // Obtener subcategorías para slider
     var children = await Category.find({
       parent: categoryDoc._id,
       level: 2,
@@ -670,12 +897,7 @@ filterBoutiques: async function(req, res) {
       .sort({ order: 1 })
       .lean();
 
-    var childrenWithArticles = [];
-    for (var k = 0; k < children.length; k++) {
-      var child = children[k];
-      child.articles = [];
-      childrenWithArticles.push(child);
-    }
+    var childrenWithArticles = children.map(child => ({ ...child, articles: [] }));
 
     return res.json({
       success: true,
@@ -685,30 +907,17 @@ filterBoutiques: async function(req, res) {
       limit: limit,
       hasMore: page * limit < total,
       totalPages: Math.ceil(total / limit),
-      pagination: {
-        currentPage: page,
-        totalPages: Math.ceil(total / limit),
-        totalPosts: total,
-        limit: limit,
-        hasMore: page * limit < total
-      },
       categoryInfo: {
         _id: categoryDoc._id,
         name: categoryDoc.name,
         slug: categoryDoc.slug,
         level: categoryDoc.level,
-        emoji: categoryDoc.emoji || '',
-        icon: categoryDoc.icon || '',
-        iconType: categoryDoc.iconType || 'emoji',
-        iconColor: categoryDoc.iconColor || '#8B5CF6',
-        bgColor: categoryDoc.bgColor || '#EDE9FE'
+        emoji: categoryDoc.emoji || ''
       },
       children: childrenWithArticles,
-      // ✅ METADATA DE FILTROS (solo ubicación, sin precio)
       filterMetadata: {
-        wilayas: await Boutique.distinct('wilaya', { category: categoryDoc._id, isActive: true }),
-        priceRange: { min: 0, max: 0 }, // Precio no aplica a boutiques
-        communes: []
+        wilayas: wilayasDisponibles.filter(w => w && w !== ''),
+        priceRange: { min: 0, max: 0 }
       }
     });
 
@@ -721,7 +930,6 @@ filterBoutiques: async function(req, res) {
     });
   }
 },
-
  // En controllers/boutiqueCtrl.js
 // controllers/boutiqueCtrl.js
 addView: async function(req, res) {

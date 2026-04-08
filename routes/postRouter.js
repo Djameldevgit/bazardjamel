@@ -4,7 +4,7 @@ const postCtrl = require('../controllers/postCtrl');
 const auth = require('../middleware/auth');
 const authAdmin = require('../middleware/authAdmin');
  
-router.get('/posts/pendientes', auth,  postCtrl.getPostsPendientes);
+ 
 // ============ 1. RUTAS PÚBLICAS (SIN PARÁMETROS) ============
 router.get('/health', postCtrl.healthCheck);
 router.get('/', postCtrl.getPosts);
@@ -21,9 +21,20 @@ router.get('/search/:query', postCtrl.searchPosts);
 router.get('/user_posts/:id', auth, postCtrl.getUserPosts);
 router.get('/public/user_posts/:userId', postCtrl.getPublicUserPosts);
 
-// ============ 4. RUTAS DE ADMIN (APROBACIÓN) ============
-router.patch('/post/:id/aprobar', auth,  postCtrl.aprobarPost);
 
+
+// 📂 routes/postRoutes.js - AÑADIR estas rutas (EN ESTE ORDEN)
+
+// ✅ IMPORTANTE: Las rutas fijas van ANTES que las rutas con parámetros
+router.get('/posts/admin/pendientes/counts/all', auth, postCtrl.getAllPostsPendientesCounts);
+router.get('/posts/admin/pendientes/count', auth, postCtrl.getPostsPendientesCount);
+router.get('/posts/admin/pendientes', auth, postCtrl.getPostsPendientes);
+router.patch('/posts/admin/aprobar/:id', auth, postCtrl.aprobarPost);
+router.delete('/posts/admin/rechazar/:id', auth, postCtrl.deletePost);
+
+
+
+ 
 // ============ 5. RUTAS CON ID (DEBEN IR AL FINAL) ============
 router.route('/post/:id')
   .patch(auth, postCtrl.updatePost)

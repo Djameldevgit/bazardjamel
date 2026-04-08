@@ -6,7 +6,7 @@ import { deleteBoutiqueProduct, getBoutiqueProducts } from '../../redux/actions/
 import { getBoutique } from '../../redux/actions/boutiqueAction';
 import { FaBox, FaPlus, FaSpinner, FaEdit, FaTrash, FaArrowLeft } from 'react-icons/fa';
 
-const MesProduitsBoutiquePage = () => {
+const ProductsBoutiquePage = () => {
   const { boutiqueId } = useParams();
   const dispatch = useDispatch();
   const { auth } = useSelector(state => state);
@@ -327,4 +327,4 @@ const MesProduitsBoutiquePage = () => {
   );
 };
 
-export default MesProduitsBoutiquePage;
+export default ProductsBoutiquePage;

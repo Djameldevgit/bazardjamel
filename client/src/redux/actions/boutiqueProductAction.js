@@ -1,4 +1,4 @@
-// redux/actions/boutiqueProductAction.js
+// redux/actions/boutiqueProductAction.js - VERSIÓN ACTUALIZADA CON NUEVAS RUTAS
 
 import { GLOBALTYPES } from './globalTypes';
 import { postDataAPI, getDataAPI, patchDataAPI, deleteDataAPI } from '../../utils/fetchData';
@@ -13,16 +13,11 @@ export const BOUTIQUE_PRODUCT_TYPES = {
   UPDATE_BOUTIQUE_STATUS: 'UPDATE_BOUTIQUE_STATUS',
   GET_BOUTIQUE_STATS: 'GET_BOUTIQUE_STATS',
   LOADING_BOUTIQUE_PRODUCTS: 'LOADING_BOUTIQUE_PRODUCTS',
-  RESET_BOUTIQUE_PRODUCTS: 'RESET_BOUTIQUE_PRODUCTS'
+  RESET_BOUTIQUE_PRODUCTS: 'RESET_BOUTIQUE_PRODUCTS',
+  GET_USER_PRODUCTS: 'GET_USER_PRODUCTS'  // 🔥 NUEVO
 };
 
 // ============ CREATE BOUTIQUE PRODUCT ============
-// redux/actions/boutiqueProductAction.js
-
-// redux/actions/boutiqueProductAction.js
-
-// redux/actions/boutiqueProductAction.js
-
 export const createBoutiqueProduct = ({ 
   boutiqueId, 
   productData, 
@@ -34,14 +29,12 @@ export const createBoutiqueProduct = ({
       boutiqueId,
       hasAuth: !!auth,
       hasToken: !!auth?.token,
-      tokenLength: auth?.token?.length,
       userId: auth?.user?._id
     });
     
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
 
     if (!auth || !auth.token) {
-      console.error('❌ No hay token de autenticación');
       throw new Error('Veuillez vous reconnecter');
     }
 
@@ -64,8 +57,9 @@ export const createBoutiqueProduct = ({
       categorySpecificData: productData.categorySpecificData || {}
     };
 
-    console.log('📤 Enviando petición POST con token:', auth.token.substring(0, 20) + '...');
+    console.log('📤 Enviando petición POST...');
     
+    // 🔥 RUTA ACTUALIZADA
     const res = await postDataAPI(`boutique/${boutiqueId}/products`, productToSend, auth.token);
     
     console.log('✅ Respuesta:', res.data);
@@ -87,8 +81,6 @@ export const createBoutiqueProduct = ({
 
   } catch (err) {
     console.error('❌ Error en createBoutiqueProduct:', err);
-    console.error('❌ Status:', err.response?.status);
-    console.error('❌ Detalles:', err.response?.data);
     dispatch({
       type: GLOBALTYPES.ALERT,
       payload: { error: err.response?.data?.message || err.message }
@@ -98,6 +90,7 @@ export const createBoutiqueProduct = ({
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
   }
 };
+
 // ============ GET BOUTIQUE PRODUCTS ============
 export const getBoutiqueProducts = (boutiqueId, filters = {}, reset = false) => async (dispatch, getState) => {
   try {
@@ -117,17 +110,14 @@ export const getBoutiqueProducts = (boutiqueId, filters = {}, reset = false) => 
     params.append('limit', filters.limit || 12);
     if (filters.sort) params.append('sort', filters.sort);
     if (filters.search) params.append('search', filters.search);
-    if (filters.categories?.length) params.append('categories', filters.categories.join(','));
-    if (filters.subCategories?.length) params.append('subCategories', filters.subCategories.join(','));
-    if (filters.articleType && filters.articleType !== 'all') params.append('articleType', filters.articleType);
     if (filters.minPrice) params.append('minPrice', filters.minPrice);
     if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
-    if (filters.etat?.length) params.append('etat', filters.etat.join(','));
+    if (filters.etat) params.append('etat', filters.etat);
     if (filters.wilaya) params.append('wilaya', filters.wilaya);
-    if (filters.dynamicFilters) params.append('dynamicFilters', JSON.stringify(filters.dynamicFilters));
 
+    // 🔥 RUTA ACTUALIZADA
     const res = await getDataAPI(`boutique/${boutiqueId}/products?${params.toString()}`);
-    console.log(res.data)
+    
     dispatch({
       type: BOUTIQUE_PRODUCT_TYPES.GET_BOUTIQUE_PRODUCTS,
       payload: {
@@ -137,9 +127,7 @@ export const getBoutiqueProducts = (boutiqueId, filters = {}, reset = false) => 
         page: res.data.page || page,
         totalPages: res.data.totalPages || 1,
         hasMore: res.data.hasMore || false,
-        reset: reset,
-        availableFields: res.data.availableFields || [],
-        fieldValues: res.data.fieldValues || {}
+        reset: reset
       }
     });
     
@@ -157,6 +145,44 @@ export const getBoutiqueProducts = (boutiqueId, filters = {}, reset = false) => 
       type: BOUTIQUE_PRODUCT_TYPES.LOADING_BOUTIQUE_PRODUCTS, 
       payload: false 
     });
+  }
+};
+
+// ============ GET USER PRODUCTS (para MesProductsBoutiques) ============
+export const getUserProducts = (auth) => async (dispatch) => {
+  try {
+    console.log('📦 getUserProducts iniciado');
+    
+    dispatch({ type: BOUTIQUE_PRODUCT_TYPES.LOADING_BOUTIQUE_PRODUCTS, payload: true });
+
+    if (!auth || !auth.token) {
+      throw new Error('Veuillez vous reconnecter');
+    }
+
+    // 🔥 NUEVA RUTA: /api/user/products
+    const res = await getDataAPI('user/products', auth.token);
+    
+    console.log('✅ getUserProducts respuesta:', res.data);
+    
+    dispatch({
+      type: BOUTIQUE_PRODUCT_TYPES.GET_USER_PRODUCTS,
+      payload: {
+        products: res.data.products || [],
+        total: res.data.total || 0
+      }
+    });
+    
+    return res.data;
+    
+  } catch (err) {
+    console.error('❌ Error en getUserProducts:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || err.message }
+    });
+    throw err;
+  } finally {
+    dispatch({ type: BOUTIQUE_PRODUCT_TYPES.LOADING_BOUTIQUE_PRODUCTS, payload: false });
   }
 };
 
@@ -190,6 +216,7 @@ export const updateBoutiqueProduct = ({
       images: finalImages.length > 0 ? finalImages : productData.images
     };
 
+    // 🔥 RUTA ACTUALIZADA
     const res = await patchDataAPI(`boutique/${boutiqueId}/products/${productId}`, productToSend, auth.token);
 
     dispatch({ 
@@ -229,6 +256,7 @@ export const deleteBoutiqueProduct = ({
     console.log('🗑️ deleteBoutiqueProduct iniciado', { boutiqueId, productId });
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
 
+    // 🔥 RUTA ACTUALIZADA
     await deleteDataAPI(`boutique/${boutiqueId}/products/${productId}`, auth.token);
 
     dispatch({ 

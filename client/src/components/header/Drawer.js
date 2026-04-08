@@ -697,7 +697,12 @@ const Drawer = ({
           color="#8b5cf6" 
         />
         
-       
+        <DropdownItem 
+          icon="✨" 
+          name="Mes products boutiques" 
+          path="/mes-products-boutiques" 
+          color="#8b5cf6" 
+        />
         
         {boutiqueLoading && (
           <div style={{ 

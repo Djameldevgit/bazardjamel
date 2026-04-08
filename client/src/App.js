@@ -1,6 +1,5 @@
-// src/App.js o src/routes/AppRoutes.js - PARA REACT ROUTER v5
-import { useEffect, useState } from 'react'
-import { BrowserRouter as Router, Switch, Route, Redirect } from 'react-router-dom'; // Switch en lugar de Routes para v5
+import { useEffect } from 'react'
+import { BrowserRouter as Router, Switch, Route  } from 'react-router-dom'; // Switch en lugar de Routes para v5
 import GoogleTranslateManager from './components/GoogleTraslateManager'
 import { useSelector, useDispatch } from 'react-redux'
 import Login from './pages/login'
@@ -26,14 +25,17 @@ import roles from './pages/users/roles';
  
  
 import BoutiqueDetailPage from './pages/boutique/BoutiqueDetailPage';
-import UserBoutiquesPage from './pages/boutique/UserBoutiquesPage';
+ 
 import MesAnnoces from './pages/users/MesAnnoces';
 import ProfileSettings from './pages/users/ProfileSettings';
 import ProfileSaved from './pages/users/ProfileSaved';
 import CreateBoutiqueProductPage from './pages/boutiqueProduct/CreateBoutiqueProductPage';
-//import CreateImageHomeCarousel from './pages/carousel/CreateImageHomeCarousel';
-import MesProduitsBoutiquePage from './pages/boutiqueProduct/MesProduitsBoutiqueDashborad';
-import AdminPostsPage from './pages/AdminPostsPage';
+ 
+import Posts from './pages/admin/Posts';
+import MesBoutiques from './pages/boutique/MesBoutiques';
+ 
+import ProductsBoutiquePage from './pages/boutiqueProduct/ProductsBoutiquePage';
+import MesProductsBoutiques from './pages/boutiqueProduct/MesProductsBoutiques';
 
  
 function App() {
@@ -67,9 +69,8 @@ function App() {
   <Route exact path="/" component={Home} />
   <Route exact path="/register" component={Register} />
   <Route exact path="/login" component={Login} />
-
-  <Route path="/admin/posts" component={AdminPostsPage} />
-
+ 
+   <Route path="/admin/posts" component={Posts} />
   {/* ============ RUTAS DE BOUTIQUES - PRIMERO LAS MÁS ESPECÍFICAS ============ */}
   <Route exact path="/boutique/:boutiqueId/products/new" component={CreateBoutiqueProductPage} />
   <Route exact path="/boutique/:boutiqueId/products/edit/:postId" component={CreateBoutiqueProductPage} />
@@ -77,9 +78,9 @@ function App() {
   {/* ✅ NUEVAS RUTAS PARA DASHBOARD - GESTIÓN DE BOUTIQUES */}
   <Route exact path="/create-boutique" component={CreateBoutiquePage} />
   <Route exact path="/edit-boutique/:id" component={CreateBoutiquePage} />
-  <Route exact path="/mes-boutiques" component={UserBoutiquesPage} />
-   <Route exact path="/mes-produits-boutique/:boutiqueId" component={MesProduitsBoutiquePage} />
-  {/* ✅ NUEVAS RUTAS PARA DASHBOARD - GESTIÓN DE PRODUCTOS DE BOUTIQUE */}
+  <Route exact path="/mes-boutiques" component={MesBoutiques} />
+   <Route exact path="/products-boutique-page/:boutiqueId" component={ProductsBoutiquePage} />
+   <Route exact path="/mes-products-boutiques" component={MesProductsBoutiques} />
  
    
   {/* Ruta genérica de boutique - PARA VISTA PÚBLICA */}

@@ -49,7 +49,6 @@ const boutiqueSchema = new mongoose.Schema({
     lowercase: true
   },
 
-  // 🔗 SEO adicional (PRO)
   slug: {
     type: String,
     unique: true,
@@ -63,7 +62,6 @@ const boutiqueSchema = new mongoose.Schema({
     required: true
   },
 
-  // 🖼️ Imágenes estructuradas
   images: [
     {
       url: String,
@@ -110,6 +108,7 @@ const boutiqueSchema = new mongoose.Schema({
     type: String,
     default: '#2563eb'
   },
+  
   followers: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'user',
@@ -121,48 +120,56 @@ const boutiqueSchema = new mongoose.Schema({
     ref: 'user',
     default: []
   }],
+  
   views: {
     type: Number,
     default: 0
   },
-  stats: {
   
+  viewHistory: [{
+    viewerId: String,
+    timestamp: Date,
+    userAgent: String
+  }],
+  
+  stats: {
     produits: { type: Number, default: 0 },
     notes: { type: Number, default: 0 },
-   
+    avis: { type: Number, default: 0 },
+    vues: { type: Number, default: 0 }
   },
- 
 
   header_images: [
-   
-      {
-        url: String,
-        public_id: String
-      }
-     
+    {
+      url: String,
+      public_id: String
+    }
   ],
 
   isActive: {
     type: Boolean,
-    default: true
+    default: true,
+    index: true
   },
 
-  isVerified: {
+  // 🔥 CAMPO PARA APROBACIÓN (mismo que Post)
+  pendiente: {
     type: Boolean,
-    default: false
+    default: true,  // Por defecto espera aprobación
+    index: true
   }
 
 }, {
   timestamps: true
 });
 
-// 🔍 Índices
-boutiqueSchema.index({ categorie: 1, isActive: 1 });
-boutiqueSchema.index({ subCategory: 1, isActive: 1 });
-boutiqueSchema.index({ articleType: 1, isActive: 1 });
-boutiqueSchema.index({ category: 1, isActive: 1 });
-boutiqueSchema.index({ user: 1, isActive: 1 });
-boutiqueSchema.index({ 'stats.notes': -1 });
-boutiqueSchema.index({ createdAt: -1 });
+// 🔥 ÍNDICES OPTIMIZADOS PARA BOUTIQUES (con pendiente)
+boutiqueSchema.index({ pendiente: 1, isActive: 1, createdAt: -1 });
+boutiqueSchema.index({ categorie: 1, pendiente: 1, isActive: 1 });
+boutiqueSchema.index({ subCategory: 1, pendiente: 1, isActive: 1 });
+boutiqueSchema.index({ category: 1, pendiente: 1, isActive: 1 });
+boutiqueSchema.index({ user: 1, pendiente: 1 });
+boutiqueSchema.index({ 'proprietaire.wilaya': 1, pendiente: 1 });
+boutiqueSchema.index({ slug: 1, pendiente: 1 });
 
 module.exports = mongoose.model('Boutique', boutiqueSchema);

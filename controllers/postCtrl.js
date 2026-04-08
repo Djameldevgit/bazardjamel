@@ -139,21 +139,40 @@ const postCtrl = {
     }
   },
 
- // 📂 controllers/postCtrl.js - getPostsPendientes CON PAGINACIÓN
+ 
+
+ // 📂 controllers/postCtrl.js - CORREGIR getPostsPendientes
 
 getPostsPendientes: async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    const { categorie, subCategory } = req.query;
+    
+    console.log('📡 Parámetros recibidos:', { categorie, subCategory, page, limit });
     
     // Verificar que el usuario sea admin
-    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
+    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'moderator')) {
       return res.status(403).json({ msg: "Non autorisé. Admin requis." });
     }
     
     // Query base
-    const query = { pendiente: true };
+    let query = { pendiente: true };
+    
+    // 🔥 CORREGIDO: Validar correctamente el valor de categorie
+    if (categorie && typeof categorie === 'string' && categorie !== 'undefined' && categorie !== 'null' && categorie.trim() !== '') {
+      query.categorie = categorie; // ✅ Usar la string directamente, no regex
+      console.log('✅ Aplicando filtro por categoría:', categorie);
+    }
+    
+    // Filtrar por subcategoría
+    if (subCategory && typeof subCategory === 'string' && subCategory !== 'undefined' && subCategory !== 'null' && subCategory.trim() !== '') {
+      query.subCategory = subCategory;
+      console.log('✅ Aplicando filtro por subcategoría:', subCategory);
+    }
+    
+    console.log('📡 Query final posts pendientes:', JSON.stringify(query));
     
     // Obtener posts con paginación
     const [posts, total] = await Promise.all([
@@ -169,18 +188,97 @@ getPostsPendientes: async (req, res) => {
     const totalPages = Math.ceil(total / limit);
     const hasMore = page < totalPages;
     
+    console.log(`📡 Resultados: ${posts.length} posts encontrados de ${total} totales`);
+    
     res.json({ 
       success: true,
-      posts, 
-      total,
-      page,
-      limit,
-      totalPages,
-      hasMore
+      posts: posts || [], 
+      total: total || 0,
+      page: page,
+      limit: limit,
+      totalPages: totalPages || 1,
+      hasMore: hasMore || false,
+      appliedFilters: { categorie, subCategory }
     });
   } catch (err) {
     console.error('❌ Error en getPostsPendientes:', err);
     res.status(500).json({ error: err.message });
+  }
+},
+  getAllPostsPendientesCounts: async (req, res) => {
+    try {
+      // Verificar permisos
+      if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'moderator')) {
+        return res.status(403).json({ success: false, message: "Non autorisé" });
+      }
+      
+      // Obtener todas las categorías
+      const categories = await Category.find({ level: 1, isActive: true }).lean();
+      
+      // Hacer un solo aggregate para contar todos los posts pendientes por categoría
+      const counts = await Post.aggregate([
+        { $match: { pendiente: true, isActive: true } },
+        { $group: { _id: "$categorie", count: { $sum: 1 } } }
+      ]);
+      
+      // Crear un mapa de counts
+      const countMap = {};
+      counts.forEach(item => {
+        countMap[item._id] = item.count;
+      });
+      
+      // Construir respuesta para todas las categorías
+      const result = {};
+      categories.forEach(cat => {
+        result[cat.slug] = countMap[cat.name] || countMap[cat.slug] || 0;
+      });
+      
+      console.log('📊 Counts por categoría:', result);
+      
+      res.json({ success: true, counts: result });
+      
+    } catch (err) {
+      console.error('❌ Error en getAllPostsPendientesCounts:', err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
+ 
+  // 📂 controllers/postCtrl.js - CORREGIR getPostsPendientesCount
+
+getPostsPendientesCount: async (req, res) => {
+  try {
+    const { categorie } = req.query;
+    
+    console.log('📊 getPostsPendientesCount - Categoría recibida:', categorie, 'tipo:', typeof categorie);
+    
+    // Verificar permisos
+    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'moderator')) {
+      return res.status(403).json({ success: false, message: "Non autorisé" });
+    }
+    
+    // Construir query
+    let query = { pendiente: true };
+    
+    // 🔥 CORREGIDO: Validar correctamente
+    if (categorie && typeof categorie === 'string' && categorie !== 'undefined' && categorie !== 'null' && categorie.trim() !== '') {
+      query.categorie = categorie;
+      console.log('✅ Contando posts con categoría:', categorie);
+    }
+    
+    console.log('📊 Query count:', JSON.stringify(query));
+    
+    const count = await Post.countDocuments(query);
+    
+    console.log(`📊 Count resultado: ${count}`);
+    
+    res.json({ success: true, count });
+    
+  } catch (err) {
+    console.error('❌ Error en getPostsPendientesCount:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: err.message
+    });
   }
 },
   aprobarPost: async (req, res) => {
@@ -218,6 +316,13 @@ getPostsPendientes: async (req, res) => {
       res.status(500).json({ msg: err.message });
     }
   },
+
+  
+
+
+
+
+
 
   filterPosts: async (req, res) => {
     try {
@@ -612,7 +717,36 @@ getPostsPendientes: async (req, res) => {
       res.status(500).json({ msg: err.message });
     }
   },
+// 📂 controllers/postCtrl.js - AÑADIR este método
 
+// ============================================
+// GET COUNT DE POSTS PENDIENTES POR CATEGORÍA
+// ============================================
+getPostsPendientesCount: async (req, res) => {
+  try {
+    const { categorie } = req.query;
+    
+    // Verificar permisos
+    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'moderator')) {
+      return res.status(403).json({ success: false, message: "Non autorisé" });
+    }
+    
+    let query = { pendiente: true, isActive: true };
+    
+    if (categorie && categorie !== 'undefined' && categorie !== 'null' && categorie.trim() !== '') {
+      query.categorie = { $regex: new RegExp(`^${categorie}$`, 'i') };
+    }
+    
+    const count = await Post.countDocuments(query);
+    
+    console.log(`📊 Count posts pendientes para ${categorie || 'todas'}: ${count}`);
+    
+    res.json({ success: true, count });
+  } catch (err) {
+    console.error('❌ Error en getPostsPendientesCount:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+},
   getPublicUserPosts: async (req, res) => {
     const { userId } = req.params;
     const page = parseInt(req.query.page) || 1;
