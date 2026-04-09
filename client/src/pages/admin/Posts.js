@@ -1,31 +1,45 @@
-// 📂 pages/admin/Posts.js - VERSIÓN CORREGIDA
+// 📂 pages/admin/Posts.js - VERSIÓN CON BOTÓN INTEGRADO
 import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import {   useSelector } from 'react-redux';
 import { useLocation, useHistory } from 'react-router-dom';
 import { Container, Button, Alert } from 'react-bootstrap';
 import { FaBars, FaSync } from 'react-icons/fa';
 
-// Importar componentes hijos
 import AdminSidebar from '../../components/adminitration/adminApove/AdminSidebar';
 import PostsTable from '../../components/adminitration/adminApove/PostsTable';
 import BoutiquesTable from '../../components/adminitration/adminApove/BoutiquesTable';
 import ProductsTable from '../../components/adminitration/adminApove/ProductsTable';
-
-
+ 
 const Posts = () => {
-  const dispatch = useDispatch();
   const location = useLocation();
   const history = useHistory();
   const { auth } = useSelector(state => state);
   
-  // Estado del sidebar
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState('posts'); // 'posts', 'boutiques', 'products'
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('posts');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   
-  // Leer parámetros de la URL
+  const [pagination, setPagination] = useState({
+    posts: { total: 0, page: 1, totalPages: 1 },
+    boutiques: { total: 0, page: 1, totalPages: 1 },
+    productos: { total: 0, page: 1, totalPages: 1 }
+  });
+  
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      setSidebarOpen(false);
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
@@ -43,7 +57,6 @@ const Posts = () => {
     }
   }, [location.search]);
   
-  // Actualizar URL cuando cambia la selección
   const updateUrl = (tab, category, subcategory) => {
     const params = new URLSearchParams();
     if (tab) params.set('tab', tab);
@@ -58,19 +71,31 @@ const Posts = () => {
     setActiveTab(tab);
     setSelectedCategory(category);
     updateUrl(tab, category?.slug, category?.subcategory);
+    setTimeout(() => setSidebarOpen(false), 300);
   };
   
   const handleSelectTab = (tab) => {
     setActiveTab(tab);
     setSelectedCategory(null);
     updateUrl(tab, null, null);
+    setTimeout(() => setSidebarOpen(false), 300);
   };
   
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
   };
   
-  // Verificar permisos de admin
+  const handlePaginationUpdate = (tab, data) => {
+    setPagination(prev => ({
+      ...prev,
+      [tab]: {
+        total: data.total || 0,
+        page: data.page || 1,
+        totalPages: data.totalPages || 1
+      }
+    }));
+  };
+  
   const isAdmin = auth.user?.role === 'admin' || auth.user?.role === 'moderator';
   
   if (!isAdmin) {
@@ -88,8 +113,7 @@ const Posts = () => {
   }
   
   return (
-    <div className="min-vh-100 bg-light" style={{ display: 'flex' }}>
-      {/* Sidebar Drawer */}
+    <div className="adm-posts-container">
       <AdminSidebar
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
@@ -97,85 +121,87 @@ const Posts = () => {
         selectedCategory={selectedCategory}
         activeTab={activeTab}
         refreshKey={refreshKey}
+        isMobile={isMobile}
       />
       
-      {/* Contenido principal */}
-      <div style={{
-        flex: 1,
-        marginLeft: sidebarOpen ? '280px' : '0',
-        transition: 'margin-left 0.3s ease',
-        width: '100%'
-      }}>
-        {/* Header móvil */}
-        <div className="bg-white border-bottom p-3 d-flex d-md-none align-items-center">
-          <Button
-            variant="light"
-            size="sm"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="me-2"
-          >
-            <FaBars />
-          </Button>
-          <h5 className="mb-0 fw-bold">Administration</h5>
-        </div>
-        
-        <div className="p-3 p-md-4">
-          {/* Barra superior */}
-          <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      {sidebarOpen && (
+        <div className="adm-sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+      )}
+      
+      <div className="adm-main-content">
+        {/* Header con título y refresh */}
+        <div className="adm-content-header">
+          <div className="adm-header-left">
             <div>
-              <h4 className="fw-bold mb-0">
+              <h4 className="adm-title">
                 {activeTab === 'posts' && '📋 Gestion des Posts'}
                 {activeTab === 'boutiques' && '🏪 Gestion des Boutiques'}
                 {activeTab === 'products' && '📦 Gestion des Produits'}
               </h4>
-              <p className="text-muted small mb-0">
+              <p className="adm-subtitle">
                 {selectedCategory ? `Filtré par: ${selectedCategory.name}` : 'Tous les éléments en attente de validation'}
               </p>
             </div>
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              onClick={handleRefresh}
-              className="d-flex align-items-center gap-2"
+          </div>
+          <button className="adm-refresh-btn" onClick={handleRefresh}>
+            <FaSync className={loading ? 'adm-spin' : ''} />
+            <span>Actualiser</span>
+          </button>
+        </div>
+        
+        {/* Tabs con botón de menú integrado a la derecha */}
+        <div className="adm-tabs-container-with-menu">
+          <div className="adm-tabs-wrapper">
+            <button
+              className={`adm-tab ${activeTab === 'posts' ? 'adm-tab-active' : ''}`}
+              onClick={() => handleSelectTab('posts')}
             >
-              <FaSync className={loading ? 'fa-spin' : ''} />
-              Actualiser
-            </Button>
+              <span>📋</span>
+              <span>Posts</span>
+              {pagination.posts.total > 0 && (
+                <span className="adm-tab-count">{pagination.posts.total}</span>
+              )}
+            </button>
+            <button
+              className={`adm-tab ${activeTab === 'boutiques' ? 'adm-tab-active' : ''}`}
+              onClick={() => handleSelectTab('boutiques')}
+            >
+              <span>🏪</span>
+              <span>Boutiques</span>
+              {pagination.boutiques.total > 0 && (
+                <span className="adm-tab-count">{pagination.boutiques.total}</span>
+              )}
+            </button>
+            <button
+              className={`adm-tab ${activeTab === 'products' ? 'adm-tab-active' : ''}`}
+              onClick={() => handleSelectTab('products')}
+            >
+              <span>📦</span>
+              <span>Produits</span>
+              {pagination.productos.total > 0 && (
+                <span className="adm-tab-count">{pagination.productos.total}</span>
+              )}
+            </button>
           </div>
           
-          {/* Tabs de navegación */}
-          <div className="mb-4 border-bottom">
-            <nav className="nav nav-tabs border-0">
-              <button
-                className={`nav-link ${activeTab === 'posts' ? 'active fw-semibold text-primary' : 'text-dark'}`}
-                onClick={() => handleSelectTab('posts')}
-                style={{ border: 'none', background: 'none', cursor: 'pointer' }}
-              >
-                📋 Posts
-              </button>
-              <button
-                className={`nav-link ${activeTab === 'boutiques' ? 'active fw-semibold text-primary' : 'text-dark'}`}
-                onClick={() => handleSelectTab('boutiques')}
-                style={{ border: 'none', background: 'none', cursor: 'pointer' }}
-              >
-                🏪 Boutiques
-              </button>
-              <button
-                className={`nav-link ${activeTab === 'products' ? 'active fw-semibold text-primary' : 'text-dark'}`}
-                onClick={() => handleSelectTab('products')}
-                style={{ border: 'none', background: 'none', cursor: 'pointer' }}
-              >
-                📦 Produits boutique
-              </button>
-            </nav>
-          </div>
-          
-          {/* Contenido según tab activo */}
+          {/* 🔥 BOTÓN DE MENÚ INTEGRADO A LA DERECHA */}
+          <button 
+            className="adm-menu-integrated-btn"
+            onClick={() => setSidebarOpen(true)}
+            title="Ouvrir le panneau de filtres"
+          >
+            <FaBars />
+            <span>Filtres</span>
+          </button>
+        </div>
+        
+        <div className="adm-tables-container">
           {activeTab === 'posts' && (
             <PostsTable
               key={`posts-${refreshKey}-${selectedCategory?.slug}`}
               selectedCategory={selectedCategory}
               onLoadingChange={setLoading}
+              onPaginationUpdate={(data) => handlePaginationUpdate('posts', data)}
             />
           )}
           
@@ -183,6 +209,7 @@ const Posts = () => {
             <BoutiquesTable
               key={`boutiques-${refreshKey}`}
               onLoadingChange={setLoading}
+              onPaginationUpdate={(data) => handlePaginationUpdate('boutiques', data)}
             />
           )}
           
@@ -191,6 +218,7 @@ const Posts = () => {
               key={`products-${refreshKey}-${selectedCategory?.slug}`}
               selectedCategory={selectedCategory}
               onLoadingChange={setLoading}
+              onPaginationUpdate={(data) => handlePaginationUpdate('productos', data)}
             />
           )}
         </div>

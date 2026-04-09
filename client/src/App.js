@@ -36,6 +36,7 @@ import MesBoutiques from './pages/boutique/MesBoutiques';
  
 import ProductsBoutiquePage from './pages/boutiqueProduct/ProductsBoutiquePage';
 import MesProductsBoutiques from './pages/boutiqueProduct/MesProductsBoutiques';
+import DetailProduct from './pages/boutiqueProduct/DetailProduct';
 
  
 function App() {
@@ -64,33 +65,32 @@ function App() {
       <div id="google_translate_element" style={{ display: 'none' }}></div>
   
       {auth.token && <SocketClient />}
-      <Switch>
+    
+
+<Switch>
   {/* ============ RUTAS PÚBLICAS ============ */}
   <Route exact path="/" component={Home} />
   <Route exact path="/register" component={Register} />
   <Route exact path="/login" component={Login} />
- 
-   <Route path="/admin/posts" component={Posts} />
-  {/* ============ RUTAS DE BOUTIQUES - PRIMERO LAS MÁS ESPECÍFICAS ============ */}
-  <Route exact path="/boutique/:boutiqueId/products/new" component={CreateBoutiqueProductPage} />
-  <Route exact path="/boutique/:boutiqueId/products/edit/:postId" component={CreateBoutiqueProductPage} />
   
-  {/* ✅ NUEVAS RUTAS PARA DASHBOARD - GESTIÓN DE BOUTIQUES */}
+  {/* ============ RUTAS DE ADMIN ============ */}
+  <Route path="/admin/posts" component={Posts} />
+
+  {/* ============ RUTAS DE BOUTIQUES - PRIMERO LAS MÁS ESPECÍFICAS ============ */}
+  
+  {/* 🔥 RUTAS DE CREACIÓN/EDICIÓN DE PRODUCTOS - VAN PRIMERO */}
+  <Route exact path="/boutique/:boutiqueId/products/new" component={CreateBoutiqueProductPage} />
+  <Route exact path="/boutique/:boutiqueId/products/edit/:productId" component={CreateBoutiqueProductPage} />
+  <Route exact path="/product/:productId" component={DetailProduct} />
+  {/* 🔥 RUTAS DE DASHBOARD - GESTIÓN DE BOUTIQUES */}
   <Route exact path="/create-boutique" component={CreateBoutiquePage} />
   <Route exact path="/edit-boutique/:id" component={CreateBoutiquePage} />
   <Route exact path="/mes-boutiques" component={MesBoutiques} />
-   <Route exact path="/products-boutique-page/:boutiqueId" component={ProductsBoutiquePage} />
-   <Route exact path="/mes-products-boutiques" component={MesProductsBoutiques} />
- 
-   
-  {/* Ruta genérica de boutique - PARA VISTA PÚBLICA */}
+  <Route exact path="/mes-products-boutiques" component={MesProductsBoutiques} />
+  <Route exact path="/products-boutique-page/:boutiqueId" component={ProductsBoutiquePage} />
+  
+  {/* 🔥 RUTA GENÉRICA DE BOUTIQUE - PARA VISTA PÚBLICA (VA AL FINAL DE LAS RUTAS DE BOUTIQUE) */}
   <Route exact path="/boutique/:id" component={BoutiqueDetailPage} />
-
-  {/* ============ RUTAS DE ADMIN ============ 
-  <Route path="/admin/carousel" exact component={CreateImageHomeCarousel} />
-  <Route path="/admin/carousel/create" exact component={CreateImageHomeCarousel} />
-  <Route path="/admin/carousel/edit/:id" exact component={CreateImageHomeCarousel} />
-  */}
 
   {/* ============ RUTAS DE ANUNCIOS NORMALES ============ */}
   <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
@@ -105,12 +105,12 @@ function App() {
   <Route exact path="/profile/:id" component={profile} />
   <Route exact path="/users/roles" component={roles} />
 
-  {/* ============ RUTAS DE CATEGORÍAS ============ */}
+  {/* ============ RUTAS DE CATEGORÍAS (VAN AL FINAL PORQUE SON MUY GENÉRICAS) ============ */}
   <Route exact path="/:slug/:page?" component={CategoryPage} />
   <Route exact path="/:slug/:subSlug/:page?" component={CategoryPage} />
   <Route exact path="/:slug/:subSlug/:articleSlug/:page?" component={CategoryPage} />
 
-  {/* ============ RUTA 404 ============ */}
+  {/* ============ RUTA 404 - SIEMPRE AL FINAL ============ */}
   <Route component={NotFound} />
 </Switch>
     </div>

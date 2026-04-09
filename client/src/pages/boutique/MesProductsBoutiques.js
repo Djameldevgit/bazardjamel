@@ -217,13 +217,32 @@ const MesProductsBoutiques = () => {
     const themeColor = product.boutiqueInfo?.couleur_theme || '#6366F1';
     
     // Obtener la primera imagen
-    const getFirstImage = () => {
-      if (product.images && product.images.length > 0) {
-        const firstImage = product.images[0];
-        return typeof firstImage === 'string' ? firstImage : firstImage?.url;
-      }
-      return null;
-    };
+    // En MesProductsBoutiques.jsx - dentro de CompactProductCard
+const getFirstImage = () => {
+  console.log('🔍 Producto:', product._id, product.title);
+  console.log('📦 images:', product.images);
+  
+  if (!product.images || product.images.length === 0) {
+    console.log('❌ No hay imágenes');
+    return null;
+  }
+  
+  const firstImage = product.images[0];
+  console.log('🖼️ Primera imagen:', firstImage);
+  
+  if (typeof firstImage === 'string') {
+    console.log('✅ Es string:', firstImage);
+    return firstImage;
+  }
+  
+  if (typeof firstImage === 'object' && firstImage.url) {
+    console.log('✅ Es objeto con url:', firstImage.url);
+    return firstImage.url;
+  }
+  
+  console.log('❌ Formato no reconocido');
+  return null;
+};
 
     const imageUrl = getFirstImage();
 

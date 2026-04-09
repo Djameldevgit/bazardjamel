@@ -26,19 +26,15 @@ import form from './formReducer'
 import { roleReducer } from './roleReducer'
 import settings from './settingsReducer'
 import privacy from './privacyReducer'
-
 import posts from './postReducer'
 import category from './categoryReducer'
 import { accordionReducer } from './accordionReducer'
-import boutiqueProduct  from './boutiqueProductReducer'
-import boutiqueAprove from './boutiqueAproveReducer'; // 🔥 NUEVO
-import productAprove from './productAproveReducer';   // 🔥 NUEVO
- import boutique from './boutiqueReducer'
-import   filter   from './filterReducer.'
+import boutique from './boutiqueReducer'
+import boutiqueProduct from './boutiqueProductReducer'  // 🔥 SOLO UNA VEZ
+import boutiqueAprove from './boutiqueAproveReducer'
+import productAprove from './productAproveReducer'
+import filter from './filterReducer.'
 import carousel from './carouselReducer'
- 
- 
- 
 
 export default combineReducers({
     auth,
@@ -70,5 +66,11 @@ export default combineReducers({
     form,
     settings,
     privacy,
-boutique ,boutiqueProduct,  posts, category,accordionReducer, filter ,carousel 
+    boutique,
+    boutiqueProduct,  // 🔥 UN SOLO reducer para productos de boutique
+    posts,
+    category,
+    accordionReducer,
+    filter,
+    carousel
 })

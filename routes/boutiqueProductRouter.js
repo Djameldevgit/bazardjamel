@@ -2,7 +2,11 @@
 const router = require('express').Router();
 const boutiqueProductCtrl = require('../controllers/boutiqueProductCtrl');
 const auth = require('../middleware/auth');
+// 🔥 OBTENER PRODUCTO POR ID (para DetailProduct)
+router.get('/product/:productId', boutiqueProductCtrl.getProductById);
 
+// Obtener productos de una boutique (público)
+router.get('/boutique/:boutiqueId/products', boutiqueProductCtrl.getBoutiqueProducts);
 // CRUD productos
 router.post('/boutique/:boutiqueId/products', auth, boutiqueProductCtrl.createBoutiqueProduct);
 router.get('/boutique/:boutiqueId/products', boutiqueProductCtrl.getBoutiqueProducts);
@@ -16,7 +20,12 @@ router.get('/admin/boutique-products/pendientes/count', auth, boutiqueProductCtr
 router.put('/admin/boutique-products/aprobar/:id', auth, boutiqueProductCtrl.aprobarProducto);
 router.delete('/admin/boutique-products/rechazar/:id', auth, boutiqueProductCtrl.rechazarProducto);
 
-// Usuario - sus productos
-router.get('/user/products', auth, boutiqueProductCtrl.getUserProducts);
+// 📂 routes/boutiqueProductRoutes.js - AGREGAR ESTAS RUTAS
+
+// Productos de la misma boutique
+router.get('/product/:productId/same-boutique', boutiqueProductCtrl.getProductsFromSameBoutique);
+
+// Productos similares
+router.get('/product/:productId/similar', boutiqueProductCtrl.getSimilarProducts);
 
 module.exports = router;

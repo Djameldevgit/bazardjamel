@@ -1,24 +1,11 @@
-// redux/reducers/boutiqueProductReducer.js
+// 📂 redux/reducers/boutiqueProductReducer.js
 
 import { BOUTIQUE_PRODUCT_TYPES } from "../actions/boutiqueProductAction";
-import { GLOBALTYPES } from "../actions/globalTypes";
-
-// Estado inicial
-const getInitialBoutiqueState = () => ({
-  products: [],
-  total: 0,
-  page: 1,
-  totalPages: 1,
-  hasMore: true,
-  loading: false,
-  error: null,
-  filters: {},
-  availableFields: [],
-  fieldValues: {}
-});
-
+ 
 const initialState = {
-  products: {},
+  products: {}, // Para productos por boutique
+  userProducts: { products: [], total: 0 }, // 🔥 Para productos del usuario logueado
+  currentProduct: null,
   feed: {
     products: [],
     page: 1,
@@ -35,23 +22,36 @@ const initialState = {
   stats: {},
   lastCreatedProduct: null,
   lastFilters: {}
+   
 };
 
-// 🔥 LOG al cargar el reducer
-console.log('✅ [REDUCER] boutiqueProductReducer INITIALIZED');
-
 const boutiqueProductReducer = (state = initialState, action) => {
-  // 🔥 LOG para verificar cada acción
-  console.log('🔄 [REDUCER] boutiqueProductReducer - Action:', action.type);
+  console.log('🔄 [boutiqueProductReducer] Action recibida:', action.type);
+  console.log('📦 Payload:', action.payload);
   
   switch (action.type) {
     
     case BOUTIQUE_PRODUCT_TYPES.LOADING_BOUTIQUE_PRODUCTS:
-      console.log('📦 [REDUCER] LOADING_BOUTIQUE_PRODUCTS:', action.payload);
+      console.log('📦 LOADING_BOUTIQUE_PRODUCTS:', action.payload);
       return {
         ...state,
         loadingProducts: action.payload
       };
+
+    // 🔥 CASE PARA GET_USER_PRODUCTS - ESTE ES EL QUE FALTA
+    case BOUTIQUE_PRODUCT_TYPES.GET_USER_PRODUCTS: {
+      console.log('✅ PROCESANDO GET_USER_PRODUCTS');
+      const newState = {
+        ...state,
+        userProducts: {
+          products: action.payload.products || [],
+          total: action.payload.total || 0
+        },
+        loadingProducts: false
+      };
+      console.log('📊 Nuevo userProducts:', newState.userProducts);
+      return newState;
+    }
 
     case BOUTIQUE_PRODUCT_TYPES.GET_BOUTIQUE_PRODUCTS: {
       const { 
@@ -61,26 +61,12 @@ const boutiqueProductReducer = (state = initialState, action) => {
         page, 
         totalPages, 
         hasMore, 
-        reset = false,
-        filters = null,
-        availableFields = [],
-        fieldValues = {}
+        reset = false 
       } = action.payload;
       
-      console.log('📦 [REDUCER] GET_BOUTIQUE_PRODUCTS:', {
-        boutiqueId,
-        productsCount: products.length,
-        total,
-        page,
-        reset
-      });
+      if (!boutiqueId) return state;
       
-      if (!boutiqueId) {
-        console.warn('⚠️ [REDUCER] boutiqueId missing');
-        return state;
-      }
-      
-      const existing = state.products[boutiqueId] || getInitialBoutiqueState();
+      const existing = state.products[boutiqueId] || { products: [], total: 0 };
       const existingProducts = existing.products || [];
       
       const shouldReset = reset || page === 1;
@@ -91,7 +77,7 @@ const boutiqueProductReducer = (state = initialState, action) => {
         newProducts = [...existingProducts, ...products];
       }
       
-      const newState = {
+      return {
         ...state,
         products: {
           ...state.products,
@@ -102,47 +88,21 @@ const boutiqueProductReducer = (state = initialState, action) => {
             totalPages: totalPages || 1,
             hasMore: hasMore !== undefined ? hasMore : (page < totalPages),
             loading: false,
-            error: null,
-            filters: filters || existing.filters || {},
-            availableFields: availableFields,
-            fieldValues: fieldValues
+            error: null
           }
-        },
-        lastFilters: {
-          ...state.lastFilters,
-          [boutiqueId]: filters || state.lastFilters[boutiqueId] || {}
-        },
-        error: null
+        }
       };
-      
-      console.log('✅ [REDUCER] Estado actualizado para boutique:', boutiqueId, {
-        productsCount: newState.products[boutiqueId].products.length,
-        total: newState.products[boutiqueId].total
-      });
-      
-      return newState;
     }
 
     case BOUTIQUE_PRODUCT_TYPES.ADD_BOUTIQUE_PRODUCT: {
       const product = action.payload.product || action.payload;
       const boutiqueId = action.payload.boutiqueId || product?.boutique;
       
-      console.log('📦 [REDUCER] ADD_BOUTIQUE_PRODUCT:', {
-        boutiqueId,
-        productId: product?._id,
-        productTitle: product?.title
-      });
-      
       if (!boutiqueId || !product) return state;
       
-      const currentProducts = state.products[boutiqueId] || getInitialBoutiqueState();
-      const currentProductsList = currentProducts.products || [];
-      
-      const exists = currentProductsList.some(p => p._id === product._id);
+      const currentProducts = state.products[boutiqueId] || { products: [], total: 0 };
+      const exists = currentProducts.products.some(p => p._id === product._id);
       if (exists) return state;
-      
-      const newProducts = [product, ...currentProductsList];
-      const newTotal = (currentProducts.total || 0) + 1;
       
       return {
         ...state,
@@ -150,34 +110,110 @@ const boutiqueProductReducer = (state = initialState, action) => {
           ...state.products,
           [boutiqueId]: {
             ...currentProducts,
-            products: newProducts,
-            total: newTotal,
-            hasMore: true
+            products: [product, ...currentProducts.products],
+            total: (currentProducts.total || 0) + 1
           }
         },
-        feed: {
-          ...state.feed,
-          products: [product, ...state.feed.products],
-          total: (state.feed.total || 0) + 1
+        userProducts: {
+          products: [product, ...state.userProducts.products],
+          total: state.userProducts.total + 1
+        }
+      };
+    }
+
+    case BOUTIQUE_PRODUCT_TYPES.DELETE_BOUTIQUE_PRODUCT: {
+      const { boutiqueId, productId } = action.payload;
+      if (!boutiqueId || !productId) return state;
+      
+      const currentProducts = state.products[boutiqueId] || { products: [], total: 0 };
+      
+      return {
+        ...state,
+        products: {
+          ...state.products,
+          [boutiqueId]: {
+            ...currentProducts,
+            products: currentProducts.products.filter(p => p._id !== productId),
+            total: Math.max(0, (currentProducts.total || 0) - 1)
+          }
         },
-        lastCreatedProduct: product
+        userProducts: {
+          products: state.userProducts.products.filter(p => p._id !== productId),
+          total: Math.max(0, state.userProducts.total - 1)
+        }
+      };
+    }
+
+    case BOUTIQUE_PRODUCT_TYPES.UPDATE_BOUTIQUE_PRODUCT: {
+      const { boutiqueId, product } = action.payload;
+      if (!boutiqueId || !product) return state;
+      
+      const currentProducts = state.products[boutiqueId] || { products: [], total: 0 };
+      
+      return {
+        ...state,
+        products: {
+          ...state.products,
+          [boutiqueId]: {
+            ...currentProducts,
+            products: currentProducts.products.map(p => 
+              p._id === product._id ? { ...p, ...product } : p
+            )
+          }
+        },
+        userProducts: {
+          ...state.userProducts,
+          products: state.userProducts.products.map(p => 
+            p._id === product._id ? { ...p, ...product } : p
+          )
+        }
       };
     }
 
     case BOUTIQUE_PRODUCT_TYPES.RESET_BOUTIQUE_PRODUCTS: {
       const { boutiqueId } = action.payload;
-      console.log('🔄 [REDUCER] RESET_BOUTIQUE_PRODUCTS:', { boutiqueId });
       if (!boutiqueId) return state;
       
       return {
         ...state,
         products: {
           ...state.products,
-          [boutiqueId]: getInitialBoutiqueState()
+          [boutiqueId]: {
+            products: [],
+            total: 0,
+            page: 1,
+            totalPages: 1,
+            hasMore: true,
+            loading: false,
+            error: null
+          }
         }
       };
     }
-
+    case BOUTIQUE_PRODUCT_TYPES.GET_BOUTIQUE_PRODUCT_DETAIL:
+      return {
+        ...state,
+        currentProduct: action.payload,
+        loadingProducts: false
+      };
+    
+    // 🔥 NUEVO CASE PARA CLEAR_BOUTIQUE_PRODUCT_DETAIL
+    case BOUTIQUE_PRODUCT_TYPES.CLEAR_BOUTIQUE_PRODUCT_DETAIL:
+      return {
+        ...state,
+        currentProduct: null
+      };
+      case BOUTIQUE_PRODUCT_TYPES.GET_SAME_BOUTIQUE_PRODUCTS:
+      return {
+        ...state,
+        sameBoutiqueProducts: action.payload
+      };
+    
+    case BOUTIQUE_PRODUCT_TYPES.GET_SIMILAR_PRODUCTS:
+      return {
+        ...state,
+        similarProducts: action.payload
+      };
     default:
       return state;
   }

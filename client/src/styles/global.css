@@ -164,7 +164,9 @@ url("./header.css"); */
 @import url("./BoutiquePostCard.css");
 @import url("./BoutiqueModal.css");
 @import url("./DescriptionPost.css");
- 
+@import url("./AdminSidebar.css");
+@import url("./AdminPosts.css");
+
 .rtl {
   direction: rtl;
   text-align: right;

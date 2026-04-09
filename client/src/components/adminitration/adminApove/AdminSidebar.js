@@ -1,16 +1,16 @@
-// 📂 components/admin/AdminSidebar.js - VERSIÓN CORREGIDA
-
+// 📂 components/adminitration/adminApove/AdminSidebar.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Badge, Spinner, Button } from 'react-bootstrap';
 import { 
   FaStore, FaBox, FaChevronDown, FaChevronRight,
   FaClipboardList, FaHourglassHalf, FaTimes,
-  FaUserCheck, FaBars
+    FaBell
 } from 'react-icons/fa';
 import { getCategoriesForAccordion } from '../../../redux/actions/categoryAction';
+ 
 
-const AdminSidebar = ({ isOpen, onToggle, onSelectCategory, selectedCategory, activeTab, refreshKey }) => {
+const AdminSidebar = ({ isOpen, onToggle, onSelectCategory, selectedCategory, activeTab, refreshKey, isMobile }) => {
   const dispatch = useDispatch();
   const { accordionCategories = [], loading } = useSelector(state => state.category || {});
   const { auth } = useSelector(state => state);
@@ -100,13 +100,8 @@ const AdminSidebar = ({ isOpen, onToggle, onSelectCategory, selectedCategory, ac
     }));
   };
   
-  // 🔥 FUNCIÓN CORREGIDA: Manejar clic en categoría/subcategoría
   const handleCategoryClick = (category, isSubCategory = false) => {
-    console.log('🖱️ Clic en:', category.name, 'esSubCategory:', isSubCategory);
-    
     if (isSubCategory) {
-      // Es una subcategoría (nivel 2 o 3)
-      // Buscar la categoría padre para enviar ambos filtros
       const parentCategory = accordionCategories.find(parent => 
         parent.children?.some(child => child._id === category._id)
       );
@@ -114,11 +109,10 @@ const AdminSidebar = ({ isOpen, onToggle, onSelectCategory, selectedCategory, ac
       onSelectCategory({
         slug: category.slug,
         name: category.name,
-        categorie: parentCategory?.slug, // Categoría padre para filtrar
-        subCategory: category.slug        // Subcategoría para filtrar
+        categorie: parentCategory?.slug,
+        subCategory: category.slug
       }, 'posts');
     } else {
-      // Es una categoría principal (nivel 1)
       onSelectCategory({
         slug: category.slug,
         name: category.name,
@@ -126,126 +120,114 @@ const AdminSidebar = ({ isOpen, onToggle, onSelectCategory, selectedCategory, ac
         subCategory: null
       }, 'posts');
     }
+    
+    if (isMobile) {
+      setTimeout(() => onToggle(), 300);
+    }
+  };
+  
+  const handleModuleClick = (module, tab) => {
+    onSelectCategory(null, tab);
+    if (isMobile) {
+      setTimeout(() => onToggle(), 300);
+    }
   };
   
   const totalPending = Object.values(pendingCounts.posts).reduce((a, b) => a + b, 0) + 
                        pendingCounts.boutiques + 
                        pendingCounts.products;
   
-  const sidebarStyle = {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    bottom: 0,
-    width: '280px',
-    backgroundColor: '#1a1a2e',
-    color: '#fff',
-    transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
-    transition: 'transform 0.3s ease',
-    zIndex: 1000,
-    overflowY: 'auto',
-    boxShadow: '2px 0 10px rgba(0,0,0,0.1)'
-  };
-  
   if (!isOpen) {
-    return (
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={onToggle}
-        style={{
-          position: 'fixed',
-          left: 10,
-          top: 70,
-          zIndex: 999,
-          borderRadius: '50%',
-          width: '40px',
-          height: '40px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        <FaBars />
-      </Button>
-    );
+    return null;
   }
   
   if (loading || fetchingCounts) {
     return (
-      <div style={sidebarStyle} className="d-flex align-items-center justify-content-center">
-        <Spinner animation="border" variant="light" size="sm" />
+      <div className={`adm-sidebar ${isOpen ? 'adm-open' : ''}`}>
+        <div className="adm-sidebar-loading">
+          <Spinner animation="border" variant="primary" size="sm" />
+          <span>Chargement...</span>
+        </div>
       </div>
     );
   }
   
   return (
-    <div style={sidebarStyle}>
+    <div className={`adm-sidebar ${isOpen ? 'adm-open' : ''}`}>
       {/* Header */}
-      <div className="p-3 border-bottom border-secondary d-flex justify-content-between align-items-center">
-        <div>
-          <h6 className="mb-0 fw-bold">
-            <FaClipboardList className="me-2" />
-            Administration
-          </h6>
-          <small className="text-muted">Gestion des validations</small>
+      <div className="adm-sidebar-header">
+        <div className="adm-header-content">
+          <div className="adm-header-icon">
+            <FaClipboardList />
+          </div>
+          <div className="adm-header-text">
+            <h5>Admin Panel</h5>
+            <span>Gestion des validations</span>
+          </div>
         </div>
-        <Button variant="link" className="text-white p-0" onClick={onToggle}>
-          <FaTimes />
-        </Button>
+        {isMobile && (
+          <button className="adm-sidebar-close" onClick={onToggle}>
+            <FaTimes />
+          </button>
+        )}
       </div>
       
-      <div className="p-3">
-        {/* Stats résumé */}
-        <div className="mb-4 p-2 rounded bg-dark bg-opacity-50">
-          <div className="d-flex justify-content-between align-items-center">
-            <span className="small text-muted">Total en attente</span>
-            <Badge bg="danger" pill className="fs-6">
-              {totalPending}
-            </Badge>
+      <div className="adm-sidebar-body">
+        {/* Tarjeta de resumen */}
+        <div className="adm-summary-card">
+          <div className="adm-summary-header">
+            <FaBell className="adm-summary-icon" />
+            <span className="adm-summary-title">En attente</span>
           </div>
+          <div className="adm-summary-value">{totalPending}</div>
+          <div className="adm-summary-footer">Éléments à vérifier</div>
         </div>
         
-        {/* Module Boutiques */}
-        <div className="mb-3">
+        {/* Módulo Boutiques */}
+        <div className="adm-nav-module">
           <div
-            onClick={() => onSelectCategory(null, 'boutiques')}
-            className={`d-flex align-items-center justify-content-between p-2 rounded cursor-pointer transition
-              ${activeTab === 'boutiques' && !selectedCategory ? 'bg-primary bg-opacity-25' : 'hover-bg-light'}`}
-            style={{ cursor: 'pointer' }}
+            onClick={() => handleModuleClick(null, 'boutiques')}
+            className={`adm-nav-item ${activeTab === 'boutiques' && !selectedCategory ? 'adm-active' : ''}`}
           >
-            <div className="d-flex align-items-center gap-2">
-              <FaStore style={{ color: '#EC4899' }} />
-              <span className="small fw-semibold">Boutiques</span>
+            <div className="adm-nav-icon adm-boutique">
+              <FaStore />
+            </div>
+            <div className="adm-nav-content">
+              <span className="adm-nav-title">Boutiques</span>
+              <span className="adm-nav-desc">Commerces à valider</span>
             </div>
             {pendingCounts.boutiques > 0 && (
-              <Badge bg="warning" pill>{pendingCounts.boutiques}</Badge>
+              <Badge className="adm-nav-badge">{pendingCounts.boutiques}</Badge>
             )}
           </div>
         </div>
         
-        {/* Module Produits Boutique */}
-        <div className="mb-4">
+        {/* Módulo Produits */}
+        <div className="adm-nav-module">
           <div
-            onClick={() => onSelectCategory(null, 'products')}
-            className={`d-flex align-items-center justify-content-between p-2 rounded cursor-pointer transition
-              ${activeTab === 'products' && !selectedCategory ? 'bg-primary bg-opacity-25' : 'hover-bg-light'}`}
-            style={{ cursor: 'pointer' }}
+            onClick={() => handleModuleClick(null, 'products')}
+            className={`adm-nav-item ${activeTab === 'products' && !selectedCategory ? 'adm-active' : ''}`}
           >
-            <div className="d-flex align-items-center gap-2">
-              <FaBox style={{ color: '#F59E0B' }} />
-              <span className="small fw-semibold">Produits boutique</span>
+            <div className="adm-nav-icon adm-product">
+              <FaBox />
+            </div>
+            <div className="adm-nav-content">
+              <span className="adm-nav-title">Produits boutique</span>
+              <span className="adm-nav-desc">Articles à valider</span>
             </div>
             {pendingCounts.products > 0 && (
-              <Badge bg="warning" pill>{pendingCounts.products}</Badge>
+              <Badge className="adm-nav-badge">{pendingCounts.products}</Badge>
             )}
           </div>
         </div>
         
-        {/* Section Posts par catégorie */}
-        <div className="mb-2">
-          <div className="small text-muted mb-2 px-2">POSTS PAR CATÉGORIE</div>
-          
+        {/* Separador */}
+        <div className="adm-sidebar-divider">
+          <span>POSTS PAR CATÉGORIE</span>
+        </div>
+        
+        {/* Categorías */}
+        <div className="adm-categories-list">
           {accordionCategories.map(category => {
             const pendingCount = pendingCounts.posts[category.slug] || 0;
             const isExpanded = openCategories[category._id];
@@ -253,8 +235,7 @@ const AdminSidebar = ({ isOpen, onToggle, onSelectCategory, selectedCategory, ac
             const isActive = activeTab === 'posts' && selectedCategory?.slug === category.slug;
             
             return (
-              <div key={category._id} className="mb-1">
-                {/* Categoría principal */}
+              <div key={category._id} className="adm-category-group">
                 <div
                   onClick={() => {
                     if (hasChildren) {
@@ -263,29 +244,25 @@ const AdminSidebar = ({ isOpen, onToggle, onSelectCategory, selectedCategory, ac
                       handleCategoryClick(category, false);
                     }
                   }}
-                  className={`d-flex align-items-center justify-content-between p-2 rounded cursor-pointer transition
-                    ${isActive ? 'bg-primary bg-opacity-25' : 'hover-bg-light'}`}
-                  style={{ cursor: 'pointer' }}
+                  className={`adm-category-item ${isActive ? 'adm-active' : ''}`}
                 >
-                  <div className="d-flex align-items-center gap-2">
+                  <div className="adm-category-left">
                     {hasChildren && (
-                      <span className="small">
+                      <span className="adm-category-chevron">
                         {isExpanded ? <FaChevronDown size={10} /> : <FaChevronRight size={10} />}
                       </span>
                     )}
-                    <span style={{ fontSize: '1rem' }}>{category.emoji || '📁'}</span>
-                    <span className="small">{category.name}</span>
+                    <span className="adm-category-emoji">{category.emoji || '📁'}</span>
+                    <span className="adm-category-name">{category.name}</span>
                   </div>
                   {pendingCount > 0 && (
-                    <Badge bg="warning" pill className="fw-normal">
-                      {pendingCount}
-                    </Badge>
+                    <Badge className="adm-category-badge">{pendingCount}</Badge>
                   )}
                 </div>
                 
-                {/* Subcategorías - CORREGIDO */}
+                {/* Subcategorías */}
                 {hasChildren && isExpanded && (
-                  <div className="ms-3 mt-1">
+                  <div className="adm-subcategories-list">
                     {category.children.map(child => {
                       const childPending = pendingCounts.posts[child.slug] || 0;
                       const isChildActive = activeTab === 'posts' && selectedCategory?.subCategory === child.slug;
@@ -294,18 +271,12 @@ const AdminSidebar = ({ isOpen, onToggle, onSelectCategory, selectedCategory, ac
                         <div
                           key={child._id}
                           onClick={() => handleCategoryClick(child, true)}
-                          className={`d-flex align-items-center justify-content-between p-1 ps-3 rounded small cursor-pointer
-                            ${isChildActive ? 'bg-primary bg-opacity-25' : 'hover-bg-light'}`}
-                          style={{ cursor: 'pointer', fontSize: '0.8rem' }}
+                          className={`adm-subcategory-item ${isChildActive ? 'adm-active' : ''}`}
                         >
-                          <div className="d-flex align-items-center gap-2">
-                            <span>{child.emoji || '📄'}</span>
-                            <span>{child.name}</span>
-                          </div>
+                          <span className="adm-subcategory-emoji">{child.emoji || '📄'}</span>
+                          <span className="adm-subcategory-name">{child.name}</span>
                           {childPending > 0 && (
-                            <Badge bg="warning" pill className="fw-normal small">
-                              {childPending}
-                            </Badge>
+                            <Badge className="adm-subcategory-badge">{childPending}</Badge>
                           )}
                         </div>
                       );
@@ -316,31 +287,28 @@ const AdminSidebar = ({ isOpen, onToggle, onSelectCategory, selectedCategory, ac
             );
           })}
         </div>
-        
-        {/* Footer */}
-        <div className="mt-4 pt-3 border-top border-secondary">
-          <div className="small text-muted text-center">
-            <FaUserCheck className="me-1" />
-            {auth.user?.name || auth.user?.username || 'Admin'}
-          </div>
-          <div className="small text-muted text-center mt-1">
-            <FaHourglassHalf className="me-1" />
-            En attente: {totalPending}
-          </div>
-        </div>
       </div>
       
-      <style jsx>{`
-        .hover-bg-light:hover {
-          background-color: rgba(255, 255, 255, 0.1);
-        }
-        .cursor-pointer {
-          cursor: pointer;
-        }
-        .transition {
-          transition: all 0.2s ease;
-        }
-      `}</style>
+      {/* Footer */}
+      <div className="adm-sidebar-footer">
+        <div className="adm-footer-user">
+          <div className="adm-user-avatar">
+            {auth.user?.avatar ? (
+              <img src={auth.user.avatar} alt="avatar" />
+            ) : (
+              <span>{auth.user?.name?.charAt(0) || auth.user?.username?.charAt(0) || 'A'}</span>
+            )}
+          </div>
+          <div className="adm-user-info">
+            <div className="adm-user-name">{auth.user?.name || auth.user?.username || 'Admin'}</div>
+            <div className="adm-user-role">{auth.user?.role === 'admin' ? 'Administrateur' : 'Moderateur'}</div>
+          </div>
+        </div>
+        <div className="adm-footer-stats">
+          <FaHourglassHalf />
+          <span>{totalPending} en attente</span>
+        </div>
+      </div>
     </div>
   );
 };

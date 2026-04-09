@@ -5,7 +5,7 @@ const BlockUser = require('../models/blockModel');
 const Users = require('../models/userModel');
 const Posts = require('../models/postModel');
 const Comments = require('../models/commentModel');
-
+const BoutiqueProduct = require('../models/boutiqueProductModel'); // ← Así debe ser
 const Notifications = require('../models/notifyModel')
 
 const sendMail = require('./sendMail');
@@ -1021,7 +1021,131 @@ checkModeratorPermission: async (req, res) => {
     }
   },
 
+// 📂 controllers/boutiqueProductCtrl.js - Agrega esta versión con logs extremos
 
+getUserProducts: async (req, res) => {
+  try {
+    console.log('='.repeat(60));
+    console.log('🔥🔥🔥 getUserProducts EJECUTÁNDOSE 🔥🔥🔥');
+    console.log('📅 Timestamp:', new Date().toISOString());
+    console.log('👤 User ID:', req.user._id);
+    console.log('👤 User role:', req.user.role);
+    console.log('👤 User username:', req.user.username);
+    console.log('🔑 Token presente:', !!req.headers.authorization);
+    console.log('📊 Query params:', req.query);
+    
+    const userId = req.user._id;
+    const { page = 1, limit = 50 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    console.log('📊 Parámetros:', { userId, page, limit, skip });
+    
+    // Verificar que el modelo existe
+    console.log('🔍 Verificando modelo BoutiqueProduct...');
+    console.log('📦 Tipo de BoutiqueProduct:', typeof BoutiqueProduct);
+    console.log('📦 BoutiqueProduct existe?', !!BoutiqueProduct);
+    
+    if (!BoutiqueProduct) {
+      console.error('❌❌❌ CRÍTICO: BoutiqueProduct NO ESTÁ DEFINIDO');
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Erreur interne: modèle BoutiqueProduct non défini',
+        error: 'MODEL_NOT_FOUND'
+      });
+    }
+    
+    // Verificar conexión a MongoDB
+    const mongoose = require('mongoose');
+    console.log('📊 Estado de MongoDB:', mongoose.connection.readyState === 1 ? 'Conectado' : 'Desconectado');
+    
+    // 🔥 EJECUTAR QUERY PASO A PASO
+    console.log('🔄 Ejecutando BoutiqueProduct.find({ user: userId })...');
+    
+    // Primero probar countDocuments
+    console.log('📊 Contando documentos...');
+    let total = 0;
+    try {
+      total = await BoutiqueProduct.countDocuments({ user: userId });
+      console.log('✅ Total encontrado:', total);
+    } catch (countErr) {
+      console.error('❌ Error en countDocuments:', countErr);
+      console.error('❌ Mensaje:', countErr.message);
+      throw countErr;
+    }
+    
+    // Luego obtener los productos
+    console.log('📊 Obteniendo productos...');
+    let products = [];
+    try {
+      products = await BoutiqueProduct.find({ user: userId })
+        .populate('boutique', 'nom_boutique couleur_theme images domaine_boutique')
+        .sort('-createdAt')
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean();
+      
+      console.log('✅ Productos obtenidos:', products.length);
+    } catch (findErr) {
+      console.error('❌ Error en find:', findErr);
+      console.error('❌ Mensaje:', findErr.message);
+      throw findErr;
+    }
+    
+    // Mostrar primer producto como muestra
+    if (products.length > 0) {
+      console.log('📦 PRIMER PRODUCTO (muestra):');
+      console.log('   - _id:', products[0]._id);
+      console.log('   - title:', products[0].title);
+      console.log('   - pendiente:', products[0].pendiente);
+      console.log('   - boutique:', products[0].boutique.nom_boutique || 'Sin boutique');
+    }
+    
+    const totalPages = Math.ceil(total / parseInt(limit));
+    
+    console.log('📊 Respuesta preparada:');
+    console.log('   - products:', products.length);
+    console.log('   - total:', total);
+    console.log('   - page:', parseInt(page));
+    console.log('   - totalPages:', totalPages);
+    console.log('='.repeat(60));
+    
+    res.json({
+      success: true,
+      products: products || [],
+      total: total || 0,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalPages: totalPages,
+      hasMore: parseInt(page) < totalPages
+    });
+    
+  } catch (error) {
+    console.error('='.repeat(60));
+    console.error('❌❌❌ ERROR EN getUserProducts ❌❌❌');
+    console.error('📅 Timestamp:', new Date().toISOString());
+    console.error('📝 Mensaje:', error.message);
+    console.error('📚 Stack:', error.stack);
+    console.error('🏷️ Nombre:', error.name);
+    
+    if (error.name === 'MongoError' || error.name === 'MongoServerError') {
+      console.error('🗄️ Código MongoDB:', error.code);
+      console.error('🗄️ Detalle MongoDB:', error.errmsg);
+    }
+    
+    if (error.message.includes('populate')) {
+      console.error('⚠️ Error de populate - verificar referencia "boutique"');
+    }
+    
+    console.error('='.repeat(60));
+    
+    res.status(500).json({ 
+      success: false, 
+      message: error.message,
+      errorType: error.name,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+}
 
 
 }

@@ -412,30 +412,33 @@ const boutiqueProductCtrl = {
   // ===========================================
   // GET SINGLE PRODUCT BY ID
   // ===========================================
-  getProductById: async (req, res) => {
-    try {
-      const { productId } = req.params;
-      
-      const product = await BoutiqueProduct.findById(productId)
-        .populate('user', 'username avatar')
-        .populate('boutique', 'nom_boutique couleur_theme images');
-      
-      if (!product) {
-        return res.status(404).json({ success: false, message: 'Produit non trouvé' });
-      }
-      
-      // Incrementar vistas
-      product.views += 1;
-      await product.save();
-      
-      res.json({ success: true, product });
-      
-    } catch (error) {
-      console.error('❌ Error en getProductById:', error);
-      res.status(500).json({ success: false, message: error.message });
-    }
-  },
+  // 📂 controllers/boutiqueProductCtrl.js - Asegurar esta función
 
+getProductById: async (req, res) => {
+  try {
+    const { productId } = req.params;
+    
+    console.log('🔍 getProductById llamado para ID:', productId);
+    
+    const product = await BoutiqueProduct.findById(productId)
+      .populate('user', 'username avatar fullname')
+      .populate('boutique', 'nom_boutique couleur_theme images domaine_boutique');
+    
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Produit non trouvé' });
+    }
+    
+    // Incrementar vistas
+    product.views += 1;
+    await product.save();
+    
+    res.json({ success: true, product });
+    
+  } catch (error) {
+    console.error('❌ Error en getProductById:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+},
   // ===========================================
   // UPDATE BOUTIQUE PRODUCT
   // ===========================================
@@ -540,143 +543,104 @@ const boutiqueProductCtrl = {
     }
   },
 
-  // ===========================================
-  // GET USER PRODUCTS (para MesProductsBoutiques)
-  // ===========================================
- // ===========================================
-// GET USER PRODUCTS (para MesProductsBoutiques)
-// ===========================================
-// controllers/boutiqueProductCtrl.js
-// Reemplaza la función getUserProducts con esta versión con logs extremos
+  // 📂 controllers/boutiqueProductCtrl.js - AGREGAR ESTAS FUNCIONES
 
-getUserProducts: async (req, res) => {
+// ============================================
+// GET PRODUCTS FROM SAME BOUTIQUE
+// ============================================
+getProductsFromSameBoutique: async (req, res) => {
   try {
-    console.log('='.repeat(60));
-    console.log('🔥🔥🔥 getUserProducts EJECUTÁNDOSE 🔥🔥🔥');
-    console.log('📅 Timestamp:', new Date().toISOString());
-    console.log('👤 User ID:', req.user._id);
-    console.log('👤 User role:', req.user.role);
-    console.log('👤 User username:', req.user.username);
-    console.log('🔑 Token presente:', !!req.headers.authorization);
+    const { productId } = req.params;
+    const { limit = 6 } = req.query;
     
-    const userId = req.user._id;
-    const { page = 1, limit = 50 } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    console.log('🔍 Buscando productos de la misma boutique para:', productId);
     
-    console.log('📊 Parámetros:', { userId, page, limit, skip });
-    
-    // Verificar que el modelo existe
-    console.log('🔍 Verificando modelo BoutiqueProduct...');
-    console.log('📦 Tipo de BoutiqueProduct:', typeof BoutiqueProduct);
-    console.log('📦 BoutiqueProduct existe?', !!BoutiqueProduct);
-    
-    if (!BoutiqueProduct) {
-      console.error('❌❌❌ CRÍTICO: BoutiqueProduct NO ESTÁ DEFINIDO');
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Erreur interne: modèle BoutiqueProduct non défini',
-        error: 'MODEL_NOT_FOUND'
-      });
+    // Obtener el producto actual
+    const currentProduct = await BoutiqueProduct.findById(productId);
+    if (!currentProduct) {
+      return res.status(404).json({ success: false, message: 'Produit non trouvé' });
     }
     
-    // Verificar métodos del modelo
-    console.log('📦 Métodos de BoutiqueProduct:', Object.keys(BoutiqueProduct));
+    const boutiqueId = currentProduct.boutique;
     
-    // Probar conexión a MongoDB
-    console.log('🔄 Probando conexión a MongoDB...');
-    try {
-      const dbState = mongoose.connection.readyState;
-      console.log('📊 Estado de MongoDB:', dbState === 1 ? 'Conectado' : dbState === 0 ? 'Desconectado' : 'Conectando');
-    } catch (dbErr) {
-      console.error('❌ Error verificando MongoDB:', dbErr.message);
-    }
+    // Buscar otros productos de la misma boutique
+    const products = await BoutiqueProduct.find({
+      boutique: boutiqueId,
+      _id: { $ne: productId }, // Excluir el producto actual
+      isActive: true,
+      pendiente: false // Solo productos aprobados
+    })
+      .sort('-createdAt')
+      .limit(parseInt(limit))
+      .populate('boutique', 'nom_boutique couleur_theme images')
+      .lean();
     
-    // 🔥 EJECUTAR QUERY PASO A PASO
-    console.log('🔄 Ejecutando BoutiqueProduct.find({ user: userId })...');
-    
-    let products = [];
-    let total = 0;
-    
-    try {
-      // Primero el count
-      console.log('📊 Contando documentos...');
-      total = await BoutiqueProduct.countDocuments({ user: userId });
-      console.log('✅ Total encontrado:', total);
-      
-      // Luego los productos
-      console.log('📊 Obteniendo productos...');
-      products = await BoutiqueProduct.find({ user: userId })
-        .populate('boutique', 'nom_boutique couleur_theme images domaine_boutique')
-        .sort('-createdAt')
-        .skip(skip)
-        .limit(parseInt(limit))
-        .lean();
-      
-      console.log('✅ Productos obtenidos:', products.length);
-      
-    } catch (queryErr) {
-      console.error('❌ Error en la consulta:', queryErr);
-      console.error('❌ Mensaje:', queryErr.message);
-      console.error('❌ Stack:', queryErr.stack);
-      throw queryErr;
-    }
-    
-    // Mostrar primer producto como muestra
-    if (products.length > 0) {
-      console.log('📦 PRIMER PRODUCTO (muestra):');
-      console.log('   - _id:', products[0]._id);
-      console.log('   - title:', products[0].title);
-      console.log('   - pendiente:', products[0].pendiente);
-      console.log('   - boutique:', products[0].boutique.nom_boutique || 'Sin boutique');
-    }
-    
-    const totalPages = Math.ceil(total / parseInt(limit));
-    
-    console.log('📊 Respuesta preparada:');
-    console.log('   - products:', products.length);
-    console.log('   - total:', total);
-    console.log('   - page:', parseInt(page));
-    console.log('   - totalPages:', totalPages);
+    console.log(`✅ Encontrados ${products.length} productos de la misma boutique`);
     
     res.json({
       success: true,
-      products: products || [],
-      total: total || 0,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      totalPages: totalPages,
-      hasMore: parseInt(page) < totalPages
+      products: products,
+      count: products.length
     });
-    
-    console.log('✅ Respuesta enviada correctamente');
-    console.log('='.repeat(60));
     
   } catch (error) {
-    console.error('='.repeat(60));
-    console.error('❌❌❌ ERROR EN getUserProducts ❌❌❌');
-    console.error('📅 Timestamp:', new Date().toISOString());
-    console.error('📝 Mensaje:', error.message);
-    console.error('📚 Stack:', error.stack);
-    console.error('🏷️ Nombre:', error.name);
-    
-    if (error.name === 'MongoError' || error.name === 'MongoServerError') {
-      console.error('🗄️ Código MongoDB:', error.code);
-      console.error('🗄️ Detalle MongoDB:', error.errmsg);
-    }
-    
-    if (error.message.includes('populate')) {
-      console.error('⚠️ Error de populate - verificar referencia "boutique"');
-    }
-    
-    console.error('='.repeat(60));
-    
-    res.status(500).json({ 
-      success: false, 
-      message: error.message,
-      errorType: error.name,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    console.error('❌ Error en getProductsFromSameBoutique:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
-}
+},
+
+// ============================================
+// GET SIMILAR PRODUCTS (misma categoría)
+// ============================================
+getSimilarProducts: async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { limit = 6 } = req.query;
+    
+    console.log('🔍 Buscando productos similares para:', productId);
+    
+    // Obtener el producto actual
+    const currentProduct = await BoutiqueProduct.findById(productId);
+    if (!currentProduct) {
+      return res.status(404).json({ success: false, message: 'Produit non trouvé' });
+    }
+    
+    // Construir query para productos similares
+    const similarQuery = {
+      _id: { $ne: productId }, // Excluir el producto actual
+      isActive: true,
+      pendiente: false // Solo productos aprobados
+    };
+    
+    // Buscar por misma subcategoría o categoría
+    if (currentProduct.subCategory) {
+      similarQuery.$or = [
+        { subCategory: currentProduct.subCategory },
+        { categorie: currentProduct.categorie }
+      ];
+    } else if (currentProduct.categorie) {
+      similarQuery.categorie = currentProduct.categorie;
+    }
+    
+    const products = await BoutiqueProduct.find(similarQuery)
+      .sort('-createdAt')
+      .limit(parseInt(limit))
+      .populate('boutique', 'nom_boutique couleur_theme images')
+      .lean();
+    
+    console.log(`✅ Encontrados ${products.length} productos similares`);
+    
+    res.json({
+      success: true,
+      products: products,
+      count: products.length
+    });
+    
+  } catch (error) {
+    console.error('❌ Error en getSimilarProducts:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+},
+ 
 };
 module.exports = boutiqueProductCtrl;

@@ -1,4 +1,4 @@
-// components/boutique/boutiquePost/BoutiqueProductCard.jsx
+// 📂 components/boutique/boutiquePost/BoutiqueProductCard.jsx - VERSIÓN CORREGIDA
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, Badge, Modal, Button, Spinner, Tooltip, OverlayTrigger } from 'react-bootstrap';
@@ -81,12 +81,13 @@ const BoutiqueProductCard = ({ post, boutique }) => {
     }
   };
 
+  // 🔥 CORREGIDO: Usar /product/ en lugar de /post/
   const handleCardClick = (e) => {
     if (showMenu) return;
     if (e.target.closest('button') || e.target.closest('.menu-button')) {
       return;
     }
-    history.push(`/post/${post._id}`);
+    history.push(`/product/${post._id}`);
   };
 
   // EDITAR PRODUCTO
@@ -203,9 +204,10 @@ const BoutiqueProductCard = ({ post, boutique }) => {
     setShowShareModal(true);
   };
 
+  // 🔥 CORREGIDO: Usar /product/ en lugar de /post/
   const copyLink = async (e) => {
     stopPropagation(e);
-    const url = `${window.location.origin}/post/${post._id}`;
+    const url = `${window.location.origin}/product/${post._id}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -217,6 +219,11 @@ const BoutiqueProductCard = ({ post, boutique }) => {
     } catch (err) {
       console.error('Failed to copy:', err);
     }
+  };
+
+  // 🔥 CORREGIDO: Usar /product/ en lugar de /post/ para compartir en redes sociales
+  const getShareUrl = () => {
+    return `${window.location.origin}/product/${post._id}`;
   };
 
   const getImage = () => {
@@ -269,6 +276,7 @@ const BoutiqueProductCard = ({ post, boutique }) => {
   const imageUrl = getImage();
   const isActive = post.isActive !== false;
   const scoreStars = getScoreStars(post.score);
+  const shareUrl = getShareUrl();
 
   const renderTooltip = (text) => (
     <Tooltip id="button-tooltip">{text}</Tooltip>
@@ -288,6 +296,7 @@ const BoutiqueProductCard = ({ post, boutique }) => {
           position: 'relative'
         }}
       >
+        {/* ... resto del contenido del card (sin cambios) ... */}
         <div className="position-relative" style={{ height: '200px', overflow: 'hidden' }}>
           {imageUrl ? (
             <img 
@@ -359,24 +368,6 @@ const BoutiqueProductCard = ({ post, boutique }) => {
               }}
             >
               {scoreStars}
-            </div>
-          )}
-
-          {/* BADGE DE USUARIO */}
-          {auth?.user?._id && (
-            <div 
-              className="position-absolute top-0 start-0 m-2"
-              style={{ 
-                backgroundColor: '#22c55e', 
-                color: 'white',
-                padding: '2px 6px',
-                borderRadius: '10px',
-                fontSize: '10px',
-                zIndex: 9999,
-                fontWeight: 'bold'
-              }}
-            >
-              👤 {auth.user._id.slice(-6)}
             </div>
           )}
 
@@ -596,7 +587,7 @@ const BoutiqueProductCard = ({ post, boutique }) => {
         </Card.Body>
       </Card>
 
-      {/* Modales */}
+      {/* Modal de eliminar */}
       <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered onClick={stopPropagation}>
         <Modal.Header closeButton>
           <Modal.Title>Confirmer la suppression</Modal.Title>
@@ -614,16 +605,54 @@ const BoutiqueProductCard = ({ post, boutique }) => {
         </Modal.Footer>
       </Modal>
 
+      {/* 🔥 CORREGIDO: Modal de compartir con la nueva URL */}
       <Modal show={showShareModal} onHide={() => setShowShareModal(false)} centered onClick={stopPropagation}>
         <Modal.Header closeButton>
           <Modal.Title>Partager ce produit</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <div className="d-flex justify-content-around py-3">
-            <Button variant="success" className="rounded-circle" style={{ width: '50px', height: '50px' }} onClick={(e) => { stopPropagation(e); window.open(`https://wa.me/?text=${encodeURIComponent(`${post.title} - ${window.location.origin}/post/${post._id}`)}`, '_blank'); }}><FaWhatsapp size={24} /></Button>
-            <Button variant="primary" className="rounded-circle" style={{ width: '50px', height: '50px' }} onClick={(e) => { stopPropagation(e); window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${window.location.origin}/post/${post._id}`)}`, '_blank'); }}><FaFacebook size={24} /></Button>
-            <Button variant="info" className="rounded-circle" style={{ width: '50px', height: '50px' }} onClick={(e) => { stopPropagation(e); window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(`${window.location.origin}/post/${post._id}`)}`, '_blank'); }}><FaTwitter size={24} /></Button>
-            <Button variant="secondary" className="rounded-circle" style={{ width: '50px', height: '50px' }} onClick={copyLink}>{copied ? <FaCheck size={24} /> : <FaCopy size={24} />}</Button>
+            <Button 
+              variant="success" 
+              className="rounded-circle" 
+              style={{ width: '50px', height: '50px' }} 
+              onClick={(e) => { 
+                stopPropagation(e); 
+                window.open(`https://wa.me/?text=${encodeURIComponent(`${post.title} - ${shareUrl}`)}`, '_blank'); 
+              }}
+            >
+              <FaWhatsapp size={24} />
+            </Button>
+            <Button 
+              variant="primary" 
+              className="rounded-circle" 
+              style={{ width: '50px', height: '50px' }} 
+              onClick={(e) => { 
+                stopPropagation(e); 
+                window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank'); 
+              }}
+            >
+              <FaFacebook size={24} />
+            </Button>
+            <Button 
+              variant="info" 
+              className="rounded-circle" 
+              style={{ width: '50px', height: '50px' }} 
+              onClick={(e) => { 
+                stopPropagation(e); 
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(shareUrl)}`, '_blank'); 
+              }}
+            >
+              <FaTwitter size={24} />
+            </Button>
+            <Button 
+              variant="secondary" 
+              className="rounded-circle" 
+              style={{ width: '50px', height: '50px' }} 
+              onClick={copyLink}
+            >
+              {copied ? <FaCheck size={24} /> : <FaCopy size={24} />}
+            </Button>
           </div>
         </Modal.Body>
       </Modal>

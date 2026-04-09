@@ -14,7 +14,13 @@ export const BOUTIQUE_PRODUCT_TYPES = {
   GET_BOUTIQUE_STATS: 'GET_BOUTIQUE_STATS',
   LOADING_BOUTIQUE_PRODUCTS: 'LOADING_BOUTIQUE_PRODUCTS',
   RESET_BOUTIQUE_PRODUCTS: 'RESET_BOUTIQUE_PRODUCTS',
-  GET_USER_PRODUCTS: 'GET_USER_PRODUCTS'  // 🔥 NUEVO
+  GET_USER_PRODUCTS: 'GET_USER_PRODUCTS' , // 🔥 NUEVO
+
+  GET_BOUTIQUE_PRODUCT_DETAIL: 'GET_BOUTIQUE_PRODUCT_DETAIL', // 🔥 NUEVO
+  CLEAR_BOUTIQUE_PRODUCT_DETAIL: 'CLEAR_BOUTIQUE_PRODUCT_DETAIL', // 🔥 NUEVO
+  GET_SAME_BOUTIQUE_PRODUCTS: 'GET_SAME_BOUTIQUE_PRODUCTS',
+  GET_SIMILAR_PRODUCTS: 'GET_SIMILAR_PRODUCTS'
+
 };
 
 // ============ CREATE BOUTIQUE PRODUCT ============
@@ -283,7 +289,69 @@ export const deleteBoutiqueProduct = ({
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
   }
 };
+// 📂 redux/actions/boutiqueProductAction.js - CORREGIR
 
+export const getBoutiqueProductById = (productId) => async (dispatch) => {
+  try {
+    console.log('📦 getBoutiqueProductById para ID:', productId);
+    
+    dispatch({ type: BOUTIQUE_PRODUCT_TYPES.LOADING_BOUTIQUE_PRODUCTS, payload: true });
+
+    const res = await getDataAPI(`product/${productId}`);
+    
+    console.log('✅ Producto recibido:', res.data);
+    console.log('📦 Imágenes del producto:', res.data.product?.images);
+    
+    // 🔥 NORMALIZAR LAS IMÁGENES ANTES DE GUARDAR EN EL REDUCER
+    const normalizedProduct = {
+      ...res.data.product,
+      images: normalizeImages(res.data.product?.images)
+    };
+    
+    console.log('📦 Imágenes normalizadas:', normalizedProduct.images);
+    
+    dispatch({
+      type: BOUTIQUE_PRODUCT_TYPES.GET_BOUTIQUE_PRODUCT_DETAIL,
+      payload: normalizedProduct
+    });
+    
+    return res.data;
+    
+  } catch (err) {
+    console.error('❌ Error en getBoutiqueProductById:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || err.message }
+    });
+    throw err;
+  } finally {
+    dispatch({ type: BOUTIQUE_PRODUCT_TYPES.LOADING_BOUTIQUE_PRODUCTS, payload: false });
+  }
+};
+
+// 🔥 FUNCIÓN AUXILIAR PARA NORMALIZAR IMÁGENES
+const normalizeImages = (images) => {
+  if (!images || !Array.isArray(images)) return [];
+  
+  return images.map(img => {
+    // Si es string, devolver string
+    if (typeof img === 'string') return img;
+    
+    // Si es objeto con url, devolver url
+    if (typeof img === 'object' && img.url) return img.url;
+    
+    // Si es objeto con otra estructura, intentar encontrar la URL
+    if (typeof img === 'object') {
+      return img.image || img.src || img.secure_url || null;
+    }
+    
+    return null;
+  }).filter(url => url);
+};
+// ============ CLEAR PRODUCT DETAIL ============
+export const clearBoutiqueProductDetail = () => (dispatch) => {
+  dispatch({ type: BOUTIQUE_PRODUCT_TYPES.CLEAR_BOUTIQUE_PRODUCT_DETAIL });
+};
 // ============ RESET BOUTIQUE PRODUCTS ============
 export const resetBoutiqueProducts = (boutiqueId) => (dispatch) => {
   dispatch({
@@ -291,3 +359,63 @@ export const resetBoutiqueProducts = (boutiqueId) => (dispatch) => {
     payload: { boutiqueId }
   });
 };
+
+ 
+// ============ GET PRODUCTS FROM SAME BOUTIQUE ============
+// En boutiqueProductAction.js - Agregar normalización a todas las funciones que traen productos
+
+ 
+
+// Similar para getProductsFromSameBoutique
+export const getProductsFromSameBoutique = (productId, limit = 6) => async (dispatch) => {
+  try {
+    console.log('📦 getProductsFromSameBoutique para:', productId);
+    
+    const res = await getDataAPI(`product/${productId}/same-boutique?limit=${limit}`);
+    
+    // 🔥 NORMALIZAR LAS IMÁGENES
+    const normalizedProducts = (res.data.products || []).map(product => ({
+      ...product,
+      images: normalizeImages(product.images)
+    }));
+    
+    dispatch({
+      type: BOUTIQUE_PRODUCT_TYPES.GET_SAME_BOUTIQUE_PRODUCTS,
+      payload: normalizedProducts
+    });
+    
+    return { ...res.data, products: normalizedProducts };
+    
+  } catch (err) {
+    console.error('❌ Error en getProductsFromSameBoutique:', err);
+    return { products: [] };
+  }
+};
+
+// Similar para getSimilarProducts
+export const getSimilarProducts = (productId, limit = 6) => async (dispatch) => {
+  try {
+    console.log('📦 getSimilarProducts para:', productId);
+    
+    const res = await getDataAPI(`product/${productId}/similar?limit=${limit}`);
+    
+    // 🔥 NORMALIZAR LAS IMÁGENES
+    const normalizedProducts = (res.data.products || []).map(product => ({
+      ...product,
+      images: normalizeImages(product.images)
+    }));
+    
+    dispatch({
+      type: BOUTIQUE_PRODUCT_TYPES.GET_SIMILAR_PRODUCTS,
+      payload: normalizedProducts
+    });
+    
+    return { ...res.data, products: normalizedProducts };
+    
+  } catch (err) {
+    console.error('❌ Error en getSimilarProducts:', err);
+    return { products: [] };
+  }
+};
+// ============ GET SIMILAR PRODUCTS ============
+ 

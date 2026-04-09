@@ -161,7 +161,7 @@ useEffect(() => {
             <div>
               <h5 className="mb-0 fw-bold">
                 <FaClipboardList className="me-2 text-primary" />
-                Liste des Posts en Attente
+                Posts en Attente
                 {selectedCategory && selectedCategory.name && selectedCategory.name !== 'posts' && (
                   <Badge bg="info" className="ms-2">
                     {selectedCategory.name}
