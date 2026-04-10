@@ -1499,6 +1499,125 @@ getLikesList: async function(req, res) {
     res.status(500).json({ success: false, message: error.message });
   }
 },
+
+// ============================================
+// GET BOUTIQUES APROBADAS (para panel de administración)
+// ============================================
+// 📂 ctrls/boutiqueCtrl.js - Añadir este método
+
+// ============================================
+// GET BOUTIQUES APROBADAS (Para panel de administración)
+// ============================================
+getBoutiquesAprobadas: async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Non autorisé. Admin requis." 
+      });
+    }
+    
+    const boutique = await Boutique.findById(id);
+    if (!boutique) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Boutique non trouvée" 
+      });
+    }
+    
+    if (!boutique.pendiente) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Cette boutique est déjà approuvée" 
+      });
+    }
+    
+    // 🔥 ACTUALIZAR: Marcar como aprobada
+    boutique.pendiente = false;
+    
+    // 🔥 Si el plan es GRATUIT, activar automáticamente
+    if (boutique.plan === 'gratuit') {
+      boutique.isActive = true;
+      console.log(`✅ Boutique gratuite approuvée et activée automatiquement: ${boutique.nom_boutique}`);
+    } else {
+      // Plan de pago: queda inactiva hasta que el admin confirme el pago
+      boutique.isActive = false;
+      console.log(`⏳ Boutique payante approuvée mais inactive en attente de paiement: ${boutique.nom_boutique} (Plan: ${boutique.plan})`);
+    }
+    
+    await boutique.save();
+    
+    res.json({
+      success: true,
+      message: boutique.plan === 'gratuit' 
+        ? "Boutique gratuite approuvée et activée avec succès"
+        : "Boutique approuvée. En attente de paiement pour activation.",
+      boutique: {
+        _id: boutique._id,
+        nom_boutique: boutique.nom_boutique,
+        pendiente: boutique.pendiente,
+        isActive: boutique.isActive,
+        plan: boutique.plan
+      }
+    });
+    
+  } catch (err) {
+    console.error('❌ Error en aprobarBoutique:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+},
+// ============================================
+// UPDATE BOUTIQUE STATUS (Activar/Desactivar)
+// ============================================
+updateAdminBoutiqueStatus: async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+    
+    // Verificar permisos
+    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'moderator')) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Non autorisé. Admin requis." 
+      });
+    }
+    
+    const boutique = await Boutique.findById(id);
+    if (!boutique) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Boutique non trouvée" 
+      });
+    }
+    
+    boutique.isActive = isActive;
+    boutique.updatedAt = Date.now();
+    await boutique.save();
+    
+    console.log(`✅ Boutique ${boutique.nom_boutique} ${isActive ? 'activée' : 'désactivée'} par ${req.user.username}`);
+    
+    res.json({
+      success: true,
+      message: isActive ? "Boutique activée avec succès" : "Boutique désactivée avec succès",
+      boutique: {
+        _id: boutique._id,
+        nom_boutique: boutique.nom_boutique,
+        isActive: boutique.isActive,
+        pendiente: boutique.pendiente
+      }
+    });
+    
+  } catch (err) {
+    console.error('❌ Error en updateAdminBoutiqueStatus:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+},
+
 };
 
 module.exports = boutiqueCtrl;

@@ -1,14 +1,15 @@
-// 📂 pages/MesBoutiques.jsx - VERSIÓN CON TARJETAS COMPACTAS (estilo MesAnnoces)
+// 📂 pages/MesBoutiques.jsx - VERSIÓN CORREGIDA (Etiquetas bien posicionadas)
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Link, useHistory } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { Spinner, Alert, Container, Row, Col, Button, Badge, Card } from 'react-bootstrap';
-import { getUserBoutiques, deleteBoutique, updateBoutiqueStatus } from '../../redux/actions/boutiqueAction';
-import { FaStore, FaPlus, FaBox, FaToggleOn, FaToggleOff } from 'react-icons/fa';
+import { getUserBoutiques, deleteBoutique } from '../../redux/actions/boutiqueAction';
+import { FaStore, FaPlus, FaBox, FaToggleOn, FaToggleOff, FaCreditCard, FaCheckCircle, FaClock } from 'react-icons/fa';
 import { Pencil, Plus, Eye, Filter, Trash } from 'react-bootstrap-icons';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import moment from 'moment';
 import 'moment/locale/fr';
+import { GLOBALTYPES } from '../../redux/actions/globalTypes';
 
 moment.locale('fr');
 
@@ -45,6 +46,10 @@ const MesBoutiques = () => {
       filtered = [...boutiques];
     } else if (status === 'pending') {
       filtered = boutiques.filter(boutique => boutique.pendiente === true);
+    } else if (status === 'active') {
+      filtered = boutiques.filter(boutique => boutique.isActive === true && boutique.pendiente === false);
+    } else if (status === 'inactive') {
+      filtered = boutiques.filter(boutique => boutique.isActive === false && boutique.pendiente === false);
     }
     
     filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -70,17 +75,24 @@ const MesBoutiques = () => {
     }
   };
 
-  const handleToggleStatus = async (boutiqueId, currentStatus, e) => {
+  const handleActivateBoutique = (boutique, e) => {
     e.stopPropagation();
-    try {
-      await dispatch(updateBoutiqueStatus({
-        boutiqueId,
-        statusData: { isActive: !currentStatus },
-        auth
-      }));
-      setRefresh(prev => !prev);
-    } catch (error) {
-      console.error('Error toggling status:', error);
+    
+    if (!boutique.isActive && !boutique.pendiente) {
+      history.push(`/payment-boutique/${boutique._id}`, { 
+        boutiqueName: boutique.nom_boutique,
+        boutiqueId: boutique._id
+      });
+    } else if (boutique.isActive) {
+      dispatch({
+        type: GLOBALTYPES.ALERT,
+        payload: { info: "Votre boutique est déjà active et visible par tous les utilisateurs." }
+      });
+    } else if (boutique.pendiente) {
+      dispatch({
+        type: GLOBALTYPES.ALERT,
+        payload: { info: "Votre boutique est en attente de vérification par l'administrateur." }
+      });
     }
   };
 
@@ -108,14 +120,17 @@ const MesBoutiques = () => {
 
   const stats = {
     total: userBoutiques?.length || 0,
-    pending: userBoutiques?.filter(b => b.pendiente === true).length || 0
+    pending: userBoutiques?.filter(b => b.pendiente === true).length || 0,
+    active: userBoutiques?.filter(b => b.isActive === true && b.pendiente === false).length || 0,
+    inactive: userBoutiques?.filter(b => b.isActive === false && b.pendiente === false).length || 0
   };
 
-  // Tarjeta compacta - MISMO ESTILO que MesAnnoces
+  // Tarjeta compacta - CON ETIQUETAS BIEN POSICIONADAS
   const CompactBoutiqueCard = ({ boutique }) => {
     const isPending = isBoutiquePending(boutique);
+    const isActive = boutique.isActive === true;
+    const isInactive = !boutique.isActive && !boutique.pendiente;
     
-    // Obtener la primera imagen (logo o header)
     const getFirstImage = () => {
       if (boutique.images && boutique.images.length > 0) {
         const firstImage = boutique.images[0];
@@ -132,37 +147,49 @@ const MesBoutiques = () => {
 
     return (
       <Card 
-        className={`border-0 shadow-sm h-100 overflow-hidden ${isPending ? 'pending-card' : 'approved-card'}`}
+        className={`border-0 shadow-sm h-100 overflow-hidden`}
         style={{ 
           borderRadius: '12px',
           transition: 'transform 0.2s ease, box-shadow 0.2s ease',
           cursor: 'pointer',
-          backgroundColor: isPending ? '#fffbea' : '#ffffff'
+          backgroundColor: '#ffffff',
+          borderTop: `4px solid ${
+            isPending ? '#ffc107' : (isActive ? '#198754' : '#6c757d')
+          }`
         }}
         onClick={() => handleBoutiqueClick(boutique._id)}
       >
-        {/* Badge flotante según estado de aprobación */}
-        <div className="status-badge">
-          {isPending ? (
-            <Badge bg="warning" className="px-2 py-1 rounded-pill">
-              ⏳ En attente
-            </Badge>
-          ) : (
-            <Badge bg="success" className="px-2 py-1 rounded-pill">
-              ✓ Vérifié
-            </Badge>
-          )}
-        </div>
-        
-        {/* Badge de estado Activo/Inactivo */}
-        <div className="active-badge">
-          <Badge bg={boutique.isActive ? "success" : "secondary"} className="px-2 py-1 rounded-pill" style={{ fontSize: '0.7rem' }}>
-            {boutique.isActive ? "Actif" : "Inactif"}
-          </Badge>
+        {/* CONTENEDOR DE ETIQUETAS - SUPERIOR */}
+        <div className="badges-container">
+          {/* Etiqueta de aprobación (izquierda) */}
+          <div className="badge-left">
+            {isPending ? (
+              <span className="badge-pending">
+                <FaClock size={10} className="me-1" /> En attente
+              </span>
+            ) : (
+              <span className="badge-approved">
+                <FaCheckCircle size={10} className="me-1" /> Vérifié
+              </span>
+            )}
+          </div>
+          
+          {/* Etiqueta de activación (derecha) - COLOR AMARILLO PARA INACTIVO */}
+          <div className="badge-right">
+            {isActive ? (
+              <span className="badge-active">
+                <FaToggleOn size={10} className="me-1" /> Actif
+              </span>
+            ) : isInactive ? (
+              <span className="badge-inactive">
+                <FaToggleOff size={10} className="me-1" /> Inactif
+              </span>
+            ) : null}
+          </div>
         </div>
         
         <Row className="g-0">
-          {/* Imagen pequeña - columna izquierda (como en MesAnnoces) */}
+          {/* Imagen pequeña - columna izquierda */}
           <Col xs={4} md={4} className="p-2">
             <div 
               className="image-container"
@@ -210,7 +237,6 @@ const MesBoutiques = () => {
           {/* Contenido - columna derecha */}
           <Col xs={8} md={8}>
             <Card.Body className="p-3">
-              {/* Nombre de la boutique */}
               <Card.Title 
                 className="fw-bold mb-1"
                 style={{ 
@@ -225,7 +251,6 @@ const MesBoutiques = () => {
                 {boutique.nom_boutique || 'Boutique sans nom'}
               </Card.Title>
               
-              {/* Slogan (opcional, una línea) */}
               {boutique.slogan_boutique && (
                 <p className="text-muted small mb-1" style={{ 
                   fontSize: '0.7rem',
@@ -238,7 +263,6 @@ const MesBoutiques = () => {
                 </p>
               )}
               
-              {/* Stats en línea - compacto */}
               <div className="d-flex gap-3 mt-1 mb-1">
                 <div className="d-flex align-items-center">
                   <FaBox size={10} className="text-muted me-1" />
@@ -248,9 +272,12 @@ const MesBoutiques = () => {
                   <i className="fas fa-eye me-1" style={{ fontSize: '0.6rem' }}></i>
                   <span className="small">{boutique.views || 0}</span>
                 </div>
+                <div className="d-flex align-items-center">
+                  <i className="fas fa-heart me-1" style={{ fontSize: '0.6rem', color: '#dc3545' }}></i>
+                  <span className="small">{boutique.likes?.length || 0}</span>
+                </div>
               </div>
               
-              {/* Fecha de creación */}
               <div className="d-flex align-items-center text-muted small">
                 <i className="fas fa-calendar-alt me-1" style={{ fontSize: '0.7rem' }}></i>
                 <span>{moment(boutique.createdAt).format('DD/MM/YYYY')}</span>
@@ -259,15 +286,14 @@ const MesBoutiques = () => {
           </Col>
         </Row>
         
-        {/* Botones de acción flotantes - MISMO estilo que MesAnnoces */}
+        {/* Botones de acción flotantes */}
         <div className="action-buttons">
           <Button
             variant="light"
             size="sm"
             className="rounded-circle p-1 shadow-sm"
             onClick={(e) => { e.stopPropagation(); handleBoutiqueClick(boutique._id); }}
-            title="Voir"
-            style={{ width: '28px', height: '28px', fontSize: '12px' }}
+            title="Voir la boutique"
           >
             <Eye size={12} />
           </Button>
@@ -277,30 +303,29 @@ const MesBoutiques = () => {
             size="sm"
             className="rounded-circle p-1 shadow-sm"
             onClick={(e) => { e.stopPropagation(); history.push(`/edit-boutique/${boutique._id}`); }}
-            title="Modifier"
-            style={{ width: '28px', height: '28px', fontSize: '12px' }}
+            title="Modifier la boutique"
           >
             <Pencil size={12} />
           </Button>
           
-          <Button
-            variant={boutique.isActive ? "warning" : "success"}
-            size="sm"
-            className="rounded-circle p-1 shadow-sm"
-            onClick={(e) => handleToggleStatus(boutique._id, boutique.isActive, e)}
-            title={boutique.isActive ? "Désactiver" : "Activer"}
-            style={{ width: '28px', height: '28px', fontSize: '12px' }}
-          >
-            {boutique.isActive ? <FaToggleOff size={12} /> : <FaToggleOn size={12} />}
-          </Button>
+          {!boutique.pendiente && (
+            <Button
+              variant={isActive ? "secondary" : "warning"}
+              size="sm"
+              className="rounded-circle p-1 shadow-sm"
+              onClick={(e) => handleActivateBoutique(boutique, e)}
+              title={isActive ? "Boutique active" : (isInactive ? "Activer la boutique" : "En attente")}
+            >
+              {isActive ? <FaToggleOff size={12} /> : <FaCreditCard size={12} />}
+            </Button>
+          )}
           
           <Button
             variant="danger"
             size="sm"
             className="rounded-circle p-1 shadow-sm"
             onClick={(e) => handleDelete(boutique._id, e)}
-            title="Supprimer"
-            style={{ width: '28px', height: '28px', fontSize: '12px' }}
+            title="Supprimer la boutique"
           >
             <Trash size={12} />
           </Button>
@@ -335,7 +360,6 @@ const MesBoutiques = () => {
   return (
     <div className="mes-boutiques-page">
       <Container className="py-2">
-        {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
           <h1 className="h3 mb-0 d-flex align-items-center gap-2">
             <FaStore /> Mes Boutiques
@@ -352,7 +376,6 @@ const MesBoutiques = () => {
           </Button>
         </div>
 
-        {/* Filtros */}
         <div className="filters-section mb-4">
           <div className="d-flex align-items-center gap-2 flex-wrap">
             <div className="d-flex align-items-center me-2">
@@ -370,17 +393,34 @@ const MesBoutiques = () => {
             </Button>
             
             <Button
-              variant={filterStatus === 'pending' ? 'warning' : 'outline-secondary'}
+              variant={filterStatus === 'active' ? 'success' : 'outline-secondary'}
+              size="sm"
+              className="rounded-pill px-3"
+              onClick={() => handleFilterChange('active')}
+            >
+              <FaToggleOn className="me-1" /> Actives <Badge bg="success" className="ms-1">{stats.active}</Badge>
+            </Button>
+            
+            <Button
+              variant={filterStatus === 'inactive' ? 'warning' : 'outline-secondary'}
+              size="sm"
+              className="rounded-pill px-3"
+              onClick={() => handleFilterChange('inactive')}
+            >
+              <FaToggleOff className="me-1" /> Inactives <Badge bg="warning" className="ms-1">{stats.inactive}</Badge>
+            </Button>
+            
+            <Button
+              variant={filterStatus === 'pending' ? 'secondary' : 'outline-secondary'}
               size="sm"
               className="rounded-pill px-3"
               onClick={() => handleFilterChange('pending')}
             >
-              En attente <Badge bg="warning" className="ms-1">{stats.pending}</Badge>
+              <FaClock className="me-1" /> En attente <Badge bg="secondary" className="ms-1">{stats.pending}</Badge>
             </Button>
           </div>
         </div>
 
-        {/* Listado de boutiques - MISMO estilo que los posts */}
         {filteredBoutiques.length > 0 ? (
           <InfiniteScroll
             dataLength={displayedBoutiques.length}
@@ -416,7 +456,7 @@ const MesBoutiques = () => {
             <h4 className="h5 mb-2">Aucune boutique</h4>
             <p className="text-muted mb-4">
               {filterStatus !== 'all' 
-                ? 'Aucune boutique en attente de vérification'
+                ? 'Aucune boutique dans cette catégorie'
                 : 'Commencez par créer votre première boutique'}
             </p>
             <Button 
@@ -431,53 +471,187 @@ const MesBoutiques = () => {
         )}
       </Container>
 
-      {/* Estilos - IDÉNTICOS a MesAnnoces */}
+      {/* Estilos CORREGIDOS - Etiquetas bien posicionadas */}
       <style jsx="true">{`
-        .pending-card {
-          border-left: 4px solid #ffc107 !important;
-        }
-        .approved-card {
-          border-left: 4px solid #198754 !important;
-        }
-        .status-badge {
+        .badges-container {
           position: absolute;
-          top: 8px;
-          left: 8px;
+          top: 10px;
+          left: 0;
+          right: 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0 10px;
           z-index: 10;
+          pointer-events: none;
         }
-        .active-badge {
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          z-index: 10;
+        
+        .badge-left, .badge-right {
+          pointer-events: auto;
         }
+        
+        .badge-pending {
+          background-color: #ffc107;
+          color: #000;
+          padding: 4px 8px;
+          border-radius: 20px;
+          font-size: 0.65rem;
+          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .badge-approved {
+          background-color: #198754;
+          color: white;
+          padding: 4px 8px;
+          border-radius: 20px;
+          font-size: 0.65rem;
+          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .badge-active {
+          background-color: #198754;
+          color: white;
+          padding: 4px 8px;
+          border-radius: 20px;
+          font-size: 0.65rem;
+          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .badge-inactive {
+          background-color: #ffc107;
+          color: #000;
+          padding: 4px 8px;
+          border-radius: 20px;
+          font-size: 0.65rem;
+          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
         .action-buttons {
           position: absolute;
-          bottom: 8px;
-          right: 8px;
+          bottom: 10px;
+          right: 10px;
           display: flex;
-          gap: 4px;
+          gap: 6px;
           z-index: 10;
         }
+        
         .action-buttons .btn {
-          width: 28px;
-          height: 28px;
+          width: 30px;
+          height: 30px;
           display: flex;
           align-items: center;
           justify-content: center;
           background-color: white;
           border: 1px solid #e9ecef;
-        }
-        .action-buttons .btn:hover {
-          transform: scale(1.05);
-        }
-        .card {
+          border-radius: 50% !important;
           transition: all 0.2s ease;
         }
-        .card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(0,0,0,0.12) !important;
+        
+        .action-buttons .btn:hover {
+          transform: scale(1.1);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
+        
+        .card {
+          position: relative;
+          transition: all 0.2s ease;
+          overflow: visible !important;
+        }
+        
+        .card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 24px rgba(0,0,0,0.12) !important;
+        }
+        
+        .image-container {
+          background-color: #f8f9fa;
+        }
+
+
+        /* Añadir al final del componente MesBoutiques */
+
+        .plan-badge {
+          position: absolute;
+          bottom: 10px;
+          left: 10px;
+          z-index: 10;
+          pointer-events: none;
+        }
+        
+        .plan-gratuit {
+          background-color: #6c757d;
+          color: white;
+          padding: 3px 8px;
+          border-radius: 20px;
+          font-size: 0.6rem;
+          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+        }
+        
+        .plan-basique {
+          background-color: #0d6efd;
+          color: white;
+          padding: 3px 8px;
+          border-radius: 20px;
+          font-size: 0.6rem;
+          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+        }
+        
+        .plan-premium {
+          background-color: #fd7e14;
+          color: white;
+          padding: 3px 8px;
+          border-radius: 20px;
+          font-size: 0.6rem;
+          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+        }
+        
+        .plan-entreprise {
+          background-color: #198754;
+          color: white;
+          padding: 3px 8px;
+          border-radius: 20px;
+          font-size: 0.6rem;
+          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+        }
+        
+        .plan-price {
+          font-size: 0.55rem;
+          opacity: 0.9;
+        }
+
+
+
+
+
+
       `}</style>
     </div>
   );

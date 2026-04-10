@@ -138,7 +138,10 @@ const boutiqueSchema = new mongoose.Schema({
     avis: { type: Number, default: 0 },
     vues: { type: Number, default: 0 }
   },
-
+  logosistema: {
+    type: String,
+    default: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1739586000/avatar/default_user_avatar.jpg'
+},
   header_images: [
     {
       url: String,
@@ -148,7 +151,7 @@ const boutiqueSchema = new mongoose.Schema({
 
   isActive: {
     type: Boolean,
-    default: true,
+    default: false,
     index: true
   },
 

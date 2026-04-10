@@ -45,7 +45,8 @@ export const BOUTIQUE_TYPES = {
   
 
 
-
+  GET_ADMIN_BOUTIQUES: 'GET_ADMIN_BOUTIQUES',            
+  GET_ADMIN_BOUTIQUES_PENDIENTES: 'GET_ADMIN_BOUTIQUES_PENDIENTES',  
 
 };
 // ============ CREATE BOUTIQUE ============
@@ -710,3 +711,223 @@ export const getBoutiqueLikes = (boutiqueId, auth = null) => async (dispatch) =>
     return { likesCount: 0, userLiked: false };
   }
 };
+
+// En redux/actions/boutiqueAction.js - Añadir después de las existentes
+
+// ============================================
+// GET BOUTIQUES APROBADAS (Para panel de administración)
+// ============================================
+export const getAdminBoutiques = (page = 1, limit = 10, search = '', filters = {}) => async (dispatch) => {
+  try {
+    dispatch({ type: BOUTIQUE_TYPES.LOADING_ADMIN_BOUTIQUES, payload: true });
+    
+    // Construir query params
+    const params = new URLSearchParams({
+      page,
+      limit
+    });
+    
+    if (search && search.trim()) {
+      params.append('search', search.trim());
+    }
+    
+    if (filters.status) {
+      params.append('status', filters.status);
+    }
+    
+    if (filters.categorie) {
+      params.append('categorie', filters.categorie);
+    }
+    
+    console.log('📡 Fetching boutiques aprobadas:', `/admin/boutiques/aprobadas?${params}`);
+    
+    const res = await getDataAPI(`admin/boutiques/aprobadas?${params}`);
+    
+    console.log('✅ Boutiques aprobadas recibidas:', res.data);
+    
+    dispatch({
+      type: BOUTIQUE_TYPES.GET_ADMIN_BOUTIQUES,
+      payload: {
+        boutiques: res.data.boutiques || [],
+        total: res.data.total || 0,
+        page: res.data.page || page,
+        totalPages: res.data.totalPages || 1,
+        hasMore: res.data.hasMore || false,
+        isSearching: !!search
+      }
+    });
+    
+    return res.data;
+    
+  } catch (err) {
+    console.error('❌ Error en getAdminBoutiques:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || 'Error al cargar boutiques' }
+    });
+    throw err;
+  } finally {
+    dispatch({ type: BOUTIQUE_TYPES.LOADING_ADMIN_BOUTIQUES, payload: false });
+  }
+};
+
+// ============================================
+// GET BOUTIQUES PENDIENTES (Para panel de aprobación)
+// ============================================
+export const getAdminBoutiquesPendientes = (page = 1, limit = 10, search = '', categorie = '') => async (dispatch) => {
+  try {
+    dispatch({ type: BOUTIQUE_TYPES.LOADING_ADMIN_BOUTIQUES, payload: true });
+    
+    const params = new URLSearchParams({
+      page,
+      limit
+    });
+    
+    if (search && search.trim()) {
+      params.append('search', search.trim());
+    }
+    
+    if (categorie) {
+      params.append('categorie', categorie);
+    }
+    
+    console.log('📡 Fetching boutiques pendientes:', `/admin/boutiques/pendientes?${params}`);
+    
+    const res = await getDataAPI(`admin/boutiques/pendientes?${params}`);
+    
+    dispatch({
+      type: BOUTIQUE_TYPES.GET_ADMIN_BOUTIQUES_PENDIENTES,
+      payload: {
+        boutiques: res.data.boutiques || [],
+        total: res.data.total || 0,
+        page: res.data.page || page,
+        totalPages: res.data.totalPages || 1,
+        hasMore: res.data.hasMore || false
+      }
+    });
+    
+    return res.data;
+    
+  } catch (err) {
+    console.error('❌ Error en getAdminBoutiquesPendientes:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || 'Error al cargar boutiques pendientes' }
+    });
+    throw err;
+  } finally {
+    dispatch({ type: BOUTIQUE_TYPES.LOADING_ADMIN_BOUTIQUES, payload: false });
+  }
+};
+
+// ============================================
+// APROBAR BOUTIQUE (Admin action)
+// ============================================
+export const approveBoutique = (boutiqueId, auth) => async (dispatch) => {
+  try {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+    
+    console.log('✅ Aprobando boutique:', boutiqueId);
+    const res = await patchDataAPI(`admin/boutiques/aprobar/${boutiqueId}`, {}, auth.token);
+    
+    dispatch({
+      type: BOUTIQUE_TYPES.APPROVE_BOUTIQUE,
+      payload: boutiqueId
+    });
+    
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { success: res.data.message || 'Boutique approuvée avec succès' }
+    });
+    
+    return res.data;
+    
+  } catch (err) {
+    console.error('❌ Error en approveBoutique:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || 'Error al aprobar boutique' }
+    });
+    throw err;
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
+  }
+};
+
+// ============================================
+// RECHAZAR BOUTIQUE (Admin action)
+// ============================================
+export const rejectBoutique = (boutiqueId, auth) => async (dispatch) => {
+  try {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+    
+    console.log('❌ Rechazando boutique:', boutiqueId);
+    const res = await deleteDataAPI(`admin/boutiques/rechazar/${boutiqueId}`, auth.token);
+    
+    dispatch({
+      type: BOUTIQUE_TYPES.REJECT_BOUTIQUE,
+      payload: boutiqueId
+    });
+    
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { success: res.data.message || 'Boutique rejetée avec succès' }
+    });
+    
+    return res.data;
+    
+  } catch (err) {
+    console.error('❌ Error en rejectBoutique:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || 'Error al rechazar boutique' }
+    });
+    throw err;
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
+  }
+};
+
+// ============================================
+// CAMBIAR ESTADO DE BOUTIQUE (Activar/Desactivar)
+// ============================================
+export const updateAdminBoutiqueStatus = (boutiqueId, isActive, auth) => async (dispatch) => {
+  try {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+    
+    console.log(`🔄 Cambiando estado de boutique ${boutiqueId} a ${isActive ? 'activo' : 'inactivo'}`);
+    const res = await patchDataAPI(`admin/boutiques/status/${boutiqueId}`, { isActive }, auth.token);
+    
+    dispatch({
+      type: BOUTIQUE_TYPES.UPDATE_ADMIN_BOUTIQUE_STATUS,
+      payload: {
+        id: boutiqueId,
+        isActive
+      }
+    });
+    
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { success: res.data.message || `Boutique ${isActive ? 'activée' : 'désactivée'} avec succès` }
+    });
+    
+    return res.data;
+    
+  } catch (err) {
+    console.error('❌ Error en updateAdminBoutiqueStatus:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || 'Error al cambiar estado' }
+    });
+    throw err;
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
+  }
+};
+
+// ============================================
+// LIMPIAR BOUTIQUES ADMIN
+// ============================================
+export const clearAdminBoutiques = () => ({
+  type: BOUTIQUE_TYPES.CLEAR_ADMIN_BOUTIQUES
+});

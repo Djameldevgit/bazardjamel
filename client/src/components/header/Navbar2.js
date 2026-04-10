@@ -582,6 +582,9 @@ const handleLogout = () => {
                     </div>
 
                     <NavDropdown.Divider />
+                    <MenuItem icon={FaUserCircle} iconColor="#667eea" to='/admindashboard'>
+                   admin dashborad
+                    </MenuItem>
                     <MenuItem icon={FaUserCircle} iconColor="#667eea" to='/admin/posts'>
                    aprobar posts
                     </MenuItem>

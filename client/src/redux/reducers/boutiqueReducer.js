@@ -1,8 +1,8 @@
-// 📂 redux/reducers/boutiqueReducer.js - VERSIÓN ACTUALIZADA CON FILTERMETADATA
-
+// 📂 redux/reducers/boutiqueReducer.js - VERSIÓN CORREGIDA Y ESTABLE
 import { BOUTIQUE_TYPES } from '../actions/boutiqueAction';
 
 const initialState = {
+  // Estados existentes
   boutiques: [],
   total: 0,
   page: 1,
@@ -15,7 +15,16 @@ const initialState = {
   boutiqueStats: {},
   loading: false,
   loadingByCategory: {},
-  error: null
+  error: null,
+  
+  // Estados para administración
+  adminBoutiques: [],
+ 
+  adminTotal: 0,
+  adminPage: 1,
+  adminTotalPages: 1,
+  adminHasMore: false,
+  loadingAdmin: false,
 };
 
 const boutiqueReducer = (state = initialState, action) => {
@@ -53,9 +62,10 @@ const boutiqueReducer = (state = initialState, action) => {
     case 'UPDATE_BOUTIQUE_VIEWS':
       const { boutiqueId: viewBoutiqueId, views } = action.payload;
       
-      const updateViewsInList = function(list) {
-        return list.map(function(b) {
-          if (b._id === viewBoutiqueId) {
+      const updateViewsInList = (list) => {
+        if (!list || !Array.isArray(list)) return list;
+        return list.map(b => {
+          if (b && b._id === viewBoutiqueId) {
             return { ...b, views: views };
           }
           return b;
@@ -76,17 +86,17 @@ const boutiqueReducer = (state = initialState, action) => {
       };
     
     // ============ GET BOUTIQUES BY CATEGORY ============
-    case BOUTIQUE_TYPES.GET_BOUTIQUES_BY_CATEGORY:
+    case BOUTIQUE_TYPES.GET_BOUTIQUES_BY_CATEGORY: {
       const {
         categoryPath,
-        boutiques,
-        total,
-        page,
-        totalPages,
-        hasMore,
-        categoryInfo,
-        children,
-        filterMetadata  // ✅ AÑADIR filterMetadata
+        boutiques = [],
+        total = 0,
+        page = 1,
+        totalPages = 1,
+        hasMore = false,
+        categoryInfo = null,
+        children = [],
+        filterMetadata = null
       } = action.payload;
 
       const existingData = state.boutiquesByCategory[categoryPath];
@@ -105,11 +115,12 @@ const boutiqueReducer = (state = initialState, action) => {
             hasMore,
             categoryInfo,
             children,
-            filterMetadata  // ✅ GUARDAR filterMetadata
+            filterMetadata
           }
         },
         error: null
       };
+    }
 
     // ============ CREATE BOUTIQUE ============
     case BOUTIQUE_TYPES.CREATE_BOUTIQUE:
@@ -127,7 +138,7 @@ const boutiqueReducer = (state = initialState, action) => {
         hasMore: true,
         categoryInfo: null,
         children: [],
-        filterMetadata: null  // ✅ INCLUIR filterMetadata
+        filterMetadata: null
       };
 
       return {
@@ -258,6 +269,8 @@ const boutiqueReducer = (state = initialState, action) => {
         boutiques: state.boutiques.filter(b => b._id !== deletedId),
         userBoutiques: state.userBoutiques.filter(b => b._id !== deletedId),
         homeBoutiques: state.homeBoutiques.filter(b => b._id !== deletedId),
+        adminBoutiques: state.adminBoutiques.filter(b => b._id !== deletedId),
+        adminPendientes: state.adminPendientes.filter(b => b._id !== deletedId),
         currentBoutique: state.currentBoutique?._id === deletedId ? null : state.currentBoutique,
         boutiqueByDomain: state.boutiqueByDomain?._id === deletedId ? null : state.boutiqueByDomain,
         boutiquesByCategory: deletedFromCategory,
@@ -288,6 +301,7 @@ const boutiqueReducer = (state = initialState, action) => {
         boutiques: updateStatusInList(state.boutiques),
         userBoutiques: updateStatusInList(state.userBoutiques),
         homeBoutiques: updateStatusInList(state.homeBoutiques),
+        adminBoutiques: updateStatusInList(state.adminBoutiques),
         boutiquesByCategory: updateStatusInCategory,
         currentBoutique: state.currentBoutique?._id === id ? { ...state.currentBoutique, isActive: newStatus } : state.currentBoutique,
         boutiqueByDomain: state.boutiqueByDomain?._id === id ? { ...state.boutiqueByDomain, isActive: newStatus } : state.boutiqueByDomain,
@@ -456,6 +470,82 @@ const boutiqueReducer = (state = initialState, action) => {
         }
       };
 
+    // ============ ADMIN ACTIONS ============
+    
+    case BOUTIQUE_TYPES.LOADING_ADMIN_BOUTIQUES:
+      return { ...state, loadingAdmin: action.payload };
+    
+    case BOUTIQUE_TYPES.GET_ADMIN_BOUTIQUES: {
+      const { boutiques = [], total = 0, page = 1, totalPages = 1, hasMore = false, isSearching = false } = action.payload;
+      
+      const updatedAdminBoutiques = (page === 1 || isSearching) 
+        ? boutiques 
+        : [...state.adminBoutiques, ...boutiques];
+      
+      return {
+        ...state,
+        adminBoutiques: updatedAdminBoutiques,
+        adminTotal: total,
+        adminPage: page,
+        adminTotalPages: totalPages,
+        adminHasMore: hasMore,
+        loadingAdmin: false
+      };
+    }
+    
+    case BOUTIQUE_TYPES.GET_ADMIN_BOUTIQUES_PENDIENTES: {
+      const { boutiques: pendientes = [], total: pendTotal = 0, page: pendPage = 1, totalPages: pendTotalPages = 1, hasMore: pendHasMore = false } = action.payload;
+      
+      const updatedPendientes = pendPage === 1 ? pendientes : [...state.adminPendientes, ...pendientes];
+      
+      return {
+        ...state,
+        adminPendientes: updatedPendientes,
+        adminTotal: pendTotal,
+        adminPage: pendPage,
+        adminTotalPages: pendTotalPages,
+        adminHasMore: pendHasMore,
+        loadingAdmin: false
+      };
+    }
+    
+    case BOUTIQUE_TYPES.APPROVE_BOUTIQUE:
+      return {
+        ...state,
+        adminPendientes: state.adminPendientes.filter(b => b._id !== action.payload)
+      };
+    
+    case BOUTIQUE_TYPES.REJECT_BOUTIQUE:
+      return {
+        ...state,
+        adminPendientes: state.adminPendientes.filter(b => b._id !== action.payload)
+      };
+    
+    case BOUTIQUE_TYPES.UPDATE_ADMIN_BOUTIQUE_STATUS: {
+      const { id: statusId, isActive: statusIsActive } = action.payload;
+      
+      const updateAdminStatusInList = (list) => 
+        list.map(b => b._id === statusId ? { ...b, isActive: statusIsActive } : b);
+      
+      return {
+        ...state,
+        adminBoutiques: updateAdminStatusInList(state.adminBoutiques),
+        adminPendientes: updateAdminStatusInList(state.adminPendientes)
+      };
+    }
+    
+    case BOUTIQUE_TYPES.CLEAR_ADMIN_BOUTIQUES:
+      return {
+        ...state,
+        adminBoutiques: [],
+        adminPendientes: [],
+        adminTotal: 0,
+        adminPage: 1,
+        adminTotalPages: 1,
+        adminHasMore: false,
+        loadingAdmin: false
+      };
+
     // ============ CLEAR OPERATIONS ============
     case 'CLEAR_BOUTIQUES':
       return { ...initialState };
@@ -483,7 +573,7 @@ const boutiqueReducer = (state = initialState, action) => {
             hasMore: false,
             categoryInfo: null,
             children: [],
-            filterMetadata: null  // ✅ INCLUIR filterMetadata
+            filterMetadata: null
           }
         },
         loadingByCategory: {

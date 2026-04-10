@@ -1,10 +1,10 @@
 // 📂 pages/MesProductsBoutiques.jsx - VERSIÓN CORREGIDA con acciones reales
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState  } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Spinner, Alert, Container, Row, Col, Button, Badge, Card, Form } from 'react-bootstrap';
 import { useHistory } from 'react-router-dom';
 import { Pencil, Plus, Eye, Filter, Trash } from 'react-bootstrap-icons';
-import { FaStore, FaBoxOpen, FaToggleOn, FaToggleOff } from 'react-icons/fa';
+import { FaStore, FaBoxOpen } from 'react-icons/fa';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import moment from 'moment';
 import 'moment/locale/fr';

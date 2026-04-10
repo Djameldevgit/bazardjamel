@@ -31,12 +31,14 @@ import ProfileSettings from './pages/users/ProfileSettings';
 import ProfileSaved from './pages/users/ProfileSaved';
 import CreateBoutiqueProductPage from './pages/boutiqueProduct/CreateBoutiqueProductPage';
  
-import Posts from './pages/admin/Posts';
+import Posts from './pages/aprobation/Posts';
 import MesBoutiques from './pages/boutique/MesBoutiques';
  
 import ProductsBoutiquePage from './pages/boutiqueProduct/ProductsBoutiquePage';
 import MesProductsBoutiques from './pages/boutiqueProduct/MesProductsBoutiques';
 import DetailProduct from './pages/boutiqueProduct/DetailProduct';
+import AdminDashboard from './pages/administration/AdminDashborad';
+import PaymentBoutique from './pages/boutique/PayementBoutique';
 
  
 function App() {
@@ -73,6 +75,11 @@ function App() {
   <Route exact path="/register" component={Register} />
   <Route exact path="/login" component={Login} />
   
+
+
+
+  <Route exact path="/admindashboard" component={AdminDashboard} />
+
   {/* ============ RUTAS DE ADMIN ============ */}
   <Route path="/admin/posts" component={Posts} />
 
@@ -91,7 +98,8 @@ function App() {
   
   {/* 🔥 RUTA GENÉRICA DE BOUTIQUE - PARA VISTA PÚBLICA (VA AL FINAL DE LAS RUTAS DE BOUTIQUE) */}
   <Route exact path="/boutique/:id" component={BoutiqueDetailPage} />
-
+  
+<Route path="/payment-boutique/:boutiqueId" component={PaymentBoutique} />
   {/* ============ RUTAS DE ANUNCIOS NORMALES ============ */}
   <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
   <Route exact path="/edit-post/:id" component={CreateAnnoncePage} />
