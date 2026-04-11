@@ -28,18 +28,18 @@ router.delete('/boutique/:boutiqueId', auth, boutiqueCtrl.deleteBoutique);
 // HEADER IMAGES
 router.patch('/boutique/:boutiqueId/headerimages', auth, boutiqueCtrl.updateBoutiqueHeaderImages);
 router.delete('/boutique/:boutiqueId/headerimages/:imageId', auth, boutiqueCtrl.deleteBoutiqueHeaderImage);
-
+router.get('/boutique/:boutiqueId/follow/check', auth, boutiqueCtrl.checkFollowBoutique);
+router.get('/boutique/:boutiqueId/like/check', auth, boutiqueCtrl.checkLikeBoutique);
 // STATUS BOUTIQUE
  
 // FOLLOW BOUTIQUE
 router.patch('/boutique/:boutiqueId/follow', auth, boutiqueCtrl.followBoutique);
 router.post('/boutique/:boutiqueId/follow', auth, boutiqueCtrl.followBoutique);
-router.get('/boutique/:boutiqueId/follow/check', auth, boutiqueCtrl.checkFollowBoutique);
+ 
 
 // LIKE BOUTIQUE
 router.patch('/boutique/:boutiqueId/like', auth, boutiqueCtrl.likeBoutique);
 router.post('/boutique/:boutiqueId/like', auth, boutiqueCtrl.likeBoutique);
-router.get('/boutique/:boutiqueId/like/check', auth, boutiqueCtrl.checkLikeBoutique);
 
 // ============================================
 // RUTAS DE ADMINISTRACIÓN (Requieren auth + role admin/moderator)
@@ -47,13 +47,13 @@ router.get('/boutique/:boutiqueId/like/check', auth, boutiqueCtrl.checkLikeBouti
 
 // Boutiques PENDIENTES (para aprobar)
 router.get('/admin/boutiques/pendientes', auth, boutiqueCtrl.getBoutiquesPendientes);
-router.get('/admin/boutiques/pendientes/count', auth, boutiqueCtrl.getBoutiquesPendientesCount);
-router.put('/admin/boutiques/aprobar/:id', auth, boutiqueCtrl.aprobarBoutique);
+router.get('/boutiques/admin/pendientes/count', auth, boutiqueCtrl.getBoutiquesPendientesCount);
+router.patch('/admin/boutiques/aprobar/:id', auth, boutiqueCtrl.aprobarBoutique);
 router.delete('/admin/boutiques/rechazar/:id', auth, boutiqueCtrl.rechazarBoutique);
 
 // ✅ NUEVA RUTA: Boutiques APROBADAS (para el panel de administración principal)
 router.get('/admin/boutiques/aprobadas', auth, boutiqueCtrl.getBoutiquesAprobadas);
-
+router.patch('/admin/activar-pago/:id', auth,   boutiqueCtrl.activarBoutiquePago);
 // ✅ Cambiar estado de boutique (Admin)
 router.patch('/admin/boutiques/status/:id', auth, boutiqueCtrl.updateAdminBoutiqueStatus);
 

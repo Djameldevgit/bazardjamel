@@ -1,617 +1,294 @@
-// ctrls/boutiqueCtrl.js
+// 📂 controllers/boutiqueCtrl.js - VERSIÓN DEFINITIVA LIMPIADA
 const Boutique = require('../models/boutiqueModel');
 const Category = require('../models/categoryModel');
- 
+const User = require('../models/userModel');
+
 // Función para generar slug único (compatible con Node antiguo)
-const generateUniqueSlug = function(text) {
-  // Asegurar que text es string
-  var textStr = text ? text.toString() : '';
+const generateUniqueSlug = function(base) {
+  if (!base) base = 'boutique';
   
-  var baseSlug = textStr
+  var cleanBase = base
     .toLowerCase()
-    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
   
-  // Si después de limpiar queda vacío, usar valor por defecto
-  var finalBase = baseSlug || 'boutique';
-  
-  // Añadir timestamp para unicidad
+  var finalBase = cleanBase || 'boutique';
   var timestamp = Date.now().toString().slice(-6);
-  return finalBase + '-' + timestamp;
+  var random = Math.floor(Math.random() * 1000);
+  return finalBase + '-' + timestamp + '-' + random;
 };
 
 const boutiqueCtrl = {
-  createBoutique: async function(req, res) {
-    try {
-      var boutiqueData = req.body;
-      var user = req.user;
-      
-      // Calcular imagesCount de forma segura
-      var imagesCount = 0;
-      if (boutiqueData.images && boutiqueData.images.length) {
-        imagesCount = boutiqueData.images.length;
-      }
-
-      console.log('📦 Creando boutique:', {
-        nom_boutique: boutiqueData.nom_boutique,
-        categorie: boutiqueData.categorie,
-        domaine: boutiqueData.domaine_boutique,
-        imagesCount: imagesCount
-      });
-
-      // Validaciones básicas
-      var nom_boutique = boutiqueData.nom_boutique;
-      var categorie = boutiqueData.categorie;
-      var images = boutiqueData.images;
-
-      if (!nom_boutique || !categorie || !images || images.length === 0) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Champs requis manquants' 
-        });
-      }
-
-      // Verificar si el dominio ya existe
-      if (boutiqueData.domaine_boutique) {
-        var existing = await Boutique.findOne({ 
-          domaine_boutique: boutiqueData.domaine_boutique 
-        });
-
-        if (existing) {
-          return res.status(400).json({ 
-            success: false, 
-            message: 'Ce domaine est déjà utilisé. Veuillez en choisir un autre.' 
-          });
-        }
-      }
-
-      // Buscar categoría Boutiques
-      var boutiquesCategory = await Category.findOne({ 
-        slug: 'boutiques', 
-        level: 1 
-      });
-
-      if (!boutiquesCategory) {
-        return res.status(500).json({ 
-          success: false, 
-          message: 'Catégorie Boutiques non trouvée' 
-        });
-      }
-
-      // Generar slug ÚNICO para la boutique
-      var slugBase = boutiqueData.domaine_boutique || boutiqueData.nom_boutique;
-      var slug = generateUniqueSlug(slugBase);
-
-      // Asegurar que domaine_boutique tenga un valor válido
-      var domaine_boutique = boutiqueData.domaine_boutique || slug;
-
-      // Generar subCategory slug
-      var subCategory = 'boutique-' + categorie
-        .toLowerCase()
-        .replace(/[&]/g, 'et')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
-
-      // Crear nueva boutique - AÑADIR header_images
-      var newBoutique = new Boutique({
-        user: user._id,
-        categorie: categorie,
-        subCategory: subCategory,
-        articleType: boutiqueData.articleType || '',
-        category: boutiquesCategory._id,
-        nom_boutique: nom_boutique,
-        domaine_boutique: domaine_boutique,
-        slug: slug,
-        slogan_boutique: boutiqueData.slogan_boutique || '',
-        description_boutique: boutiqueData.description_boutique,
-        images: images,
-        // ============ NUEVO: header_images ============
-        header_images: boutiqueData.header_images || [],
-        plan: boutiqueData.plan || 'gratuit',
-        duree_abonnement: boutiqueData.duree_abonnement || '1mois',
-        date_debut: boutiqueData.date_debut || new Date(),
-        proprietaire: boutiqueData.proprietaire || {},
-        reseaux_sociaux: boutiqueData.reseaux_sociaux || {},
-        couleur_theme: boutiqueData.couleur_theme || '#2563eb',
-        offre_choisie: boutiqueData.offre_choisie,
-        duree_choisie: boutiqueData.duree_choisie,
-        montant_initial: boutiqueData.montant_initial || 0,
-        mois_offerts: boutiqueData.mois_offerts || 0,
-        montant_ttc: boutiqueData.montant_ttc || 0,
-        methode_paiement: boutiqueData.methode_paiement || '',
-        transaction_id: 'TR-' + Date.now() + '-' + Math.floor(Math.random() * 1000)
-      });
-
-      console.log('💾 Boutique à sauvegarder:', {
-        nom: newBoutique.nom_boutique,
-        domaine: newBoutique.domaine_boutique,
-        slug: newBoutique.slug,
-        imagesCount: newBoutique.images.length,
-        headerImagesCount: newBoutique.header_images.length
-      });
-
-      await newBoutique.save();
-
-      console.log('✅ Boutique créée avec succès, ID:', newBoutique._id);
-
-      res.status(201).json({
-        success: true,
-        message: 'Boutique créée avec succès!',
-        boutique: {
-          _id: newBoutique._id,
-          nom_boutique: newBoutique.nom_boutique,
-          domaine_boutique: newBoutique.domaine_boutique,
-          slug: newBoutique.slug,
-          images: newBoutique.images,
-          header_images: newBoutique.header_images
-        }
-      });
-
-    } catch (error) {
-      console.error('❌ Error en createBoutique:', error);
-
-      // Error de duplicado
-      if (error.code === 11000) {
-        // Verificar qué campo causó el duplicado de forma segura
-        if (error.keyPattern && error.keyPattern.domaine_boutique) {
-          return res.status(400).json({ 
-            success: false, 
-            message: 'Ce domaine est déjà utilisé. Veuillez en choisir un autre.' 
-          });
-        }
-        if (error.keyPattern && error.keyPattern.slug) {
-          return res.status(400).json({ 
-            success: false, 
-            message: 'Erreur de création. Veuillez réessayer.' 
-          });
-        }
-      }
-
-      res.status(500).json({ 
-        success: false, 
-        message: error.message 
-      });
-    }
-  },
-
-  updateBoutique: async function(req, res) {
-    try {
-      var id = req.params.boutiqueId;
-      var updateData = req.body;
-      var user = req.user;
-
-      console.log('📝 Actualizando boutique:', {
-        id: id,
-        nom_boutique: updateData.nom_boutique,
-        user: user._id
-      });
-
-      // Buscar la boutique
-      var boutique = await Boutique.findById(id);
-
-      if (!boutique) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Boutique non trouvée' 
-        });
-      }
-
-      // Verificar que el usuario sea el propietario
-      if (boutique.user.toString() !== user._id.toString()) {
-        return res.status(403).json({ 
-          success: false, 
-          message: 'Non autorisé à modifier cette boutique' 
-        });
-      }
-
-      // Verificar si el dominio ya existe (si está cambiando)
-      if (updateData.domaine_boutique && 
-          updateData.domaine_boutique !== boutique.domaine_boutique) {
-        var existing = await Boutique.findOne({ 
-          domaine_boutique: updateData.domaine_boutique,
-          _id: { $ne: id }
-        });
-
-        if (existing) {
-          return res.status(400).json({ 
-            success: false, 
-            message: 'Ce domaine est déjà utilisé. Veuillez en choisir un autre.' 
-          });
-        }
-      }
-
-      // Actualizar subCategory si cambia la categoría
-      var subCategory = boutique.subCategory;
-      if (updateData.categorie && updateData.categorie !== boutique.categorie) {
-        subCategory = 'boutique-' + updateData.categorie
-          .toLowerCase()
-          .replace(/[&]/g, 'et')
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-|-$/g, '');
-      }
-
-      // Regenerar slug solo si cambia el nombre o dominio
-      var slug = boutique.slug;
-      if (updateData.nom_boutique && updateData.nom_boutique !== boutique.nom_boutique) {
-        slug = generateUniqueSlug(updateData.nom_boutique);
-      } else if (updateData.domaine_boutique && updateData.domaine_boutique !== boutique.domaine_boutique) {
-        slug = generateUniqueSlug(updateData.domaine_boutique);
-      }
-
-      // Campos que se pueden actualizar (INCLUYENDO header_images)
-      var updatableFields = {
-        nom_boutique: updateData.nom_boutique,
-        domaine_boutique: updateData.domaine_boutique,
-        slug: slug,
-        slogan_boutique: updateData.slogan_boutique,
-        description_boutique: updateData.description_boutique,
-        categorie: updateData.categorie,
-        subCategory: subCategory,
-        articleType: updateData.articleType,
-        images: updateData.images,
-        // ============ NUEVO: header_images ============
-        header_images: updateData.header_images,
-        plan: updateData.plan,
-        duree_abonnement: updateData.duree_abonnement,
-        date_debut: updateData.date_debut,
-        proprietaire: updateData.proprietaire,
-        reseaux_sociaux: updateData.reseaux_sociaux,
-        couleur_theme: updateData.couleur_theme,
-        offre_choisie: updateData.offre_choisie,
-        duree_choisie: updateData.duree_choisie,
-        montant_initial: updateData.montant_initial,
-        mois_offerts: updateData.mois_offerts,
-        montant_ttc: updateData.montant_ttc,
-        methode_paiement: updateData.methode_paiement,
-        updatedAt: Date.now()
-      };
-
-      // Eliminar undefined values de forma segura
-      for (var key in updatableFields) {
-        if (updatableFields.hasOwnProperty(key)) {
-          if (updatableFields[key] === undefined) {
-            delete updatableFields[key];
-          }
-        }
-      }
-
-      // Actualizar boutique
-      var updatedBoutique = await Boutique.findByIdAndUpdate(
-        id,
-        updatableFields,
-        { new: true, runValidators: true }
-      ).populate('user', 'name username avatar email mobile');
-
-      if (!updatedBoutique) {
-        return res.status(404).json({
-          success: false,
-          message: 'Boutique non trouvée après mise à jour'
-        });
-      }
-
-      console.log('✅ Boutique actualizada con éxito:', updatedBoutique._id);
-
-      res.json({
-        success: true,
-        message: 'Boutique mise à jour avec succès!',
-        boutique: updatedBoutique
-      });
-
-    } catch (error) {
-      console.error('❌ Error en updateBoutique:', error);
-
-      if (error.code === 11000) {
-        if (error.keyPattern && error.keyPattern.domaine_boutique) {
-          return res.status(400).json({ 
-            success: false, 
-            message: 'Ce domaine est déjà utilisé. Veuillez en choisir un autre.' 
-          });
-        }
-        if (error.keyPattern && error.keyPattern.slug) {
-          return res.status(400).json({ 
-            success: false, 
-            message: 'Erreur de création. Veuillez réessayer.' 
-          });
-        }
-      }
-
-      res.status(500).json({ 
-        success: false, 
-        message: error.message 
-      });
-    }
-  },
-// En boutiqueCtrl.js - AÑADIR este método
-
-// 📂 controllers/boutiqueCtrl.js - AÑADIR ESTOS MÉTODOS
-
-// ============================================
-// GET BOUTIQUES PENDIENTES (CON PAGINACIÓN)
-// ============================================
-getBoutiquesPendientes: async (req, res) => {
+  
+  // ============================================
+  // CREATE BOUTIQUE (CORREGIDO)
+  // ============================================
+// ============ CREATE BOUTIQUE - LÓGICA CORREGIDA ============
+createBoutique: async function(req, res) {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-    const { categorie } = req.query;
+    console.log('🔵 Creando boutique');
+    console.log('📦 Body recibido:', JSON.stringify(req.body, null, 2));
     
-    // Verificar permisos
-    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
-      return res.status(403).json({ success: false, message: "Non autorisé. Admin requis." });
-    }
+    var boutiqueData = req.body;
+    var user = req.user;
     
-    // Query base
-    let query = { pendiente: true, isActive: true };
+    // Validación de campos requeridos
+    var requiredFields = ['nom_boutique', 'categorie'];
+    var missingFields = [];
     
-    // Filtrar por categoría
-    if (categorie && categorie !== 'undefined' && categorie !== 'null') {
-      query.categorie = { $regex: new RegExp(categorie, 'i') };
-    }
-    
-    console.log('📡 Query boutiques pendientes:', JSON.stringify(query));
-    
-    const [boutiques, total] = await Promise.all([
-      Boutique.find(query)
-        .populate('user', 'username email avatar name')
-        .sort('-createdAt')
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Boutique.countDocuments(query)
-    ]);
-    
-    const totalPages = Math.ceil(total / limit);
-    const hasMore = page < totalPages;
-    
-    res.json({
-      success: true,
-      boutiques,
-      total,
-      page,
-      limit,
-      totalPages,
-      hasMore
-    });
-  } catch (err) {
-    console.error('❌ Error en getBoutiquesPendientes:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-},
-
-// ============================================
-// APROBAR BOUTIQUE
-// ============================================
-aprobarBoutique: async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
-      return res.status(403).json({ success: false, message: "Non autorisé. Admin requis." });
-    }
-    
-    const boutique = await Boutique.findById(id);
-    if (!boutique) {
-      return res.status(404).json({ success: false, message: "Boutique non trouvée" });
-    }
-    
-    if (!boutique.pendiente) {
-      return res.status(400).json({ success: false, message: "Cette boutique est déjà approuvée" });
-    }
-    
-    boutique.pendiente = false;
-    await boutique.save();
-    
-    res.json({
-      success: true,
-      message: "Boutique approuvée avec succès",
-      boutique: {
-        _id: boutique._id,
-        nom_boutique: boutique.nom_boutique,
-        pendiente: boutique.pendiente
+    for (var i = 0; i < requiredFields.length; i++) {
+      var field = requiredFields[i];
+      if (!boutiqueData[field]) {
+        missingFields.push(field);
       }
-    });
-  } catch (err) {
-    console.error('❌ Error en aprobarBoutique:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-},
-getBoutiquesPendientesCount: async (req, res) => {
-  try {
-    // Verificar permisos
-    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'moderator')) {
-      return res.status(403).json({ success: false, message: "Non autorisé" });
     }
     
-    const count = await Boutique.countDocuments({ 
-      pendiente: true, 
-      isActive: true 
-    });
-    
-    console.log(`📊 Count boutiques pendientes: ${count}`);
-    
-    res.json({ success: true, count });
-  } catch (err) {
-    console.error('❌ Error en getBoutiquesPendientesCount:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-},
-// 📂 controllers/boutiqueCtrl.js - AÑADIR/VERIFICAR este método
-
-// ============================================
-// GET BOUTIQUES PENDIENTES (CON PAGINACIÓN)
-// ============================================
-getBoutiquesPendientes: async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-    const { categorie } = req.query;
-    
-    // Verificar permisos
-    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'moderator')) {
-      return res.status(403).json({ success: false, message: "Non autorisé. Admin requis." });
-    }
-    
-    let query = { pendiente: true, isActive: true };
-    
-    if (categorie && categorie !== 'undefined' && categorie !== 'null' && categorie !== '') {
-      query.categorie = { $regex: new RegExp(categorie, 'i') };
-    }
-    
-    console.log('📡 Query boutiques pendientes:', JSON.stringify(query));
-    
-    const [boutiques, total] = await Promise.all([
-      Boutique.find(query)
-        .populate('user', 'username email avatar name')
-        .sort('-createdAt')
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Boutique.countDocuments(query)
-    ]);
-    
-    const totalPages = Math.ceil(total / limit);
-    const hasMore = page < totalPages;
-    
-    res.json({
-      success: true,
-      boutiques: boutiques || [],
-      total: total || 0,
-      page: page,
-      limit: limit,
-      totalPages: totalPages || 1,
-      hasMore: hasMore || false
-    });
-  } catch (err) {
-    console.error('❌ Error en getBoutiquesPendientes:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-},
-rechazarBoutique: async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
-      return res.status(403).json({ success: false, message: "Non autorisé. Admin requis." });
-    }
-    
-    const boutique = await Boutique.findById(id);
-    if (!boutique) {
-      return res.status(404).json({ success: false, message: "Boutique non trouvée" });
-    }
-    
-    // Opcional: eliminar o marcar como inactiva
-    await Boutique.findByIdAndDelete(id);
-    
-    res.json({
-      success: true,
-      message: "Boutique rejetée avec succès"
-    });
-  } catch (err) {
-    console.error('❌ Error en rechazarBoutique:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-},
-
-// ============================================
-// GET CONTADOR DE BOUTIQUES PENDIENTES
-// ============================================
-getBoutiquesPendientesCount: async (req, res) => {
-  try {
-    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
-      return res.status(403).json({ success: false, message: "Non autorisé" });
-    }
-    
-    const count = await Boutique.countDocuments({ pendiente: true, isActive: true });
-    
-    res.json({ success: true, count });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-},
-
-// 🔥 APROBAR BOUTIQUE
-aprobarBoutique: async function(req, res) {
-  try {
-    const { id } = req.params;
-    
-    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Non autorisé. Admin requis.' 
-      });
-    }
-    
-    const boutique = await Boutique.findById(id);
-    if (!boutique) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Boutique non trouvée' 
-      });
-    }
-    
-    if (!boutique.pendiente) {
+    if (missingFields.length > 0) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Cette boutique est déjà approuvée' 
+        message: 'Champs requis manquants: ' + missingFields.join(', ')
       });
     }
     
-    boutique.pendiente = false;
-    await boutique.save();
+    // Obtener USER ID
+    var userId = user._id || boutiqueData.user;
+    if (!userId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Utilisateur non identifié' 
+      });
+    }
     
-    res.json({
+    // Manejo de imágenes según el plan
+    var images = boutiqueData.images || [];
+    var isFreePlan = (boutiqueData.plan === 'gratuit');
+    
+    // 🔥 LÓGICA CORREGIDA:
+    // - TODAS las boutiques requieren aprobación (pendiente = true)
+    // - Gratuitas: isActive = true (activadas automáticamente)
+    // - De pago: isActive = false (esperan pago)
+    var isPendiente = true;                    // SIEMPRE true - todas requieren aprobación
+    var isActive = isFreePlan ? true : false;  // Gratis=true, Pago=false
+    
+    console.log('📊 Plan:', boutiqueData.plan, '| Gratuito:', isFreePlan);
+    console.log('📊 Pendiente (requiere aprobación):', isPendiente);
+    console.log('📊 Activo (visible al público):', isActive);
+    console.log('📊 Explicación:', isFreePlan ? 
+      'Gratuita → Aprobación requerida, pero activación automática (prueba 5 días)' : 
+      'De pago → Aprobación requerida + espera pago para activación');
+    
+    // Logo por defecto para plan gratuito (si no hay imágenes)
+    if (isFreePlan && (!images || images.length === 0)) {
+      images = [{
+        url: 'https://res.cloudinary.com/dfjipgj2o/image/upload/q_auto/f_auto/v1775747960/boutique_to7oea.jpg',
+        public_id: 'default_logo_free'
+      }];
+      console.log('🖼️ Logo por defecto asignado para plan gratuito');
+    }
+    
+    // Validar imágenes solo para planes pagos
+    if (!isFreePlan && (!images || images.length === 0)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Au moins une image est requise pour les boutiques payantes' 
+      });
+    }
+    
+    // Verificar dominio único
+    if (boutiqueData.domaine_boutique) {
+      var existingBoutique = await Boutique.findOne({ 
+        domaine_boutique: boutiqueData.domaine_boutique 
+      });
+      if (existingBoutique) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Ce domaine est déjà utilisé' 
+        });
+      }
+    }
+    
+    // Buscar o crear categoría Boutiques
+    var boutiquesCategory = await Category.findOne({ slug: 'boutiques', level: 1 });
+    if (!boutiquesCategory) {
+      boutiquesCategory = await Category.create({
+        name: 'Boutiques',
+        slug: 'boutiques',
+        level: 1,
+        description: 'Toutes les boutiques du marketplace',
+        isActive: true
+      });
+    }
+    
+    // Generar slug
+    var slugBase = boutiqueData.domaine_boutique || boutiqueData.nom_boutique;
+    var slug = generateUniqueSlug(slugBase);
+    var domaine_boutique = boutiqueData.domaine_boutique || slug;
+    
+    // Generar subCategory
+    var subCategory = 'boutique-' + boutiqueData.categorie
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[&]/g, 'et')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    
+    // Asegurar que description_boutique tenga valor
+    var descriptionValue = boutiqueData.description_boutique;
+    if (!descriptionValue || descriptionValue.trim() === '') {
+      descriptionValue = 'Description de la boutique';
+    }
+    
+    // 🔥 Calcular fecha de expiración según plan y duración
+    var dateExpiration = null;
+    var dateDebut = boutiqueData.date_debut || new Date();
+    
+    if (isFreePlan) {
+      // Plan gratuito: expira en 5 días por defecto
+      var daysToAdd = 5;
+      if (boutiqueData.duree_abonnement === '1mois') daysToAdd = 30;
+      else if (boutiqueData.duree_abonnement === '3mois') daysToAdd = 90;
+      else if (boutiqueData.duree_abonnement === '6mois') daysToAdd = 180;
+      else if (boutiqueData.duree_abonnement === '1an') daysToAdd = 365;
+      else daysToAdd = 5;
+      
+      dateExpiration = new Date(dateDebut);
+      dateExpiration.setDate(dateExpiration.getDate() + daysToAdd);
+    } else {
+      // Plan de pago: usar fecha enviada o calcular
+      dateExpiration = boutiqueData.date_expiration || null;
+    }
+    
+    // Crear boutique
+    var newBoutique = new Boutique({
+      user: userId,
+      categorie: boutiqueData.categorie,
+      subCategory: boutiqueData.subCategory || subCategory,
+      articleType: boutiqueData.articleType || '',
+      category: boutiquesCategory._id,
+      nom_boutique: boutiqueData.nom_boutique,
+      domaine_boutique: domaine_boutique,
+      slug: slug,
+      slogan_boutique: boutiqueData.slogan_boutique || '',
+      description_boutique: descriptionValue,
+      images: images,
+      header_images: boutiqueData.header_images || [],
+      plan: boutiqueData.plan || 'gratuit',
+      duree_abonnement: boutiqueData.duree_abonnement || '1mois',
+      date_debut: dateDebut,
+      date_expiration: dateExpiration,
+      proprietaire: boutiqueData.proprietaire || {},
+      reseaux_sociaux: boutiqueData.reseaux_sociaux || {},
+      couleur_theme: boutiqueData.couleur_theme || '#2563eb',
+      montant_initial: boutiqueData.montant_initial || 0,
+      montant_ttc: boutiqueData.montant_ttc || 0,
+      transaction_id: boutiqueData.transaction_id || 'TR-' + Date.now(),
+      pendiente: isPendiente,     // 🔥 SIEMPRE true
+      isActive: isActive           // 🔥 Gratis=true, Pago=false
+    });
+    
+    await newBoutique.save();
+    
+    console.log('✅ Boutique creada exitosamente, ID:', newBoutique._id);
+    console.log('📊 Estado final:');
+    console.log('   - Pendiente (aprobación):', newBoutique.pendiente);
+    console.log('   - Activo (visible):', newBoutique.isActive);
+    console.log('   - Expira:', newBoutique.date_expiration);
+    
+    var successMessage = isFreePlan ?
+      'Votre boutique gratuite a été créée. Elle sera visible après validation par un administrateur.' :
+      'Votre boutique a été créée. Elle sera activée après validation et confirmation de paiement.';
+    
+    res.status(201).json({
       success: true,
-      message: 'Boutique approuvée avec succès',
+      message: successMessage,
       boutique: {
-        _id: boutique._id,
-        nom_boutique: boutique.nom_boutique,
-        pendiente: boutique.pendiente
+        _id: newBoutique._id,
+        nom_boutique: newBoutique.nom_boutique,
+        domaine_boutique: newBoutique.domaine_boutique,
+        slug: newBoutique.slug,
+        images: newBoutique.images,
+        plan: newBoutique.plan,
+        isActive: newBoutique.isActive,
+        pendiente: newBoutique.pendiente,
+        date_expiration: newBoutique.date_expiration
       }
     });
     
-  } catch (err) {
-    console.error('❌ Error en aprobarBoutique:', err);
-    res.status(500).json({ msg: err.message });
+  } catch (error) {
+    console.error('❌ Error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 },
-
+  // ============================================
+  // GET BOUTIQUE BY ID (con control de pendiente)
+  // ============================================
+// ============================================
+// GET BOUTIQUE BY ID (con control de permisos)
+// ============================================
 getBoutique: async function(req, res) {
   try {
     var id = req.params.id;
     var userId = req.user ? req.user._id : null;
     var userRole = req.user ? req.user.role : null;
-
+    
+    console.log('🔍 Buscando boutique:', id);
+    console.log('👤 Usuario:', { userId, userRole });
+    
     var boutique = await Boutique.findById(id)
       .populate('user', 'name username avatar email mobile')
       .lean();
-
+    
     if (!boutique) {
       return res.status(404).json({ 
         success: false, 
         message: 'Boutique non trouvée' 
       });
     }
-
-    // 🔥 VERIFICACIÓN CON pendiente (misma lógica que Post)
-    const isAdmin = userRole === 'admin' || userRole === 'moderator';
-    const isOwner = userId && boutique.user && boutique.user._id.toString() === userId.toString();
     
-    // Si está pendiente, solo admin/moderator o dueño pueden verla
-    if (boutique.pendiente === true && !isAdmin && !isOwner) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Cette boutique est en attente de validation.' 
-      });
+    // 🔥 CONTROL DE PERMISOS
+    var isAdmin = (userRole === 'admin' || userRole === 'moderator');
+    var isOwner = userId && boutique.user && boutique.user._id.toString() === userId.toString();
+    
+    console.log('📊 Estado boutique:', {
+      pendiente: boutique.pendiente,
+      isActive: boutique.isActive,
+      isAdmin,
+      isOwner
+    });
+    
+    // Caso 1: Boutique pendiente (esperando aprobación)
+    if (boutique.pendiente === true) {
+      // Solo admin o propietario pueden verla
+      if (!isAdmin && !isOwner) {
+        console.log('❌ Acceso denegado - Boutique pendiente');
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Cette boutique est en attente de validation.' 
+        });
+      }
     }
-
-    // Contadores seguros
+    
+    // Caso 2: Boutique inactiva (isActive = false)
+    if (boutique.isActive === false && boutique.pendiente === false) {
+      // Solo admin puede ver boutiques inactivas (esperando pago)
+      if (!isAdmin && !isOwner) {
+        console.log('❌ Acceso denegado - Boutique inactive');
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Cette boutique n\'est pas encore active.' 
+        });
+      }
+    }
+    
+    // Calcular contadores
     var followersCount = (boutique.followers || []).length;
     var likesCount = (boutique.likes || []).length;
     var produitsCount = (boutique.stats && boutique.stats.produits) || 0;
-
+    
     // Estado de interacción
     var isFollowing = false;
     var isLiked = false;
@@ -620,7 +297,7 @@ getBoutique: async function(req, res) {
       isFollowing = (boutique.followers || []).some(f => f.toString() === userId.toString());
       isLiked = (boutique.likes || []).some(l => l.toString() === userId.toString());
     }
-
+    
     var boutiqueData = {
       ...boutique,
       followersCount: followersCount,
@@ -632,12 +309,14 @@ getBoutique: async function(req, res) {
       isFollowing: isFollowing,
       isLiked: isLiked
     };
-
+    
+    console.log('✅ Acceso permitido a boutique:', boutique.nom_boutique);
+    
     res.json({
       success: true,
       boutique: boutiqueData
     });
-
+    
   } catch (error) {
     console.error('❌ Error en getBoutique:', error);
     res.status(500).json({ 
@@ -647,406 +326,532 @@ getBoutique: async function(req, res) {
     });
   }
 },
+  // ============================================
+  // GET BOUTIQUES PENDIENTES (Admin)
+  // ============================================
+  getBoutiquesPendientes: async function(req, res) {
+    try {
+      var page = parseInt(req.query.page) || 1;
+      var limit = parseInt(req.query.limit) || 10;
+      var skip = (page - 1) * limit;
+      
+      // Verificar permisos
+      if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'moderator')) {
+        return res.status(403).json({ success: false, message: "Non autorisé" });
+      }
+      
+      var query = { pendiente: true };
+      var total = await Boutique.countDocuments(query);
+      var boutiques = await Boutique.find(query)
+        .populate('user', 'username email name')
+        .sort('-createdAt')
+        .skip(skip)
+        .limit(limit)
+        .lean();
+      
+      res.json({
+        success: true,
+        boutiques: boutiques,
+        total: total,
+        page: page,
+        totalPages: Math.ceil(total / limit),
+        hasMore: skip + boutiques.length < total
+      });
+      
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+  
+  // ============================================
+  // COUNT BOUTIQUES PENDIENTES (Admin)
+  // ============================================
+  getBoutiquesPendientesCount: async function(req, res) {
+    try {
+      if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'moderator')) {
+        return res.status(403).json({ success: false, message: "Non autorisé" });
+      }
+      
+      var count = await Boutique.countDocuments({ pendiente: true });
+      res.json({ success: true, count: count });
+      
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+  
+  // ============================================
+  // APROBAR BOUTIQUE (Admin)
+  // ============================================
+  // ============================================
+// APROBAR BOUTIQUE (Admin)
+// ============================================
+// ============================================
+// APROBAR BOUTIQUE (Admin) - Solo quita pendiente
+// ============================================
+aprobarBoutique: async function(req, res) {
+  try {
+    var id = req.params.id;
+    
+    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'moderator')) {
+      return res.status(403).json({ success: false, message: "Non autorisé" });
+    }
+    
+    var boutique = await Boutique.findById(id);
+    if (!boutique) {
+      return res.status(404).json({ success: false, message: "Boutique non trouvée" });
+    }
+    
+    if (!boutique.pendiente) {
+      return res.status(400).json({ success: false, message: "Déjà approuvée" });
+    }
+    
+    // 🔥 Solo quitamos pendiente, NO tocamos isActive
+    boutique.pendiente = false;
+    await boutique.save();
+    
+    var message = boutique.plan === 'gratuit' ?
+      "Boutique gratuite approuvée. Elle est déjà active et visible." :
+      "Boutique approuvée. En attente de paiement pour activation.";
+    
+    console.log(`✅ Boutique approuvée: ${boutique.nom_boutique} (${boutique.plan}) par ${req.user.username}`);
+    
+    res.json({
+      success: true,
+      message: message,
+      boutique: {
+        _id: boutique._id,
+        nom_boutique: boutique.nom_boutique,
+        plan: boutique.plan,
+        pendiente: boutique.pendiente,
+        isActive: boutique.isActive
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error en aprobarBoutique:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+},
+  // ============================================
+  // RECHAZAR BOUTIQUE (Admin)
+  // ============================================
+  rechazarBoutique: async function(req, res) {
+    try {
+      var id = req.params.id;
+      
+      if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'moderator')) {
+        return res.status(403).json({ success: false, message: "Non autorisé" });
+      }
+      
+      var boutique = await Boutique.findByIdAndDelete(id);
+      if (!boutique) {
+        return res.status(404).json({ success: false, message: "Boutique non trouvée" });
+      }
+      
+      res.json({ success: true, message: "Boutique rejetée et supprimée" });
+      
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+  
+  // ============================================
+  // GET BOUTIQUES APROBADAS (Admin)
+  // ============================================
+  getBoutiquesAprobadas: async function(req, res) {
+    try {
+      var page = parseInt(req.query.page) || 1;
+      var limit = parseInt(req.query.limit) || 10;
+      var skip = (page - 1) * limit;
+      
+      if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'moderator')) {
+        return res.status(403).json({ success: false, message: "Non autorisé" });
+      }
+      
+      var query = { pendiente: false };
+      var total = await Boutique.countDocuments(query);
+      var boutiques = await Boutique.find(query)
+        .populate('user', 'username email name')
+        .sort('-createdAt')
+        .skip(skip)
+        .limit(limit)
+        .lean();
+      
+      res.json({
+        success: true,
+        boutiques: boutiques,
+        total: total,
+        page: page,
+        totalPages: Math.ceil(total / limit),
+        hasMore: skip + boutiques.length < total
+      });
+      
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+  
+  // ============================================
+  // UPDATE ADMIN BOUTIQUE STATUS
+  // ============================================
+  updateAdminBoutiqueStatus: async function(req, res) {
+    try {
+      var id = req.params.id;
+      var isActive = req.body.isActive;
+      
+      if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'moderator')) {
+        return res.status(403).json({ success: false, message: "Non autorisé" });
+      }
+      
+      var boutique = await Boutique.findById(id);
+      if (!boutique) {
+        return res.status(404).json({ success: false, message: "Boutique non trouvée" });
+      }
+      
+      boutique.isActive = isActive;
+      await boutique.save();
+      
+      res.json({
+        success: true,
+        message: isActive ? "Boutique activée" : "Boutique désactivée",
+        boutique: { _id: boutique._id, isActive: boutique.isActive }
+      });
+      
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+  
+  // ============================================
+  // GET USER BOUTIQUES
+  // ============================================
   getUserBoutiques: async function(req, res) {
     try {
       var user = req.user;
-
       var boutiques = await Boutique.find({ user: user._id })
         .sort({ createdAt: -1 })
         .lean();
-
-      res.json({
-        success: true,
-        boutiques: boutiques
-      });
-
+      
+      res.json({ success: true, boutiques: boutiques });
+      
     } catch (error) {
-      console.error('❌ Error en getUserBoutiques:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Erreur lors de la récupération des boutiques', 
-        error: error.message 
-      });
+      res.status(500).json({ success: false, message: error.message });
     }
   },
-
+  
+  // ============================================
+  // UPDATE BOUTIQUE
+  // ============================================
+  updateBoutique: async function(req, res) {
+    try {
+      var id = req.params.boutiqueId;
+      var updateData = req.body;
+      var user = req.user;
+      
+      var boutique = await Boutique.findById(id);
+      if (!boutique) {
+        return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+      }
+      
+      if (boutique.user.toString() !== user._id.toString()) {
+        return res.status(403).json({ success: false, message: 'Non autorisé' });
+      }
+      
+      var updatedBoutique = await Boutique.findByIdAndUpdate(id, updateData, { new: true });
+      
+      res.json({ success: true, message: 'Boutique mise à jour', boutique: updatedBoutique });
+      
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+  
+  // ============================================
+  // DELETE BOUTIQUE
+  // ============================================
   deleteBoutique: async function(req, res) {
     try {
-      var boutiqueId = req.params.boutiqueId;
+      var id = req.params.boutiqueId;
       var user = req.user;
-
-      var boutique = await Boutique.findById(boutiqueId);
-
+      
+      var boutique = await Boutique.findById(id);
       if (!boutique) {
-        return res.status(404).json({
-          success: false,
-          message: 'Boutique non trouvée',
-        });
+        return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
       }
-
+      
       if (boutique.user.toString() !== user._id.toString()) {
-        return res.status(403).json({
-          success: false,
-          message: 'Non autorisé à supprimer cette boutique',
-        });
+        return res.status(403).json({ success: false, message: 'Non autorisé' });
       }
-
-      await Boutique.findByIdAndDelete(boutiqueId);
-
-      res.json({
-        success: true,
-        message: 'Boutique supprimée avec succès',
-      });
+      
+      await Boutique.findByIdAndDelete(id);
+      
+      res.json({ success: true, message: 'Boutique supprimée' });
+      
     } catch (error) {
-      console.error('❌ Error en deleteBoutique:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erreur lors de la suppression de la boutique',
-        error: error.message,
-      });
+      res.status(500).json({ success: false, message: error.message });
     }
   },
-
-  verifyBoutique: async function(req, res) {
+  
+  // ============================================
+  // FILTER BOUTIQUES (Home)
+  // ============================================
+  filterBoutiques: async function(req, res) {
     try {
-      var id = req.params.id;
-      var verified = req.body.verified;
-
-      var boutique = await Boutique.findByIdAndUpdate(
-        id,
-        { 
-          isVerified: verified,
-          updatedAt: Date.now()
-        },
-        { new: true }
-      );
-
-      if (!boutique) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Boutique non trouvée' 
-        });
+      var page = parseInt(req.query.page) || 1;
+      var limit = parseInt(req.query.limit) || 12;
+      var skip = (page - 1) * limit;
+      
+      var user = req.user;
+      var filter = { isActive: true };
+      
+      // 🔥 CLAVE: Solo mostrar boutiques aprobadas al público
+      if (!user || (user.role !== 'admin' && user.role !== 'moderator')) {
+        filter.pendiente = false;
       }
-
+      
+      var boutiques = await Boutique.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('user', 'name username avatar')
+        .lean();
+      
+      var total = await Boutique.countDocuments(filter);
+      
       res.json({
         success: true,
-        message: verified ? 'Boutique vérifiée avec succès' : 'Boutique non vérifiée',
-        boutique: boutique
-      });
-
-    } catch (error) {
-      console.error('❌ Error en verifyBoutique:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Erreur lors de la vérification de la boutique', 
-        error: error.message 
-      });
-    }
-  },
-
- // 📂 controllers/boutiqueController.js - MODIFICAR filterBoutiques
-// ctrls/boutiqueCtrl.js - filterBoutiques con campo pendiente
-
-filterBoutiques: async function(req, res) {
-  try {
-    var page = parseInt(req.query.page) || 1;
-    var limit = parseInt(req.query.limit) || 12;
-    var skip = (page - 1) * limit;
-
-    var categorySlug = req.query.category;
-    var subSlug = req.query.sub;
-    var wilaya = req.query.wilaya;
-    var commune = req.query.commune;
-    var sortBy = req.query.sortBy;
-
-    // Validar categoría principal
-    if (!categorySlug || categorySlug !== 'boutiques') {
-      return res.status(400).json({ success: false, message: 'Categoría no válida' });
-    }
-
-    var categoryDoc = await Category.findOne({
-      slug: 'boutiques',
-      level: 1,
-      isActive: true
-    }).lean();
-
-    if (!categoryDoc) {
-      return res.status(404).json({ success: false, message: 'Categoría Boutiques no encontrada' });
-    }
-
-    // 🔥 FILTRO BASE: usar pendiente igual que en Post
-    const user = req.user || null;
-    let filter = { 
-      category: categoryDoc._id, 
-      isActive: true
-    };
-
-    // 🔥 MISMA LÓGICA QUE POSTS
-    if (user && (user.role === 'admin' || user.role === 'moderator')) {
-      // Admin/Moderador: ver todas las boutiques (incluyendo pendientes)
-      // No añadir filtro de pendiente
-    } else {
-      // Usuarios normales: SOLO boutiques aprobadas
-      filter.pendiente = false;
-    }
-
-    // Filtrado por subcategoría (tipo de boutique)
-    if (subSlug && subSlug !== 'undefined' && subSlug !== 'null') {
-      var subCategoryDoc = await Category.findOne({
-        slug: subSlug,
-        level: 2,
-        parent: categoryDoc._id,
-        isActive: true
-      }).lean();
-
-      if (subCategoryDoc) {
-        var nombreOriginal = subCategoryDoc.name || '';
-        var soloSlug = subCategoryDoc.slug || '';
-
-        var variantes = [
-          nombreOriginal,
-          nombreOriginal.replace('Boutique ', '').replace("d'", '').trim(),
-          nombreOriginal.toLowerCase(),
-          soloSlug,
-          soloSlug.replace(/-/g, ' ')
-        ];
-        
-        variantes = variantes.filter(function(v) {
-          return v && typeof v === 'string' && v.trim() !== '';
-        });
-
-        var orConditions = [];
-        for (var i = 0; i < variantes.length; i++) {
-          var v = variantes[i];
-          var escaped = v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          orConditions.push({ categorie: { $regex: escaped, $options: 'i' } });
-          orConditions.push({ subCategory: { $regex: escaped, $options: 'i' } });
-        }
-
-        var uniqueConditions = [];
-        var seen = {};
-        for (var j = 0; j < orConditions.length; j++) {
-          var condStr = JSON.stringify(orConditions[j]);
-          if (!seen[condStr]) {
-            seen[condStr] = true;
-            uniqueConditions.push(orConditions[j]);
-          }
-        }
-
-        filter.$or = uniqueConditions;
-      } else {
-        var cleaned = subSlug.replace(/-/g, ' ');
-        filter.$or = [
-          { categorie: { $regex: cleaned, $options: 'i' } },
-          { subCategory: { $regex: cleaned, $options: 'i' } }
-        ];
-      }
-    }
-
-    // ✅ FILTRO GEOGRÁFICO
-    if (wilaya && wilaya !== '') {
-      filter['proprietaire.wilaya'] = { $regex: new RegExp(`^${wilaya}$`, 'i') };
-    }
-    if (commune && commune !== '') {
-      filter['proprietaire.commune'] = { $regex: new RegExp(commune, 'i') };
-    }
-
-    // Ordenamiento para boutiques
-    var sort = { createdAt: -1 };
-    if (sortBy === 'name_asc') {
-      sort = { nom_boutique: 1 };
-    }
-    if (sortBy === 'name_desc') {
-      sort = { nom_boutique: -1 };
-    }
-
-    console.log('🎯 Filtro final BOUTIQUES:', JSON.stringify(filter, null, 2));
-
-    // Obtener boutiques
-    var boutiques = await Boutique.find(filter)
-      .sort(sort)
-      .skip(skip)
-      .limit(limit)
-      .populate('user', 'name username avatar email mobile')
-      .lean();
-
-    var total = await Boutique.countDocuments(filter);
-
-    // Obtener wilayas disponibles (solo boutiques aprobadas para el público)
-    let wilayasDisponibles = [];
-    if (user && (user.role === 'admin' || user.role === 'moderator')) {
-      wilayasDisponibles = await Boutique.distinct('proprietaire.wilaya', { 
-        category: categoryDoc._id, 
-        isActive: true 
-      });
-    } else {
-      wilayasDisponibles = await Boutique.distinct('proprietaire.wilaya', { 
-        category: categoryDoc._id, 
-        isActive: true,
-        pendiente: false 
-      });
-    }
-
-    // Obtener subcategorías para slider
-    var children = await Category.find({
-      parent: categoryDoc._id,
-      level: 2,
-      isActive: true
-    })
-      .select('_id name slug level emoji icon iconType iconColor bgColor')
-      .sort({ order: 1 })
-      .lean();
-
-    var childrenWithArticles = children.map(child => ({ ...child, articles: [] }));
-
-    return res.json({
-      success: true,
-      boutiques: boutiques,
-      total: total,
-      page: page,
-      limit: limit,
-      hasMore: page * limit < total,
-      totalPages: Math.ceil(total / limit),
-      categoryInfo: {
-        _id: categoryDoc._id,
-        name: categoryDoc.name,
-        slug: categoryDoc.slug,
-        level: categoryDoc.level,
-        emoji: categoryDoc.emoji || ''
-      },
-      children: childrenWithArticles,
-      filterMetadata: {
-        wilayas: wilayasDisponibles.filter(w => w && w !== ''),
-        priceRange: { min: 0, max: 0 }
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Error en filterBoutiques:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Error al filtrar boutiques', 
-      error: error.message 
-    });
-  }
-},
- // En controllers/boutiqueCtrl.js
-// controllers/boutiqueCtrl.js
-addView: async function(req, res) {
-  try {
-    const boutiqueId = req.params.boutiqueId;
-    const userId = req.user ? req.user._id : null;
-    const ip = req.ip || req.connection.remoteAddress;
-    const sessionId = req.sessionID;
-    
-    // Identificador único para la vista
-    let viewerId = userId ? userId.toString() : (sessionId || ip);
-    
-    console.log('📊 Registrando vista:', { 
-      boutiqueId, 
-      viewerId, 
-      isAuthenticated: !!userId 
-    });
-    
-    const boutique = await Boutique.findById(boutiqueId);
-    
-    if (!boutique) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Boutique non trouvée' 
-      });
-    }
-    
-    // Inicializar array de historial de vistas si no existe
-    if (!boutique.viewHistory) {
-      boutique.viewHistory = [];
-    }
-    
-    // Limpiar vistas antiguas (más de 24 horas)
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    boutique.viewHistory = boutique.viewHistory.filter(function(view) {
-      return view.timestamp && view.timestamp > oneDayAgo;
-    });
-    
-    // Verificar si este viewer ya vio en las últimas 24 horas
-    let existingView = null;
-    for (var i = 0; i < boutique.viewHistory.length; i++) {
-      if (boutique.viewHistory[i].viewerId === viewerId) {
-        existingView = boutique.viewHistory[i];
-        break;
-      }
-    }
-    
-    if (!existingView) {
-      // Registrar nueva vista única
-      boutique.viewHistory.push({
-        viewerId: viewerId,
-        timestamp: new Date(),
-        userAgent: req.headers['user-agent'] || 'unknown'
+        boutiques: boutiques,
+        total: total,
+        page: page,
+        hasMore: skip + boutiques.length < total
       });
       
-      // Incrementar contador total de vistas
-      boutique.views = (boutique.views || 0) + 1;
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+  
+  // ============================================
+  // ADD VIEW
+  // ============================================
+  addView: async function(req, res) {
+    try {
+      var boutiqueId = req.params.boutiqueId;
+      var userId = req.user ? req.user._id : null;
+      var ip = req.ip || req.connection.remoteAddress;
+      var sessionId = req.sessionID;
+      var viewerId = userId ? userId.toString() : (sessionId || ip);
+      
+      var boutique = await Boutique.findById(boutiqueId);
+      if (!boutique) {
+        return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+      }
+      
+      if (!boutique.viewHistory) {
+        boutique.viewHistory = [];
+      }
+      
+      var oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      boutique.viewHistory = boutique.viewHistory.filter(function(view) {
+        return view.timestamp && view.timestamp > oneDayAgo;
+      });
+      
+      var existingView = null;
+      for (var i = 0; i < boutique.viewHistory.length; i++) {
+        if (boutique.viewHistory[i].viewerId === viewerId) {
+          existingView = boutique.viewHistory[i];
+          break;
+        }
+      }
+      
+      if (!existingView) {
+        boutique.viewHistory.push({
+          viewerId: viewerId,
+          timestamp: new Date(),
+          userAgent: req.headers['user-agent'] || 'unknown'
+        });
+        boutique.views = (boutique.views || 0) + 1;
+        await boutique.save();
+      }
+      
+      res.json({ success: true, views: boutique.views || 0 });
+      
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+  
+  // ============================================
+  // FOLLOW BOUTIQUE
+  // ============================================
+  followBoutique: async function(req, res) {
+    try {
+      var userId = req.user._id;
+      var boutiqueId = req.params.boutiqueId;
+      
+      var boutique = await Boutique.findById(boutiqueId);
+      if (!boutique) {
+        return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+      }
+      
+      if (!boutique.followers) {
+        boutique.followers = [];
+      }
+      
+      var alreadyFollowing = false;
+      for (var i = 0; i < boutique.followers.length; i++) {
+        if (boutique.followers[i].toString() === userId.toString()) {
+          alreadyFollowing = true;
+          break;
+        }
+      }
+      
+      if (alreadyFollowing) {
+        boutique.followers = boutique.followers.filter(function(id) {
+          return id.toString() !== userId.toString();
+        });
+      } else {
+        boutique.followers.push(userId);
+      }
       
       await boutique.save();
       
-      console.log('✅ Vista única registrada:', {
-        boutiqueId,
-        viewerId,
-        totalViews: boutique.views,
-        uniqueToday: boutique.viewHistory.length
+      res.json({
+        success: true,
+        following: !alreadyFollowing,
+        followersCount: boutique.followers.length
       });
       
-      res.json({ 
-        success: true, 
-        views: boutique.views,
-        msg: "view counted" 
-      });
-    } else {
-      console.log('⏭️ Vista duplicada ignorada (menos de 24h):', { 
-        boutiqueId, 
-        viewerId,
-        lastView: existingView.timestamp 
-      });
-      
-      res.json({ 
-        success: true, 
-        views: boutique.views,
-        msg: "view already counted" 
-      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
     }
-    
-  } catch (err) {
-    console.error('❌ Error en addView:', err);
-    res.status(500).json({ 
-      success: false, 
-      msg: err.message 
-    });
-  }
-},
- // En boutiqueCtrl.js - updateBoutiqueHeaderImages
-// ctrls/boutiqueCtrl.js - Versión mejorada con más logs
+  },
+  
+  // ============================================
+  // LIKE BOUTIQUE
+  // ============================================
+  likeBoutique: async function(req, res) {
+    try {
+      var userId = req.user._id;
+      var boutiqueId = req.params.boutiqueId;
+      
+      var boutique = await Boutique.findById(boutiqueId);
+      if (!boutique) {
+        return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+      }
+      
+      if (!boutique.likes) {
+        boutique.likes = [];
+      }
+      
+      var alreadyLiked = false;
+      for (var i = 0; i < boutique.likes.length; i++) {
+        if (boutique.likes[i].toString() === userId.toString()) {
+          alreadyLiked = true;
+          break;
+        }
+      }
+      
+      if (alreadyLiked) {
+        boutique.likes = boutique.likes.filter(function(id) {
+          return id.toString() !== userId.toString();
+        });
+      } else {
+        boutique.likes.push(userId);
+      }
+      
+      await boutique.save();
+      
+      res.json({
+        success: true,
+        liked: !alreadyLiked,
+        likesCount: boutique.likes.length
+      });
+      
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+  
+  // ============================================
+  // GET BOUTIQUE FOLLOWERS COUNT
+  // ============================================
+  getBoutiqueFollowers: async function(req, res) {
+    try {
+      var boutiqueId = req.params.boutiqueId;
+      var boutique = await Boutique.findById(boutiqueId).select('followers');
+      
+      if (!boutique) {
+        return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+      }
+      
+      var followersCount = boutique.followers ? boutique.followers.length : 0;
+      var userFollowing = false;
+      
+      if (req.user && req.user._id) {
+        for (var i = 0; i < (boutique.followers || []).length; i++) {
+          if (boutique.followers[i].toString() === req.user._id.toString()) {
+            userFollowing = true;
+            break;
+          }
+        }
+      }
+      
+      res.json({ success: true, followersCount: followersCount, userFollowing: userFollowing });
+      
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+  
+  // ============================================
+  // GET BOUTIQUE LIKES COUNT
+  // ============================================
+  getBoutiqueLikes: async function(req, res) {
+    try {
+      var boutiqueId = req.params.boutiqueId;
+      var boutique = await Boutique.findById(boutiqueId).select('likes');
+      
+      if (!boutique) {
+        return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+      }
+      
+      var likesCount = boutique.likes ? boutique.likes.length : 0;
+      var userLiked = false;
+      
+      if (req.user && req.user._id) {
+        for (var i = 0; i < (boutique.likes || []).length; i++) {
+          if (boutique.likes[i].toString() === req.user._id.toString()) {
+            userLiked = true;
+            break;
+          }
+        }
+      }
+      
+      res.json({ success: true, likesCount: likesCount, userLiked: userLiked });
+      
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
 
-// controllers/boutiqueController.js
-
-// controllers/boutiqueController.js
-
-// controllers/boutiqueController.js
-
-// ctrls/boutiqueCtrl.js - Versión corregida
-
+ 
+// ============================================
+// UPDATE BOUTIQUE HEADER IMAGES
+// ============================================
 updateBoutiqueHeaderImages: async function(req, res) {
   try {
     console.log('='.repeat(50));
     console.log('🖼️ INICIO updateBoutiqueHeaderImages');
     
     const boutiqueId = req.params.boutiqueId;
-    // ✅ Aceptar tanto header_images como images (para compatibilidad)
+    // Aceptar tanto header_images como images (para compatibilidad)
     const headerImages = req.body.header_images || req.body.images || [];
     const user = req.user;
 
     console.log('📌 Datos recibidos:', {
-      boutiqueId,
+      boutiqueId: boutiqueId,
       headerImagesLength: headerImages.length,
       userId: user._id,
       source: req.body.header_images ? 'header_images' : (req.body.images ? 'images' : 'ninguno')
@@ -1100,46 +905,46 @@ updateBoutiqueHeaderImages: async function(req, res) {
       });
     }
 
-    // ✅ PROCESAR IMÁGENES: Si vienen con file (objetos con file), necesitamos extraer URLs
-    // En este punto, las imágenes ya deberían estar subidas a Cloudinary por el frontend
-    // Porque en la acción Redux ya se llamó a imageUpload antes de llegar aquí
+    // Verificar si las imágenes tienen file (no debería pasar porque ya se subieron en el frontend)
+    var hasFiles = false;
+    for (var i = 0; i < headerImages.length; i++) {
+      if (headerImages[i].file) {
+        hasFiles = true;
+        break;
+      }
+    }
     
-    let finalHeaderImages = headerImages;
-    
-    // Si las imágenes vienen con file (no debería pasar porque ya se subieron en el frontend)
-    // pero por si acaso, logueamos para debug
-    const hasFiles = headerImages.some(img => img.file);
     if (hasFiles) {
       console.warn('⚠️ Las imágenes tienen objetos file - esto debería haberse subido antes');
-      // Si tienen file, significa que el frontend no subió las imágenes
-      // Deberíamos rechazar o subir aquí
       return res.status(400).json({
         success: false,
         message: 'Les images doivent être téléchargées avant d\'être envoyées au serveur'
       });
     }
 
-    // ✅ Asegurar que cada imagen tenga el formato correcto
-    finalHeaderImages = finalHeaderImages.map(img => {
+    // Asegurar que cada imagen tenga el formato correcto
+    var finalHeaderImages = [];
+    for (var j = 0; j < headerImages.length; j++) {
+      var img = headerImages[j];
       if (typeof img === 'string') {
-        return { url: img, public_id: null };
+        finalHeaderImages.push({ url: img, public_id: null });
+      } else {
+        finalHeaderImages.push({
+          url: img.url || img.secure_url,
+          public_id: img.public_id || null,
+          alt: img.alt || 'Header image'
+        });
       }
-      return {
-        url: img.url || img.secure_url,
-        public_id: img.public_id || null,
-        alt: img.alt || `Header image`
-      };
-    });
+    }
 
     console.log('📦 Guardando header_images:', finalHeaderImages.length);
 
-    // ✅ ACTUALIZAR
+    // ACTUALIZAR
     boutique.header_images = finalHeaderImages;
     boutique.updatedAt = Date.now();
     await boutique.save();
 
     console.log('✅ Guardado exitoso:', finalHeaderImages.length, 'imágenes');
-    console.log('📋 URLs guardadas:', finalHeaderImages.map(img => img.url));
 
     res.json({
       success: true,
@@ -1156,138 +961,104 @@ updateBoutiqueHeaderImages: async function(req, res) {
     });
   }
 },
-  // ============ ELIMINAR IMAGEN DE HEADER (versión compatible con Node antiguo) ============
-  deleteBoutiqueHeaderImage: async function(req, res) {
-    try {
-      var boutiqueId = req.params.boutiqueId;
-      var imageId = req.params.imageId;
-      var user = req.user;
 
-      console.log('🗑️ Eliminando imagen de header:', { boutiqueId: boutiqueId, imageId: imageId });
-
-      // Buscar la boutique
-      var boutique = await Boutique.findById(boutiqueId);
-
-      if (!boutique) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Boutique non trouvée' 
-        });
-      }
-
-      // Verificar propiedad
-      if (boutique.user.toString() !== user._id.toString()) {
-        return res.status(403).json({ 
-          success: false, 
-          message: 'Non autorisé à modifier cette boutique' 
-        });
-      }
-
-      // Buscar la imagen a eliminar
-      var imageToDelete = null;
-      for (var i = 0; i < boutique.header_images.length; i++) {
-        var img = boutique.header_images[i];
-        if (img._id.toString() === imageId || img.public_id === imageId) {
-          imageToDelete = img;
-          break;
-        }
-      }
-
-      if (!imageToDelete) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Image non trouvée' 
-        });
-      }
-
-      // Eliminar de Cloudinary si tiene public_id
-      if (imageToDelete.public_id) {
-        try {
-          var cloudinary = require('cloudinary').v2;
-          await cloudinary.uploader.destroy(imageToDelete.public_id);
-        } catch (cloudinaryErr) {
-          console.warn('⚠️ No se pudo eliminar de Cloudinary:', cloudinaryErr);
-          // Continuamos aunque falle Cloudinary
-        }
-      }
-
-      // Eliminar del array (filtrar manualmente)
-      var newHeaderImages = [];
-      for (var j = 0; j < boutique.header_images.length; j++) {
-        var img = boutique.header_images[j];
-        if (img._id.toString() !== imageId && img.public_id !== imageId) {
-          newHeaderImages.push(img);
-        }
-      }
-      
-      boutique.header_images = newHeaderImages;
-      boutique.updatedAt = Date.now();
-      await boutique.save();
-
-      console.log('✅ Imagen eliminada correctamente');
-
-      res.json({
-        success: true,
-        message: 'Image supprimée avec succès',
-        header_images: boutique.header_images
-      });
-
-    } catch (error) {
-      console.error('❌ Error en deleteBoutiqueHeaderImage:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: error.message 
-      });
-    }
-  },
-
-// ============ FOLLOW BOUTIQUE ============
-// ============ FOLLOW BOUTIQUE ============
-followBoutique: async function(req, res) {
+// ============================================
+// DELETE BOUTIQUE HEADER IMAGE
+// ============================================
+deleteBoutiqueHeaderImage: async function(req, res) {
   try {
-    const userId = req.user._id;
-    const boutiqueId = req.params.boutiqueId;
+    var boutiqueId = req.params.boutiqueId;
+    var imageId = req.params.imageId;
+    var user = req.user;
 
-    const boutique = await Boutique.findById(boutiqueId);
+    console.log('🗑️ Eliminando imagen de header:', { boutiqueId: boutiqueId, imageId: imageId });
+
+    // Buscar la boutique
+    var boutique = await Boutique.findById(boutiqueId);
+
     if (!boutique) {
-      return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Boutique non trouvée' 
+      });
     }
 
-    // Inicializar followers array si no existe
-    if (!boutique.followers) {
-      boutique.followers = [];
+    // Verificar propiedad
+    if (boutique.user.toString() !== user._id.toString()) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Non autorisé à modifier cette boutique' 
+      });
     }
 
-    const alreadyFollowing = boutique.followers.some(id => id.toString() === userId.toString());
+    // Buscar la imagen a eliminar
+    var imageToDelete = null;
+    var imageIndex = -1;
+    for (var i = 0; i < boutique.header_images.length; i++) {
+      var img = boutique.header_images[i];
+      if (img._id && img._id.toString() === imageId) {
+        imageToDelete = img;
+        imageIndex = i;
+        break;
+      }
+      if (img.public_id === imageId) {
+        imageToDelete = img;
+        imageIndex = i;
+        break;
+      }
+    }
+
+    if (!imageToDelete) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Image non trouvée' 
+      });
+    }
+
+    // Eliminar de Cloudinary si tiene public_id
+    if (imageToDelete.public_id) {
+      try {
+        var cloudinary = require('cloudinary').v2;
+        await cloudinary.uploader.destroy(imageToDelete.public_id);
+        console.log('✅ Imagen eliminada de Cloudinary:', imageToDelete.public_id);
+      } catch (cloudinaryErr) {
+        console.warn('⚠️ No se pudo eliminar de Cloudinary:', cloudinaryErr.message);
+        // Continuamos aunque falle Cloudinary
+      }
+    }
+
+    // Eliminar del array
+    var newHeaderImages = [];
+    for (var j = 0; j < boutique.header_images.length; j++) {
+      if (j !== imageIndex) {
+        newHeaderImages.push(boutique.header_images[j]);
+      }
+    }
     
-    if (alreadyFollowing) {
-      // Unfollow
-      boutique.followers = boutique.followers.filter(id => id.toString() !== userId.toString());
-      await boutique.save();
-      
-      return res.json({ 
-        success: true, 
-        following: false, 
-        followersCount: boutique.followers.length 
-      });
-    } else {
-      // Follow
-      boutique.followers.push(userId);
-      await boutique.save();
-      
-      return res.json({ 
-        success: true, 
-        following: true, 
-        followersCount: boutique.followers.length 
-      });
-    }
+    boutique.header_images = newHeaderImages;
+    boutique.updatedAt = Date.now();
+    await boutique.save();
+
+    console.log('✅ Imagen eliminada correctamente');
+
+    res.json({
+      success: true,
+      message: 'Image supprimée avec succès',
+      header_images: boutique.header_images
+    });
+
   } catch (error) {
-    console.error('❌ Error followBoutique:', error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error('❌ Error en deleteBoutiqueHeaderImage:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
   }
 },
 
-// Check if user follows boutique
+// ============================================
+// CHECK IF USER FOLLOWS BOUTIQUE
+// ============================================
 checkFollowBoutique: async function(req, res) {
   try {
     const userId = req.user._id;
@@ -1295,90 +1066,39 @@ checkFollowBoutique: async function(req, res) {
 
     const boutique = await Boutique.findById(boutiqueId).select('followers');
     if (!boutique) {
-      return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Boutique non trouvée' 
+      });
     }
 
-    const following = boutique.followers ? boutique.followers.some(id => id.toString() === userId.toString()) : false;
-    
-    res.json({ success: true, following });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-},
-
-// Get boutique followers count
-getBoutiqueFollowers: async function(req, res) {
-  try {
-    const boutiqueId = req.params.boutiqueId;
-    const boutique = await Boutique.findById(boutiqueId).select('followers');
-    
-    if (!boutique) {
-      return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
-    }
-
-    const followersCount = boutique.followers ? boutique.followers.length : 0;
-    let userFollowing = false;
-    
-    if (req.user && req.user._id) {
-      userFollowing = boutique.followers ? boutique.followers.some(id => id.toString() === req.user._id.toString()) : false;
+    var following = false;
+    if (boutique.followers) {
+      for (var i = 0; i < boutique.followers.length; i++) {
+        if (boutique.followers[i].toString() === userId.toString()) {
+          following = true;
+          break;
+        }
+      }
     }
     
     res.json({ 
       success: true, 
-      followersCount, 
-      userFollowing 
+      following: following 
     });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-},
-
-// ============ LIKE BOUTIQUE ============
-likeBoutique: async function(req, res) {
-  try {
-    const userId = req.user._id;
-    const boutiqueId = req.params.boutiqueId;
-
-    const boutique = await Boutique.findById(boutiqueId);
-    if (!boutique) {
-      return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
-    }
-
-    // Inicializar likes array si no existe
-    if (!boutique.likes) {
-      boutique.likes = [];
-    }
-
-    const alreadyLiked = boutique.likes.some(id => id.toString() === userId.toString());
     
-    if (alreadyLiked) {
-      // Unlike
-      boutique.likes = boutique.likes.filter(id => id.toString() !== userId.toString());
-      await boutique.save();
-      
-      return res.json({ 
-        success: true, 
-        liked: false, 
-        likesCount: boutique.likes.length 
-      });
-    } else {
-      // Like
-      boutique.likes.push(userId);
-      await boutique.save();
-      
-      return res.json({ 
-        success: true, 
-        liked: true, 
-        likesCount: boutique.likes.length 
-      });
-    }
   } catch (error) {
-    console.error('❌ Error likeBoutique:', error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error('❌ Error en checkFollowBoutique:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
   }
 },
 
-// Check if user liked boutique
+// ============================================
+// CHECK IF USER LIKED BOUTIQUE
+// ============================================
 checkLikeBoutique: async function(req, res) {
   try {
     const userId = req.user._id;
@@ -1386,237 +1106,242 @@ checkLikeBoutique: async function(req, res) {
 
     const boutique = await Boutique.findById(boutiqueId).select('likes');
     if (!boutique) {
-      return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Boutique non trouvée' 
+      });
     }
 
-    const liked = boutique.likes ? boutique.likes.some(id => id.toString() === userId.toString()) : false;
-    
-    res.json({ success: true, liked });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-},
-
-// Get boutique likes count
-getBoutiqueLikes: async function(req, res) {
-  try {
-    const boutiqueId = req.params.boutiqueId;
-    const boutique = await Boutique.findById(boutiqueId).select('likes');
-    
-    if (!boutique) {
-      return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
-    }
-
-    const likesCount = boutique.likes ? boutique.likes.length : 0;
-    let userLiked = false;
-    
-    if (req.user && req.user._id) {
-      userLiked = boutique.likes ? boutique.likes.some(id => id.toString() === req.user._id.toString()) : false;
+    var liked = false;
+    if (boutique.likes) {
+      for (var i = 0; i < boutique.likes.length; i++) {
+        if (boutique.likes[i].toString() === userId.toString()) {
+          liked = true;
+          break;
+        }
+      }
     }
     
     res.json({ 
       success: true, 
-      likesCount, 
-      userLiked 
+      liked: liked 
     });
+    
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('❌ Error en checkLikeBoutique:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
   }
 },
-// ============ GET VIEWERS LIST ============
+ 
+  // ============================================
+// GET VIEWERS LIST (Usuarios que han visto la boutique)
+// ============================================
 getViewersList: async function(req, res) {
   try {
     const boutiqueId = req.params.boutiqueId;
+    
+    console.log('📊 Obteniendo lista de viewers para boutique:', boutiqueId);
+    
     const boutique = await Boutique.findById(boutiqueId).select('viewHistory');
     
     if (!boutique) {
-      return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Boutique non trouvée' 
+      });
     }
     
     // Obtener los IDs de los viewers únicos de las últimas 24 horas
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const recentViews = (boutique.viewHistory || []).filter(view => view.timestamp > oneDayAgo);
+    var recentViews = [];
+    
+    if (boutique.viewHistory && boutique.viewHistory.length > 0) {
+      for (var i = 0; i < boutique.viewHistory.length; i++) {
+        if (boutique.viewHistory[i].timestamp && boutique.viewHistory[i].timestamp > oneDayAgo) {
+          recentViews.push(boutique.viewHistory[i]);
+        }
+      }
+    }
     
     // Obtener IDs únicos
-    const viewerIds = [...new Set(recentViews.map(view => view.viewerId))];
+    var viewerIds = [];
+    var seenIds = {};
+    
+    for (var j = 0; j < recentViews.length; j++) {
+      var viewerId = recentViews[j].viewerId;
+      if (!seenIds[viewerId]) {
+        seenIds[viewerId] = true;
+        viewerIds.push(viewerId);
+      }
+    }
     
     // Obtener información de los usuarios
-    const User = require('../models/userModel');
-    const viewers = await User.find(
-      { _id: { $in: viewerIds } },
-      'name username avatar'
-    ).lean();
+    var viewers = [];
+    
+    if (viewerIds.length > 0) {
+      const User = require('../models/userModel');
+      viewers = await User.find(
+        { _id: { $in: viewerIds } },
+        'name username avatar email'
+      ).lean();
+    }
+    
+    console.log(`✅ ${viewers.length} viewers encontrados para boutique ${boutiqueId}`);
     
     res.json({
       success: true,
-      viewers: viewers
+      viewers: viewers,
+      count: viewers.length
     });
     
   } catch (error) {
-    console.error('❌ Error getViewersList:', error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error('❌ Error en getViewersList:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
   }
 },
 
-// ============ GET FOLLOWERS LIST ============
+// ============================================
+// GET FOLLOWERS LIST (Usuarios que siguen la boutique)
+// ============================================
 getFollowersList: async function(req, res) {
   try {
     const boutiqueId = req.params.boutiqueId;
-    const boutique = await Boutique.findById(boutiqueId).select('followers').populate('followers', 'name username avatar');
+    
+    console.log('📊 Obteniendo lista de followers para boutique:', boutiqueId);
+    
+    const boutique = await Boutique.findById(boutiqueId)
+      .select('followers nom_boutique')
+      .populate('followers', 'name username avatar email');
     
     if (!boutique) {
-      return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Boutique non trouvée' 
+      });
     }
+    
+    const followers = boutique.followers || [];
+    
+    console.log(`✅ ${followers.length} followers encontrados para boutique ${boutiqueId}`);
     
     res.json({
       success: true,
-      followers: boutique.followers || []
+      followers: followers,
+      count: followers.length,
+      boutique: {
+        id: boutique._id,
+        nom: boutique.nom_boutique
+      }
     });
     
   } catch (error) {
-    console.error('❌ Error getFollowersList:', error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error('❌ Error en getFollowersList:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
   }
 },
 
-// ============ GET LIKES LIST ============
+// ============================================
+// GET LIKES LIST (Usuarios que dieron like a la boutique)
+// ============================================
 getLikesList: async function(req, res) {
   try {
     const boutiqueId = req.params.boutiqueId;
-    const boutique = await Boutique.findById(boutiqueId).select('likes').populate('likes', 'name username avatar');
+    
+    console.log('📊 Obteniendo lista de likes para boutique:', boutiqueId);
+    
+    const boutique = await Boutique.findById(boutiqueId)
+      .select('likes nom_boutique')
+      .populate('likes', 'name username avatar email');
     
     if (!boutique) {
-      return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Boutique non trouvée' 
+      });
     }
+    
+    const likes = boutique.likes || [];
+    
+    console.log(`✅ ${likes.length} likes encontrados para boutique ${boutiqueId}`);
     
     res.json({
       success: true,
-      likes: boutique.likes || []
+      likes: likes,
+      count: likes.length,
+      boutique: {
+        id: boutique._id,
+        nom: boutique.nom_boutique
+      }
     });
     
   } catch (error) {
-    console.error('❌ Error getLikesList:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-},
-
-// ============================================
-// GET BOUTIQUES APROBADAS (para panel de administración)
-// ============================================
-// 📂 ctrls/boutiqueCtrl.js - Añadir este método
-
-// ============================================
-// GET BOUTIQUES APROBADAS (Para panel de administración)
-// ============================================
-getBoutiquesAprobadas: async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
-      return res.status(403).json({ 
-        success: false, 
-        message: "Non autorisé. Admin requis." 
-      });
-    }
-    
-    const boutique = await Boutique.findById(id);
-    if (!boutique) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Boutique non trouvée" 
-      });
-    }
-    
-    if (!boutique.pendiente) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Cette boutique est déjà approuvée" 
-      });
-    }
-    
-    // 🔥 ACTUALIZAR: Marcar como aprobada
-    boutique.pendiente = false;
-    
-    // 🔥 Si el plan es GRATUIT, activar automáticamente
-    if (boutique.plan === 'gratuit') {
-      boutique.isActive = true;
-      console.log(`✅ Boutique gratuite approuvée et activée automatiquement: ${boutique.nom_boutique}`);
-    } else {
-      // Plan de pago: queda inactiva hasta que el admin confirme el pago
-      boutique.isActive = false;
-      console.log(`⏳ Boutique payante approuvée mais inactive en attente de paiement: ${boutique.nom_boutique} (Plan: ${boutique.plan})`);
-    }
-    
-    await boutique.save();
-    
-    res.json({
-      success: true,
-      message: boutique.plan === 'gratuit' 
-        ? "Boutique gratuite approuvée et activée avec succès"
-        : "Boutique approuvée. En attente de paiement pour activation.",
-      boutique: {
-        _id: boutique._id,
-        nom_boutique: boutique.nom_boutique,
-        pendiente: boutique.pendiente,
-        isActive: boutique.isActive,
-        plan: boutique.plan
-      }
-    });
-    
-  } catch (err) {
-    console.error('❌ Error en aprobarBoutique:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-},
-// ============================================
-// UPDATE BOUTIQUE STATUS (Activar/Desactivar)
-// ============================================
-updateAdminBoutiqueStatus: async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { isActive } = req.body;
-    
-    // Verificar permisos
-    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'moderator')) {
-      return res.status(403).json({ 
-        success: false, 
-        message: "Non autorisé. Admin requis." 
-      });
-    }
-    
-    const boutique = await Boutique.findById(id);
-    if (!boutique) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Boutique non trouvée" 
-      });
-    }
-    
-    boutique.isActive = isActive;
-    boutique.updatedAt = Date.now();
-    await boutique.save();
-    
-    console.log(`✅ Boutique ${boutique.nom_boutique} ${isActive ? 'activée' : 'désactivée'} par ${req.user.username}`);
-    
-    res.json({
-      success: true,
-      message: isActive ? "Boutique activée avec succès" : "Boutique désactivée avec succès",
-      boutique: {
-        _id: boutique._id,
-        nom_boutique: boutique.nom_boutique,
-        isActive: boutique.isActive,
-        pendiente: boutique.pendiente
-      }
-    });
-    
-  } catch (err) {
-    console.error('❌ Error en updateAdminBoutiqueStatus:', err);
+    console.error('❌ Error en getLikesList:', error);
     res.status(500).json({ 
       success: false, 
-      error: err.message 
+      message: error.message 
     });
   }
 },
+
+// ============================================
+// ACTIVAR BOUTIQUE DE PAGO (Admin - después de confirmar pago)
+// ============================================
+activarBoutiquePago: async function(req, res) {
+  try {
+    var id = req.params.id;
+    
+    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'moderator')) {
+      return res.status(403).json({ success: false, message: "Non autorisé" });
+    }
+    
+    var boutique = await Boutique.findById(id);
+    if (!boutique) {
+      return res.status(404).json({ success: false, message: "Boutique non trouvée" });
+    }
+    
+    // Solo se puede activar si no es plan gratuito
+    if (boutique.plan === 'gratuit') {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Les boutiques gratuites sont automatiquement activées" 
+      });
+    }
+    
+    if (boutique.isActive === true) {
+      return res.status(400).json({ success: false, message: "Déjà activée" });
+    }
+    
+    // Activar boutique
+    boutique.isActive = true;
+    await boutique.save();
+    
+    console.log(`✅ Boutique de pago activée: ${boutique.nom_boutique} par ${req.user.username}`);
+    
+    res.json({
+      success: true,
+      message: "Boutique activée avec succès après confirmation du paiement",
+      boutique: {
+        _id: boutique._id,
+        nom_boutique: boutique.nom_boutique,
+        plan: boutique.plan,
+        isActive: boutique.isActive
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error en activarBoutiquePago:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
 
 };
 

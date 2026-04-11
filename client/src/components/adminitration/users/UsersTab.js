@@ -29,8 +29,7 @@ import {
   XCircle
 } from "react-bootstrap-icons";
 import moment from "moment";
-import "moment/locale/ar";
-import "moment/locale/es";
+import "moment/locale/fr";
 import { debounce } from 'lodash';
 
 import { getDataAPI } from "../../../utils/fetchData";
@@ -42,9 +41,6 @@ import {
   bloquearUsuario,
   unBlockUser,
 } from "../../../redux/actions/userAction";
-import {
-  getBlockedUsers,
-} from "../../../redux/actions/userBlockAction";
 import { MESS_TYPES } from "../../../redux/actions/messageAction";
 import { GLOBALTYPES } from "../../../redux/actions/globalTypes";
 
@@ -52,16 +48,11 @@ import LoadMoreBtn from "../../LoadMoreBtn";
 import UserCard from "../../UserCard";
 import BloqueModalUser from "./BloqueModalUser";
 
-// Recibimos props del AdminDashboard
 const UsersTab = ({ filters = {}, token: propToken }) => {
-  // Usamos Redux pero también permitimos recibir token por props
-  const { homeUsers, auth, socket, online, languageReducer } = useSelector((state) => state);
+  const { homeUsers, auth, socket, online } = useSelector((state) => state);
   const dispatch = useDispatch();
   
-  // Token prioritario: el que viene por props o el de Redux
   const authToken = propToken || auth?.token;
-  
-  const lang = languageReducer?.language || 'es';
   
   const [load, setLoad] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -69,160 +60,25 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
-  const [, forceRender] = useState(0);
   const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [userForPermission, setUserForPermission] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
 
-  // Estados para búsqueda en servidor
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchPage, setSearchPage] = useState(1);
   const [hasMoreSearch, setHasMoreSearch] = useState(false);
 
-  // Efecto para aplicar filtros desde el Drawer
-  useEffect(() => {
-    if (filters && Object.keys(filters).length > 0) {
-      // Aquí puedes aplicar los filtros del drawer
-      // Por ejemplo, si hay filtros, refrescar la búsqueda
-      console.log('Filtros aplicados:', filters);
-      // Refrescar usuarios con filtros
-      if (authToken) {
-        fetchUsersWithFilters();
-      }
-    }
-  }, [filters]);
-
-  // Función para obtener usuarios con filtros
-  const fetchUsersWithFilters = async () => {
-    try {
-      setLoad(true);
-      let query = `users?limit=9`;
-      
-      // Aplicar filtros si existen
-      if (filters.status) {
-        query += `&status=${filters.status}`;
-      }
-      if (filters.role) {
-        query += `&role=${filters.role}`;
-      }
-      if (filters.dateRange?.from) {
-        query += `&fromDate=${filters.dateRange.from}`;
-      }
-      if (filters.dateRange?.to) {
-        query += `&toDate=${filters.dateRange.to}`;
-      }
-      
-      const res = await getDataAPI(query, authToken);
-      dispatch({
-        type: USER_TYPES.GET_USERS,
-        payload: { ...res.data, page: 1 },
-      });
-    } catch (err) {
-      console.error("Error fetching users with filters:", err);
-    } finally {
-      setLoad(false);
-    }
-  };
-
-  // Función para buscar usuarios en el servidor
-  const searchUsers = useCallback(
-    debounce(async (searchTerm, page = 1) => {
-      if (!authToken) return;
-
-      try {
-        setIsSearching(true);
-        const normalizedSearchTerm = searchTerm.trim().toLowerCase();
-
-        if (normalizedSearchTerm.length === 0) {
-          setSearchResults([]);
-          return;
-        }
-
-        const query = `users/search?username=${encodeURIComponent(normalizedSearchTerm)}&page=${page}&limit=9&caseInsensitive=true`;
-        const res = await getDataAPI(query, authToken);
-
-        if (page === 1) {
-          setSearchResults(res.data.users || []);
-        } else {
-          setSearchResults(prev => [...prev, ...(res.data.users || [])]);
-        }
-
-        setSearchPage(page);
-        setHasMoreSearch(res.data.users && res.data.users.length === 9);
-      } catch (err) {
-        console.error("Error searching users:", err);
-        dispatch({
-          type: GLOBALTYPES.ALERT,
-          payload: { error: "Error en la búsqueda de usuarios" }
-        });
-      } finally {
-        setIsSearching(false);
-      }
-    }, 500),
-    [authToken, dispatch]
-  );
-
-  // Efecto para realizar búsqueda cuando el término cambia
-  useEffect(() => {
-    if (search.trim() !== "") {
-      searchUsers(search, 1);
-    } else {
-      setSearchResults([]);
-      setIsSearching(false);
-    }
-  }, [search, searchUsers]);
-
-  // Handler para cargar más resultados de búsqueda
-  const handleLoadMoreSearch = async () => {
-    if (!authToken || search.trim() === "") return;
-
-    try {
-      setLoad(true);
-      await searchUsers(search, searchPage + 1);
-    } catch (err) {
-      console.error("Error loading more search results:", err);
-    } finally {
-      setLoad(false);
-    }
-  };
-
-  useEffect(() => {
-    moment.locale(lang === 'ar' ? 'ar' : 'es');
-  }, [lang]);
+  moment.locale('fr');
 
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 992);
     };
-
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  const handleOpenPermissionModal = (user) => {
-    setUserForPermission(user);
-    setShowPermissionModal(true);
-  };
-
-  const handleClosePermissionModal = () => {
-    setUserForPermission(null);
-    setShowPermissionModal(false);
-  };
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      forceRender((n) => n + 1);
-    }, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (authToken) {
-      dispatch(getBlockedUsers(authToken));
-    }
-  }, [authToken, dispatch]);
 
   useEffect(() => {
     if (!socket || !auth?.user) return;
@@ -264,6 +120,64 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
       fetchUsers();
     }
   }, [authToken, dispatch, initialLoad]);
+
+  const searchUsers = useCallback(
+    debounce(async (searchTerm, page = 1) => {
+      if (!authToken) return;
+
+      try {
+        setIsSearching(true);
+        const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+
+        if (normalizedSearchTerm.length === 0) {
+          setSearchResults([]);
+          return;
+        }
+
+        const query = `users/search?username=${encodeURIComponent(normalizedSearchTerm)}&page=${page}&limit=9&caseInsensitive=true`;
+        const res = await getDataAPI(query, authToken);
+
+        if (page === 1) {
+          setSearchResults(res.data.users || []);
+        } else {
+          setSearchResults(prev => [...prev, ...(res.data.users || [])]);
+        }
+
+        setSearchPage(page);
+        setHasMoreSearch(res.data.users && res.data.users.length === 9);
+      } catch (err) {
+        console.error("Error searching users:", err);
+        dispatch({
+          type: GLOBALTYPES.ALERT,
+          payload: { error: "Erreur lors de la recherche" }
+        });
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500),
+    [authToken, dispatch]
+  );
+
+  useEffect(() => {
+    if (search.trim() !== "") {
+      searchUsers(search, 1);
+    } else {
+      setSearchResults([]);
+      setIsSearching(false);
+    }
+  }, [search, searchUsers]);
+
+  const handleLoadMoreSearch = async () => {
+    if (!authToken || search.trim() === "") return;
+    try {
+      setLoad(true);
+      await searchUsers(search, searchPage + 1);
+    } catch (err) {
+      console.error("Error loading more search results:", err);
+    } finally {
+      setLoad(false);
+    }
+  };
 
   const handleLoadMore = async () => {
     setLoad(true);
@@ -316,21 +230,6 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
       await dispatch(
         bloquearUsuario({ auth: { token: authToken }, datosBloqueo, user: selectedUser })
       );
-      dispatch({
-        type: USER_TYPES.UPDATE_USER_BLOCK_STATUS,
-        payload: {
-          userId: selectedUser._id,
-          esBloqueado: true,
-        },
-      });
-      dispatch(getBlockedUsers(authToken));
-
-      if (search.trim() !== "") {
-        setSearchResults(prev =>
-          prev.map(u => u._id === selectedUser._id ? { ...u, esBloqueado: true } : u)
-        );
-      }
-
       handleCloseModal();
     } catch (err) {
       console.error("Error blocking user:", err);
@@ -340,22 +239,6 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
   const handleUnblockUser = async (user) => {
     try {
       await dispatch(unBlockUser({ user, auth: { token: authToken } }));
-      dispatch({
-        type: USER_TYPES.UPDATE_USER_BLOCK_STATUS,
-        payload: {
-          userId: user._id,
-          esBloqueado: false,
-        },
-      });
-      dispatch(getBlockedUsers(authToken));
-
-      if (search.trim() !== "") {
-        setSearchResults(prev =>
-          prev.map(u => u._id === user._id ? { ...u, esBloqueado: false } : u)
-        );
-      }
-
-      forceRender(n => n + 1);
     } catch (err) {
       console.error("Error unblocking user:", err);
     }
@@ -364,12 +247,6 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
   const handleToggleActiveStatus = async (userId) => {
     try {
       await dispatch(toggleActiveStatus(userId, authToken));
-
-      if (search.trim() !== "") {
-        setSearchResults(prev =>
-          prev.map(u => u._id === userId ? { ...u, isActive: !u.isActive } : u)
-        );
-      }
     } catch (err) {
       console.error("Error toggling active status:", err);
     }
@@ -378,18 +255,21 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
   const handleToggleVerification = async (userId) => {
     try {
       await dispatch(toggleVerification(userId, authToken));
-
-      if (search.trim() !== "") {
-        setSearchResults(prev =>
-          prev.map(u => u._id === userId ? { ...u, isVerified: !u.isVerified } : u)
-        );
-      }
     } catch (err) {
       console.error("Error toggling verification:", err);
     }
   };
 
-  // Determinar qué usuarios mostrar
+  const handleOpenPermissionModal = (user) => {
+    setUserForPermission(user);
+    setShowPermissionModal(true);
+  };
+
+  const handleClosePermissionModal = () => {
+    setUserForPermission(null);
+    setShowPermissionModal(false);
+  };
+
   const usersToShow = search.trim() !== "" ? searchResults : homeUsers.users;
   const hasMore = search.trim() !== "" ? hasMoreSearch : homeUsers.result >= 9;
 
@@ -398,7 +278,7 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
       <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
         <div className="text-center">
           <Spinner animation="border" variant="primary" style={{ width: "3rem", height: "3rem" }} />
-          <p className="mt-3 text-muted fw-semibold">Cargando usuarios...</p>
+          <p className="mt-3 text-muted fw-semibold">Chargement des utilisateurs...</p>
         </div>
       </div>
     );
@@ -406,7 +286,6 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
 
   return (
     <Container fluid className="py-4">
-      {/* Header con buscador */}
       <Row className="mb-4">
         <Col>
           <Card className="border-0 shadow-sm bg-gradient" style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}>
@@ -419,18 +298,14 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                     </InputGroup.Text>
                     <Form.Control
                       type="text"
-                      placeholder="Buscar usuarios por nombre o email..."
+                      placeholder="Rechercher un utilisateur par nom ou email..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       className="border-0 shadow-sm"
                       style={{ fontSize: "1rem" }}
                     />
                     {search.trim() !== "" && (
-                      <Button
-                        variant="light"
-                        onClick={() => setSearch("")}
-                        className="border-0"
-                      >
+                      <Button variant="light" onClick={() => setSearch("")} className="border-0">
                         <XCircle />
                       </Button>
                     )}
@@ -439,7 +314,7 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                 <Col lg={4} md={5} className="text-md-end">
                   <Badge bg="light" text="dark" className="py-2 px-3 fs-6">
                     <i className="bi bi-person-check me-2"></i>
-                    {usersToShow.length} {search.trim() !== "" ? "resultados" : "usuarios"}
+                    {usersToShow.length} {search.trim() !== "" ? "résultats" : "utilisateurs"}
                   </Badge>
                 </Col>
               </Row>
@@ -448,43 +323,40 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
         </Col>
       </Row>
 
-      {/* Modal de eliminación */}
       <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
         <Modal.Header closeButton className="border-0 pb-0">
           <Modal.Title className="text-danger">
             <TrashFill className="me-2" />
-            Confirmar Eliminación
+            Confirmer la suppression
           </Modal.Title>
         </Modal.Header>
         <Modal.Body className="pt-2">
-          <p className="mb-0">¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.</p>
+          <p className="mb-0">Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.</p>
         </Modal.Body>
         <Modal.Footer className="border-0">
           <Button variant="outline-secondary" onClick={() => setShowDeleteModal(false)}>
-            Cancelar
+            Annuler
           </Button>
           <Button variant="danger" onClick={handleDeleteUser}>
             <TrashFill className="me-2" />
-            Eliminar
+            Supprimer
           </Button>
         </Modal.Footer>
       </Modal>
 
-      {/* Indicador de búsqueda */}
       {isSearching && search.trim() !== "" && (
         <Row className="mb-4">
           <Col>
             <Card className="border-0 shadow-sm">
               <Card.Body className="text-center py-4">
                 <Spinner animation="border" variant="primary" className="mb-2" />
-                <p className="mb-0 text-muted">Buscando...</p>
+                <p className="mb-0 text-muted">Recherche...</p>
               </Card.Body>
             </Card>
           </Col>
         </Row>
       )}
 
-      {/* Vista Mobile - Accordion */}
       {isMobile ? (
         <Row>
           <Col>
@@ -493,7 +365,7 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                 <Card.Body className="py-5">
                   <i className="bi bi-inbox" style={{ fontSize: "3rem", color: "#ccc" }}></i>
                   <p className="mt-3 mb-0 text-muted fs-5">
-                    {search ? "No se encontraron usuarios" : "No hay usuarios disponibles"}
+                    {search ? "Aucun utilisateur trouvé" : "Aucun utilisateur disponible"}
                   </p>
                 </Card.Body>
               </Card>
@@ -513,21 +385,21 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                       <Row className="g-3 mb-3">
                         <Col xs={6}>
                           <div className="p-2 bg-white rounded">
-                            <small className="text-muted d-block mb-1">Estado</small>
+                            <small className="text-muted d-block mb-1">Statut</small>
                             {online.some((u) => u._id === user._id) ? (
-                              <Badge bg="success" className="w-100">En línea</Badge>
+                              <Badge bg="success" className="w-100">En ligne</Badge>
                             ) : user.lastDisconnectedAt ? (
                               <Badge bg="secondary" className="w-100">
-                                Desconectado {moment(user.lastDisconnectedAt).fromNow()}
+                                Déconnecté {moment(user.lastDisconnectedAt).fromNow()}
                               </Badge>
                             ) : (
-                              <Badge bg="secondary" className="w-100">Desconectado</Badge>
+                              <Badge bg="secondary" className="w-100">Déconnecté</Badge>
                             )}
                           </div>
                         </Col>
                         <Col xs={6}>
                           <div className="p-2 bg-white rounded">
-                            <small className="text-muted d-block mb-1">Última desconexión</small>
+                            <small className="text-muted d-block mb-1">Dernière déconnexion</small>
                             {user.lastDisconnectedAt ? (
                               <small className="text-dark fw-semibold">
                                 {moment(user.lastDisconnectedAt).fromNow()}
@@ -539,7 +411,7 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                         </Col>
                         <Col xs={6}>
                           <div className="p-2 bg-white rounded">
-                            <small className="text-muted d-block mb-1">Registro</small>
+                            <small className="text-muted d-block mb-1">Inscription</small>
                             <small className="text-dark fw-semibold">
                               {new Date(user.createdAt).toLocaleDateString()}
                             </small>
@@ -547,31 +419,32 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                         </Col>
                         <Col xs={6}>
                           <div className="p-2 bg-white rounded">
-                            <small className="text-muted d-block mb-1">Verificación</small>
+                            <small className="text-muted d-block mb-1">Vérification</small>
                             {user.isVerified ? (
-                              <Badge bg="success" className="w-100"><CheckCircleFill className="me-1" /> Verificado</Badge>
+                              <Badge bg="success" className="w-100"><CheckCircleFill className="me-1" /> Vérifié</Badge>
                             ) : (
-                              <Badge bg="danger" className="w-100"><XCircleFill className="me-1" /> No verificado</Badge>
+                              <Badge bg="danger" className="w-100"><XCircleFill className="me-1" /> Non vérifié</Badge>
                             )}
                           </div>
                         </Col>
                         <Col xs={6}>
                           <div className="p-2 bg-white rounded">
-                            <small className="text-muted d-block mb-1">Estado cuenta</small>
+                            <small className="text-muted d-block mb-1">Statut compte</small>
                             {user.isActive ? (
-                              <Badge bg="success" className="w-100">Activo</Badge>
+                              <Badge bg="success" className="w-100">Actif</Badge>
                             ) : (
-                              <Badge bg="warning" text="dark" className="w-100">Inactivo</Badge>
+                              <Badge bg="warning" text="dark" className="w-100">Inactif</Badge>
                             )}
                           </div>
                         </Col>
                         <Col xs={6}>
                           <div className="p-2 bg-white rounded">
-                            <small className="text-muted d-block mb-1">Bloqueo</small>
-                            {user.esBloqueado ? (
-                              <Badge bg="danger" className="w-100">Bloqueado</Badge>
+                            <small className="text-muted d-block mb-1">Blocage</small>
+                            {/* 🔥 CORREGIDO: usar isBlocked en lugar de esBloqueado */}
+                            {user.isBlocked ? (
+                              <Badge bg="danger" className="w-100">Bloqué</Badge>
                             ) : (
-                              <Badge bg="success" className="w-100">No bloqueado</Badge>
+                              <Badge bg="success" className="w-100">Non bloqué</Badge>
                             )}
                           </div>
                         </Col>
@@ -580,20 +453,20 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                       <Dropdown className="d-grid">
                         <Dropdown.Toggle variant="primary" size="sm" className="w-100">
                           <ThreeDotsVertical className="me-2" />
-                          Acciones
+                          Actions
                         </Dropdown.Toggle>
                         <Dropdown.Menu className="w-100 shadow">
                           <Dropdown.Item disabled className="text-muted">
-                            <PencilFill className="me-2" /> Editar
+                            <PencilFill className="me-2" /> Modifier
                           </Dropdown.Item>
                           <Dropdown.Divider />
 
                           <Dropdown.Item className="text-danger" onClick={() => confirmDelete(user._id)}>
-                            <TrashFill className="me-2" /> Eliminar
+                            <TrashFill className="me-2" /> Supprimer
                           </Dropdown.Item>
 
                           <Dropdown.Item onClick={() => handleOpenPermissionModal(user)}>
-                            🛡️ Gestionar Permisos
+                            🛡️ Gérer les permissions
                           </Dropdown.Item>
 
                           <Dropdown.Divider />
@@ -607,21 +480,22 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                             ) : (
                               <UnlockFill className="me-2" />
                             )}
-                            {user.isActive ? "Desactivar" : "Activar"}
+                            {user.isActive ? "Désactiver" : "Activer"}
                           </Dropdown.Item>
 
+                          {/* 🔥 CORREGIDO: usar isBlocked en lugar de esBloqueado */}
                           <Dropdown.Item
-                            className={user.esBloqueado ? "text-success" : "text-danger"}
+                            className={user.isBlocked ? "text-success" : "text-danger"}
                             onClick={() =>
-                              user.esBloqueado ? handleUnblockUser(user) : handleOpenModal(user)
+                              user.isBlocked ? handleUnblockUser(user) : handleOpenModal(user)
                             }
                           >
-                            {user.esBloqueado ? (
+                            {user.isBlocked ? (
                               <UnlockFill className="me-2" />
                             ) : (
                               <LockFill className="me-2" />
                             )}
-                            {user.esBloqueado ? "Desbloquear" : "Bloquear"}
+                            {user.isBlocked ? "Débloquer" : "Bloquer"}
                           </Dropdown.Item>
 
                           <Dropdown.Item
@@ -633,7 +507,7 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                             ) : (
                               <CheckCircleFill className="me-2" />
                             )}
-                            {user.isVerified ? "Desverificar" : "Verificar"}
+                            {user.isVerified ? "Dévérifier" : "Vérifier"}
                           </Dropdown.Item>
                         </Dropdown.Menu>
                       </Dropdown>
@@ -645,7 +519,6 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
           </Col>
         </Row>
       ) : (
-        /* Vista Desktop - Tabla */
         <Card className="border-0 shadow-sm">
           <Card.Body className="p-0">
             <div className="table-responsive">
@@ -653,14 +526,14 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                 <thead style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}>
                   <tr>
                     <th className="text-white border-0 py-3">#</th>
-                    <th className="text-white border-0 py-3">Usuario</th>
-                    <th className="text-white border-0 py-3">Estado</th>
-                    <th className="text-white border-0 py-3">Última desconexión</th>
-                    <th className="text-white border-0 py-3">Registro</th>
-                    <th className="text-white border-0 py-3">Verificación</th>
-                    <th className="text-white border-0 py-3">Estado cuenta</th>
-                    <th className="text-white border-0 py-3">Bloqueo</th>
-                    <th className="text-white border-0 py-3 text-center">Acciones</th>
+                    <th className="text-white border-0 py-3">Utilisateur</th>
+                    <th className="text-white border-0 py-3">Statut</th>
+                    <th className="text-white border-0 py-3">Dernière déconnexion</th>
+                    <th className="text-white border-0 py-3">Inscription</th>
+                    <th className="text-white border-0 py-3">Vérification</th>
+                    <th className="text-white border-0 py-3">Statut compte</th>
+                    <th className="text-white border-0 py-3">Blocage</th>
+                    <th className="text-white border-0 py-3 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -669,7 +542,7 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                       <td colSpan="9" className="text-center py-5">
                         <i className="bi bi-inbox" style={{ fontSize: "3rem", color: "#ccc" }}></i>
                         <p className="mt-3 mb-0 text-muted fs-5">
-                          {search ? "No se encontraron usuarios" : "No hay usuarios disponibles"}
+                          {search ? "Aucun utilisateur trouvé" : "Aucun utilisateur disponible"}
                         </p>
                       </td>
                     </tr>
@@ -680,13 +553,13 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                         <td><UserCard user={user} /></td>
                         <td>
                           {online.some((u) => u._id === user._id) ? (
-                            <Badge bg="success" className="px-3 py-2">En línea</Badge>
+                            <Badge bg="success" className="px-3 py-2">En ligne</Badge>
                           ) : user.lastDisconnectedAt ? (
                             <Badge bg="secondary" className="px-3 py-2">
-                              Desconectado {moment(user.lastDisconnectedAt).fromNow()}
+                              Déconnecté {moment(user.lastDisconnectedAt).fromNow()}
                             </Badge>
                           ) : (
-                            <Badge bg="secondary" className="px-3 py-2">Desconectado</Badge>
+                            <Badge bg="secondary" className="px-3 py-2">Déconnecté</Badge>
                           )}
                         </td>
                         <td>
@@ -701,83 +574,64 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                         <td><small className="text-muted">{new Date(user.createdAt).toLocaleDateString()}</small></td>
                         <td>
                           {user.isVerified ? (
-                            <Badge bg="success" className="px-3 py-2"><CheckCircleFill className={`me-1 ${lang === 'ar' ? 'ms-1' : ''}`} /> Verificado</Badge>
+                            <Badge bg="success" className="px-3 py-2"><CheckCircleFill className="me-1" /> Vérifié</Badge>
                           ) : (
-                            <Badge bg="danger" className="px-3 py-2"><XCircleFill className={`me-1 ${lang === 'ar' ? 'ms-1' : ''}`} /> No verificado</Badge>
+                            <Badge bg="danger" className="px-3 py-2"><XCircleFill className="me-1" /> Non vérifié</Badge>
                           )}
                         </td>
                         <td>
                           {user.isActive ? (
-                            <Badge bg="success" className="px-3 py-2">Activo</Badge>
+                            <Badge bg="success" className="px-3 py-2">Actif</Badge>
                           ) : (
-                            <Badge bg="warning" text="dark" className="px-3 py-2">Inactivo</Badge>
+                            <Badge bg="warning" text="dark" className="px-3 py-2">Inactif</Badge>
                           )}
                         </td>
                         <td>
-                          {user.esBloqueado ? (
-                            <Badge bg="danger" className="px-3 py-2">Bloqueado</Badge>
+                          {/* 🔥 CORREGIDO: usar isBlocked en lugar de esBloqueado */}
+                          {user.isBlocked ? (
+                            <Badge bg="danger" className="px-3 py-2">Bloqué</Badge>
                           ) : (
-                            <Badge bg="success" className="px-3 py-2">No bloqueado</Badge>
+                            <Badge bg="success" className="px-3 py-2">Non bloqué</Badge>
                           )}
                         </td>
                         <td className="text-center">
-                          <Dropdown drop={lang === 'ar' ? 'start' : 'end'}>
-                            <Dropdown.Toggle variant="outline-primary" size="sm" id="dropdown-actions" className="rounded-circle" style={{ width: "35px", height: "35px", padding: "0" }}>
+                          <Dropdown>
+                            <Dropdown.Toggle variant="outline-primary" size="sm" className="rounded-circle" style={{ width: "35px", height: "35px", padding: "0" }}>
                               <ThreeDotsVertical />
                             </Dropdown.Toggle>
                             <Dropdown.Menu className="shadow border-0">
                               <Dropdown.Item className="text-danger" onClick={() => confirmDelete(user._id)}>
-                                <TrashFill className={`me-2 ${lang === 'ar' ? 'ms-2' : ''}`} /> Eliminar
+                                <TrashFill className="me-2" /> Supprimer
                               </Dropdown.Item>
-
                               <Dropdown.Divider />
-
                               <Dropdown.Item
                                 className={user.isActive ? "text-warning" : "text-success"}
                                 onClick={() => handleToggleActiveStatus(user._id)}
                               >
-                                {user.isActive ? (
-                                  <LockFill className={`me-2 ${lang === 'ar' ? 'ms-2' : ''}`} />
-                                ) : (
-                                  <UnlockFill className={`me-2 ${lang === 'ar' ? 'ms-2' : ''}`} />
-                                )}
-                                {user.isActive ? "Desactivar" : "Activar"}
+                                {user.isActive ? <LockFill className="me-2" /> : <UnlockFill className="me-2" />}
+                                {user.isActive ? "Désactiver" : "Activer"}
                               </Dropdown.Item>
-
+                              {/* 🔥 CORREGIDO: usar isBlocked en lugar de esBloqueado */}
                               <Dropdown.Item
-                                className={user.esBloqueado ? "text-success" : "text-danger"}
-                                onClick={() =>
-                                  user.esBloqueado ? handleUnblockUser(user) : handleOpenModal(user)
-                                }
+                                className={user.isBlocked ? "text-success" : "text-danger"}
+                                onClick={() => user.isBlocked ? handleUnblockUser(user) : handleOpenModal(user)}
                               >
-                                {user.esBloqueado ? (
-                                  <UnlockFill className={`me-2 ${lang === 'ar' ? 'ms-2' : ''}`} />
-                                ) : (
-                                  <LockFill className={`me-2 ${lang === 'ar' ? 'ms-2' : ''}`} />
-                                )}
-                                {user.esBloqueado ? "Desbloquear" : "Bloquear"}
+                                {user.isBlocked ? <UnlockFill className="me-2" /> : <LockFill className="me-2" />}
+                                {user.isBlocked ? "Débloquer" : "Bloquer"}
                               </Dropdown.Item>
-
                               <Dropdown.Item
                                 className={user.isVerified ? "text-danger" : "text-success"}
                                 onClick={() => handleToggleVerification(user._id)}
                               >
-                                {user.isVerified ? (
-                                  <XCircleFill className={`me-2 ${lang === 'ar' ? 'ms-2' : ''}`} />
-                                ) : (
-                                  <CheckCircleFill className={`me-2 ${lang === 'ar' ? 'ms-2' : ''}`} />
-                                )}
-                                {user.isVerified ? "Desverificar" : "Verificar"}
+                                {user.isVerified ? <XCircleFill className="me-2" /> : <CheckCircleFill className="me-2" />}
+                                {user.isVerified ? "Dévérifier" : "Vérifier"}
                               </Dropdown.Item>
-
                               <Dropdown.Divider />
-
                               <Dropdown.Item disabled className="text-muted">
-                                <PencilFill className={`me-2 ${lang === 'ar' ? 'ms-2' : ''}`} /> Editar
+                                <PencilFill className="me-2" /> Modifier
                               </Dropdown.Item>
-
                               <Dropdown.Item onClick={() => handleOpenPermissionModal(user)}>
-                                🛡️ Gestionar Permisos
+                                🛡️ Gérer les permissions
                               </Dropdown.Item>
                             </Dropdown.Menu>
                           </Dropdown>
@@ -792,21 +646,19 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
         </Card>
       )}
 
-      {/* Indicador de carga */}
       {load && (
         <Row className="my-4">
           <Col>
             <Card className="border-0 shadow-sm">
               <Card.Body className="text-center py-3">
                 <Spinner animation="border" variant="primary" size="sm" className="me-2" />
-                <span className="text-muted">Cargando más...</span>
+                <span className="text-muted">Chargement...</span>
               </Card.Body>
             </Card>
           </Col>
         </Row>
       )}
 
-      {/* Botón de cargar más */}
       {hasMore && usersToShow.length > 0 && (
         <Row className="my-4">
           <Col className="d-flex justify-content-center">
@@ -820,7 +672,6 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
         </Row>
       )}
 
-      {/* Modal de permisos */}
       {showPermissionModal && userForPermission && (
         <ModalPrivilegios
           user={userForPermission}
@@ -829,7 +680,6 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
         />
       )}
 
-      {/* Modal de bloqueo */}
       {showBlockModal && selectedUser && (
         <BloqueModalUser
           show={showBlockModal}

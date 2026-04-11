@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect,useRef } from 'react'
 import { BrowserRouter as Router, Switch, Route  } from 'react-router-dom'; // Switch en lugar de Routes para v5
 import GoogleTranslateManager from './components/GoogleTraslateManager'
 import { useSelector, useDispatch } from 'react-redux'
@@ -9,7 +9,7 @@ import io from 'socket.io-client'
 import { GLOBALTYPES } from './redux/actions/globalTypes'
 import SocketClient from './SocketClient'
 import Home from './pages/home';
-
+import Bloqueos404 from './components/adminitration/Bloqueos404';
 import NotFound from './pages/NotFound';
 import CategoryPage from './pages/category/CategoryPage';
 import Navbar2 from './components/header/Navbar2';
@@ -42,12 +42,12 @@ import PaymentBoutique from './pages/boutique/PayementBoutique';
 
  
 function App() {
-  const { auth } = useSelector(state => state)
+  const { auth , notify } = useSelector(state => state)
   const dispatch = useDispatch()
 
 
  
-
+   
   useEffect(() => {
     dispatch(refreshToken())
 
@@ -56,7 +56,61 @@ function App() {
     return () => socket.close()
   },[dispatch])
 
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      console.log('PWA manifest loaded successfully');
+    });
+  }
 
+  useEffect(() => {
+    if (!("Notification" in window)) {
+      alert("This browser does not support desktop notification");
+    }
+    else if (Notification.permission === "granted") { }
+    else if (Notification.permission !== "denied") {
+      Notification.requestPermission().then(function (permission) {
+        if (permission === "granted") { }
+      });
+    }
+  }, [])
+
+  const lastNotifyId = useRef(null);
+
+  useEffect(() => {
+    if (notify.data.length > 0) {
+      const ultima = notify.data[0];
+
+      // Solo ejecutar si es realmente una nueva notificación
+      if (ultima._id !== lastNotifyId.current) {
+        lastNotifyId.current = ultima._id;
+
+        // 🔔 Sonido
+        try {
+          const audio = new Audio("/sounds/notify.mp3");
+          audio.play().catch(err => {
+            console.log("⚠️ El sonido requiere interacción del usuario", err);
+          });
+        } catch (error) {
+          console.warn("Sonido no soportado", error);
+        }
+
+        // 📳 Vibración
+        if ("vibrate" in navigator) {
+          navigator.vibrate([300, 100, 300, 100, 600]);
+        }
+      }
+    }
+  }, [notify.data]);
+ 
+
+  if (auth.token && auth.user?.esBloqueado) {
+    return (
+      <Router>
+        <Route exact path="/bloqueos404" component={Bloqueos404} />
+        <Route path="*" component={Bloqueos404} />
+      </Router>
+    )
+  }
   return (
     <Router>
     <GoogleTranslateManager />
@@ -75,7 +129,7 @@ function App() {
   <Route exact path="/register" component={Register} />
   <Route exact path="/login" component={Login} />
   
-
+  <Route exact path="/bloqueos404" component={Bloqueos404} />
 
 
   <Route exact path="/admindashboard" component={AdminDashboard} />
@@ -119,6 +173,9 @@ function App() {
   <Route exact path="/:slug/:subSlug/:articleSlug/:page?" component={CategoryPage} />
 
   {/* ============ RUTA 404 - SIEMPRE AL FINAL ============ */}
+
+
+
   <Route component={NotFound} />
 </Switch>
     </div>

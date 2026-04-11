@@ -1,7 +1,7 @@
 // src/components/administration/boutiques/BoutiquesTab.jsx
 // VERSIÓN CORREGIDA - CON CARGA DIRECTA
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Container,
@@ -30,11 +30,7 @@ import {
   EyeFill,
   Shop,
   Person,
-  GraphUp,
-  Heart,
-  People,
-  FileText,
-  Flag
+  
 } from "react-bootstrap-icons";
 import moment from "moment";
 import { debounce } from 'lodash';

@@ -706,196 +706,160 @@ checkModeratorPermission: async (req, res) => {
       });
     }
   },
-  getUsersAction: async (req, res) => {
-    try {
-      var filter = req.query.filter;
+  // 📂 controllers/userCtrl.js - CORREGIR getUsersAction
 
-      console.log('🔍 Iniciando getUsersAction...');
+getUsersAction: async (req, res) => {
+  try {
+    var filter = req.query.filter;
 
-      // 🎯 CORREGIDO: Agregar populate para followers y following
-      var query = Users.find()
-        .select('-password')
-        .populate('followers', 'username   avatar')
-        .populate('following', 'username   avatar')
-        .lean();
+    console.log('🔍 Iniciando getUsersAction...');
 
-      var features = new APIfeatures(query, req.query).paginating();
-      var users = await features.query.sort('-createdAt');
+    // 🎯 CORREGIDO: Agregar populate para followers y following
+    var query = Users.find()
+      .select('-password')
+      .populate('followers', 'username avatar')
+      .populate('following', 'username avatar')
+      .lean();
 
-     
-      // 🎯 VERIFICACIÓN DE SEGURIDAD ANTES DEL MAP
-      if (!users || !Array.isArray(users)) {
-          users = [];
-      }
+    var features = new APIfeatures(query, req.query).paginating();
+    var users = await features.query.sort('-createdAt');
 
-      var usersWithDetails = await Promise.all(
-        users.map(async function(user) {
-          try {
-            console.log('🔍 Procesando usuario: ' + user.username, {
-              followers: user.followers,
-              following: user.following
-            });
-
-            var posts = await Posts.find({ user: user._id });
-            
-            // 🎯 CÁLCULOS SEGUROS
-            var totalLikesReceived = posts.reduce(
-              function(acc, post) {
-                return acc + (post.likes ? post.likes.length : 0);
-              },
-              0
-            );
-            
-            var totalCommentsReceived = posts.reduce(
-              function(acc, post) {
-                return acc + (post.comments ? post.comments.length : 0);
-              },
-              0
-            );
-            
-            var reportsReceived = await Report.countDocuments({
-              userId: user._id,
-            });
-            
-            var likesGiven = await Posts.countDocuments({ likes: user._id });
-            var commentsMade = await Comments.countDocuments({
-              user: user._id,
-            });
-
-            // 🎯 CORREGIDO: Typo en blockInfo
-            var blockInfo = await BlockUser.findOne({ user: user._id })
-              .populate('userquibloquea', 'username')
-              .select('motivo content fechaLimite esBloqueado createdAt');
-
-            // 🎯 CORREGIDO: Typo en blockInfoData
-            var blockInfoData = null;
-            if (blockInfo) {
-              blockInfoData = {
-                motivo: blockInfo.motivo,
-                content: blockInfo.content,
-                fechaLimite: blockInfo.fechaLimite,
-                esBloqueado: blockInfo.esBloqueado,
-                createdAt: blockInfo.createdAt,
-                bloqueadoPor: blockInfo.userquibloquea ? blockInfo.userquibloquea.username : 'Desconocido'
-              };
-            }
-
-            // 🎯 ESTRUCTURA SEGURA DEL USUARIO
-            var userObject = Object.assign({}, user);
-            
-            // 🎯 AGREGAR CAMPOS FALTANTES PARA EL FRONTEND
-            userObject.bio = user.bio || '';
-            userObject.story = user.story || '';
-            userObject.website = user.website || '';
-            userObject.mobile = user.mobile || '';
-            userObject.address = user.address || '';
-            
-            // 🎯 CÁLCULOS SEGUROS
-            userObject.postCount = posts.length;
-            userObject.totalLikesReceived = totalLikesReceived;
-            userObject.totalCommentsReceived = totalCommentsReceived;
-            userObject.totalFollowers = user.followers ? user.followers.length : 0;
-            userObject.totalFollowing = user.following ? user.following.length : 0;
-            userObject.totalReportsReceived = reportsReceived;
-            userObject.likesGiven = likesGiven;
-            userObject.commentsMade = commentsMade;
-            userObject.blockInfo = blockInfoData;
-            
-            // 🎯 ASEGURAR ARRAYS PARA EL FRONTEND
-            userObject.posts = posts || [];
-            userObject.followers = user.followers || [];
-            userObject.following = user.following || [];
-
-            return userObject;
-            
-          } catch (userError) {
-            console.error('❌ Error procesando usuario ' + user.username + ':', userError);
-            
-            // 🎯 DEVOLVER USUARIO BÁSICO EN CASO DE ERROR
-            var safeUser = Object.assign({}, user);
-            safeUser.postCount = 0;
-            safeUser.totalLikesReceived = 0;
-            safeUser.totalCommentsReceived = 0;
-            safeUser.totalFollowers = 0;
-            safeUser.totalFollowing = 0;
-            safeUser.totalReportsReceived = 0;
-            safeUser.likesGiven = 0;
-            safeUser.commentsMade = 0;
-            safeUser.blockInfo = null;
-            safeUser.posts = [];
-            safeUser.followers = [];
-            safeUser.following = [];
-            safeUser.bio = user.bio || '';
-            safeUser.story = user.story || '';
-            safeUser.website = user.website || '';
-            safeUser.mobile = user.mobile || '';
-            safeUser.address = user.address || '';
-            
-            return safeUser;
-          }
-        })
-      );
-
-      // 📊 Aplicar filtros
-      switch (filter) {
-        case 'mostLikes':
-          usersWithDetails.sort(function(a, b) {
-            return b.totalLikesReceived - a.totalLikesReceived;
-          });
-          break;
-        case 'mostComments':
-          usersWithDetails.sort(function(a, b) {
-            return b.totalCommentsReceived - a.totalCommentsReceived;
-          });
-          break;
-        case 'mostFollowers':
-          usersWithDetails.sort(function(a, b) {
-            return b.totalFollowers - a.totalFollowers;
-          });
-          break;
-        case 'mostPosts':
-          usersWithDetails.sort(function(a, b) {
-            return b.postCount - a.postCount;
-          });
-          break;
-        case 'mostReports':
-          usersWithDetails.sort(function(a, b) {
-            return b.totalReportsReceived - a.totalReportsReceived;
-          });
-          break;
-        case 'lastLogin':
-          usersWithDetails.sort(function(a, b) {
-            var dateA = new Date(a.lastLogin || 0);
-            var dateB = new Date(b.lastLogin || 0);
-            return dateB - dateA;
-          });
-          break;
-        case 'latestRegistered':
-          usersWithDetails.sort(function(a, b) {
-            var dateA = new Date(a.createdAt);
-            var dateB = new Date(b.createdAt);
-            return dateB - dateA;
-          });
-          break;
-        default:
-          break;
-      }
-
-      console.log('✅ getUsersAction completado: ' + usersWithDetails.length + ' usuarios');
-
-      res.json({
-        msg: 'Success!',
-        result: usersWithDetails.length,
-        users: usersWithDetails,
-      });
-    } catch (err) {
-      console.error('❌ ERROR en getUsersAction:', err);
-      return res.status(500).json({ 
-        msg: err.message,
-        users: [] // 🎯 Siempre devolver array vacío en error
-      });
+    if (!users || !Array.isArray(users)) {
+        users = [];
     }
-  },
+
+    var usersWithDetails = await Promise.all(
+      users.map(async function(user) {
+        try {
+          console.log('🔍 Procesando usuario: ' + user.username);
+
+          var posts = await Posts.find({ user: user._id });
+          
+          // Cálculos
+          var totalLikesReceived = posts.reduce(function(acc, post) {
+            return acc + (post.likes ? post.likes.length : 0);
+          }, 0);
+          
+          var totalCommentsReceived = posts.reduce(function(acc, post) {
+            return acc + (post.comments ? post.comments.length : 0);
+          }, 0);
+          
+          var reportsReceived = await Report.countDocuments({ userId: user._id });
+          var likesGiven = await Posts.countDocuments({ likes: user._id });
+          var commentsMade = await Comments.countDocuments({ user: user._id });
+
+          // 🔥 CORREGIDO: Usar isBlocked del modelo User en lugar de consultar BlockUser
+          var blockInfoData = null;
+          if (user.isBlocked && user.blockInfo) {
+            blockInfoData = {
+              motivo: user.blockInfo.motivo || 'Sin especificar',
+              content: user.blockInfo.content,
+              fechaLimite: user.blockInfo.fechaLimite,
+              esBloqueado: user.isBlocked,
+              bloqueadoEn: user.blockInfo.bloqueadoEn,
+              bloqueadoPor: user.blockInfo.bloqueadoPor || null
+            };
+          }
+
+          // Estructura del usuario
+          var userObject = {
+            ...user,
+            // Campos adicionales
+            bio: user.bio || '',
+            story: user.story || '',
+            website: user.website || '',
+            mobile: user.mobile || '',
+            address: user.address || '',
+            // 🔥 IMPORTANTE: Asegurar que isBlocked está presente
+            isBlocked: user.isBlocked || false,
+            // Cálculos
+            postCount: posts.length,
+            totalLikesReceived: totalLikesReceived,
+            totalCommentsReceived: totalCommentsReceived,
+            totalFollowers: user.followers ? user.followers.length : 0,
+            totalFollowing: user.following ? user.following.length : 0,
+            totalReportsReceived: reportsReceived,
+            likesGiven: likesGiven,
+            commentsMade: commentsMade,
+            blockInfo: blockInfoData,
+            posts: posts || [],
+            followers: user.followers || [],
+            following: user.following || []
+          };
+
+          return userObject;
+          
+        } catch (userError) {
+          console.error('❌ Error procesando usuario ' + user.username + ':', userError);
+          
+          // Usuario seguro en caso de error
+          return {
+            ...user,
+            postCount: 0,
+            totalLikesReceived: 0,
+            totalCommentsReceived: 0,
+            totalFollowers: 0,
+            totalFollowing: 0,
+            totalReportsReceived: 0,
+            likesGiven: 0,
+            commentsMade: 0,
+            blockInfo: null,
+            posts: [],
+            followers: [],
+            following: [],
+            bio: user.bio || '',
+            story: user.story || '',
+            website: user.website || '',
+            mobile: user.mobile || '',
+            address: user.address || '',
+            isBlocked: user.isBlocked || false
+          };
+        }
+      })
+    );
+
+    // Aplicar filtros
+    switch (filter) {
+      case 'mostLikes':
+        usersWithDetails.sort((a, b) => b.totalLikesReceived - a.totalLikesReceived);
+        break;
+      case 'mostComments':
+        usersWithDetails.sort((a, b) => b.totalCommentsReceived - a.totalCommentsReceived);
+        break;
+      case 'mostFollowers':
+        usersWithDetails.sort((a, b) => b.totalFollowers - a.totalFollowers);
+        break;
+      case 'mostPosts':
+        usersWithDetails.sort((a, b) => b.postCount - a.postCount);
+        break;
+      case 'mostReports':
+        usersWithDetails.sort((a, b) => b.totalReportsReceived - a.totalReportsReceived);
+        break;
+      case 'lastLogin':
+        usersWithDetails.sort((a, b) => new Date(b.lastLogin || 0) - new Date(a.lastLogin || 0));
+        break;
+      case 'latestRegistered':
+        usersWithDetails.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        break;
+      default:
+        break;
+    }
+
+    console.log('✅ getUsersAction completado: ' + usersWithDetails.length + ' usuarios');
+
+    res.json({
+      msg: 'Success!',
+      result: usersWithDetails.length,
+      users: usersWithDetails,
+    });
+  } catch (err) {
+    console.error('❌ ERROR en getUsersAction:', err);
+    return res.status(500).json({ 
+      msg: err.message,
+      users: []
+    });
+  }
+},
   getInactiveUsers: async (req, res) => {
     try {
       const oneMonthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);

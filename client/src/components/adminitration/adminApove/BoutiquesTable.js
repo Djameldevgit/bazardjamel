@@ -1,12 +1,16 @@
-// components/admin/BoutiquesTable.js - USANDO LAS NUEVAS PROPS
+// components/admin/BoutiquesTable.js - VERSIÓN CORREGIDA (SIN BUCLE INFINITO)
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Table, Button, Badge, Card, Pagination, Image, Alert, Spinner } from 'react-bootstrap';
-import { FaCheck, FaTrash, FaEye, FaStore, FaPhone } from 'react-icons/fa';
+import { FaCheck, FaTrash, FaEye, FaStore, FaPhone, FaMoneyBillWave, FaClock } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
-import { getBoutiquesPendientes, aprobarBoutique, rechazarBoutique } from '../../../redux/actions/boutiqueAproveAction';
-
+import { 
+  getBoutiquesPendientes, 
+  aprobarBoutique, 
+  rechazarBoutique,
+  activatePaidBoutique
+} from '../../../redux/actions/boutiqueAproveAction';
 const BoutiquesTable = ({ onLoadingChange }) => {
   const dispatch = useDispatch();
   const { auth } = useSelector(state => state);
@@ -22,28 +26,53 @@ const BoutiquesTable = ({ onLoadingChange }) => {
   const [selectAll, setSelectAll] = useState(false);
   const [message, setMessage] = useState({ show: false, text: '', type: '' });
   const [currentPage, setCurrentPage] = useState(1);
+  const [filterPlan, setFilterPlan] = useState('tous');
   const limit = 10;
   
+  // 🔥 USAR useRef para evitar llamadas infinitas
+  const loadingRef = useRef(loading);
+  const onLoadingChangeRef = useRef(onLoadingChange);
+  
+  // Actualizar refs cuando cambien
+  useEffect(() => {
+    loadingRef.current = loading;
+    onLoadingChangeRef.current = onLoadingChange;
+  }, [loading, onLoadingChange]);
+  
+  // 🔥 CORREGIDO: useEffect con dependencia correcta
+  useEffect(() => {
+    if (onLoadingChangeRef.current) {
+      onLoadingChangeRef.current(loadingRef.current);
+    }
+  }, [loading]); // Solo depende de loading, no de onLoadingChange
+  
+  // Filtrar SOLO planes de pago (excluir gratuitos)
+  const paidBoutiques = Array.isArray(boutiques) 
+    ? boutiques.filter(b => b.plan !== 'gratuit')
+    : [];
+  
+  // Filtrar por plan específico
+  const filteredBoutiques = filterPlan === 'tous' 
+    ? paidBoutiques 
+    : paidBoutiques.filter(b => b.plan === filterPlan);
+  
+  // 🔥 CORREGIDO: useCallback con dependencias correctas
   const loadBoutiques = useCallback((pageNum = 1) => {
     if (auth?.token) {
       dispatch(getBoutiquesPendientes(auth.token, pageNum, limit));
     }
   }, [dispatch, auth?.token, limit]);
   
+  // 🔥 CORREGIDO: Solo cargar cuando cambia currentPage
   useEffect(() => {
     loadBoutiques(currentPage);
-  }, [loadBoutiques, currentPage]);
+  }, [currentPage, loadBoutiques]); // loadBoutiques es estable por useCallback
   
-  useEffect(() => {
-    if (onLoadingChange) onLoadingChange(loading);
-  }, [loading, onLoadingChange]);
-  
+  // Reset selección cuando cambian los datos
   useEffect(() => {
     setSelectedItems([]);
     setSelectAll(false);
-  }, [boutiques]);
-  
-  const safeBoutiques = Array.isArray(boutiques) ? boutiques : [];
+  }, [filteredBoutiques.length]); // Solo cuando cambia la longitud
   
   const handleSelectItem = (id) => {
     setSelectedItems(prev => 
@@ -55,25 +84,60 @@ const BoutiquesTable = ({ onLoadingChange }) => {
     if (selectAll) {
       setSelectedItems([]);
     } else {
-      setSelectedItems(safeBoutiques.map(b => b._id));
+      setSelectedItems(filteredBoutiques.map(b => b._id));
     }
     setSelectAll(!selectAll);
   };
   
+  // Mostrar mensaje temporal
+  const showMessage = (text, type) => {
+    setMessage({ show: true, text, type });
+    setTimeout(() => setMessage({ show: false, text: '', type: '' }), 3000);
+  };
+  
+  // Aprobar boutique
   const handleApprove = async (item) => {
-    if (window.confirm(`Approuver la boutique "${item.nom_boutique}" ?`)) {
-      await dispatch(aprobarBoutique(item._id, auth.token));
-      setMessage({ show: true, text: 'Boutique approuvée', type: 'success' });
-      setTimeout(() => setMessage({ show: false, text: '', type: '' }), 3000);
+    const confirmMsg = item.plan === 'gratuit'
+      ? `Approuver la boutique gratuite "${item.nom_boutique}" ? Elle sera visible immédiatement.`
+      : `Approuver la boutique "${item.nom_boutique}" ? Elle restera inactive jusqu'au paiement.`;
+    
+    if (!window.confirm(confirmMsg)) return;
+    
+    const result = await dispatch(aprobarBoutique(item._id, auth.token));
+    if (result?.success) {
+      showMessage(
+        item.plan === 'gratuit' 
+          ? 'Boutique gratuite approuvée et visible' 
+          : 'Boutique approuvée. En attente de paiement pour activation.',
+        'success'
+      );
+      loadBoutiques(currentPage);
     }
   };
   
+  // Activar por pago
+  const handleActivatePayment = async (item) => {
+    if (item.plan === 'gratuit') {
+      showMessage('Les boutiques gratuites n\'ont pas besoin d\'activation', 'warning');
+      return;
+    }
+    
+    if (!window.confirm(`Confirmer le paiement et activer la boutique "${item.nom_boutique}" ?`)) return;
+    
+    const result = await dispatch(activatePaidBoutique(item._id, auth.token));
+    if (result?.success) {
+      showMessage('Paiement confirmé. Boutique activée avec succès!', 'success');
+      loadBoutiques(currentPage);
+    }
+  };
+  
+  // Rechazar boutique
   const handleReject = async (item) => {
-    if (!window.confirm(`Rejeter la boutique "${item.nom_boutique}" ?`)) return;
+    if (!window.confirm(`Rejeter la boutique "${item.nom_boutique}" ? Cette action est irréversible.`)) return;
     
     await dispatch(rechazarBoutique(item._id, auth.token));
-    setMessage({ show: true, text: 'Boutique rejetée', type: 'warning' });
-    setTimeout(() => setMessage({ show: false, text: '', type: '' }), 3000);
+    showMessage('Boutique rejetée et supprimée', 'warning');
+    loadBoutiques(currentPage);
   };
   
   const handlePageChange = (newPage) => {
@@ -82,11 +146,20 @@ const BoutiquesTable = ({ onLoadingChange }) => {
     }
   };
   
-  if (loading && safeBoutiques.length === 0) {
+  // Estadísticas
+  const stats = {
+    total: paidBoutiques.length,
+    basique: paidBoutiques.filter(b => b.plan === 'basique').length,
+    premium: paidBoutiques.filter(b => b.plan === 'premium').length,
+    entreprise: paidBoutiques.filter(b => b.plan === 'entreprise').length,
+  };
+  
+  // Loading inicial
+  if (loading && paidBoutiques.length === 0) {
     return (
       <Card className="border-0 shadow-sm text-center py-5">
         <Spinner animation="border" variant="primary" />
-        <p className="mt-3">Chargement des boutiques...</p>
+        <p className="mt-3">Chargement des boutiques payantes...</p>
       </Card>
     );
   }
@@ -99,32 +172,112 @@ const BoutiquesTable = ({ onLoadingChange }) => {
         </Alert>
       )}
       
+      {/* Banner informativo */}
+      <Card className="border-0 shadow-sm mb-3 bg-info bg-opacity-10">
+        <Card.Body className="py-2">
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div className="d-flex align-items-center gap-3">
+              <FaMoneyBillWave className="text-info" size={20} />
+              <small className="text-muted">
+                <strong>Boutiques payantes uniquement</strong> — Les boutiques gratuites sont gérées dans l'onglet "Approbation"
+              </small>
+            </div>
+            <div className="d-flex gap-2">
+              <Badge bg="primary" pill>Basique: {stats.basique}</Badge>
+              <Badge bg="warning" pill>Premium: {stats.premium}</Badge>
+              <Badge bg="success" pill>Entreprise: {stats.entreprise}</Badge>
+            </div>
+          </div>
+        </Card.Body>
+      </Card>
+      
+      {/* Filtro por plan */}
+      <Card className="border-0 shadow-sm mb-3">
+        <Card.Body className="py-2">
+          <div className="d-flex gap-2 flex-wrap">
+            <Button 
+              size="sm" 
+              variant={filterPlan === 'tous' ? 'primary' : 'outline-secondary'}
+              onClick={() => setFilterPlan('tous')}
+            >
+              Tous ({stats.total})
+            </Button>
+            <Button 
+              size="sm" 
+              variant={filterPlan === 'basique' ? 'primary' : 'outline-secondary'}
+              onClick={() => setFilterPlan('basique')}
+            >
+              Basique ({stats.basique})
+            </Button>
+            <Button 
+              size="sm" 
+              variant={filterPlan === 'premium' ? 'primary' : 'outline-secondary'}
+              onClick={() => setFilterPlan('premium')}
+            >
+              Premium ({stats.premium})
+            </Button>
+            <Button 
+              size="sm" 
+              variant={filterPlan === 'entreprise' ? 'primary' : 'outline-secondary'}
+              onClick={() => setFilterPlan('entreprise')}
+            >
+              Entreprise ({stats.entreprise})
+            </Button>
+          </div>
+        </Card.Body>
+      </Card>
+      
+      {/* Barra de selección múltiple */}
       {selectedItems.length > 0 && (
         <Card className="border-0 shadow-sm mb-3 bg-light">
           <Card.Body className="p-3">
-            <div className="d-flex justify-content-between align-items-center">
+            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
               <span className="fw-semibold">
                 <FaCheck className="me-2 text-success" />
                 {selectedItems.length} boutique(s) sélectionnée(s)
               </span>
-              <Button size="sm" variant="success" onClick={() => selectedItems.forEach(id => handleApprove({ _id: id }))}>
-                <FaCheck className="me-1" /> Approuver la sélection
-              </Button>
+              <div className="d-flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="success" 
+                  onClick={() => {
+                    selectedItems.forEach(id => {
+                      const boutique = filteredBoutiques.find(b => b._id === id);
+                      if (boutique) handleApprove(boutique);
+                    });
+                  }}
+                >
+                  <FaCheck className="me-1" /> Approuver sélection
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="info" 
+                  onClick={() => {
+                    selectedItems.forEach(id => {
+                      const boutique = filteredBoutiques.find(b => b._id === id);
+                      if (boutique) handleActivatePayment(boutique);
+                    });
+                  }}
+                >
+                  <FaMoneyBillWave className="me-1" /> Activer paiement
+                </Button>
+              </div>
             </div>
           </Card.Body>
         </Card>
       )}
       
+      {/* Tabla principal */}
       <Card className="border-0 shadow-sm">
         <Card.Header className="bg-white border-0 py-3">
           <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
               <h5 className="mb-0 fw-bold">
                 <FaStore className="me-2" style={{ color: '#EC4899' }} />
-                Boutiques à vérifier
+                Boutiques payantes à vérifier
               </h5>
               <small className="text-muted">
-                Page {page} sur {totalPages} - Total: {total}
+                Page {page} sur {totalPages} - Total payantes: {stats.total}
               </small>
             </div>
             <div className="form-check">
@@ -133,18 +286,22 @@ const BoutiquesTable = ({ onLoadingChange }) => {
                 className="form-check-input"
                 checked={selectAll}
                 onChange={handleSelectAll}
-                disabled={safeBoutiques.length === 0}
+                disabled={filteredBoutiques.length === 0}
               />
               <label className="form-check-label small">Tout sélectionner</label>
             </div>
           </div>
         </Card.Header>
         
-        {safeBoutiques.length === 0 ? (
+        {filteredBoutiques.length === 0 ? (
           <Card.Body className="text-center py-5">
             <FaStore className="fs-1 text-muted mb-3 opacity-50" />
-            <h5 className="text-muted">Aucune boutique en attente</h5>
-            <p className="small text-muted">Toutes les boutiques ont été vérifiées</p>
+            <h5 className="text-muted">Aucune boutique payante en attente</h5>
+            <p className="small text-muted">
+              {paidBoutiques.length === 0 
+                ? "Toutes les boutiques payantes ont été traitées" 
+                : `Aucune boutique avec le plan "${filterPlan}"`}
+            </p>
           </Card.Body>
         ) : (
           <>
@@ -160,13 +317,14 @@ const BoutiquesTable = ({ onLoadingChange }) => {
                     <th>Propriétaire</th>
                     <th>Catégorie</th>
                     <th>Plan</th>
+                    <th>Statut</th>
                     <th>Contact</th>
                     <th>Date</th>
-                    <th style={{ width: '120px' }}>Actions</th>
+                    <th style={{ width: '180px' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {safeBoutiques.map(boutique => (
+                  {filteredBoutiques.map(boutique => (
                     <tr key={boutique._id} className={selectedItems.includes(boutique._id) ? 'table-primary' : ''}>
                       <td>
                         <input
@@ -209,9 +367,27 @@ const BoutiquesTable = ({ onLoadingChange }) => {
                         </Badge>
                       </td>
                       <td>
-                        <Badge bg={boutique.plan === 'premium' ? 'warning' : 'secondary'} className="rounded-pill">
-                          {boutique.plan || 'gratuit'}
+                        <Badge 
+                          bg={boutique.plan === 'premium' ? 'warning' : boutique.plan === 'entreprise' ? 'success' : 'primary'} 
+                          className="rounded-pill"
+                        >
+                          {boutique.plan}
                         </Badge>
+                      </td>
+                      <td>
+                        {boutique.pendiente ? (
+                          <Badge bg="warning" className="rounded-pill">
+                            <FaClock className="me-1" size={10} /> En attente
+                          </Badge>
+                        ) : boutique.isActive ? (
+                          <Badge bg="success" className="rounded-pill">
+                            <FaCheck className="me-1" size={10} /> Active
+                          </Badge>
+                        ) : (
+                          <Badge bg="secondary" className="rounded-pill">
+                            <FaClock className="me-1" size={10} /> En attente paiement
+                          </Badge>
+                        )}
                       </td>
                       <td>
                         <div className="small">
@@ -229,7 +405,7 @@ const BoutiquesTable = ({ onLoadingChange }) => {
                         </small>
                       </td>
                       <td>
-                        <div className="d-flex gap-2">
+                        <div className="d-flex gap-1 flex-wrap">
                           <Button
                             as={Link}
                             to={`/boutique/${boutique._id}`}
@@ -243,9 +419,19 @@ const BoutiquesTable = ({ onLoadingChange }) => {
                             variant="outline-success"
                             size="sm"
                             onClick={() => handleApprove(boutique)}
-                            title="Approuver"
+                            title="Approuver la boutique"
+                            disabled={!boutique.pendiente}
                           >
                             <FaCheck />
+                          </Button>
+                          <Button
+                            variant="outline-info"
+                            size="sm"
+                            onClick={() => handleActivatePayment(boutique)}
+                            title="Confirmer paiement et activer"
+                            disabled={boutique.pendiente || boutique.isActive}
+                          >
+                            <FaMoneyBillWave />
                           </Button>
                           <Button
                             variant="outline-danger"
@@ -271,7 +457,7 @@ const BoutiquesTable = ({ onLoadingChange }) => {
                       onClick={() => handlePageChange(page - 1)}
                       disabled={page === 1}
                     />
-                    {[...Array(totalPages)].slice(0, 10).map((_, idx) => (
+                    {[...Array(Math.min(totalPages, 10))].map((_, idx) => (
                       <Pagination.Item
                         key={idx + 1}
                         active={page === idx + 1}

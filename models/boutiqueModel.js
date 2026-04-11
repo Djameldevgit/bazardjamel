@@ -59,7 +59,7 @@ const boutiqueSchema = new mongoose.Schema({
 
   description_boutique: {
     type: String,
-    required: true
+    default: 'Description de la boutique'
   },
 
   images: [
@@ -138,7 +138,7 @@ const boutiqueSchema = new mongoose.Schema({
     avis: { type: Number, default: 0 },
     vues: { type: Number, default: 0 }
   },
-  logosistema: {
+  logopordefecto: {
     type: String,
     default: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1739586000/avatar/default_user_avatar.jpg'
 },

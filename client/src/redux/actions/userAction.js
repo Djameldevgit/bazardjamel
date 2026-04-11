@@ -14,8 +14,11 @@ export const USER_TYPES = {
 CREATE_COMMENT:'CREATE_COMMENT',
 GET_ADMIN_COMMENTS:'GET_ADMIN_COMMENTS',
 DELETE_ADMIN_COMMENT:'DELETE_ADMIN_COMMENT',
-UPDATE_USER_VERIFICATION:'UPDATE_USER_VERIFICATION'
-
+UPDATE_USER_VERIFICATION:'UPDATE_USER_VERIFICATION',
+LOADING_BLOCKED_USERS: 'LOADING_BLOCKED_USERS',
+GET_BLOCKED_USERS: 'GET_BLOCKED_USERS',
+BLOCK_USER_SUCCESS: 'BLOCK_USER_SUCCESS',
+UNBLOCK_USER_SUCCESS: 'UNBLOCK_USER_SUCCESS',
     
 };
 
@@ -207,65 +210,10 @@ export const deleteUser = ({id, auth}) => async (dispatch) => {
   };
 
 
-
-  export const bloquearUsuario = ({ auth, datosBloqueo, user }) => async (dispatch) => {
-    try {
-      dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
-  
-      const res = await patchDataAPI(`user/${user._id}/block`, {
-        motivo: datosBloqueo.motivo,
-        content: datosBloqueo.content,
-        fechaLimite: datosBloqueo.fechaLimite,
-      }, auth.token);
-  
-      dispatch({
-        type: USER_TYPES.BLOCK_USER_SUCCESS,
-        payload: {
-          userId: user._id,
-          esBloqueado: true,
-        }
-      });
-  
-      dispatch({ type: GLOBALTYPES.ALERT, payload: { success: res.data.msg } });
-  
-    } catch (err) {
-      dispatch({
-        type: GLOBALTYPES.ALERT,
-        payload: { error: err.response?.data?.msg || "Error al bloquear usuario" }
-      });
-    } finally {
-      dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
-    }
-  };
+ 
 
 
-
-  export const unBlockUser = ({ user, auth }) => async (dispatch) => {
-    try {
-      dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
-  
-      const res = await patchDataAPI(`user/${user._id}/unblock`, {}, auth.token);
-  
-      dispatch({
-        type: USER_TYPES.UNBLOCK_USER_SUCCESS,
-        payload: {
-          userId: user._id,
-          esBloqueado: false,
-        }
-      });
-  
-      dispatch({ type: GLOBALTYPES.ALERT, payload: { success: res.data.msg } });
-  
-    } catch (err) {
-      dispatch({
-        type: GLOBALTYPES.ALERT,
-        payload: { error: err.response?.data?.msg || "Error al desbloquear usuario" }
-      });
-    } finally {
-      dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
-    }
-  };
-
+   
   export const updatePrivilegios = (id, opcionesUser, token) => async (dispatch) => {
     try {
       const res = await patchDataAPI(`user/${id}/privilegios`, { opcionesUser }, token);
@@ -373,3 +321,97 @@ export const deleteUser = ({id, auth}) => async (dispatch) => {
       throw err;
     }
   };
+ 
+// 📂 redux/actions/userAction.js - Añade esta función
+
+export const getBlockedUsers = (token, page = 1, limit = 10) => async (dispatch) => {
+  try {
+      dispatch({ type: USER_TYPES.LOADING_BLOCKED_USERS, payload: true });
+      
+      const res = await getDataAPI(`users/block?page=${page}&limit=${limit}`, token);
+      
+      dispatch({
+          type: USER_TYPES.GET_BLOCKED_USERS,
+          payload: {
+              blockedUsers: res.data.blockedUsers || [],
+              result: res.data.result || 0,
+              page: page,
+          }
+      });
+      
+      return res.data;
+  } catch (err) {
+      console.error('Error getting blocked users:', err);
+      dispatch({
+          type: GLOBALTYPES.ALERT,
+          payload: { error: err.response?.data?.msg || err.message }
+      });
+  } finally {
+      dispatch({ type: USER_TYPES.LOADING_BLOCKED_USERS, payload: false });
+  }
+};
+// 📂 redux/actions/userAction.js - Actualizar bloquearUsuario y unBlockUser
+
+export const bloquearUsuario = ({ auth, datosBloqueo, user }) => async (dispatch) => {
+  try {
+      dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+
+      const res = await patchDataAPI(`user/${user._id}/block`, {
+          motivo: datosBloqueo.motif,
+          content: datosBloqueo.description,
+          fechaLimite: datosBloqueo.fechaLimite,
+      }, auth.token);
+
+      // 🔥 Enviar el usuario actualizado completo
+      const updatedUser = { ...user, isBlocked: true, isActive: false };
+      
+      dispatch({
+          type: USER_TYPES.BLOCK_USER_SUCCESS,
+          payload: {
+              userId: user._id,
+              user: updatedUser,
+              esBloqueado: true
+          }
+      });
+
+      dispatch({ type: GLOBALTYPES.ALERT, payload: { success: res.data.msg } });
+
+  } catch (err) {
+      dispatch({
+          type: GLOBALTYPES.ALERT,
+          payload: { error: err.response?.data?.msg || "Erreur lors du blocage" }
+      });
+  } finally {
+      dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
+  }
+};
+
+export const unBlockUser = ({ user, auth }) => async (dispatch) => {
+  try {
+      dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+
+      const res = await patchDataAPI(`user/${user._id}/unblock`, {}, auth.token);
+
+      // 🔥 Enviar el usuario actualizado completo
+      const updatedUser = { ...user, isBlocked: false, isActive: true };
+      
+      dispatch({
+          type: USER_TYPES.UNBLOCK_USER_SUCCESS,
+          payload: {
+              userId: user._id,
+              user: updatedUser,
+              esBloqueado: false
+          }
+      });
+
+      dispatch({ type: GLOBALTYPES.ALERT, payload: { success: res.data.msg } });
+
+  } catch (err) {
+      dispatch({
+          type: GLOBALTYPES.ALERT,
+          payload: { error: err.response?.data?.msg || "Erreur lors du déblocage" }
+      });
+  } finally {
+      dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
+  }
+};

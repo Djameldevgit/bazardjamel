@@ -103,17 +103,7 @@ const CreateBoutiquePage = () => {
         </Breadcrumb.Item>
       </Breadcrumb>
       
-      <div className="page-header mb-5">
-        <h1 className="display-5 mb-3">
-          {isEdit ? '✏️ Modifier votre boutique' : '🏪 Créez votre boutique en ligne'}
-        </h1>
-        <p className="lead text-muted">
-          {isEdit 
-            ? 'Mettez à jour les informations de votre boutique et gérez vos paramètres'
-            : 'Vendez vos produits en ligne avec une boutique professionnelle en quelques minutes'
-          }
-        </p>
-      </div>
+   
       
       {/* Información sobre créditos */}
       {isEdit ? (

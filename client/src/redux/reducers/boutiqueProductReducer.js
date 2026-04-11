@@ -214,9 +214,15 @@ const boutiqueProductReducer = (state = initialState, action) => {
         ...state,
         similarProducts: action.payload
       };
-    default:
+ 
+
+   
+
+
+   default:
       return state;
   }
+
 };
 
 export default boutiqueProductReducer;

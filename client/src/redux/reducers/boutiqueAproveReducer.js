@@ -1,6 +1,7 @@
-// redux/reducers/boutiqueAproveReducer.js - VERSIÓN COMPLETA ACTUALIZADA
+// redux/reducers/boutiqueAproveReducer.js - VERSIÓN CORREGIDA
 
-import { BOUTIQUE_APROVE_TYPES } from "../actions/boutiqueAproveAction";
+// 🔥 CORREGIDO: Importar con el nombre correcto (doble P)
+import { BOUTIQUE_APPROVE_TYPES } from "../actions/boutiqueAproveAction";
 
 const initialState = {
   // Boutiques
@@ -10,7 +11,7 @@ const initialState = {
   totalPages: 1,
   hasMore: false,
   
-  // Productos (nuevo)
+  // Productos
   products: [],
   totalProducts: 0,
   pageProducts: 1,
@@ -23,11 +24,13 @@ const initialState = {
 
 const boutiqueAproveReducer = (state = initialState, action) => {
   switch (action.type) {
-    case BOUTIQUE_APROVE_TYPES.LOADING:
+    // ============ LOADING ============
+    case BOUTIQUE_APPROVE_TYPES.LOADING:
+    case BOUTIQUE_APPROVE_TYPES.LOADING_BOUTIQUES:
       return { ...state, loading: action.payload };
     
-    // ============ BOUTIQUES ============
-    case BOUTIQUE_APROVE_TYPES.GET_PENDIENTES:
+    // ============ BOUTIQUES PENDIENTES ============
+    case BOUTIQUE_APPROVE_TYPES.GET_BOUTIQUES_PENDIENTES:
       return {
         ...state,
         boutiques: action.payload.boutiques || [],
@@ -38,22 +41,37 @@ const boutiqueAproveReducer = (state = initialState, action) => {
         loading: false
       };
     
-    case BOUTIQUE_APROVE_TYPES.APROBAR:
+    // ============ APROBAR BOUTIQUE ============
+    case BOUTIQUE_APPROVE_TYPES.APPROVE_BOUTIQUE:
       return {
         ...state,
-        boutiques: state.boutiques.filter(b => b._id !== action.payload.id),
+        boutiques: state.boutiques.filter(b => b._id !== action.payload),
         total: Math.max(0, state.total - 1)
       };
     
-    case BOUTIQUE_APROVE_TYPES.RECHAZAR:
+    // ============ RECHAZAR BOUTIQUE ============
+    case BOUTIQUE_APPROVE_TYPES.REJECT_BOUTIQUE:
       return {
         ...state,
-        boutiques: state.boutiques.filter(b => b._id !== action.payload.id),
+        boutiques: state.boutiques.filter(b => b._id !== action.payload),
         total: Math.max(0, state.total - 1)
       };
     
-    // ============ PRODUCTOS ============
-    case BOUTIQUE_APROVE_TYPES.GET_PRODUCTS_PENDIENTES:
+    // ============ ACTIVAR BOUTIQUE DE PAGO ============
+    case BOUTIQUE_APPROVE_TYPES.ACTIVATE_PAID_BOUTIQUE:
+      return {
+        ...state,
+        // No eliminamos la boutique, solo actualizamos su estado
+        boutiques: state.boutiques.map(b => 
+          b._id === action.payload 
+            ? { ...b, isActive: true, pendiente: false }
+            : b
+        ),
+        loading: false
+      };
+    
+    // ============ PRODUCTOS PENDIENTES ============
+    case BOUTIQUE_APPROVE_TYPES.GET_PRODUCTS_PENDIENTES:
       return {
         ...state,
         products: action.payload.products || [],
@@ -64,21 +82,24 @@ const boutiqueAproveReducer = (state = initialState, action) => {
         loading: false
       };
     
-    case BOUTIQUE_APROVE_TYPES.APROBAR_PRODUCT:
+    // ============ APROBAR PRODUCTO ============
+    case BOUTIQUE_APPROVE_TYPES.APROBAR_PRODUCT:
       return {
         ...state,
         products: state.products.filter(p => p._id !== action.payload.id),
         totalProducts: Math.max(0, state.totalProducts - 1)
       };
     
-    case BOUTIQUE_APROVE_TYPES.RECHAZAR_PRODUCT:
+    // ============ RECHAZAR PRODUCTO ============
+    case BOUTIQUE_APPROVE_TYPES.RECHAZAR_PRODUCT:
       return {
         ...state,
         products: state.products.filter(p => p._id !== action.payload.id),
         totalProducts: Math.max(0, state.totalProducts - 1)
       };
     
-    case BOUTIQUE_APROVE_TYPES.RESET:
+    // ============ RESET ============
+    case BOUTIQUE_APPROVE_TYPES.RESET:
       return initialState;
     
     default:

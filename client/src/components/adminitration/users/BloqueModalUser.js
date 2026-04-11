@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+// 📂 components/administration/Users/BloqueModalUser.jsx - VERSIÓN CORREGIDA
+
+import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from 'react-redux';
-import { useTranslation } from 'react-i18next';
 import {
   Modal,
   Button,
@@ -18,296 +19,220 @@ import {
 } from "react-bootstrap-icons";
 import { bloquearUsuario } from "../../../redux/actions/userAction";
 
-const BloqueModalUser = ({ show, handleClose, user, closeOnOverlayClick = true }) => {
-  const { auth, languageReducer } = useSelector(state => state);
+const BloqueModalUser = ({ show, handleClose, user }) => {
+  const { auth } = useSelector(state => state);
   const dispatch = useDispatch();
-  const { t } = useTranslation('bloqueomodaluser');
-  const lang = languageReducer.language || 'es';
-  const [errorrr, setError] = useState(null);
-  const modalRef = useRef(null);
+  const [error, setError] = useState(null);
 
   const [datosBloqueo, setDatosBloqueo] = useState({
-    motivo: "",
-    content: "",
-    fecha: "",
-    hora: "",
+    motif: "",
+    description: "",
+    date: "",
+    time: "",
   });
 
-  // Función para cerrar al hacer clic fuera del modal
-  const handleOverlayClick = (e) => {
-    if (closeOnOverlayClick && modalRef.current && !modalRef.current.contains(e.target)) {
-      handleClose();
-    }
-  };
-
-  // Función para cerrar con la tecla Escape
-  const handleEscapeKey = (e) => {
-    if (e.key === 'Escape') {
-      handleClose();
-    }
-  };
-
+  // Cerrar con tecla Escape
   useEffect(() => {
+    const handleEscapeKey = (e) => {
+      if (e.key === 'Escape' && show) {
+        handleClose();
+      }
+    };
+
     if (show) {
-      // Agregar event listeners cuando el modal se muestra
-      document.addEventListener('mousedown', handleOverlayClick);
       document.addEventListener('keydown', handleEscapeKey);
-      // Prevenir scroll del body cuando el modal está abierto
       document.body.style.overflow = 'hidden';
     }
 
-    // Cleanup function
     return () => {
-      document.removeEventListener('mousedown', handleOverlayClick);
       document.removeEventListener('keydown', handleEscapeKey);
       document.body.style.overflow = 'unset';
     };
-  }, [show, closeOnOverlayClick]);
+  }, [show, handleClose]);
 
   const handleChangeInput = (e) => {
     const { name, value } = e.target;
     setDatosBloqueo({ ...datosBloqueo, [name]: value });
   };
 
-  const handleBloqueo = (e) => {
+  const handleBloqueo = async (e) => {
     e.preventDefault();
     setError(null);
 
-    const { motivo, fecha, hora, content } = datosBloqueo;
+    const { motif, date, time, description } = datosBloqueo;
 
-    if (!motivo || !fecha || !hora || !content) {
-      setError(t('errors.missingFields'));
+    if (!motif || !date || !time || !description) {
+      setError("Tous les champs sont requis");
       return;
     }
 
-    // Validar que la fecha/hora no sea en el pasado
-    const fechaLimite = `${fecha}T${hora}`;
+    // Vérifier que la date/heure est dans le futur
+    const dateTimeLimit = `${date}T${time}`;
     const now = new Date();
-    const selectedDate = new Date(fechaLimite);
+    const selectedDate = new Date(dateTimeLimit);
 
     if (selectedDate <= now) {
-      setError(t('errors.futureDate'));
+      setError("La date de déblocage doit être dans le futur");
       return;
     }
 
-    dispatch(bloquearUsuario({
-      auth,
-      datosBloqueo: { motivo, content, fechaLimite },
-      user
-    }));
-    handleClose();
+    try {
+      await dispatch(bloquearUsuario({
+        auth,
+        datosBloqueo: { 
+          motivo: motif, 
+          content: description, 
+          fechaLimite: selectedDate.toISOString() 
+        },
+        user
+      }));
+      handleClose();
+    } catch (err) {
+      setError(err.response?.data?.msg || "Erreur lors du blocage");
+    }
   };
 
   // Resetear formulario cuando se cierra el modal
   useEffect(() => {
     if (!show) {
       setDatosBloqueo({
-        motivo: "",
-        content: "",
-        fecha: "",
-        hora: "",
+        motif: "",
+        description: "",
+        date: "",
+        time: "",
       });
       setError(null);
     }
   }, [show]);
+
+  // Date minimale (demain)
+  const getMinDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  };
 
   return (
     <Modal 
       show={show} 
       onHide={handleClose} 
       centered 
-      backdrop="static" 
-      dir={lang === 'ar' ? 'rtl' : 'ltr'}
-      style={{ backdropFilter: "blur(3px)" }}
+      backdrop="static"
+      size="lg"
     >
-      <Modal.Header className="bg-danger text-white position-relative">
+      <Modal.Header className="bg-danger text-white">
         <Modal.Title className="d-flex align-items-center">
-          <ExclamationTriangleFill className={`${lang === 'ar' ? 'ms-2' : 'me-2'}`} />
-          {t('header.title')}
+          <ExclamationTriangleFill className="me-2" />
+          Bloquer l'utilisateur
         </Modal.Title>
         <CloseButton
           variant="white"
           onClick={handleClose}
-          aria-label={t('actions.close')}
-          className="position-absolute"
-          style={lang === 'ar' ? { left: '1rem', top: '1rem' } : { right: '1rem', top: '1rem' }}
+          aria-label="Fermer"
         />
       </Modal.Header>
 
       <Form onSubmit={handleBloqueo}>
         <Modal.Body>
-          {/* Información del usuario - ESTILOS MEJORADOS */}
-          <Alert variant="info" style={{ 
-            padding: '12px', 
-            marginBottom: '15px',
-            border: '1px solid #bee5eb',
-            borderRadius: '8px'
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '10px',
-              justifyContent: 'space-between'
-            }}>
-              {/* Username */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                flex: '1 1 200px',
-                minWidth: '0',
-                marginBottom: '8px'
-              }}>
-                <PersonFill style={{ 
-                  color: '#6c757d', 
-                  fontSize: '16px',
-                  marginRight: lang === 'ar' ? '0' : '8px',
-                  marginLeft: lang === 'ar' ? '8px' : '0',
-                  flexShrink: '0'
-                }} />
-                <span style={{ 
-                  fontWeight: 'bold', 
-                  marginRight: lang === 'ar' ? '0' : '6px',
-                  marginLeft: lang === 'ar' ? '6px' : '0',
-                  flexShrink: '0',
-                  fontSize: '14px'
-                }}>
-                  {t('userInfo.username')}:
-                </span>
-                <span style={{ 
-                  color: '#495057',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }}>
-                  {user?.username || user?.name  || 'N/A'}
-                </span>
+          {/* Information utilisateur */}
+          <Alert variant="info" className="p-3">
+            <div className="d-flex flex-wrap gap-3 justify-content-between">
+              <div className="d-flex align-items-center">
+                <PersonFill className="text-muted me-2" />
+                <strong className="me-1">Utilisateur:</strong>
+                <span>{user?.username || user?.name || 'N/A'}</span>
               </div>
-
-              {/* Email */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                flex: '1 1 250px',
-                minWidth: '0',
-                marginBottom: '8px'
-              }}>
-                <EnvelopeFill style={{ 
-                  color: '#6c757d', 
-                  fontSize: '16px',
-                  marginRight: lang === 'ar' ? '0' : '8px',
-                  marginLeft: lang === 'ar' ? '8px' : '0',
-                  flexShrink: '0'
-                }} />
-                <span style={{ 
-                  fontWeight: 'bold', 
-                  marginRight: lang === 'ar' ? '0' : '6px',
-                  marginLeft: lang === 'ar' ? '6px' : '0',
-                  flexShrink: '0',
-                  fontSize: '14px'
-                }}>
-                  {t('userInfo.email')}:
-                </span>
-                <span style={{ 
-                  color: '#495057',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }}>
-                  {user?.email || user?.mail || 'N/A'}
-                </span>
+              <div className="d-flex align-items-center">
+                <EnvelopeFill className="text-muted me-2" />
+                <strong className="me-1">Email:</strong>
+                <span>{user?.email || 'N/A'}</span>
               </div>
             </div>
           </Alert>
 
-          {errorrr && (
+          {error && (
             <Alert variant="danger" className="d-flex align-items-center">
-              <XCircleFill className={`${lang === 'ar' ? 'ms-2' : 'me-2'}`} />
-              {errorrr}
+              <XCircleFill className="me-2" />
+              {error}
             </Alert>
           )}
 
+          {/* Motif du blocage */}
           <Form.Group className="mb-3">
             <Form.Label className="fw-bold">
-              <InfoCircleFill className={`${lang === 'ar' ? 'ms-2' : 'me-2'} text-warning`} />
-              {t('form.reasonLabel')}
+              <InfoCircleFill className="me-2 text-warning" />
+              Motif du blocage
             </Form.Label>
             <Form.Select
-              name="motivo"
-              value={datosBloqueo.motivo}
+              name="motif"
+              value={datosBloqueo.motif}
               onChange={handleChangeInput}
               required
-              className="border-2"
             >
-              <option value="">{t('form.selectReason')}</option>
-              <option value="Comportement abusif">{t('reasons.abusiveBehavior')}</option>
-              <option value="Spam">{t('reasons.spam')}</option>
-              <option value="Violation des conditions d'utilisation">{t('reasons.termsViolation')}</option>
-              <option value="Langage offensant">{t('reasons.offensiveLanguage')}</option>
-              <option value="Fraude">{t('reasons.fraud')}</option>
-              <option value="Usurpation d'identité">{t('reasons.identityTheft')}</option>
-              <option value="Contenu inapproprié">{t('reasons.inappropriateContent')}</option>
-              <option value="Violation de la vie privée">{t('reasons.privacyViolation')}</option>
-              <option value="Interruption du service">{t('reasons.serviceDisruption')}</option>
-              <option value="Activité suspecte">{t('reasons.suspiciousActivity')}</option>
-              <option value="Autre">{t('reasons.other')}</option>
+              <option value="">Sélectionner un motif...</option>
+              <option value="Comportement abusif">Comportement abusif</option>
+              <option value="Spam">Spam</option>
+              <option value="Violation des conditions">Violation des conditions d'utilisation</option>
+              <option value="Langage offensant">Langage offensant</option>
+              <option value="Fraude">Fraude</option>
+              <option value="Usurpation d'identité">Usurpation d'identité</option>
+              <option value="Contenu inapproprié">Contenu inapproprié</option>
+              <option value="Violation de la vie privée">Violation de la vie privée</option>
+              <option value="Activité suspecte">Activité suspecte</option>
+              <option value="Autre">Autre</option>
             </Form.Select>
           </Form.Group>
 
+          {/* Description détaillée */}
           <Form.Group className="mb-3">
-            <Form.Label className="fw-bold">{t('form.detailsLabel')}</Form.Label>
+            <Form.Label className="fw-bold">Description détaillée</Form.Label>
             <Form.Control
               as="textarea"
               rows={3}
-              name="content"
-              value={datosBloqueo.content}
+              name="description"
+              value={datosBloqueo.description}
               onChange={handleChangeInput}
-              placeholder={t('form.detailsPlaceholder')}
+              placeholder="Décrivez les raisons du blocage..."
               required
-              className="border-2"
             />
             <Form.Text className="text-muted">
-              {t('form.detailsHelp')}
+              Cette information sera visible par l'utilisateur.
             </Form.Text>
           </Form.Group>
 
+          {/* Date et heure de déblocage */}
           <Form.Group className="mb-3">
             <Form.Label className="fw-bold">
-              <Calendar2EventFill className={`${lang === 'ar' ? 'ms-2' : 'me-2'} text-primary`} />
-              {t('form.blockDuration')}
+              <Calendar2EventFill className="me-2 text-primary" />
+              Date de déblocage
             </Form.Label>
             
-            <Form.Group className="mb-2">
-              <Form.Label>{t('form.dateLabel')}</Form.Label>
-              <Form.Control
-                type="date"
-                name="fecha"
-                value={datosBloqueo.fecha}
-                onChange={handleChangeInput}
-                required
-                min={new Date().toISOString().split('T')[0]}
-                className="border-2"
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-2">
-              <Form.Label>{t('form.timeLabel')}</Form.Label>
-              <Form.Control
-                type="time"
-                name="hora"
-                value={datosBloqueo.hora}
-                onChange={handleChangeInput}
-                required
-                className="border-2"
-              />
-            </Form.Group>
+            <div className="row">
+              <div className="col-md-6 mb-2">
+                <Form.Label>Date</Form.Label>
+                <Form.Control
+                  type="date"
+                  name="date"
+                  value={datosBloqueo.date}
+                  onChange={handleChangeInput}
+                  required
+                  min={getMinDate()}
+                />
+              </div>
+              <div className="col-md-6 mb-2">
+                <Form.Label>Heure</Form.Label>
+                <Form.Control
+                  type="time"
+                  name="time"
+                  value={datosBloqueo.time}
+                  onChange={handleChangeInput}
+                  required
+                />
+              </div>
+            </div>
             
             <Form.Text className="text-muted">
-              {t('form.durationHelp')}
+              L'utilisateur restera bloqué jusqu'à cette date et heure.
             </Form.Text>
           </Form.Group>
         </Modal.Body>
@@ -316,16 +241,14 @@ const BloqueModalUser = ({ show, handleClose, user, closeOnOverlayClick = true }
           <Button 
             variant="outline-secondary" 
             onClick={handleClose}
-            className="px-4"
           >
-            {t('actions.cancel')}
+            Annuler
           </Button>
           <Button 
             variant="danger" 
             type="submit"
-            className="px-4"
           >
-            {t('actions.confirmBlock')}
+            Bloquer l'utilisateur
           </Button>
         </Modal.Footer>
       </Form>

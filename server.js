@@ -50,7 +50,7 @@ app.use('/api', require('./routes/messageRouter'));
 app.use('/api', require('./routes/languageRouter'));
 app.use('/api', require('./routes/rolesRouter'));
 app.use('/api', require('./routes/userActionRouter'));
-app.use('/api', require('./routes/blockUserRouter'));
+app.use('/api', require('./routes/blockRouter'));
 app.use('/api', require('./routes/reportRouter'));
 app.use('/api/blog/comments', require('./routes/blogCommentRoutes'));
 app.use('/api/forms', require('./routes/formRouter'));

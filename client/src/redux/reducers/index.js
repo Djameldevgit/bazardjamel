@@ -16,7 +16,7 @@ import online from './onlineReducer'
 import call from './callReducer'
 import languageReducer from './languageReducer'
 import homeUsers from './userReducer'
-import userBlockReducer from './userBlcokReducer'
+ 
 import usersActionReducer from './usersActionReducer'
 import blog from './blogReducer'
 import ProvaReducer from './provaReducer'
@@ -57,7 +57,7 @@ export default combineReducers({
     languageReducer,
     roleReducer,
     homeUsers,
-    userBlockReducer,
+    
     usersActionReducer,
     ProvaReducer,
     reportReducer,

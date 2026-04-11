@@ -15,7 +15,7 @@ import {
 import { ClockHistory, ExclamationTriangle, PersonLock, CalendarEvent, Envelope, Telephone } from 'react-bootstrap-icons';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { getBlockedUsers } from '../../redux/actions/userBlockAction'; // Ajusta la ruta
+import { getBlockedUsers } from '../../redux/actions/userAction'; // Ajusta la ruta
 
 const Bloqueos404 = () => {
     const dispatch = useDispatch();

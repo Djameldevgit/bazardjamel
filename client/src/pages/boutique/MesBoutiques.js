@@ -1,10 +1,10 @@
-// 📂 pages/MesBoutiques.jsx - VERSIÓN CORREGIDA (Etiquetas bien posicionadas)
+// 📂 pages/MesBoutiques.jsx - VERSIÓN COMPLETA CORREGIDA
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useHistory } from 'react-router-dom';
-import { Spinner, Alert, Container, Row, Col, Button, Badge, Card } from 'react-bootstrap';
+import { Spinner, Alert, Container, Row, Col, Button, Badge, Card, Modal } from 'react-bootstrap';
 import { getUserBoutiques, deleteBoutique } from '../../redux/actions/boutiqueAction';
-import { FaStore, FaPlus, FaBox, FaToggleOn, FaToggleOff, FaCreditCard, FaCheckCircle, FaClock } from 'react-icons/fa';
+import { FaStore, FaPlus, FaBox, FaToggleOn, FaToggleOff, FaCreditCard, FaCheckCircle, FaClock, FaInfoCircle } from 'react-icons/fa';
 import { Pencil, Plus, Eye, Filter, Trash } from 'react-bootstrap-icons';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import moment from 'moment';
@@ -23,6 +23,8 @@ const MesBoutiques = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
+  const [showPendingModal, setShowPendingModal] = useState(false);
+  const [selectedBoutique, setSelectedBoutique] = useState(null);
   const boutiquesPerPage = 9;
 
   useEffect(() => {
@@ -96,16 +98,31 @@ const MesBoutiques = () => {
     }
   };
 
-  const handleBoutiqueClick = (boutiqueId) => {
-    history.push(`/boutique/${boutiqueId}`);
+  const handleBoutiqueClick = (boutique) => {
+    // Si la boutique está pendiente, mostrar modal informativo
+    if (boutique.pendiente === true) {
+      setSelectedBoutique(boutique);
+      setShowPendingModal(true);
+      return;
+    }
+    
+    // Si la boutique está inactiva (solo para planes de pago)
+    if (boutique.isActive === false && boutique.pendiente === false) {
+      dispatch({
+        type: GLOBALTYPES.ALERT,
+        payload: { 
+          info: "Votre boutique est approuvée mais en attente de paiement pour être activée. Veuillez procéder au paiement pour la rendre visible au public." 
+        }
+      });
+      return;
+    }
+    
+    // Si está activa y aprobada, ir a la página
+    history.push(`/boutique/${boutique._id}`);
   };
 
   const handleCreateBoutique = () => {
     history.push('/create-boutique');
-  };
-
-  const isBoutiquePending = (boutique) => {
-    return boutique.pendiente === true;
   };
 
   const loadMoreBoutiques = () => {
@@ -125,9 +142,9 @@ const MesBoutiques = () => {
     inactive: userBoutiques?.filter(b => b.isActive === false && b.pendiente === false).length || 0
   };
 
-  // Tarjeta compacta - CON ETIQUETAS BIEN POSICIONADAS
+  // Tarjeta compacta
   const CompactBoutiqueCard = ({ boutique }) => {
-    const isPending = isBoutiquePending(boutique);
+    const isPending = boutique.pendiente === true;
     const isActive = boutique.isActive === true;
     const isInactive = !boutique.isActive && !boutique.pendiente;
     
@@ -157,11 +174,9 @@ const MesBoutiques = () => {
             isPending ? '#ffc107' : (isActive ? '#198754' : '#6c757d')
           }`
         }}
-        onClick={() => handleBoutiqueClick(boutique._id)}
+        onClick={() => handleBoutiqueClick(boutique)}
       >
-        {/* CONTENEDOR DE ETIQUETAS - SUPERIOR */}
         <div className="badges-container">
-          {/* Etiqueta de aprobación (izquierda) */}
           <div className="badge-left">
             {isPending ? (
               <span className="badge-pending">
@@ -174,7 +189,6 @@ const MesBoutiques = () => {
             )}
           </div>
           
-          {/* Etiqueta de activación (derecha) - COLOR AMARILLO PARA INACTIVO */}
           <div className="badge-right">
             {isActive ? (
               <span className="badge-active">
@@ -189,7 +203,6 @@ const MesBoutiques = () => {
         </div>
         
         <Row className="g-0">
-          {/* Imagen pequeña - columna izquierda */}
           <Col xs={4} md={4} className="p-2">
             <div 
               className="image-container"
@@ -234,7 +247,6 @@ const MesBoutiques = () => {
             </div>
           </Col>
           
-          {/* Contenido - columna derecha */}
           <Col xs={8} md={8}>
             <Card.Body className="p-3">
               <Card.Title 
@@ -286,13 +298,12 @@ const MesBoutiques = () => {
           </Col>
         </Row>
         
-        {/* Botones de acción flotantes */}
         <div className="action-buttons">
           <Button
             variant="light"
             size="sm"
             className="rounded-circle p-1 shadow-sm"
-            onClick={(e) => { e.stopPropagation(); handleBoutiqueClick(boutique._id); }}
+            onClick={(e) => { e.stopPropagation(); handleBoutiqueClick(boutique); }}
             title="Voir la boutique"
           >
             <Eye size={12} />
@@ -471,7 +482,98 @@ const MesBoutiques = () => {
         )}
       </Container>
 
-      {/* Estilos CORREGIDOS - Etiquetas bien posicionadas */}
+      {/* Modal para boutiques en attente de validation */}
+      <Modal 
+        show={showPendingModal} 
+        onHide={() => setShowPendingModal(false)}
+        centered
+        size="lg"
+      >
+        <Modal.Header className="border-0 pb-0">
+          <div className="d-flex justify-content-between align-items-center w-100">
+            <div className="d-flex align-items-center gap-2">
+              <div className="rounded-circle bg-warning bg-opacity-10 p-2">
+                <FaClock size={24} className="text-warning" />
+              </div>
+              <Modal.Title className="fw-bold">Boutique en attente de validation</Modal.Title>
+            </div>
+            <Button 
+              variant="link" 
+              className="text-muted p-0" 
+              onClick={() => setShowPendingModal(false)}
+            >
+              ✕
+            </Button>
+          </div>
+        </Modal.Header>
+        
+        <Modal.Body className="pt-0">
+          {selectedBoutique && (
+            <>
+              <div className="text-center mb-4">
+                <div className="bg-light rounded-3 p-3 d-inline-block mb-3">
+                  {selectedBoutique.images?.[0]?.url ? (
+                    <img 
+                      src={selectedBoutique.images[0].url} 
+                      alt={selectedBoutique.nom_boutique}
+                      style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '12px' }}
+                    />
+                  ) : (
+                    <FaStore size={50} className="text-muted" />
+                  )}
+                </div>
+                <h5 className="fw-bold mb-1">{selectedBoutique.nom_boutique}</h5>
+                <p className="text-muted small">{selectedBoutique.domaine_boutique}</p>
+              </div>
+              
+              <div className="bg-warning bg-opacity-10 rounded-3 p-3 mb-4">
+                <div className="d-flex gap-3 align-items-start">
+                  <FaInfoCircle size={20} className="text-warning mt-1" />
+                  <div>
+                    <p className="fw-bold mb-1">Votre boutique est en cours de vérification</p>
+                    <p className="small text-muted mb-0">
+                      Notre équipe examine actuellement votre boutique pour s'assurer qu'elle respecte nos conditions d'utilisation. 
+                      Ce processus peut prendre 24 à 48 heures. Vous recevrez une notification dès que votre boutique sera approuvée.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-light rounded-3 p-3">
+                <p className="fw-bold mb-2">Que faire en attendant ?</p>
+                <ul className="small mb-0 ps-3">
+                  <li className="mb-1">✓ Complétez les informations de votre boutique</li>
+                  <li className="mb-1">✓ Ajoutez des produits de qualité</li>
+                  <li className="mb-1">✓ Soignez les photos et descriptions</li>
+                  <li>✓ Préparez vos offres promotionnelles</li>
+                </ul>
+              </div>
+            </>
+          )}
+        </Modal.Body>
+        
+        <Modal.Footer className="border-0 pt-0">
+          <Button 
+            variant="secondary" 
+            onClick={() => setShowPendingModal(false)}
+          >
+            Compris
+          </Button>
+          {selectedBoutique && (
+            <Button 
+              variant="outline-primary"
+              onClick={() => {
+                setShowPendingModal(false);
+                history.push(`/edit-boutique/${selectedBoutique._id}`);
+              }}
+            >
+              Modifier la boutique
+            </Button>
+          )}
+        </Modal.Footer>
+      </Modal>
+
+      {/* Estilos */}
       <style jsx="true">{`
         .badges-container {
           position: absolute;
@@ -582,76 +684,6 @@ const MesBoutiques = () => {
         .image-container {
           background-color: #f8f9fa;
         }
-
-
-        /* Añadir al final del componente MesBoutiques */
-
-        .plan-badge {
-          position: absolute;
-          bottom: 10px;
-          left: 10px;
-          z-index: 10;
-          pointer-events: none;
-        }
-        
-        .plan-gratuit {
-          background-color: #6c757d;
-          color: white;
-          padding: 3px 8px;
-          border-radius: 20px;
-          font-size: 0.6rem;
-          font-weight: 600;
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-        }
-        
-        .plan-basique {
-          background-color: #0d6efd;
-          color: white;
-          padding: 3px 8px;
-          border-radius: 20px;
-          font-size: 0.6rem;
-          font-weight: 600;
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-        }
-        
-        .plan-premium {
-          background-color: #fd7e14;
-          color: white;
-          padding: 3px 8px;
-          border-radius: 20px;
-          font-size: 0.6rem;
-          font-weight: 600;
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-        }
-        
-        .plan-entreprise {
-          background-color: #198754;
-          color: white;
-          padding: 3px 8px;
-          border-radius: 20px;
-          font-size: 0.6rem;
-          font-weight: 600;
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-        }
-        
-        .plan-price {
-          font-size: 0.55rem;
-          opacity: 0.9;
-        }
-
-
-
-
-
-
       `}</style>
     </div>
   );

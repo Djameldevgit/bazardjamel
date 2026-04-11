@@ -230,102 +230,141 @@ const handlePlanSelect = (planData) => {
     return `${finalBase}-${timestamp}`;
   };
   
-  const prepareSubmitData = () => {
-    const generateSubCategory = (categorie) => {
-      if (!categorie) return '';
-      return 'boutique-' + categorie
-        .toLowerCase()
-        .replace(/[&]/g, 'et')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
-    };
-    
-    const baseSlug = formData.nom_boutique || 'boutique';
-    const slug = generateUniqueSlug(baseSlug);
-    const domaine_boutique = formData.domaine_boutique?.trim() || slug;
-    const subCategory = generateSubCategory(formData.categorie);
-    const userId = typeof formData.user === 'object' ? formData.user._id : formData.user || auth?.user?._id;
-    
-    return {
-      nom_boutique: formData.nom_boutique,
-      domaine_boutique: domaine_boutique,
-      slug: slug,
-      slogan_boutique: formData.slogan_boutique || '',
-      description_boutique: formData.description_boutique,
-      date_debut: formData.date_debut,
-      user: userId,
-      categorie: formData.categorie,
-      subCategory: subCategory,
-      plan: formData.plan,
-      duree_abonnement: formData.duree === '1' ? '1mois' : formData.duree === '3' ? '3mois' : formData.duree === '6' ? '6mois' : '1an',
-      proprietaire: {
-        nom: formData.proprietaire.nom || auth?.user?.name || '',
-        email: formData.proprietaire.email || auth?.user?.email || '',
-        telephone: formData.proprietaire.telephone || auth?.user?.mobile || '',
-        wilaya: formData.proprietaire.wilaya || '',
-        adresse: formData.proprietaire.adresse || ''
-      },
-      reseaux_sociaux: formData.reseaux_sociaux,
-      couleur_theme: formData.couleur_theme,
-      images: isFreePlan ? [{ url: DEFAULT_LOGO, public_id: 'default' }] : images,
-      montant_initial: formData.montant_initial,
-      mois_offerts: formData.mois_offerts,
-      montant_ttc: formData.montant_ttc,
-      methode_paiement: formData.methode_paiement,
-      transaction_id: transactionId,
-      client_nom: formData.client_nom,
-      client_telephone: formData.client_telephone
-    };
+// En CreateBoutiqueWizard.jsx - Función prepareSubmitData corregida
+const prepareSubmitData = () => {
+  // Generar subCategory si no existe
+  const generateSubCategory = (categorie) => {
+    if (!categorie) return '';
+    return 'boutique-' + categorie
+      .toLowerCase()
+      .replace(/[&]/g, 'et')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
   };
   
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const baseSlug = formData.nom_boutique || 'boutique';
+  const slug = generateUniqueSlug(baseSlug);
+  const domaine_boutique = formData.domaine_boutique?.trim() || slug;
+  const subCategory = generateSubCategory(formData.categorie);
+  
+  // Obtener el userId correctamente
+  let userId = null;
+  if (typeof formData.user === 'object' && formData.user?._id) {
+    userId = formData.user._id;
+  } else if (formData.user) {
+    userId = formData.user;
+  } else if (auth?.user?._id) {
+    userId = auth.user._id;
+  } else if (auth?.user?.id) {
+    userId = auth.user.id;
+  }
+  
+  console.log('👤 User ID obtenido:', userId);
+  
+  if (!userId) {
+    console.error('❌ No se pudo obtener el userId');
+    throw new Error('Utilisateur non identifié');
+  }
+  
+  const submitData = {
+    // Campos REQUERIDOS
+    nom_boutique: formData.nom_boutique || '',
+    categorie: formData.categorie || '',
+    user: userId,
+    domaine_boutique: domaine_boutique,
     
-    if (!isFreePlan && images.length === 0) {
-      setError('Au moins une image est requise pour votre boutique');
-      return;
-    }
-    
-    setIsSubmitting(true);
-    setError('');
-    
-    try {
-      const submitData = prepareSubmitData();
-      console.log('📦 submitData:', submitData);
-      
-      if (isEdit) {
-        const boutiqueId = formData._id || formData.id;
-        if (!boutiqueId) throw new Error('ID de boutique non trouvé');
-        
-        await dispatch(updateBoutique({ boutiqueId, boutiqueData: submitData, images, auth }));
-        setSuccess('Boutique mise à jour avec succès!');
-        
-        setTimeout(() => {
-          if (onSuccess) onSuccess(submitData);
-          else history.push(`/boutique/${boutiqueId}`);
-        }, 2000);
-      } else {
-        const result = await dispatch(createBoutique({ boutiqueData: submitData, images: isFreePlan ? [] : images, auth }));
-        
-        if (result) {
-          const message = isFreePlan 
-            ? 'Boutique gratuite créée avec succès! Elle sera visible après validation.'
-            : 'Votre demande a été envoyée. Vous recevrez une confirmation après paiement.';
-          setSuccess(message);
-          
-          setTimeout(() => {
-            if (onSuccess) onSuccess(result.boutique || result);
-            else history.push('/mes-boutiques');
-          }, 3000);
-        }
-      }
-    } catch (err) {
-      console.error('❌ Erreur:', err);
-      setError(err.message || 'Erreur lors de la création');
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Campos opcionales con valores por defecto
+    slug: slug,
+    slogan_boutique: formData.slogan_boutique || '',
+    description_boutique: formData.description_boutique || '',
+    date_debut: formData.date_debut || new Date().toISOString().split('T')[0],
+    subCategory: subCategory,
+    plan: formData.plan || 'gratuit',
+    duree_abonnement: formData.duree === '1' ? '1mois' : 
+                     formData.duree === '3' ? '3mois' :
+                     formData.duree === '6' ? '6mois' : '1an',
+    date_expiration: formData.date_expiration || null,
+    proprietaire: {
+      nom: formData.proprietaire?.nom || auth?.user?.name || '',
+      email: formData.proprietaire?.email || auth?.user?.email || '',
+      telephone: formData.proprietaire?.telephone || auth?.user?.mobile || '',
+      wilaya: formData.proprietaire?.wilaya || '',
+      adresse: formData.proprietaire?.adresse || ''
+    },
+    reseaux_sociaux: formData.reseaux_sociaux || {
+      facebook: '',
+      instagram: '',
+      tiktok: '',
+      whatsapp: '',
+      website: ''
+    },
+    couleur_theme: formData.couleur_theme || '#2563eb',
+    montant_initial: formData.montant_initial || 0,
+    mois_offerts: formData.mois_offerts || 0,
+    montant_ttc: formData.montant_ttc || 0,
+    methode_paiement: formData.methode_paiement || '',
+    transaction_id: transactionId,
+    client_nom: formData.client_nom || auth?.user?.name || '',
+    client_telephone: formData.client_telephone || auth?.user?.mobile || ''
   };
+  
+  console.log('📦 Datos preparados para enviar:', {
+    nom_boutique: submitData.nom_boutique,
+    categorie: submitData.categorie,
+    user: submitData.user,
+    domaine_boutique: submitData.domaine_boutique,
+    plan: submitData.plan
+  });
+  
+  return submitData;
+};
+  
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  // Validación previa
+  if (!formData.nom_boutique?.trim()) {
+    setError('Le nom de la boutique est requis');
+    return;
+  }
+  
+  if (!formData.categorie) {
+    setError('La catégorie est requise');
+    return;
+  }
+  
+  if (!auth?.user?._id && !formData.user) {
+    setError('Utilisateur non identifié');
+    return;
+  }
+  
+  // Para planes pagos, validar imágenes
+  if (!isFreePlan && images.length === 0) {
+    setError('Au moins une image est requise pour votre boutique');
+    return;
+  }
+  
+  setIsSubmitting(true);
+  setError('');
+  
+  try {
+    const submitData = prepareSubmitData();
+    console.log('📦 Enviando al backend:', submitData);
+    
+    const result = await dispatch(createBoutique({ 
+      boutiqueData: submitData, 
+      images: isFreePlan ? [] : images, 
+      auth 
+    }));
+    
+    // ... resto del código
+  } catch (err) {
+    console.error('❌ Error en submit:', err);
+    setError(err.response?.data?.message || err.message || 'Erreur lors de la création');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
   
   useEffect(() => {
     if (isEdit && boutiqueData) {

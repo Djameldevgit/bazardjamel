@@ -585,6 +585,29 @@ const boutiqueReducer = (state = initialState, action) => {
     // ============ ERROR HANDLING ============
     case 'BOUTIQUE_ERROR':
       return { ...state, error: action.payload, loading: false, loadingByCategory: {} };
+// ============ ACTIVATE PAID BOUTIQUE ============
+case BOUTIQUE_TYPES.ACTIVATE_PAID_BOUTIQUE:
+  const { id: activateId, isActive: activateStatus } = action.payload;
+  
+  const updateActivateInList = (list) => list.map(b =>
+    b._id === activateId ? { ...b, isActive: activateStatus } : b
+  );
+  
+  return {
+    ...state,
+    boutiques: updateActivateInList(state.boutiques),
+    userBoutiques: updateActivateInList(state.userBoutiques),
+    homeBoutiques: updateActivateInList(state.homeBoutiques),
+    adminBoutiques: updateActivateInList(state.adminBoutiques),
+    currentBoutique: state.currentBoutique?._id === activateId
+      ? { ...state.currentBoutique, isActive: activateStatus }
+      : state.currentBoutique,
+    boutiqueByDomain: state.boutiqueByDomain?._id === activateId
+      ? { ...state.boutiqueByDomain, isActive: activateStatus }
+      : state.boutiqueByDomain,
+    error: null
+  };
+
 
     default:
       return state;

@@ -27,12 +27,13 @@ const userSchema = new mongoose.Schema({
     },
     
     // ============ ROLES Y PERMISOS ============
-    role: {
-        type: String,
-        enum: ['user', 'moderator', 'admin'],
-        default: 'user'
-    },
-    
+ // 📂 models/userModel.js - Actualizar el enum de role
+
+role: {
+    type: String,
+    enum: ['user', 'moderator', 'admin', 'Super-utilisateur'], // 🔥 Añadir "Super-utilisateur"
+    default: 'user'
+},
     // ✅ SIMPLIFICADO: Categorías asignadas como array de strings (slugs)
     assignedCategories: {
         type: [String],
@@ -91,7 +92,7 @@ const userSchema = new mongoose.Schema({
         default: true,
         index: true
     },
-    
+    esBloqueado: { type: Boolean, default: false },
     // ============ INTERACCIONES ============
     followers: [{
         type: mongoose.Types.ObjectId,
@@ -106,8 +107,12 @@ const userSchema = new mongoose.Schema({
     saved: [{
         type: mongoose.Types.ObjectId,
         ref: 'user'
-    }]
-    
+    }],
+    isBlocked: {
+        type: Boolean,
+        default: false,
+        index: true
+    },
 }, {
     timestamps: true
 });
