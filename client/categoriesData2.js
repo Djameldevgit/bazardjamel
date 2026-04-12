@@ -263,7 +263,37 @@ const categories = {
       "stylets": ["stylets-actifs.png", "stylets-passifs.png", "stylets-bluetooth.png", "stylets-tablette.png", "recharges-stylet.png"],
       "cartes-memoire": ["cartes-sd.png", "cartes-micro-sd.png", "cartes-sdhc.png", "cartes-sdxc.png", "adaptateurs-carte.png", "lecteurs-carte.png"]
     }
+  },
+
+  "videos": {
+    "level1": ["videos.png"],
+    "level2": [
+      "videos-vehicules.png",
+      "videos-immobilier.png",
+      "videos-telephones.png",
+      "videos-informatique.png",
+      "videos-electromenager.png",
+      "videos-mode-vetements.png",
+      "videos-maison-jardin.png",
+      "videos-sport-loisirs.png",
+      "videos-alimentaires.png",
+      "videos-meubles.png",
+      "videos-pieces-detachees.png",
+      "videos-sante-beaute.png",
+      "videos-services.png",
+      "videos-emploi.png",
+      "videos-voyages.png",
+      "videos-boutiques.png",
+      "videos-tutoriels.png",
+      "videos-reviews.png"
+    ],
+    "level3": []
   }
+
+
+
+
+
 };
 
 // Función para crear carpetas y archivos

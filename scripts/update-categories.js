@@ -1,4 +1,4 @@
-// node scripts/update-categories.js
+// node scripts/update-categories.js //asigna categoria
 require('dotenv').config();
 const mongoose = require('mongoose');
 const Category = require('../models/categoryModel');
@@ -390,63 +390,78 @@ async function moveCategory(slug, newParentSlug = null) {
 const updates = {
   // 1. Agregar nuevas categorías
   addCategories: [
-    // Ejemplo: 
-    // {
-    //   name: 'Coches Eléctricos',
-    //   slug: 'coches-electricos',
-    //   parentSlug: 'vehicules',
-    //   icon: '/categories/vehicules/coches-electricos.png',
-    //   iconType: 'image-png',
-    //   order: 12,
-    //   children: []
-    // }
+    // ==================== NUEVA CATEGORÍA VIDEOS ====================
+    {
+      name: 'Vidéos',
+      slug: 'videos',
+      parentSlug: null, // Categoría principal (nivel 1)
+      icon: '/categories/videos/videos.png',
+      iconType: 'image-png',
+      order: 99, // Orden al final
+      children: [
+        { name: 'Véhicules', slug: 'videos-vehicules', icon: '/categories/videos/videos-vehicules.png', order: 1, children: [] },
+        { name: 'Immobilier', slug: 'videos-immobilier', icon: '/categories/videos/videos-immobilier.png', order: 2, children: [] },
+        { name: 'Téléphones', slug: 'videos-telephones', icon: '/categories/videos/videos-telephones.png', order: 3, children: [] },
+        { name: 'Informatique', slug: 'videos-informatique', icon: '/categories/videos/videos-informatique.png', order: 4, children: [] },
+        { name: 'Électroménager', slug: 'videos-electromenager', icon: '/categories/videos/videos-electromenager.png', order: 5, children: [] },
+        { name: 'Mode & Vêtements', slug: 'videos-mode-vetements', icon: '/categories/videos/videos-mode-vetements.png', order: 6, children: [] },
+        { name: 'Maison & Jardin', slug: 'videos-maison-jardin', icon: '/categories/videos/videos-maison-jardin.png', order: 7, children: [] },
+        { name: 'Sport & Loisirs', slug: 'videos-sport-loisirs', icon: '/categories/videos/videos-sport-loisirs.png', order: 8, children: [] },
+        { name: 'Alimentaires', slug: 'videos-alimentaires', icon: '/categories/videos/videos-alimentaires.png', order: 9, children: [] },
+        { name: 'Meubles', slug: 'videos-meubles', icon: '/categories/videos/videos-meubles.png', order: 10, children: [] },
+        { name: 'Pièces Détachées', slug: 'videos-pieces-detachees', icon: '/categories/videos/videos-pieces-detachees.png', order: 11, children: [] },
+        { name: 'Santé & Beauté', slug: 'videos-sante-beaute', icon: '/categories/videos/videos-sante-beaute.png', order: 12, children: [] },
+        { name: 'Services', slug: 'videos-services', icon: '/categories/videos/videos-services.png', order: 13, children: [] },
+        { name: 'Emploi', slug: 'videos-emploi', icon: '/categories/videos/videos-emploi.png', order: 14, children: [] },
+        { name: 'Voyages', slug: 'videos-voyages', icon: '/categories/videos/videos-voyages.png', order: 15, children: [] },
+        { name: 'Boutiques', slug: 'videos-boutiques', icon: '/categories/videos/videos-boutiques.png', order: 16, children: [] },
+        { name: 'Tutoriels', slug: 'videos-tutoriels', icon: '/categories/videos/videos-tutoriels.png', order: 17, children: [] },
+        { name: 'Reviews', slug: 'videos-reviews', icon: '/categories/videos/videos-reviews.png', order: 18, children: [] }
+      ]
+    }
   ],
 
   // 2. Actualizar categorías existentes
-  updateCategories: [
-    // Ejemplo:
-    // {
-    //   findSlug: 'voitures',
-    //   updates: {
-    //     icon: '/categories/vehicules/voitures-nuevo.png',
-    //     order: 1
-    //   }
-    // }
-  ],
+  updateCategories: [],
 
-  // 3. Reordenar categorías
+  // 3. Reordenar categorías principales
   reorderCategoriesList: [
-    // Ejemplo:
-    // {
-    //   parentSlug: null,
-    //   orderedSlugs: ['boutiques', 'immobilier', 'vehicules']
-    // }
+    {
+      parentSlug: null,
+      orderedSlugs: [
+        'vehicules',
+        'immobilier',
+        'telephones',
+        'informatique',
+        'electromenager',
+        'vetements',
+        'meubles',
+        'sport',
+        'alimentaires',
+        'sante-beaute',
+        'loisirs',
+        'materiaux',
+        'pieces-detachees',
+        'services',
+        'emploi',
+        'voyages',
+        'boutiques',
+        'videos'  // ← Videos agregado al final
+      ]
+    }
   ],
 
   // 4. Deshabilitar categorías
-  disableCategories: [
-    // Ejemplo:
-    // { slug: 'antiquites-collections' }
-  ],
+  disableCategories: [],
 
   // 5. Activar categorías
-  activateCategories: [
-    { slug: 'boutiques' },
-    { slug: 'voyages' },
-    { slug: 'telephone' }
-  ],
+  activateCategories: [],
 
   // 6. Eliminar categorías permanentemente
-  deleteCategories: [
-    // Ejemplo:
-    // { slug: 'categoria-obsoleta' }
-  ],
+  deleteCategories: [],
 
   // 7. Mover categorías a otro padre
-  moveCategories: [
-    // Ejemplo:
-    // { slug: 'coches-electricos', newParentSlug: 'voitures' }
-  ]
+  moveCategories: []
 };
 
 // ==================== FUNCIÓN PRINCIPAL ====================

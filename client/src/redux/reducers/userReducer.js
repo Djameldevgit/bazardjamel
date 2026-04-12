@@ -1,4 +1,4 @@
-// 📂 redux/reducers/userReducer.js - VERSIÓN CORREGIDA
+// redux/reducers/userReducer.js - Agregar casos para Pro
 
 import { USER_TYPES } from '../actions/userAction';
 
@@ -31,7 +31,10 @@ const userReducer = (state = initialState, action) => {
                 usersCount: action.payload.users?.length || 0,
                 firstUser: action.payload.users?.[0] ? {
                     username: action.payload.users[0].username,
-                    isBlocked: action.payload.users[0].isBlocked
+                    isBlocked: action.payload.users[0].isBlocked,
+                    isActive: action.payload.users[0].isActive,
+                    isPro: action.payload.users[0].isPro,
+                    proExpiryDate: action.payload.users[0].proExpiryDate
                 } : null
             });
             return {
@@ -56,7 +59,7 @@ const userReducer = (state = initialState, action) => {
             return {
                 ...state,
                 users: state.users.map(user =>
-                    user._id === action.payload._id ? action.payload : user
+                    user._id === action.payload._id ? { ...user, ...action.payload } : user
                 ),
             };
 
@@ -67,40 +70,113 @@ const userReducer = (state = initialState, action) => {
                 result: state.result - 1
             };
 
-        // ============ BLOQUEO/DESBLOQUEO ============
-        case USER_TYPES.BLOCK_USER_SUCCESS:
-            console.log('🔵 BLOCK_USER_SUCCESS recibido:', action.payload);
+        // ============ ACTIVAR/DESACTIVAR USUARIO ============
+        case USER_TYPES.ACTIVATE_USER:
+            console.log('🟢 ACTIVATE_USER recibido:', action.payload);
             return {
                 ...state,
-                // Actualizar lista de usuarios normales
                 users: state.users.map(user =>
-                    user._id === action.payload.userId
-                        ? { ...user, isBlocked: true, isActive: false }
+                    user._id === action.payload._id
+                        ? { ...user, isActive: true }
                         : user
-                ),
-                // Añadir a la lista de bloqueados si viene el usuario completo
-                blockedUsers: action.payload.user
-                    ? [action.payload.user, ...state.blockedUsers]
-                    : state.blockedUsers.map(user =>
-                        user._id === action.payload.userId
-                            ? { ...user, isBlocked: true }
-                            : user
-                      )
+                )
             };
 
-        case USER_TYPES.UNBLOCK_USER_SUCCESS:
-            console.log('🟢 UNBLOCK_USER_SUCCESS recibido:', action.payload);
+        case USER_TYPES.DEACTIVATE_USER:
+            console.log('🔴 DEACTIVATE_USER recibido:', action.payload);
             return {
                 ...state,
-                // Actualizar lista de usuarios normales
                 users: state.users.map(user =>
-                    user._id === action.payload.userId
-                        ? { ...user, isBlocked: false, isActive: true }
+                    user._id === action.payload._id
+                        ? { ...user, isActive: false }
+                        : user
+                )
+            };
+
+        case USER_TYPES.TOGGLE_ACTIVE_STATUS:
+            console.log('🔄 TOGGLE_ACTIVE_STATUS recibido:', action.payload);
+            return {
+                ...state,
+                users: state.users.map(user =>
+                    user._id === action.payload._id
+                        ? { ...user, isActive: action.payload.isActive }
+                        : user
+                )
+            };
+
+        // ============ BLOQUEO/DESBLOQUEO USUARIO ============
+        case USER_TYPES.BLOCK_USER:
+            console.log('🔵 BLOCK_USER recibido:', action.payload);
+            return {
+                ...state,
+                users: state.users.map(user =>
+                    user._id === action.payload._id
+                        ? { 
+                            ...user, 
+                            isBlocked: true,
+                            isActive: false,
+                            blockDetails: action.payload.blockDetails || {
+                                reason: action.payload.reason,
+                                description: action.payload.description,
+                                blockExpiryDate: action.payload.blockExpiryDate
+                            }
+                          }
                         : user
                 ),
-                // Eliminar de la lista de bloqueados
+                blockedUsers: state.blockedUsers.map(user =>
+                    user._id === action.payload._id
+                        ? { ...user, isBlocked: true, ...action.payload }
+                        : user
+                )
+            };
+
+        case USER_TYPES.UNBLOCK_USER:
+            console.log('🟢 UNBLOCK_USER recibido:', action.payload);
+            return {
+                ...state,
+                users: state.users.map(user =>
+                    user._id === action.payload._id
+                        ? { 
+                            ...user, 
+                            isBlocked: false,
+                            isActive: true,
+                            blockDetails: null
+                          }
+                        : user
+                ),
                 blockedUsers: state.blockedUsers.filter(
-                    user => user._id !== action.payload.userId
+                    user => user._id !== action.payload._id
+                )
+            };
+
+        // ============ USUARIO PRO ============
+        case USER_TYPES.ACTIVATE_PRO:
+            console.log('⭐ ACTIVATE_PRO recibido:', action.payload);
+            return {
+                ...state,
+                users: state.users.map(user =>
+                    user._id === action.payload._id
+                        ? { 
+                            ...user, 
+                            isPro: true,
+                            proExpiryDate: action.payload.proExpiryDate || null
+                          }
+                        : user
+                )
+            };
+
+        case USER_TYPES.DEACTIVATE_PRO:
+            console.log('🚫 DEACTIVATE_PRO recibido:', action.payload);
+            return {
+                ...state,
+                users: state.users.map(user =>
+                    user._id === action.payload._id
+                        ? { 
+                            ...user, 
+                            isPro: false,
+                            proExpiryDate: null
+                          }
+                        : user
                 )
             };
 

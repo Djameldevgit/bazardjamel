@@ -17,7 +17,7 @@ import {
   PersonFill,
   EnvelopeFill
 } from "react-bootstrap-icons";
-import { bloquearUsuario } from "../../../redux/actions/userAction";
+//import { bloquearUsuario } from "../../../redux/actions/userAction";
 
 const BloqueModalUser = ({ show, handleClose, user }) => {
   const { auth } = useSelector(state => state);

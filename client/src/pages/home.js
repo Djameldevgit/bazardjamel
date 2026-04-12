@@ -1,4 +1,4 @@
-// src/pages/Home.jsx - VERSIÓN LIMPIA Y TRADUCIDA
+// src/pages/Home.jsx - VERSIÓN CON SECCIÓN DE VIDEOS
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -9,6 +9,9 @@ import {
   getSliderCategories
 } from '../redux/actions/categoryAction';
 import { getBoutiquesForHome } from '../redux/actions/boutiqueAction';
+import { getFeaturedVideos, getPopularVideos } from '../redux/actions/videoAction';
+
+
 import { 
   Container, 
   Spinner, 
@@ -16,16 +19,20 @@ import {
   Button,
   Row,
   Col,
-  Badge
+   
 } from 'react-bootstrap';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import MainCategorySlider from '../components/SlidersCategories/CategorySlider';
 import HeaderCarousel from '../components/SlidersCategories/HeaderCarousel';
- 
 import PostCard from '../components/post-card/PostCard';
 import BoutiquePostCard from '../components/boutique/BoutiquePostCard';
-import { ArrowRight, ChevronLeft, ChevronRight } from 'react-bootstrap-icons';
+ import VideoCard from '../components/VideoCard';
+
+import { ArrowRight, ChevronLeft, ChevronRight, PlayCircle } from 'react-bootstrap-icons';
+
+
  
+
 const Home = () => {
   const dispatch = useDispatch();
   const history = useHistory();
@@ -34,8 +41,11 @@ const Home = () => {
   const [dataLoaded, setDataLoaded] = useState(false);
   const hasLoadedRef = useRef(false);
   const boutiqueSliderRef = useRef(null);
+  const videoSliderRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
+  const [showVideoLeftArrow, setShowVideoLeftArrow] = useState(false);
+  const [showVideoRightArrow, setShowVideoRightArrow] = useState(true);
   
   const { theme = 'light' } = useSelector(state => state.theme || {});
   
@@ -49,12 +59,13 @@ const Home = () => {
   const {
     categories = [],
     loading,
-    
     hasMoreCategories,
-   
   } = useSelector((state) => state.category || {});
 
   const { homeBoutiques = [] } = useSelector((state) => state.boutique || {});
+  
+  // Videos
+  const { featuredVideos = [], popularVideos = [], loading: videoLoading } = useSelector((state) => state.video || {});
 
   // Carga inicial
   useEffect(() => {
@@ -68,6 +79,10 @@ const Home = () => {
     // Cargar primeras 2 categorías con posts (scroll infinito)
     dispatch(getAllCategoriesWithPosts(1, 2));
     dispatch(getBoutiquesForHome(10));
+    
+    // Cargar videos destacados y populares
+    dispatch(getFeaturedVideos(10));
+    dispatch(getPopularVideos(10));
     
     // Timeout de respaldo
     const timer = setTimeout(() => {
@@ -97,6 +112,15 @@ const Home = () => {
     }
   }, []);
 
+  // Verificar scroll de videos
+  const checkVideoScrollPosition = useCallback(() => {
+    if (videoSliderRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = videoSliderRef.current;
+      setShowVideoLeftArrow(scrollLeft > 0);
+      setShowVideoRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  }, []);
+
   useEffect(() => {
     const slider = boutiqueSliderRef.current;
     if (slider) {
@@ -106,9 +130,27 @@ const Home = () => {
     }
   }, [homeBoutiques, checkScrollPosition]);
 
+  useEffect(() => {
+    const slider = videoSliderRef.current;
+    if (slider) {
+      slider.addEventListener('scroll', checkVideoScrollPosition);
+      checkVideoScrollPosition();
+      return () => slider.removeEventListener('scroll', checkVideoScrollPosition);
+    }
+  }, [featuredVideos, checkVideoScrollPosition]);
+
   const scrollBoutiques = (direction) => {
     if (boutiqueSliderRef.current) {
       boutiqueSliderRef.current.scrollBy({
+        left: direction === 'left' ? -300 : 300,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const scrollVideos = (direction) => {
+    if (videoSliderRef.current) {
+      videoSliderRef.current.scrollBy({
         left: direction === 'left' ? -300 : 300,
         behavior: 'smooth'
       });
@@ -145,8 +187,16 @@ const Home = () => {
     history.push('/boutiques/1');
   };
 
+  const handleViewAllVideos = () => {
+    history.push('/videos');
+  };
+
   const handleBoutiqueClick = (boutiqueId) => {
     history.push(`/boutique/${boutiqueId}`);
+  };
+
+  const handleVideoClick = (video) => {
+    history.push(`/video/${video._id}`);
   };
 
   // Filtrar posts normales (excluir boutiques)
@@ -164,6 +214,9 @@ const Home = () => {
            categorySlug !== 'boutique' && 
            categorySlug !== 'boutiques';
   });
+
+  // Videos a mostrar (priorizar destacados, luego populares)
+  const displayVideos = featuredVideos.length > 0 ? featuredVideos : popularVideos;
 
   // Loading inicial
   if ((sliderLoading || loading) && categories.length === 0 && !dataLoaded) {
@@ -196,12 +249,79 @@ const Home = () => {
         </section>
 
         <Container className="py-1">
+          {/* ============================================ */}
+          {/* 🎬 SECCIÓN DE VIDEOS (NUEVA) */}
+          {/* ============================================ */}
+          {displayVideos.length > 0 && (
+            <section className="mb-5">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  <div className="d-flex align-items-center gap-2">
+                    <PlayCircle size={28} className="text-danger" />
+                    <h5 className="h4 fw-bold mb-0">🎬 Vidéos Tassili</h5>
+                  </div>
+                  <p className="text-muted mb-0 small">
+                    Découvrez nos vidéos populaires et tutoriels
+                  </p>
+                </div>
+                <div className="d-flex gap-2 align-items-center">
+                  <div className="d-flex gap-2">
+                    <Button 
+                      variant="outline-danger" 
+                      className="rounded-circle p-2" 
+                      onClick={() => scrollVideos('left')} 
+                      disabled={!showVideoLeftArrow} 
+                      style={{ width: '40px', height: '40px' }}
+                    >
+                      <ChevronLeft size={20} />
+                    </Button>
+                    <Button 
+                      variant="outline-danger" 
+                      className="rounded-circle p-2" 
+                      onClick={() => scrollVideos('right')} 
+                      disabled={!showVideoRightArrow} 
+                      style={{ width: '40px', height: '40px' }}
+                    >
+                      <ChevronRight size={20} />
+                    </Button>
+                  </div>
+                  <Button 
+                    variant="outline-danger" 
+                    className="rounded-pill px-4" 
+                    onClick={handleViewAllVideos}
+                  >
+                    Toutes les vidéos <ArrowRight className="ms-2" size={16} />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="video-slider-container position-relative">
+                <div 
+                  className="video-slider d-flex gap-3 pb-3" 
+                  ref={videoSliderRef} 
+                  style={{ overflowX: 'auto', scrollBehavior: 'smooth', scrollbarWidth: 'thin' }}
+                >
+                  {displayVideos.map((video) => (
+                    <div 
+                      key={video._id} 
+                      className="video-slide" 
+                      style={{ minWidth: '300px', maxWidth: '300px', width: '100%' }}
+                    >
+                      <VideoCard video={video} showActions={false} onVideoClick={handleVideoClick} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* Section Boutiques */}
           {homeBoutiques.length > 0 && (
-            <section className="mb-2">
-              <div className="d-flex justify-content-between align-items-center mb-2">
+            <section className="mb-5">
+              <div className="d-flex justify-content-between align-items-center mb-3">
                 <div>
-                  <h5 className="h4 fw-bold mb-0">Boutiques {homeBoutiques.length}</h5>
+                  <h5 className="h4 fw-bold mb-0">🏪 Boutiques</h5>
+                  <p className="text-muted mb-0 small">Découvrez nos boutiques partenaires</p>
                 </div>
                 <div className="d-flex gap-2">
                   <Button 
@@ -324,14 +444,29 @@ const Home = () => {
         .text-purple { color: #8B5CF6; }
         .btn-outline-purple { color: #8B5CF6; border-color: #8B5CF6; }
         .btn-outline-purple:hover { color: #fff; background-color: #8B5CF6; border-color: #8B5CF6; }
-        .boutique-slider { overflow-x: auto; overflow-y: hidden; white-space: nowrap; cursor: grab; scrollbar-width: thin; padding: 5px 0; }
-        .boutique-slider:active { cursor: grabbing; }
-        .boutique-slider::-webkit-scrollbar { height: 6px; }
+        
+        .boutique-slider, .video-slider {
+          overflow-x: auto;
+          overflow-y: hidden;
+          white-space: nowrap;
+          cursor: grab;
+          scrollbar-width: thin;
+          padding: 5px 0;
+        }
+        .boutique-slider:active, .video-slider:active { cursor: grabbing; }
+        .boutique-slider::-webkit-scrollbar, .video-slider::-webkit-scrollbar { height: 6px; }
         .boutique-slider::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .video-slider::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
         .boutique-slider::-webkit-scrollbar-thumb { background: #8B5CF6; border-radius: 10px; }
-        .boutique-slide { transition: transform 0.2s; cursor: pointer; }
-        .boutique-slide:hover { transform: translateY(-4px); }
-        @media (max-width: 768px) { .boutique-slide { min-width: 240px !important; max-width: 240px !important; } }
+        .video-slider::-webkit-scrollbar-thumb { background: #DC2626; border-radius: 10px; }
+        
+        .boutique-slide, .video-slide { transition: transform 0.2s; cursor: pointer; }
+        .boutique-slide:hover, .video-slide:hover { transform: translateY(-4px); }
+        
+        @media (max-width: 768px) {
+          .boutique-slide { min-width: 240px !important; max-width: 240px !important; }
+          .video-slide { min-width: 260px !important; max-width: 260px !important; }
+        }
       `}</style>
     </div>
   );

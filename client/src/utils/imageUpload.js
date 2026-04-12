@@ -1,16 +1,14 @@
-// En utils/imageUpload.js
+// utils/imageUpload.js
 export const checkImage = (files, currentImagesCount = 0) => {
   let err = "";
   if (!files || files.length === 0) return err = "No files selected.";
 
-  // ✅ Límite de cantidad (2 imágenes máximo por post)
   const maxImages = 2;
   if (files.length > maxImages) {
     err = `Solo puedes subir máximo ${maxImages} imágenes.`;
     return err;
   }
 
-  // ✅ Límite total considerando imágenes existentes
   if (currentImagesCount + files.length > maxImages) {
     err = `Máximo ${maxImages} imágenes permitidas por post.`;
     return err;
@@ -22,14 +20,12 @@ export const checkImage = (files, currentImagesCount = 0) => {
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
     
-    // ✅ Límite de tamaño (2 MB máximo por imagen)
-    const maxSize = 2 * 1024 * 1024; // 2MB
+    const maxSize = 2 * 1024 * 1024;
     if (file.size > maxSize) {
       err = "Cada imagen debe ser menor a 2MB.";
       return err;
     }
 
-    // ✅ Validación de formato
     const fileExtension = file.name.split('.').pop().toLowerCase();
     if (!allowedExtensions.includes(fileExtension)) {
       err = "Formatos permitidos: JPG, PNG, WebP.";
@@ -45,7 +41,9 @@ export const checkImage = (files, currentImagesCount = 0) => {
   return err;
 };
 
+// ✅ NUEVA FUNCIÓN: Validar video
  
+// Función existente para imágenes
 export const imageUpload = async (images) => {
   console.log('🟡 INICIANDO imageUpload - Total imágenes:', images?.length || 0);
 
@@ -55,12 +53,10 @@ export const imageUpload = async (images) => {
   for(const [index, item] of images.entries()){ 
       console.log(`\n🔄 Procesando imagen ${index + 1}:`, item);
 
-      // ✅ SI ES BLOB URL (IMAGEN NUEVA) - CONVERTIR A FILE
       if (item.url && item.url.startsWith('blob:') && !item.isExisting) {
           console.log('🔄 Convirtiendo blob URL a archivo...');
           
           try {
-              // 1. Convertir blob URL a File
               const response = await fetch(item.url);
               if (!response.ok) throw new Error('No se pudo acceder al blob');
               
@@ -71,7 +67,6 @@ export const imageUpload = async (images) => {
 
               console.log('📁 Blob convertido a File:', file.name, `${(file.size / 1024).toFixed(2)} KB`);
 
-              // 2. Subir a Cloudinary
               const formData = new FormData();
               formData.append("file", file);
               formData.append("upload_preset", "vetementsdjamel");
@@ -108,7 +103,6 @@ export const imageUpload = async (images) => {
               continue;
           }
       }
-      // ✅ SI YA ES IMAGEN DE CLOUDINARY
       else if (item.isExisting && item.url && item.url.includes('cloudinary.com')) {
           console.log('✅ Imagen ya en Cloudinary:', item.public_id);
           imgArr.push({
@@ -127,4 +121,88 @@ export const imageUpload = async (images) => {
   console.log('📦 Array resultante:', imgArr);
   
   return imgArr;
-}
+};
+
+
+export const videoUpload = async (file, onProgress) => {
+  console.log('🟡 INICIANDO videoUpload');
+  console.log('📁 Archivo:', file.name, `${(file.size / 1024 / 1024).toFixed(2)} MB`);
+  
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "vetementsdjamel");
+    formData.append("cloud_name", "dfjipgj2o");
+    formData.append("resource_type", "video");
+    
+    console.log('🌐 Enviando video a Cloudinary...');
+    
+    // Usar fetch con XMLHttpRequest para progreso
+    const xhr = new XMLHttpRequest();
+    
+    // Promesa para manejar la subida
+    const uploadPromise = new Promise((resolve, reject) => {
+      xhr.open('POST', 'https://api.cloudinary.com/v1_1/dfjipgj2o/video/upload');
+      
+      // Progreso
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable && onProgress) {
+          const percentCompleted = Math.round((e.loaded * 100) / e.total);
+          onProgress(percentCompleted);
+        }
+      });
+      
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          const data = JSON.parse(xhr.responseText);
+          console.log('✅ UPLOAD EXITOSO:', data.public_id);
+          resolve(data);
+        } else {
+          reject(new Error(`Cloudinary error: ${xhr.status}`));
+        }
+      };
+      
+      xhr.onerror = () => reject(new Error('Network error'));
+      xhr.send(formData);
+    });
+    
+    const result = await uploadPromise;
+    
+    // Generar miniatura desde Cloudinary (usando el video ID)
+    const thumbnailUrl = result.secure_url.replace(/\.[^/.]+$/, '.jpg');
+    
+    return {
+      public_id: result.public_id,
+      url: result.secure_url,
+      thumbnail: thumbnailUrl,
+      duration: result.duration || 0,
+      format: result.format
+    };
+    
+  } catch (error) {
+    console.error('❌ ERROR subiendo video:', error.message);
+    throw error;
+  }
+};
+
+// Validar video
+export const checkVideo = (file, isPro = false) => {
+  let err = "";
+  if (!file) return "No file selected.";
+
+  const maxDuration = isPro ? 100 : 100;
+  const maxSize = isPro ? 100 * 1024 * 1024 : 100 * 1024 * 1024;
+  const allowedFormats = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+  
+  if (!allowedFormats.includes(file.type)) {
+    err = "Formatos permitidos: MP4, MOV, AVI, WEBM.";
+    return err;
+  }
+  
+  if (file.size > maxSize) {
+    err = `El video debe ser menor a ${maxSize / (1024 * 1024)}MB.`;
+    return err;
+  }
+  
+  return err;
+};

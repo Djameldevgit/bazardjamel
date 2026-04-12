@@ -1,7 +1,7 @@
 
 const mongoose = require('mongoose');
 
-const BlockUser = require('../models/blockModel');
+ 
 const Users = require('../models/userModel');
 const Posts = require('../models/postModel');
 const Comments = require('../models/commentModel');
@@ -33,68 +33,7 @@ class APIfeatures {
 const userCtrl = {
 
 
-
-// 📂 controllers/userCtrl.js - AÑADIR estos métodos
-
-// ============================================
-// ASIGNAR CATEGORÍAS A MODERADOR
-// ============================================
-assignCategoriesToModerator: async (req, res) => {
-  try {
-      const { id } = req.params;
-      const { assignedCategories } = req.body;
-      
-      // Verificar permisos (solo admin puede asignar)
-      if (req.user.role !== 'admin') {
-          return res.status(403).json({ 
-              success: false, 
-              message: "Non autorisé. Seul un administrateur peut assigner des catégories." 
-          });
-      }
-      
-      const user = await Users.findById(id);
-      if (!user) {
-          return res.status(404).json({ 
-              success: false, 
-              message: "Utilisateur non trouvé" 
-          });
-      }
-      
-      // Solo moderadores pueden tener categorías asignadas
-      if (user.role !== 'moderator') {
-          return res.status(400).json({ 
-              success: false, 
-              message: "Seuls les modérateurs peuvent avoir des catégories assignées" 
-          });
-      }
-      
-      // Actualizar categorías asignadas
-      user.assignedCategories = assignedCategories || [];
-      user.updatedAt = Date.now();
-      await user.save();
-      
-      res.json({ 
-          success: true, 
-          message: "Catégories assignées avec succès",
-          user: {
-              _id: user._id,
-              username: user.username,
-              role: user.role,
-              assignedCategories: user.assignedCategories
-          }
-      });
-      
-  } catch (err) {
-      console.error('❌ Error assignCategoriesToModerator:', err);
-      res.status(500).json({ success: false, error: err.message });
-  }
-},
-// 📂 controllers/userCtrl.js - AÑADIR este método
-
-// ============================================
-// ASIGNAR CATEGORÍAS A MODERADOR
-// ============================================
-// 📂 controllers/userCtrl.js - AÑADIR este método
+ 
 
 assignCategoriesToModerator: async (req, res) => {
   try {
@@ -406,28 +345,7 @@ checkModeratorPermission: async (req, res) => {
       return res.status(500).json({ msg: err.message })
     }
   },
-  suggestionsUser: async (req, res) => {
-    try {
-      const newArr = [...req.user.following, req.user._id]
-
-      const num = req.query.num || 10
-
-      const users = await Users.aggregate([
-        { $match: { _id: { $nin: newArr } } },
-        { $sample: { size: Number(num) } },
-        { $lookup: { from: 'users', localField: 'followers', foreignField: '_id', as: 'followers' } },
-        { $lookup: { from: 'users', localField: 'following', foreignField: '_id', as: 'following' } },
-      ]).project("-password")
-
-      return res.json({
-        users,
-        result: users.length
-      })
-
-    } catch (err) {
-      return res.status(500).json({ msg: err.message })
-    }
-  },
+  
   /*
   
     deleteUser: async (req, res) => {
@@ -1109,10 +1027,500 @@ getUserProducts: async (req, res) => {
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
+},
+assignCategoriesToModerator: async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { assignedCategories } = req.body;
+
+    console.log('📝 Asignando categorías a:', id);
+
+    // Verificar permisos
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Non autorisé. Seul un administrateur peut assigner des catégories." 
+      });
+    }
+
+    const user = await Users.findById(id); // ← Usar Users, no User
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Utilisateur non trouvé" 
+      });
+    }
+
+    // Solo moderadores pueden tener categorías asignadas
+    if (user.role !== 'moderator') {
+      return res.status(400).json({
+        success: false,
+        message: "Seuls les modérateurs peuvent avoir des catégories assignées"
+      });
+    }
+
+    // Actualizar categorías asignadas
+    user.assignedCategories = assignedCategories || [];
+    user.updatedAt = Date.now();
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Catégories assignées avec succès",
+      user: {
+        _id: user._id,
+        username: user.username,
+        role: user.role,
+        assignedCategories: user.assignedCategories
+      }
+    });
+
+  } catch (err) {
+    console.error('❌ Error assignCategoriesToModerator:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+},
+
+// ============================================
+// VERIFICAR PERMISO DE MODERADOR (CORREGIDO)
+// ============================================
+checkModeratorPermission: async (req, res) => {
+  try {
+    const { userId, categorySlug, subCategorySlug } = req.params;
+
+    const user = await Users.findById(userId); // ← Usar Users
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Utilisateur non trouvé" 
+      });
+    }
+
+    // Lógica directa en lugar de método inexistente
+    let canModerate = false;
+    
+    if (user.role === 'admin') {
+      canModerate = true;
+    } else if (user.role === 'moderator') {
+      if (user.canApproveAllCategories) {
+        canModerate = true;
+      } else if (user.assignedCategories && user.assignedCategories.length > 0) {
+        // Verificar si tiene asignada la categoría específica
+        canModerate = user.assignedCategories.some(cat => 
+          cat.slug === categorySlug || 
+          (subCategorySlug && cat.subCategories.includes(subCategorySlug))
+        );
+      }
+    }
+
+    res.json({
+      success: true,
+      canModerate,
+      role: user.role,
+      permissionLevel: user.permissionLevel
+    });
+
+  } catch (err) {
+    console.error('❌ Error checkModeratorPermission:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+},
+
+ 
+
+// ============================================
+// BLOQUEAR USUARIO (CORREGIDO)
+// ============================================
+blockUser: async (req, res) => {
+  try {
+    const { id } = req.params; // userId
+    const { reason, description, blockExpiryDate } = req.body;
+    const adminId = req.user._id;
+
+    if (!reason) {
+      return res.status(400).json({ 
+        message: 'Le motif du blocage est requis' 
+      });
+    }
+
+    const user = await Users.findById(id);
+    if (!user) {
+      return res.status(404).json({ 
+        message: 'Utilisateur non trouvé' 
+      });
+    }
+
+    // Inicializar blockHistory si no existe
+    if (!user.blockHistory) {
+      user.blockHistory = [];
+    }
+
+    // Guardar en historial
+    user.blockHistory.push({
+      reason,
+      description,
+      blockDate: new Date(),
+      blockExpiryDate: blockExpiryDate || null,
+      blockedBy: adminId
+    });
+
+    // Actualizar estado de bloqueo
+    user.isBlocked = true;
+    user.isActive = false; // Un usuario bloqueado también está desactivado
+    user.blockDetails = {
+      reason,
+      description,
+      blockDate: new Date(),
+      blockExpiryDate: blockExpiryDate || null,
+      blockedBy: adminId
+    };
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Utilisateur bloqué avec succès',
+      user: {
+        _id: user._id,
+        isBlocked: user.isBlocked,
+        isActive: user.isActive,
+        blockDetails: user.blockDetails
+      }
+    });
+
+  } catch (error) {
+    console.error('Error blockUser:', error);
+    res.status(500).json({ 
+      message: error.message || 'Erreur lors du blocage' 
+    });
+  }
+},
+
+// ============================================
+// DESBLOQUEAR USUARIO
+// ============================================
+unblockUser: async (req, res) => {
+  try {
+    const { id } = req.params;
+    const adminId = req.user._id;
+
+    const user = await Users.findById(id);
+    if (!user) {
+      return res.status(404).json({ 
+        message: 'Utilisateur non trouvé' 
+      });
+    }
+
+    // Actualizar el último bloqueo en el historial
+    if (user.blockHistory && user.blockHistory.length > 0) {
+      const lastBlock = user.blockHistory[user.blockHistory.length - 1];
+      if (!lastBlock.unblockDate) {
+        lastBlock.unblockDate = new Date();
+        lastBlock.unblockedBy = adminId;
+      }
+    }
+
+    // Limpiar bloqueo actual
+    user.isBlocked = false;
+    user.isActive = true;
+    user.blockDetails = {
+      reason: null,
+      description: null,
+      blockDate: null,
+      blockExpiryDate: null,
+      blockedBy: null
+    };
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Utilisateur débloqué avec succès',
+      user: {
+        _id: user._id,
+        isBlocked: user.isBlocked,
+        isActive: user.isActive
+      }
+    });
+
+  } catch (error) {
+    console.error('Error unblockUser:', error);
+    res.status(500).json({ 
+      message: error.message || 'Erreur lors du déblocage' 
+    });
+  }
+},
+
+// ============================================
+// ACTIVAR USUARIO
+// ============================================
+activateUser: async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await Users.findByIdAndUpdate(
+      id,
+      { isActive: true },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ 
+        message: 'Utilisateur non trouvé' 
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Utilisateur activé avec succès',
+      user: {
+        _id: user._id,
+        isActive: user.isActive,
+        isBlocked: user.isBlocked
+      }
+    });
+
+  } catch (error) {
+    console.error('Error activateUser:', error);
+    res.status(500).json({ 
+      message: error.message || 'Erreur lors de l\'activation' 
+    });
+  }
+},
+
+// ============================================
+// DESACTIVAR USUARIO
+// ============================================
+deactivateUser: async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await Users.findByIdAndUpdate(
+      id,
+      { isActive: false },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ 
+        message: 'Utilisateur non trouvé' 
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Utilisateur désactivé avec succès',
+      user: {
+        _id: user._id,
+        isActive: user.isActive,
+        isBlocked: user.isBlocked
+      }
+    });
+
+  } catch (error) {
+    console.error('Error deactivateUser:', error);
+    res.status(500).json({ 
+      message: error.message || 'Erreur lors de la désactivation' 
+    });
+  }
+},
+getUsersAction: async (req, res) => {
+  try {
+    const filter = req.query.filter;
+
+    const query = Users.find()
+      .select('-password')
+      .populate('followers', 'username avatar')
+      .populate('following', 'username avatar')
+      .lean();
+
+    const features = new APIfeatures(query, req.query).paginating();
+    const users = await features.query.sort('-createdAt');
+
+    const usersWithDetails = await Promise.all(
+      users.map(async (user) => {
+        try {
+          const posts = await Posts.find({ user: user._id });
+
+          const totalLikesReceived = posts.reduce((acc, post) => {
+            return acc + (post.likes ? post.likes.length : 0);
+          }, 0);
+
+          const totalCommentsReceived = posts.reduce((acc, post) => {
+            return acc + (post.comments ? post.comments.length : 0);
+          }, 0);
+
+          const reportsReceived = await Report.countDocuments({ userId: user._id });
+          const likesGiven = await Posts.countDocuments({ likes: user._id });
+          const commentsMade = await Comments.countDocuments({ user: user._id });
+
+          // ✅ CORREGIDO: usar blockDetails en lugar de blockInfo
+          let blockInfoData = null;
+          if (user.isBlocked && user.blockDetails && user.blockDetails.reason) {
+            blockInfoData = {
+              motivo: user.blockDetails.reason || 'Sin especificar',
+              content: user.blockDetails.description,
+              fechaLimite: user.blockDetails.blockExpiryDate,
+              esBloqueado: user.isBlocked,
+              bloqueadoEn: user.blockDetails.blockDate,
+              bloqueadoPor: user.blockDetails.blockedBy || null
+            };
+          }
+
+          return {
+            ...user,
+            isBlocked: user.isBlocked || false,
+            blockInfo: blockInfoData, // ← Para compatibilidad con frontend
+            blockDetails: user.blockDetails, // ← También incluir el nuevo
+            postCount: posts.length,
+            totalLikesReceived,
+            totalCommentsReceived,
+            totalFollowers: user.followers.length || 0,
+            totalFollowing: user.following.length || 0,
+            totalReportsReceived: reportsReceived,
+            likesGiven,
+            commentsMade,
+            posts: posts || []
+          };
+        } catch (userError) {
+          console.error('Error procesando usuario:', userError);
+          return {
+            ...user,
+            isBlocked: user.isBlocked || false,
+            postCount: 0,
+            totalLikesReceived: 0,
+            totalCommentsReceived: 0,
+            totalFollowers: 0,
+            totalFollowing: 0,
+            totalReportsReceived: 0,
+            likesGiven: 0,
+            commentsMade: 0,
+            blockInfo: null,
+            posts: []
+          };
+        }
+      })
+    );
+
+    res.json({
+      msg: 'Success!',
+      result: usersWithDetails.length,
+      users: usersWithDetails,
+    });
+  } catch (err) {
+    console.error('ERROR en getUsersAction:', err);
+    return res.status(500).json({
+      msg: err.message,
+      users: []
+    });
+  }
+},
+
+activatePro: async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { proExpiryDate } = req.body;
+
+    // Verificar permisos (solo admin)
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès non autorisé. Seul un administrateur peut activer le compte Pro.'
+      });
+    }
+
+    const user = await Users.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur non trouvé'
+      });
+    }
+
+    // Activar usuario Pro
+    user.isPro = true;
+    user.proExpiryDate = proExpiryDate || null;
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Compte Pro activé avec succès',
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        isPro: user.isPro,
+        proExpiryDate: user.proExpiryDate
+      }
+    });
+
+  } catch (error) {
+    console.error('Error activatePro:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Erreur lors de l\'activation du compte Pro'
+    });
+  }
+},
+
+// ============================================
+// DESACTIVAR USUARIO PRO
+// ============================================
+deactivatePro: async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Verificar permisos (solo admin)
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès non autorisé. Seul un administrateur peut désactiver le compte Pro.'
+      });
+    }
+
+    const user = await Users.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur non trouvé'
+      });
+    }
+
+    // Desactivar usuario Pro
+    user.isPro = false;
+    user.proExpiryDate = null;
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Compte Pro désactivé avec succès',
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        isPro: user.isPro,
+        proExpiryDate: user.proExpiryDate
+      }
+    });
+
+  } catch (error) {
+    console.error('Error deactivatePro:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Erreur lors de la désactivation du compte Pro'
+    });
+  }
 }
+ 
+ 
 
 
-}
+
+
+
+};
 
 
 module.exports = userCtrl

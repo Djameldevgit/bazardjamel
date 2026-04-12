@@ -894,105 +894,105 @@ export const DYNAMIC_FIELDS_CONFIG = {
       step5: [],
       subCategories: {
         'ordinateurs-portables': {
-          step2: ['marque', 'modele', 'processeur', 'ram', 'stockage', 'tailleEcran', 'carteGraphique', 'garantie', 'etat', 'description'],
+          step2: ['marqueModelePcs', 'processeur', 'ram', 'stockage', 'tailleEcran', 'carteGraphique', 'garantie', 'etat', 'description'],
           step3: ['price', 'typeOffre', 'livraison'],
-          step4: ['wilaya',  'telephone', 'email'],
+          step4: ['wilaya', 'telephone', 'email'],
           step5: ['images']
         },
         'ordinateurs-bureau': {
-          step2: ['marque', 'modele', 'processeur', 'ram', 'stockage', 'carteGraphique', 'garantie', 'etat', 'description'],
+          step2: ['marqueModelePcs', 'processeur', 'ram', 'stockage', 'carteGraphique', 'garantie', 'etat', 'description'],
           step3: ['price', 'typeOffre', 'livraison'],
-          step4: ['wilaya',  'telephone', 'email'],
+          step4: ['wilaya', 'telephone', 'email'],
           step5: ['images']
         },
         'composants-pc-fixe': {
-          step2: ['typeComposant', 'marque', 'modele', 'garantie', 'etat', 'description'],
+          step2: ['typeComposant', 'marqueModelePcs', 'garantie', 'etat', 'description'],
           step3: ['price', 'typeOffre', 'livraison'],
-          step4: ['wilaya',  'telephone', 'email'],
+          step4: ['wilaya', 'telephone', 'email'],
           step5: ['images']
         },
         'composants-pc-portable': {
-          step2: ['typeComposant', 'marque', 'modele', 'garantie', 'etat', 'description'],
+          step2: ['typeComposant', 'marqueModelePcs', 'garantie', 'etat', 'description'],
           step3: ['price', 'typeOffre', 'livraison'],
-          step4: ['wilaya',  'telephone', 'email'],
+          step4: ['wilaya', 'telephone', 'email'],
           step5: ['images']
         },
         'composants-serveur': {
-          step2: ['typeComposant', 'marque', 'modele', 'garantie', 'etat', 'description'],
+          step2: ['typeComposant', 'marqueModelePcs', 'garantie', 'etat', 'description'],
           step3: ['price', 'typeOffre', 'livraison'],
-          step4: ['wilaya',  'telephone', 'email'],
+          step4: ['wilaya', 'telephone', 'email'],
           step5: ['images']
         },
         'imprimantes-cartouches': {
-          step2: ['marque', 'modele', 'garantie', 'etat', 'description'],
+          step2: ['marqueModelePcs', 'garantie', 'etat', 'description'],
           step3: ['price', 'typeOffre', 'livraison'],
-          step4: ['wilaya',  'telephone', 'email'],
+          step4: ['wilaya', 'telephone', 'email'],
           step5: ['images']
         },
         'reseau-connexion': {
-          step2: ['marque', 'modele', 'garantie', 'etat', 'description'],
+          step2: ['marqueModelePcs', 'garantie', 'etat', 'description'],
           step3: ['price', 'typeOffre', 'livraison'],
-          step4: ['wilaya',  'telephone', 'email'],
+          step4: ['wilaya', 'telephone', 'email'],
           step5: ['images']
         },
         'stockage-externe-racks': {
-          step2: ['marque', 'modele', 'garantie', 'etat', 'description'],
+          step2: ['marqueModelePcs', 'garantie', 'etat', 'description'],
           step3: ['price', 'typeOffre', 'livraison'],
-          step4: ['wilaya',  'telephone', 'email'],
+          step4: ['wilaya', 'telephone', 'email'],
           step5: ['images']
         },
         'serveurs': {
-          step2: ['marque', 'modele', 'processeur', 'ram', 'stockage', 'garantie', 'etat', 'description'],
+          step2: ['marqueModelePcs', 'processeur', 'ram', 'stockage', 'garantie', 'etat', 'description'],
           step3: ['price', 'typeOffre', 'livraison'],
-          step4: ['wilaya',  'telephone', 'email'],
+          step4: ['wilaya', 'telephone', 'email'],
           step5: ['images']
         },
         'ecrans': {
-          step2: ['marque', 'modele', 'tailleEcran', 'garantie', 'etat', 'description'],
+          step2: ['marqueModelePcs', 'tailleEcran', 'garantie', 'etat', 'description'],
           step3: ['price', 'typeOffre', 'livraison'],
-          step4: ['wilaya',  'telephone', 'email'],
+          step4: ['wilaya', 'telephone', 'email'],
           step5: ['images']
         },
         'onduleurs-stabilisateurs': {
-          step2: ['marque', 'modele', 'garantie', 'etat', 'description'],
+          step2: ['marqueModelePcs', 'garantie', 'etat', 'description'],
           step3: ['price', 'typeOffre', 'livraison'],
-          step4: ['wilaya',  'telephone', 'email'],
+          step4: ['wilaya', 'telephone', 'email'],
           step5: ['images']
         },
         'claviers-souris': {
-          step2: ['typePeripherique', 'marque', 'modele', 'garantie', 'etat', 'description'],
+          step2: ['typePeripherique', 'marqueModelePcs', 'garantie', 'etat', 'description'],
           step3: ['price', 'typeOffre', 'livraison'],
-          step4: ['wilaya',  'telephone', 'email'],
+          step4: ['wilaya', 'telephone', 'email'],
           step5: ['images']
         },
         'casques-son': {
-          step2: ['typePeripherique', 'marque', 'modele', 'garantie', 'etat', 'description'],
+          step2: ['typePeripherique', 'marqueModelePcs', 'garantie', 'etat', 'description'],
           step3: ['price', 'typeOffre', 'livraison'],
-          step4: ['wilaya',  'telephone', 'email'],
+          step4: ['wilaya', 'telephone', 'email'],
           step5: ['images']
         },
         'webcam-videoconference': {
-          step2: ['typePeripherique', 'marque', 'modele', 'garantie', 'etat', 'description'],
+          step2: ['typePeripherique', 'marqueModelePcs', 'garantie', 'etat', 'description'],
           step3: ['price', 'typeOffre', 'livraison'],
-          step4: ['wilaya',  'telephone', 'email'],
+          step4: ['wilaya', 'telephone', 'email'],
           step5: ['images']
         },
         'cables-adaptateurs': {
-          step2: ['typePeripherique', 'marque', 'modele', 'etat', 'description'],
+          step2: ['typePeripherique', 'marqueModelePcs', 'etat', 'description'],
           step3: ['price', 'typeOffre', 'livraison'],
-          step4: ['wilaya',  'telephone', 'email'],
+          step4: ['wilaya', 'telephone', 'email'],
           step5: ['images']
         },
         'logiciels-abonnements': {
           step2: ['description'],
           step3: ['price', 'typeOffre', 'livraison'],
-          step4: ['wilaya',  'telephone', 'email'],
+          step4: ['wilaya', 'telephone', 'email'],
           step5: ['images']
         },
         'autre-informatique': {
-          step2: ['marque', 'modele', 'etat', 'description'],
+          step2: ['marqueModelePcs', 'etat', 'description'],
           step3: ['price', 'typeOffre', 'livraison'],
-          step4: ['wilaya',  'telephone', 'email'],
+          step4: ['wilaya', 'telephone', 'email'],
           step5: ['images']
         }
       }

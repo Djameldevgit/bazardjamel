@@ -1334,7 +1334,7 @@ const categoriesData = [
     ]
   },
 
- 
+
   {
     name: 'Boutiques',
     slug: 'boutiques',
@@ -1393,8 +1393,168 @@ const categoriesData = [
       { name: 'Couture & Confection', slug: 'couture-et-confection', level: 2, icon: '/categories/boutiques/couture-et-confection.png', order: 49, children: [] },
       { name: 'Réparation Electronique & Electroménager', slug: 'reparation-electronique-electromenager', level: 2, icon: '/categories/boutiques/reparation-electronique-electromenager.png', order: 50, children: [] }
     ]
-  }, 
+  },
   // ==================== 17. TÉLÉPHONE ====================
+
+
+  {
+    name: 'Vidéos', slug: 'videos', level: 1, icon: '/categories/videos/videos.png', order: 0, children: [
+      { name: 'Véhicules', slug: 'videos-vehicules', level: 2, icon: '/categories/videos/videos-vehicules.png', order: 1, children: [] },
+      { name: 'Immobilier', slug: 'videos-immobilier', level: 2, icon: '/categories/videos/videos-immobilier.png', order: 2, children: [] },
+      { name: 'Téléphones', slug: 'videos-telephones', level: 2, icon: '/categories/videos/videos-telephones.png', order: 3, children: [] },
+      { name: 'Informatique', slug: 'videos-informatique', level: 2, icon: '/categories/videos/videos-informatique.png', order: 4, children: [] },
+      { name: 'Électroménager', slug: 'videos-electromenager', level: 2, icon: '/categories/videos/videos-electromenager.png', order: 5, children: [] },
+      { name: 'Mode & Vêtements', slug: 'videos-mode-vetements', level: 2, icon: '/categories/videos/videos-mode-vetements.png', order: 6, children: [] },
+      { name: 'Maison & Jardin', slug: 'videos-maison-jardin', level: 2, icon: '/categories/videos/videos-maison-jardin.png', order: 7, children: [] },
+      { name: 'Sport & Loisirs', slug: 'videos-sport-loisirs', level: 2, icon: '/categories/videos/videos-sport-loisirs.png', order: 8, children: [] },
+      { name: 'Alimentaires', slug: 'videos-alimentaires', level: 2, icon: '/categories/videos/videos-alimentaires.png', order: 9, children: [] },
+      { name: 'Meubles', slug: 'videos-meubles', level: 2, icon: '/categories/videos/videos-meubles.png', order: 10, children: [] },
+      { name: 'Pièces Détachées', slug: 'videos-pieces-detachees', level: 2, icon: '/categories/videos/videos-pieces-detachees.png', order: 11, children: [] },
+      { name: 'Santé & Beauté', slug: 'videos-sante-beaute', level: 2, icon: '/categories/videos/videos-sante-beaute.png', order: 12, children: [] },
+      { name: 'Services', slug: 'videos-services', level: 2, icon: '/categories/videos/videos-services.png', order: 13, children: [] },
+      { name: 'Emploi', slug: 'videos-emploi', level: 2, icon: '/categories/videos/videos-emploi.png', order: 14, children: [] },
+      { name: 'Voyages', slug: 'videos-voyages', level: 2, icon: '/categories/videos/videos-voyages.png', order: 15, children: [] },
+      { name: 'Boutiques', slug: 'videos-boutiques', level: 2, icon: '/categories/videos/videos-boutiques.png', order: 16, children: [] },
+      { name: 'Tutoriels', slug: 'videos-tutoriels', level: 2, icon: '/categories/videos/videos-tutoriels.png', order: 17, children: [] },
+      { name: 'Reviews', slug: 'videos-reviews', level: 2, icon: '/categories/videos/videos-reviews.png', order: 18, children: [] }
+    ]
+  },
+  {
+    name: 'Téléphones',
+    slug: 'videos-telephones',
+    level: 2,
+    icon: '/categories/videos/telephones.png',
+    order: 3,
+    children: [
+      { name: 'Smartphones', slug: 'videos-smartphones', level: 3, icon: '/categories/videos/smartphones.png', order: 1, children: [] },
+      { name: 'Tablettes', slug: 'videos-tablettes', level: 3, icon: '/categories/videos/tablettes.png', order: 2, children: [] },
+      { name: 'Accessoires', slug: 'videos-accessoires-telephones', level: 3, icon: '/categories/videos/accessoires-telephones.png', order: 3, children: [] }
+    ]
+  },
+  {
+    name: 'Informatique',
+    slug: 'videos-informatique',
+    level: 2,
+    icon: '/categories/videos/informatique.png',
+    order: 4,
+    children: [
+      { name: 'Ordinateurs portables', slug: 'videos-ordinateurs-portables', level: 3, icon: '/categories/videos/ordinateurs-portables.png', order: 1, children: [] },
+      { name: 'Ordinateurs bureau', slug: 'videos-ordinateurs-bureau', level: 3, icon: '/categories/videos/ordinateurs-bureau.png', order: 2, children: [] },
+      { name: 'Composants PC', slug: 'videos-composants-pc', level: 3, icon: '/categories/videos/composants-pc.png', order: 3, children: [] },
+      { name: 'Périphériques', slug: 'videos-peripheriques', level: 3, icon: '/categories/videos/peripheriques.png', order: 4, children: [] }
+    ]
+  },
+  {
+    name: 'Électroménager',
+    slug: 'videos-electromenager',
+    level: 2,
+    icon: '/categories/videos/electromenager.png',
+    order: 5,
+    children: [
+      { name: 'Réfrigérateurs', slug: 'videos-refrigerateurs', level: 3, icon: '/categories/videos/refrigerateurs.png', order: 1, children: [] },
+      { name: 'Lave-linge', slug: 'videos-lave-linge', level: 3, icon: '/categories/videos/lave-linge.png', order: 2, children: [] },
+      { name: 'Cuisinières', slug: 'videos-cuisinieres', level: 3, icon: '/categories/videos/cuisinieres.png', order: 3, children: [] },
+      { name: 'Petit électroménager', slug: 'videos-petit-electromenager', level: 3, icon: '/categories/videos/petit-electromenager.png', order: 4, children: [] }
+    ]
+  },
+  {
+    name: 'Mode & Vêtements',
+    slug: 'videos-mode-vetements',
+    level: 2,
+    icon: '/categories/videos/mode-vetements.png',
+    order: 6,
+    children: [
+      { name: 'Vêtements homme', slug: 'videos-vetements-homme', level: 3, icon: '/categories/videos/vetements-homme.png', order: 1, children: [] },
+      { name: 'Vêtements femme', slug: 'videos-vetements-femme', level: 3, icon: '/categories/videos/vetements-femme.png', order: 2, children: [] },
+      { name: 'Chaussures', slug: 'videos-chaussures', level: 3, icon: '/categories/videos/chaussures.png', order: 3, children: [] },
+      { name: 'Accessoires', slug: 'videos-accessoires-mode', level: 3, icon: '/categories/videos/accessoires-mode.png', order: 4, children: [] }
+    ]
+  },
+  {
+    name: 'Maison & Jardin',
+    slug: 'videos-maison-jardin',
+    level: 2,
+    icon: '/categories/videos/maison-jardin.png',
+    order: 7,
+    children: [
+      { name: 'Meubles', slug: 'videos-meubles', level: 3, icon: '/categories/videos/meubles.png', order: 1, children: [] },
+      { name: 'Décoration', slug: 'videos-decoration', level: 3, icon: '/categories/videos/decoration.png', order: 2, children: [] },
+      { name: 'Jardinage', slug: 'videos-jardinage', level: 3, icon: '/categories/videos/jardinage.png', order: 3, children: [] }
+    ]
+  },
+  {
+    name: 'Sport & Loisirs',
+    slug: 'videos-sport-loisirs',
+    level: 2,
+    icon: '/categories/videos/sport-loisirs.png',
+    order: 8,
+    children: [
+      { name: 'Équipement sportif', slug: 'videos-equipement-sportif', level: 3, icon: '/categories/videos/equipement-sportif.png', order: 1, children: [] },
+      { name: 'Jeux vidéo', slug: 'videos-jeux-video', level: 3, icon: '/categories/videos/jeux-video.png', order: 2, children: [] },
+      { name: 'Instruments musique', slug: 'videos-instruments-musique', level: 3, icon: '/categories/videos/instruments-musique.png', order: 3, children: [] }
+    ]
+  },
+
+  // ============================================
+  // VIDEOS DE BOUTIQUES (Pro)
+  // ============================================
+  {
+    name: 'Boutiques',
+    slug: 'videos-boutiques',
+    level: 2,
+    icon: '/categories/videos/boutiques.png',
+    order: 9,
+    children: [
+      { name: 'Présentation boutique', slug: 'videos-presentation-boutique', level: 3, icon: '/categories/videos/presentation-boutique.png', order: 1, children: [] },
+      { name: 'Catalogue produits', slug: 'videos-catalogue-produits', level: 3, icon: '/categories/videos/catalogue-produits.png', order: 2, children: [] },
+      { name: 'Promotions & Soldes', slug: 'videos-promotions-soldes', level: 3, icon: '/categories/videos/promotions-soldes.png', order: 3, children: [] },
+      { name: 'Services', slug: 'videos-services', level: 3, icon: '/categories/videos/services.png', order: 4, children: [] }
+    ]
+  },
+
+  // ============================================
+  // VIDEOS TIPO TUTORIAL
+  // ============================================
+  {
+    name: 'Tutoriels',
+    slug: 'videos-tutoriels',
+    level: 2,
+    icon: '/categories/videos/tutoriels.png',
+    order: 10,
+    children: [
+      { name: 'Utilisation produit', slug: 'videos-utilisation-produit', level: 3, icon: '/categories/videos/utilisation-produit.png', order: 1, children: [] },
+      { name: 'Installation', slug: 'videos-installation', level: 3, icon: '/categories/videos/installation.png', order: 2, children: [] },
+      { name: 'Entretien', slug: 'videos-entretien', level: 3, icon: '/categories/videos/entretien.png', order: 3, children: [] },
+      { name: 'Réparation', slug: 'videos-reparation', level: 3, icon: '/categories/videos/reparation.png', order: 4, children: [] }
+    ]
+  },
+
+  // ============================================
+  // VIDEOS DE REVIEWS
+  // ============================================
+  {
+    name: 'Reviews',
+    slug: 'videos-reviews',
+    level: 2,
+    icon: '/categories/videos/reviews.png',
+    order: 11,
+    children: [
+      { name: 'Tests produits', slug: 'videos-tests-produits', level: 3, icon: '/categories/videos/tests-produits.png', order: 1, children: [] },
+      { name: 'Comparatifs', slug: 'videos-comparatifs', level: 3, icon: '/categories/videos/comparatifs.png', order: 2, children: [] },
+      { name: 'Unboxing', slug: 'videos-unboxing', level: 3, icon: '/categories/videos/unboxing.png', order: 3, children: [] }
+    ]
+  },
+
+
+
+
+
+
+
+
+
+
+
   {
     name: 'Téléphone',
     slug: 'telephone',

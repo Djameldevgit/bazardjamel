@@ -582,6 +582,10 @@ const handleLogout = () => {
                     </div>
 
                     <NavDropdown.Divider />
+                    <MenuItem icon={FaUserCircle} iconColor="#667eea" to='/create-video-page'>
+       crear video
+                    </MenuItem>
+
                     <MenuItem icon={FaUserCircle} iconColor="#667eea" to='/admindashboard'>
                    admin dashborad
                     </MenuItem>

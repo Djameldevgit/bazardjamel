@@ -2,73 +2,11 @@
 import React from 'react';
 import Select from 'react-select';
 import BaseCategoryField from './BaseCategoryField';
+import MarqueModelPcs from '../camposComun/MarqueModelPcs';
 
 // ============================================
 // CAMPOS ESPECÍFICOS PARA INFORMATIQUE
 // ============================================
-
-// Marque
-const MarqueField = ({ postData, handleChangeInput }) => {
-  const marques = [
-    { value: 'Dell', label: 'Dell' },
-    { value: 'HP', label: 'HP' },
-    { value: 'Lenovo', label: 'Lenovo' },
-    { value: 'Apple', label: 'Apple' },
-    { value: 'Asus', label: 'Asus' },
-    { value: 'Acer', label: 'Acer' },
-    { value: 'MSI', label: 'MSI' },
-    { value: 'Microsoft', label: 'Microsoft' },
-    { value: 'Samsung', label: 'Samsung' },
-    { value: 'Toshiba', label: 'Toshiba' },
-    { value: 'Sony', label: 'Sony' },
-    { value: 'Razer', label: 'Razer' },
-    { value: 'Gigabyte', label: 'Gigabyte' },
-    { value: 'Huawei', label: 'Huawei' },
-    { value: 'Xiaomi', label: 'Xiaomi' },
-    { value: 'Autre', label: 'Autre' }
-  ];
-  
-  const selectedOption = marques.find(opt => opt.value === postData?.marque) || null;
-  
-  const handleChange = (selected) => {
-    handleChangeInput({
-      target: { name: 'marque', value: selected?.value || '' }
-    });
-  };
-  
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Marque</label>
-      <Select
-        name="marque"
-        options={marques}
-        value={selectedOption}
-        onChange={handleChange}
-        className="basic-single-select"
-        classNamePrefix="select"
-        placeholder="Sélectionner la marque..."
-        isClearable
-      />
-    </div>
-  );
-};
-
-// Modèle
-const ModeleField = ({ postData, handleChangeInput }) => {
-  return (
-    <div className="mb-3">
-      <label className="form-label fw-bold">Modèle</label>
-      <input
-        type="text"
-        name="modele"
-        className="form-control"
-        placeholder="Ex: Latitude 5420, Pavilion 15, MacBook Pro..."
-        value={postData?.modele || ''}
-        onChange={handleChangeInput}
-      />
-    </div>
-  );
-};
 
 // Processeur
 const ProcesseurField = ({ postData, handleChangeInput }) => {
@@ -319,7 +257,7 @@ const GarantieField = ({ postData, handleChangeInput }) => {
 // CAMPOS ADICIONALES
 // ============================================
 
-// Type de composant (para componentes de PC)
+// Type de composant
 const TypeComposantField = ({ postData, handleChangeInput }) => {
   const typeComposants = [
     { value: 'Carte mère', label: 'Carte mère' },
@@ -403,11 +341,12 @@ const TypePeripheriqueField = ({ postData, handleChangeInput }) => {
 const InformatiqueFields = (props) => {
   const { step } = props;
   
-  // SOLO campos específicos (sin title, description, etat)
+  // CAMPOS ESPECÍFICOS con MarqueModelPcs
   const customComponents = {
-    // Marque al principio
-    'marque': <MarqueField {...props} />,
-    'modele': <ModeleField {...props} />,
+    // ⭐ NUEVO: Componente MarqueModelPcs para PCs
+    'marqueModelePcs': <MarqueModelPcs {...props} />,
+    
+    // Otros campos específicos
     'processeur': <ProcesseurField {...props} />,
     'ram': <RamField {...props} />,
     'stockage': <StockageField {...props} />,

@@ -1,4 +1,5 @@
-// 📂 components/common/Drawer.js - VERSIÓN CON RECUPERACIÓN DE IMÁGENES
+// 📂 components/common/Drawer.js - VERSIÓN CORREGIDA
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useLocation, useHistory } from 'react-router-dom';
@@ -30,13 +31,22 @@ const Drawer = ({
   const hasBoutiques = userBoutiques && Array.isArray(userBoutiques) && userBoutiques.length > 0;
   const firstBoutiqueId = hasBoutiques && userBoutiques[0]?._id ? userBoutiques[0]._id : null;
 
+  // ✅ Verificar si el usuario es Pro activo
+  const isProActive = useMemo(() => {
+    const user = auth?.user;
+    if (!user?.isPro) return false;
+    if (!user?.proExpiryDate) return true;
+    return new Date(user.proExpiryDate) > new Date();
+  }, [auth?.user]);
+
   // Estados para los dropdowns
   const [openDropdowns, setOpenDropdowns] = useState({
     monCompte: false,
     mesAnnonces: false,
     mesCommandes: false,
     mesBoutiques: false,
-    mesTransactions: false
+    mesTransactions: false,
+    videos: false  // ✅ Nuevo dropdown para videos
   });
 
   // Obtener categorías desde Redux
@@ -58,7 +68,6 @@ const Drawer = ({
 
   // 🔥 MAPA DE ICONOS POR DEFECTO PARA CADA CATEGORÍA (fallback cuando no hay imagen)
   const defaultCategoryIcons = useMemo(() => ({
-    // Categorías principales
     'vehicules': '🚗',
     'immobilier': '🏠',
     'telephones': '📱',
@@ -76,8 +85,6 @@ const Drawer = ({
     'voyages': '✈️',
     'pieces-detachees': '⚙️',
     'boutiques': '🏪',
-    
-    // Subcategorías comunes
     'voitures': '🚙',
     'motos': '🏍️',
     'smartphones': '📱',
@@ -92,8 +99,6 @@ const Drawer = ({
     'appartement': '🏢',
     'villa': '🏡',
     'terrain': '🌾',
-    
-    // Default
     'default': '📁'
   }), []);
 
@@ -121,19 +126,15 @@ const Drawer = ({
   const getFullImageUrl = useCallback((iconPath) => {
     if (!iconPath) return null;
     
-    // Si ya es una URL completa
     if (iconPath.startsWith('http://') || iconPath.startsWith('https://')) {
       return iconPath;
     }
     
-    // Si es una ruta relativa que empieza con /categories
     if (iconPath.startsWith('/categories')) {
-      // Obtener la URL base (podría ser desde variables de entorno)
       const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       return `${baseUrl}${iconPath}`;
     }
     
-    // Si es solo el nombre del archivo
     if (iconPath.includes('.png') || iconPath.includes('.jpg') || iconPath.includes('.svg')) {
       const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       return `${baseUrl}/categories/${iconPath}`;
@@ -147,7 +148,6 @@ const Drawer = ({
     const categorySlug = category.slug;
     const hasError = imageErrors[categorySlug];
     
-    // Si hay error de imagen, usar emoji por defecto
     if (hasError) {
       return {
         type: 'emoji',
@@ -155,7 +155,6 @@ const Drawer = ({
       };
     }
     
-    // Si tiene icono (ruta de imagen)
     if (category.icon) {
       const fullUrl = getFullImageUrl(category.icon);
       if (fullUrl) {
@@ -167,7 +166,6 @@ const Drawer = ({
       }
     }
     
-    // Si no tiene icono, usar emoji por defecto
     return {
       type: 'emoji',
       value: defaultCategoryIcons[categorySlug] || defaultCategoryIcons.default
@@ -210,7 +208,7 @@ const Drawer = ({
     message: '💬', shopping: '🛒', megaphone: '📢', gear: '⚙️',
     verified: '✅', warning: '⚠️', star: '⭐', heart: '❤️',
     annonce: '📢', commande: '📦', voyage: '✈️', pub: '🎯',
-    transaction: '💰', credit: '💳'
+    transaction: '💰', credit: '💳', video: '🎬', camera: '📹'
   };
 
   const handleImageError = useCallback((categorySlug) => {
@@ -269,7 +267,8 @@ const Drawer = ({
     mesAnnonces: { primary: '#3B82F6', light: '#EFF6FF' },
     mesBoutiques: { primary: '#EC4899', light: '#FDF2F8' },
     mesCommandes: { primary: '#F59E0B', light: '#FFFBEB' },
-    mesTransactions: { primary: '#10B981', light: '#ECFDF5' }
+    mesTransactions: { primary: '#10B981', light: '#ECFDF5' },
+    videos: { primary: '#DC2626', light: '#FEF2F2' }  // ✅ Color rojo para videos
   };
 
   // 🔥 COMPONENTE CATEGORY ICON RENDERIZADO
@@ -453,7 +452,6 @@ const Drawer = ({
       if (path && !onClick) onHide();
     };
     
-    // Si es una categoría con icono de imagen
     const isCategoryItem = icon && typeof icon === 'string' && (icon.startsWith('http') || icon.startsWith('/categories'));
     
     const content = (
@@ -568,6 +566,39 @@ const Drawer = ({
     return <div style={{ display: 'block' }}>{content}</div>;
   };
 
+  // ✅ DROPDOWN: Videos (solo para usuarios Pro activos)
+  const renderVideosDropdown = () => {
+    if (!isProActive) return null;
+    
+    return (
+      <DropdownHeader 
+        title="Vidéos" 
+        icon="🎬" 
+        dropdownName="videos"
+        color="#DC2626"
+      >
+        <DropdownItem 
+          icon="🎬" 
+          name="Créer une vidéo" 
+          path="/creer-video" 
+          color="#DC2626" 
+        />
+        <DropdownItem 
+          icon="📹" 
+          name="Mes vidéos" 
+          path="/mes-videos" 
+          color="#DC2626" 
+        />
+        <DropdownItem 
+          icon="📊" 
+          name="Statistiques vidéos" 
+          path="/stats-videos" 
+          color="#F59E0B" 
+        />
+      </DropdownHeader>
+    );
+  };
+
   // Contenido para DASHBOARD con DROPDOWNS
   const renderDashboardContent = () => (
     <>
@@ -585,6 +616,22 @@ const Drawer = ({
           <div style={{ fontSize: '1.3rem', marginBottom: '8px' }}>📊</div>
           <div style={{ fontWeight: '700', fontSize: '1rem' }}>Mon Espace</div>
           <div style={{ fontSize: '0.75rem', opacity: 0.9 }}>{auth.user?.name || auth.user?.username}</div>
+          
+          {/* Badge Pro */}
+          {isProActive && (
+            <div style={{ 
+              fontSize: '0.65rem', 
+              marginTop: '8px', 
+              opacity: 0.9,
+              display: 'inline-block',
+              background: 'rgba(255,255,255,0.25)',
+              padding: '2px 8px',
+              borderRadius: '20px'
+            }}>
+              ⭐ Compte Pro
+            </div>
+          )}
+          
           {hasBoutiques && (
             <div style={{ 
               fontSize: '0.65rem', 
@@ -593,7 +640,8 @@ const Drawer = ({
               display: 'inline-block',
               background: 'rgba(255,255,255,0.2)',
               padding: '2px 8px',
-              borderRadius: '20px'
+              borderRadius: '20px',
+              marginLeft: isProActive ? '8px' : '0'
             }}>
               🏪 {userBoutiques.length} boutique(s)
             </div>
@@ -637,6 +685,9 @@ const Drawer = ({
           color="#ef4444" 
         />
       </DropdownHeader>
+
+      {/* ✅ DROPDOWN: Videos (solo para usuarios Pro) */}
+      {renderVideosDropdown()}
 
       {/* DROPDOWN: Mes Annonces */}
       <DropdownHeader 
@@ -696,7 +747,6 @@ const Drawer = ({
           path="/create-boutique" 
           color="#8b5cf6" 
         />
-        
         <DropdownItem 
           icon="✨" 
           name="Mes products boutiques" 
@@ -861,7 +911,6 @@ const Drawer = ({
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            {/* Icono con soporte para imágenes */}
             <div style={{
               width: '32px',
               height: '32px',
@@ -959,6 +1008,22 @@ const Drawer = ({
               fontWeight: '600'
             }}>
               {auth.user.name || auth.user.username}
+            </span>
+          )}
+          {/* Badge Pro en el header */}
+          {isProActive && (
+            <span style={{
+              background: 'linear-gradient(135deg, #DC2626 0%, #EF4444 100%)',
+              color: 'white',
+              fontSize: '0.7rem',
+              padding: '2px 8px',
+              borderRadius: '20px',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}>
+              <span>⭐</span> PRO
             </span>
           )}
         </div>
@@ -1062,7 +1127,7 @@ const Drawer = ({
             <span>🛡️</span>
             <span>Plateforme sécurisée</span>
           </div>
-          © {new Date().getFullYear()} MarketPlace. Tous droits réservés.
+          © {new Date().getFullYear()} MarketPlace Djamel Tous droits réservés.
         </div>
       </Offcanvas.Body>
     </Offcanvas>

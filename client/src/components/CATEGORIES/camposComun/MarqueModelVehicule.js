@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import telefonosData from './json/vehicules.json';
 
-const MarqueModelTelephone = ({
+const MarqueModelVehicule= ({
   postData,
   handleChangeInput,
   ...props
@@ -106,4 +106,4 @@ const MarqueModelTelephone = ({
   );
 };
 
-export default MarqueModelTelephone;
+export default MarqueModelVehicule;

@@ -1,3 +1,5 @@
+// 📂 pages/Bloqueos404.jsx - VERSIÓN COMPLETA EN FRANCÉS CON TÉLÉFONO
+
 import React, { useEffect, useState } from 'react';
 import { 
   Container,
@@ -12,24 +14,27 @@ import {
   Form,
   Spinner
 } from 'react-bootstrap';
-import { ClockHistory, ExclamationTriangle, PersonLock, CalendarEvent, Envelope, Telephone } from 'react-bootstrap-icons';
+import { ClockHistory, ExclamationTriangle, PersonLock, CalendarEvent, Envelope, Telephone, InfoCircle, FileText, ChatDots } from 'react-bootstrap-icons';
 import { useSelector, useDispatch } from 'react-redux';
-import { useTranslation } from 'react-i18next';
-import { getBlockedUsers } from '../../redux/actions/userAction'; // Ajusta la ruta
+import { getUsers } from '../../redux/actions/userAction';
 
 const Bloqueos404 = () => {
     const dispatch = useDispatch();
-    const { auth, userBlockReducer, languageReducer } = useSelector(state => state);
-    const { t } = useTranslation('bloqueos404');
-    const lang = languageReducer?.language || 'en';
+    const { auth, homeUsers } = useSelector(state => state);
     const user = auth?.user;
     
-    const isRTL = lang === 'ar';
     const [showContactModal, setShowContactModal] = useState(false);
     const [contactMessage, setContactMessage] = useState('');
     const [userEmail, setUserEmail] = useState(user?.email || '');
     const [loading, setLoading] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
+
+    // Informations de contact de l'administration
+    const adminContactInfo = {
+        email: "artealger2020argelia@gmail.com",
+        phone: "+213 658 556 296",
+        phoneDisplay: "0658 55 62 96"
+    };
 
     useEffect(() => {
         if (user?.email) {
@@ -37,53 +42,33 @@ const Bloqueos404 = () => {
         }
     }, [user]);
 
-    // ✅ CARGAR DATOS DE BLOQUEO - igual que en ListaUsuariosBloqueados
+    // Charger les données des utilisateurs pour obtenir blockDetails à jour
     useEffect(() => {
-        if (auth.token && user?.esBloqueado && !dataLoaded) {
-            dispatch(getBlockedUsers(auth.token));
+        if (auth.token && !dataLoaded) {
+            dispatch(getUsers(auth.token));
             setDataLoaded(true);
         }
-    }, [dispatch, auth.token, user?.esBloqueado, dataLoaded]);
+    }, [dispatch, auth.token, dataLoaded]);
 
-    // ✅ VERIFICACIÓN CORRECTA
-    const esBloqueado = user?.esBloqueado === true;
+    // Rechercher l'utilisateur actuel dans homeUsers
+    const currentUser = homeUsers?.users?.find(u => u._id === user?._id);
+    
+    // Vérifier si l'utilisateur est bloqué
+    const isBlocked = currentUser?.isBlocked === true;
+    
+    // Obtenir les détails du blocage
+    const blockDetails = currentUser?.blockDetails || null;
+    
+    // Vérifier si le blocage a expiré
+    const isExpired = blockDetails?.blockExpiryDate && new Date(blockDetails.blockExpiryDate) < new Date();
 
-    // ✅ BUSCAR DATOS EXACTAMENTE COMO EN ListaUsuariosBloqueados
-    const blockedUserData = userBlockReducer?.blockedUsers?.find(
-        block => block.user && block.user._id === user?._id
-    );
-
-    // ✅ DEBUG DETALLADO
-    console.log('=== DEBUG BLOQUEOS404 ===');
-    console.log('Usuario:', user);
-    console.log('esBloqueado:', esBloqueado);
-    console.log('Todos los blockedUsers en reducer:', userBlockReducer?.blockedUsers);
-    console.log('BlockedUserData encontrado:', blockedUserData);
-    console.log('Motivo:', blockedUserData?.motivo);
-    console.log('Content:', blockedUserData?.content);
-    console.log('CreatedAt:', blockedUserData?.createdAt);
-    console.log('FechaLimite:', blockedUserData?.fechaLimite);
-
-    // Si no hay usuario, mostrar carga
-    if (!user) {
-        return (
-            <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
-                <Spinner animation="border" variant="primary" />
-            </Container>
-        );
-    }
-
-    // Si está cargando datos
-    if (esBloqueado && !dataLoaded && userBlockReducer?.blockedUsers?.length === 0) {
-        return (
-            <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
-                <div className="text-center">
-                    <Spinner animation="border" variant="primary" />
-                    <p className="mt-2">Cargando información del bloqueo...</p>
-                </div>
-            </Container>
-        );
-    }
+    // Debug
+    console.log('=== BLOQUEOS404 DEBUG ===');
+    console.log('Utilisateur:', user);
+    console.log('CurrentUser:', currentUser);
+    console.log('isBlocked:', isBlocked);
+    console.log('BlockDetails:', blockDetails);
+    console.log('isExpired:', isExpired);
 
     const handleContactSupport = () => {
         setShowContactModal(true);
@@ -94,16 +79,11 @@ const Bloqueos404 = () => {
         setContactMessage('');
     };
 
-    const yourContactInfo = {
-        email: "artealger2020argelia@gmail.com",
-        phone: "+213 658 556 296"
-    };
-    
     const handleSubmitContact = async (e) => {
         e.preventDefault();
         
         if (!contactMessage.trim()) {
-            alert(t('messageRequired', { lng: lang }));
+            alert('Veuillez écrire un message');
             return;
         }
 
@@ -120,44 +100,67 @@ const Bloqueos404 = () => {
                     email: user?.email,
                     username: user?.username,
                     _id: user?._id,
-                    blockDate: blockedUserData?.createdAt || new Date(),
-                    blockReason: blockedUserData?.motivo || t('notSpecified', { lng: lang }),
-                    message: contactMessage,
-                    lang: lang
+                    blockReason: blockDetails?.reason || 'Non spécifié',
+                    blockDescription: blockDetails?.description || '',
+                    blockDate: blockDetails?.blockDate || new Date(),
+                    blockExpiryDate: blockDetails?.blockExpiryDate || null,
+                    message: contactMessage
                 })
             });
 
             if (!response.ok) {
-                throw new Error('Error en la respuesta del servidor');
+                throw new Error('Erreur lors de l\'envoi');
             }
 
-            alert(t('messageSentSuccess', { lng: lang }));
+            alert('Message envoyé avec succès. Nous vous contacterons prochainement.');
             setContactMessage('');
             handleCloseContactModal();
         } catch (error) {
-            console.error("Error al enviar:", error);
-            alert(t('messageSentError', { lng: lang }));
+            console.error("Erreur lors de l'envoi:", error);
+            alert('Erreur lors de l\'envoi du message. Veuillez réessayer plus tard.');
         } finally {
             setLoading(false);
         }
     };
 
-    // ✅ SI NO ESTÁ BLOQUEADO - mostrar estado normal
-    if (!esBloqueado) {
+    // Si pas d'utilisateur, afficher chargement
+    if (!user) {
+        return (
+            <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
+                <Spinner animation="border" variant="primary" />
+            </Container>
+        );
+    }
+
+    // Si chargement des données
+    if (isBlocked && !dataLoaded && homeUsers?.users?.length === 0) {
+        return (
+            <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
+                <div className="text-center">
+                    <Spinner animation="border" variant="primary" />
+                    <p className="mt-2">Chargement des informations de blocage...</p>
+                </div>
+            </Container>
+        );
+    }
+
+    // Si le blocage a expiré mais l'état n'est pas mis à jour
+    if (isBlocked && isExpired) {
         return (
             <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
                 <Card className="text-center shadow" style={{ width: '100%', maxWidth: '600px' }}>
-                    <Card.Header className="bg-success text-white">
-                        <h4 className="mb-0">{t('accountStatus', { lng: lang })}</h4>
+                    <Card.Header className="bg-warning text-dark">
+                        <h4 className="mb-0">⚠️ Blocage expiré</h4>
                     </Card.Header>
                     <Card.Body>
-                        <PersonLock size={48} className="text-success mb-3" />
-                        <Card.Title>{t('activeAccount', { lng: lang })}</Card.Title>
+                        <ClockHistory size={48} className="text-warning mb-3" />
+                        <Card.Title>Votre blocage a expiré</Card.Title>
                         <Card.Text>
-                            {t('noRestrictions', { lng: lang })}
+                            La période de blocage est terminée. Vous devriez pouvoir accéder normalement à votre compte.
+                            Si vous ne pouvez toujours pas accéder, veuillez contacter le support.
                         </Card.Text>
                         <Button variant="primary" href="/">
-                            {t('backToHome', { lng: lang })}
+                            Accueil
                         </Button>
                     </Card.Body>
                 </Card>
@@ -165,101 +168,177 @@ const Bloqueos404 = () => {
         );
     }
 
-    // ✅ SI ESTÁ BLOQUEADO - mostrar página de bloqueo
+    // SI NON BLOQUÉ - afficher statut normal
+    if (!isBlocked) {
+        return (
+            <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
+                <Card className="text-center shadow" style={{ width: '100%', maxWidth: '600px' }}>
+                    <Card.Header className="bg-success text-white">
+                        <h4 className="mb-0">Statut du compte</h4>
+                    </Card.Header>
+                    <Card.Body>
+                        <PersonLock size={48} className="text-success mb-3" />
+                        <Card.Title>Compte actif</Card.Title>
+                        <Card.Text>
+                            Votre compte est actif et sans restriction.
+                            Vous pouvez continuer à utiliser la plateforme normalement.
+                        </Card.Text>
+                        <Button variant="primary" href="/">
+                            Accueil
+                        </Button>
+                    </Card.Body>
+                </Card>
+            </Container>
+        );
+    }
+
+    // SI BLOQUÉ - afficher page de blocage avec détails
     return (
         <>
-            <Container className={`py-5 ${isRTL ? 'rtl-container' : ''}`} style={{ maxWidth: '800px' }}>
+            <Container className="py-5" style={{ maxWidth: '800px' }}>
                 <Row className="justify-content-center">
                     <Col md={10} lg={8}>
                         <Card className="shadow-lg border-danger">
-                            <Card.Header className={`bg-danger text-white d-flex justify-content-between align-items-center ${isRTL ? 'rtl-header' : ''}`}>
+                            <Card.Header className="bg-danger text-white d-flex justify-content-between align-items-center">
                                 <div className="d-flex align-items-center">
-                                    <ExclamationTriangle className={isRTL ? 'ms-2' : 'me-2'} />
-                                    <strong>{t('blockedAccount', { lng: lang })}</strong>
+                                    <ExclamationTriangle className="me-2" />
+                                    <strong>⚠️ Compte bloqué</strong>
                                 </div>
                                 <Badge bg="light" text="dark">
-                                    {t('blockSystem', { lng: lang })}
+                                    Système de blocage
                                 </Badge>
                             </Card.Header>
                             
-                            <Card.Body className={isRTL ? 'rtl-body' : ''}>
+                            <Card.Body>
                                 <Alert variant="danger" className="d-flex align-items-center">
-                                    <ExclamationTriangle size={24} className={isRTL ? 'ms-3' : 'me-3'} />
+                                    <ExclamationTriangle size={24} className="me-3" />
                                     <div>
-                                        {t('accountSuspended', { lng: lang })}
+                                        <strong>Votre compte a été temporairement suspendu</strong>
+                                        <br />
+                                        Vous ne pourrez pas accéder à la plateforme jusqu'à la levée du blocage.
                                     </div>
                                 </Alert>
                                 
                                 <ListGroup variant="flush" className="mb-4">
                                     <ListGroup.Item className="d-flex justify-content-between align-items-center">
                                         <span className="fw-bold d-flex align-items-center">
-                                            <PersonLock className={isRTL ? 'ms-2' : 'me-2'} />
-                                            {t('username', { lng: lang })}:
+                                            <PersonLock className="me-2" />
+                                            Utilisateur:
                                         </span>
-                                        <span className={isRTL ? 'text-start' : 'text-end'} style={{ minWidth: '50%' }}>
+                                        <span className="text-end" style={{ minWidth: '50%' }}>
                                             {user?.username || 'N/A'}
                                         </span>
                                     </ListGroup.Item>
                                     
                                     <ListGroup.Item className="d-flex justify-content-between align-items-center">
                                         <span className="fw-bold d-flex align-items-center">
-                                            <ExclamationTriangle className={isRTL ? 'ms-2' : 'me-2'} />
-                                            {t('blockReason', { lng: lang })}:
+                                            <ExclamationTriangle className="me-2" />
+                                            Motif du blocage:
                                         </span>
-                                        <span className={isRTL ? 'text-start' : 'text-end'} style={{ minWidth: '50%' }}>
-                                            {blockedUserData?.motivo || t('notSpecified', { lng: lang })}
+                                        <span className="text-end text-danger fw-bold" style={{ minWidth: '50%' }}>
+                                            {blockDetails?.reason || 'Non spécifié'}
                                         </span>
                                     </ListGroup.Item>
                                     
-                                    <ListGroup.Item>
-                                        <div className="fw-bold mb-2 d-flex align-items-center">
-                                            <ExclamationTriangle className={isRTL ? 'ms-2' : 'me-2'} />
-                                            {t('details', { lng: lang })}:
-                                        </div>
-                                        <div className="text-muted">
-                                            {blockedUserData?.content || t('noAdditionalDetails', { lng: lang })}
-                                        </div>
+                                    {blockDetails?.description && (
+                                        <ListGroup.Item>
+                                            <div className="fw-bold mb-2 d-flex align-items-center">
+                                                <FileText className="me-2" />
+                                                Description détaillée:
+                                            </div>
+                                            <div className="text-muted bg-light p-2 rounded">
+                                                {blockDetails.description}
+                                            </div>
+                                        </ListGroup.Item>
+                                    )}
+                                    
+                                    <ListGroup.Item className="d-flex justify-content-between align-items-center">
+                                        <span className="fw-bold d-flex align-items-center">
+                                            <ClockHistory className="me-2" />
+                                            Date du blocage:
+                                        </span>
+                                        <span className="text-end" style={{ minWidth: '50%' }}>
+                                            {blockDetails?.blockDate 
+                                                ? new Date(blockDetails.blockDate).toLocaleString('fr-FR')
+                                                : 'Inconnue'}
+                                        </span>
                                     </ListGroup.Item>
                                     
                                     <ListGroup.Item className="d-flex justify-content-between align-items-center">
                                         <span className="fw-bold d-flex align-items-center">
-                                            <ClockHistory className={isRTL ? 'ms-2' : 'me-2'} />
-                                            {t('blockDate', { lng: lang })}:
+                                            <CalendarEvent className="me-2" />
+                                            Date de déblocage:
                                         </span>
-                                        <span className={isRTL ? 'text-start' : 'text-end'} style={{ minWidth: '50%' }}>
-                                            {blockedUserData?.createdAt 
-                                                ? new Date(blockedUserData.createdAt).toLocaleString(lang)
-                                                : t('unknown', { lng: lang })}
-                                        </span>
-                                    </ListGroup.Item>
-                                    
-                                    <ListGroup.Item className="d-flex justify-content-between align-items-center">
-                                        <span className="fw-bold d-flex align-items-center">
-                                            <CalendarEvent className={isRTL ? 'ms-2' : 'me-2'} />
-                                            {t('expectedUnblock', { lng: lang })}:
-                                        </span>
-                                        <span className={`${!blockedUserData?.fechaLimite ? 'text-warning' : ''} ${isRTL ? 'text-start' : 'text-end'}`} style={{ minWidth: '50%' }}>
-                                            {blockedUserData?.fechaLimite 
-                                                ? new Date(blockedUserData.fechaLimite).toLocaleString(lang)
-                                                : t('indeterminate', { lng: lang })}
+                                        <span className={`text-end ${!blockDetails?.blockExpiryDate ? 'text-warning' : ''}`} style={{ minWidth: '50%' }}>
+                                            {blockDetails?.blockExpiryDate 
+                                                ? new Date(blockDetails.blockExpiryDate).toLocaleString('fr-FR')
+                                                : 'Sans date définie (en attente de révision)'}
                                         </span>
                                     </ListGroup.Item>
                                 </ListGroup>
                                 
-                                <div className="d-grid gap-2">
+                                {/* SECTION CONTACT DIRECT - TÉLÉPHONE */}
+                                <Alert variant="primary" className="mt-3">
+                                    <div className="d-flex align-items-start">
+                                        <Telephone size={20} className="me-2 mt-1" />
+                                        <div>
+                                            <strong>📞 Contacter directement l'administration</strong>
+                                            <div className="mt-2">
+                                                <p className="mb-1">
+                                                    <strong>Téléphone :</strong> 
+                                                    <a href={`tel:${adminContactInfo.phone}`} className="ms-2 text-decoration-none">
+                                                        {adminContactInfo.phoneDisplay}
+                                                    </a>
+                                                </p>
+                                                <p className="mb-1">
+                                                    <strong>Email :</strong> 
+                                                    <a href={`mailto:${adminContactInfo.email}`} className="ms-2 text-decoration-none">
+                                                        {adminContactInfo.email}
+                                                    </a>
+                                                </p>
+                                                <small className="text-muted d-block mt-2">
+                                                    📍 Horaires de contact : Du lundi au vendredi de 9h à 18h
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Alert>
+
+                                <Alert variant="info" className="mt-2">
+                                    <div className="d-flex align-items-start">
+                                        <InfoCircle size={20} className="me-2 mt-1" />
+                                        <div>
+                                            <strong>Que pouvez-vous faire ?</strong>
+                                            <ul className="mb-0 mt-1">
+                                                <li>Attendre la fin de la période de blocage</li>
+                                                <li>Contacter le support si vous pensez à une erreur</li>
+                                                <li>Consulter les règles de la communauté</li>
+                                                <li>Appeler directement l'administration au <strong>{adminContactInfo.phoneDisplay}</strong></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </Alert>
+                                
+                                <div className="d-grid gap-2 mt-3">
                                     <Button 
-                                        variant="outline-secondary" 
+                                        variant="outline-primary" 
                                         onClick={handleContactSupport}
-                                        className="position-relative"
                                         disabled={loading}
                                     >
-                                        {loading ? <Spinner size="sm" /> : t('contactSupport', { lng: lang })}
+                                        {loading ? <Spinner size="sm" /> : '📧 Envoyer un message au support'}
+                                    </Button>
+                                    
+                                    <Button 
+                                        variant="outline-success" 
+                                        href={`tel:${adminContactInfo.phone}`}
+                                    >
+                                        📞 Appeler l'administration ({adminContactInfo.phoneDisplay})
                                     </Button>
                                 </div>
                             </Card.Body>
                             
                             <Card.Footer className="text-muted small d-flex justify-content-between">
-                                <span>{t('blockSystemReghaia', { lng: lang })}</span>
+                                <span>Système de gestion des utilisateurs</span>
                                 <span>ID: {user?._id?.substring(0, 8) || 'N/A'}</span>
                             </Card.Footer>
                         </Card>
@@ -267,83 +346,102 @@ const Bloqueos404 = () => {
                 </Row>
             </Container>
 
-            {/* Modal de Contacto con Soporte */}
+            {/* Modal de Contact avec Support */}
             <Modal 
                 show={showContactModal} 
                 onHide={handleCloseContactModal}
                 centered
+                size="lg"
             >
-                <Modal.Header closeButton className={isRTL ? 'text-right' : ''}>
+                <Modal.Header closeButton className="bg-primary text-white">
                     <Modal.Title>
-                        <ExclamationTriangle className={isRTL ? 'ms-2' : 'me-2'} />
-                        {t('contactSupport', { lng: lang })}
+                        <ChatDots className="me-2" />
+                        Contacter le support
                     </Modal.Title>
                 </Modal.Header>
                 
                 <Modal.Body>
-                    <div className={`mb-4 ${isRTL ? 'text-right' : ''}`}>
-                        <h5>{t('ourContactInfo', { lng: lang })}</h5>
-                        <div className="contact-method">
-                            <Envelope className={isRTL ? 'ms-2' : 'me-2'} />
-                            <span>{yourContactInfo.email}</span>
+                    <Alert variant="info">
+                        <strong>Informations de votre blocage :</strong>
+                        <ul className="mb-0 mt-2">
+                            <li><strong>Motif :</strong> {blockDetails?.reason || 'Non spécifié'}</li>
+                            <li><strong>Date du blocage :</strong> {blockDetails?.blockDate ? new Date(blockDetails.blockDate).toLocaleString('fr-FR') : 'Inconnue'}</li>
+                            <li><strong>Date de déblocage :</strong> {blockDetails?.blockExpiryDate ? new Date(blockDetails.blockExpiryDate).toLocaleString('fr-FR') : 'En attente'}</li>
+                        </ul>
+                    </Alert>
+
+                    <div className="mb-4">
+                        <h5 className="mb-3">📞 Contactez l'administration</h5>
+                        <div className="d-flex flex-column gap-2">
+                            <div className="d-flex align-items-center p-2 bg-light rounded">
+                                <Envelope className="me-2 text-primary" />
+                                <span><strong>Email :</strong> </span>
+                                <a href={`mailto:${adminContactInfo.email}`} className="ms-2">
+                                    {adminContactInfo.email}
+                                </a>
+                            </div>
+                            <div className="d-flex align-items-center p-2 bg-light rounded">
+                                <Telephone className="me-2 text-success" />
+                                <span><strong>Téléphone :</strong> </span>
+                                <a href={`tel:${adminContactInfo.phone}`} className="ms-2">
+                                    {adminContactInfo.phoneDisplay}
+                                </a>
+                            </div>
                         </div>
-                        <div className="contact-method mt-2">
-                            <Telephone className={isRTL ? 'ms-2' : 'me-2'} />
-                            <span>{yourContactInfo.phone}</span>
-                        </div>
+                        <small className="text-muted d-block mt-2">
+                            📍 Disponible du lundi au vendredi de 9h à 18h
+                        </small>
                     </div>
 
                     <Form onSubmit={handleSubmitContact}>
                         <Form.Group className="mb-3">
-                            <Form.Label>{t('adminEmail', { lng: lang })}</Form.Label>
-                            <Form.Control
-                                type="email"
-                                value={yourContactInfo.email}
-                                readOnly
-                                plaintext
-                            />
-                        </Form.Group>
-
-                        <Form.Group className="mb-3">
-                            <Form.Label>{t('yourEmail', { lng: lang })}</Form.Label>
+                            <Form.Label><strong>Votre email</strong></Form.Label>
                             <Form.Control
                                 type="email"
                                 value={userEmail}
                                 readOnly
-                                required
+                                disabled
                             />
                         </Form.Group>
 
-                        <Form.Group>
-                            <Form.Label>{t('yourMessage', { lng: lang })}</Form.Label>
+                        <Form.Group className="mb-3">
+                            <Form.Label><strong>Message</strong></Form.Label>
                             <Form.Control
                                 as="textarea"
                                 rows={5}
                                 value={contactMessage}
                                 onChange={(e) => setContactMessage(e.target.value)}
-                                placeholder={t('messagePlaceholder', { lng: lang })}
+                                placeholder="Décrivez votre situation, pourquoi vous pensez que le blocage peut être une erreur, ou toute information supplémentaire..."
                                 required
                                 disabled={loading}
                             />
                         </Form.Group>
 
-                        <div className={`d-flex justify-content-end gap-2 mt-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <div className="d-flex justify-content-end gap-2 mt-3">
                             <Button 
                                 variant="secondary" 
                                 onClick={handleCloseContactModal}
                                 disabled={loading}
                             >
-                                {t('cancel', { lng: lang })}
+                                Annuler
                             </Button>
                             <Button 
                                 type="submit" 
                                 variant="primary" 
                                 disabled={!contactMessage.trim() || loading}
                             >
-                                {loading ? <Spinner size="sm" /> : t('sendMessage', { lng: lang })}
+                                {loading ? <Spinner size="sm" /> : 'Envoyer le message'}
                             </Button>
                         </div>
                     </Form>
+                    
+                    <hr className="my-3" />
+                    
+                    <div className="text-center">
+                        <small className="text-muted">
+                            Vous pouvez aussi nous appeler directement au <strong>{adminContactInfo.phoneDisplay}</strong>
+                        </small>
+                    </div>
                 </Modal.Body>
             </Modal>
         </>

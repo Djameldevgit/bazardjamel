@@ -1,6 +1,5 @@
 // src/components/administration/Users/UsersTab.jsx
 import React, { useState, useEffect, useCallback } from "react";
-import ModalPrivilegios from "../ModalPrivilegios";
 import { useSelector, useDispatch } from "react-redux";
 import {
   Container,
@@ -15,18 +14,20 @@ import {
   Card,
   Accordion,
   Form,
-  InputGroup
+  InputGroup,
+  Tabs,
+  Tab,
+  Alert  // ← IMPORTANTE: Alert agregado
 } from "react-bootstrap";
 import {
-  PencilFill,
   TrashFill,
-  LockFill,
-  UnlockFill,
   CheckCircleFill,
   XCircleFill,
   ThreeDotsVertical,
   Search,
-  XCircle
+  XCircle,
+  StarFill,
+  CalendarCheck
 } from "react-bootstrap-icons";
 import moment from "moment";
 import "moment/locale/fr";
@@ -35,18 +36,16 @@ import { debounce } from 'lodash';
 import { getDataAPI } from "../../../utils/fetchData";
 import {
   deleteUser,
-  toggleActiveStatus,
-  USER_TYPES,
   toggleVerification,
-  bloquearUsuario,
-  unBlockUser,
+  activatePro,
+  deactivatePro,
+  USER_TYPES
 } from "../../../redux/actions/userAction";
 import { MESS_TYPES } from "../../../redux/actions/messageAction";
 import { GLOBALTYPES } from "../../../redux/actions/globalTypes";
 
 import LoadMoreBtn from "../../LoadMoreBtn";
 import UserCard from "../../UserCard";
-import BloqueModalUser from "./BloqueModalUser";
 
 const UsersTab = ({ filters = {}, token: propToken }) => {
   const { homeUsers, auth, socket, online } = useSelector((state) => state);
@@ -56,13 +55,16 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
   
   const [load, setLoad] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [showBlockModal, setShowBlockModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
-  const [showPermissionModal, setShowPermissionModal] = useState(false);
-  const [userForPermission, setUserForPermission] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
+  const [activeTab, setActiveTab] = useState('all');
+
+  // Modal para Usuario Pro
+  const [showProModal, setShowProModal] = useState(false);
+  const [selectedUserForPro, setSelectedUserForPro] = useState(null);
+  const [proExpiryDate, setProExpiryDate] = useState("");
+  const [proActionType, setProActionType] = useState('activate');
 
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -120,6 +122,19 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
       fetchUsers();
     }
   }, [authToken, dispatch, initialLoad]);
+
+  const getFilteredUsers = () => {
+    const users = search.trim() !== "" ? searchResults : homeUsers.users;
+    
+    switch (activeTab) {
+      case 'pro':
+        return users?.filter(user => user.isPro === true) || [];
+      case 'non-pro':
+        return users?.filter(user => !user.isPro || user.isPro === false) || [];
+      default:
+        return users || [];
+    }
+  };
 
   const searchUsers = useCallback(
     debounce(async (searchTerm, page = 1) => {
@@ -215,43 +230,6 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
     }
   };
 
-  const handleOpenModal = (user) => {
-    setSelectedUser(user);
-    setShowBlockModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setShowBlockModal(false);
-    setSelectedUser(null);
-  };
-
-  const handleBlockUser = async (datosBloqueo) => {
-    try {
-      await dispatch(
-        bloquearUsuario({ auth: { token: authToken }, datosBloqueo, user: selectedUser })
-      );
-      handleCloseModal();
-    } catch (err) {
-      console.error("Error blocking user:", err);
-    }
-  };
-
-  const handleUnblockUser = async (user) => {
-    try {
-      await dispatch(unBlockUser({ user, auth: { token: authToken } }));
-    } catch (err) {
-      console.error("Error unblocking user:", err);
-    }
-  };
-
-  const handleToggleActiveStatus = async (userId) => {
-    try {
-      await dispatch(toggleActiveStatus(userId, authToken));
-    } catch (err) {
-      console.error("Error toggling active status:", err);
-    }
-  };
-
   const handleToggleVerification = async (userId) => {
     try {
       await dispatch(toggleVerification(userId, authToken));
@@ -260,17 +238,41 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
     }
   };
 
-  const handleOpenPermissionModal = (user) => {
-    setUserForPermission(user);
-    setShowPermissionModal(true);
+  const handleOpenProModal = (user, action) => {
+    setSelectedUserForPro(user);
+    setProActionType(action);
+    if (action === 'activate') {
+      const defaultDate = new Date();
+      defaultDate.setFullYear(defaultDate.getFullYear() + 1);
+      setProExpiryDate(defaultDate.toISOString().slice(0, 16));
+    } else {
+      setProExpiryDate("");
+    }
+    setShowProModal(true);
   };
 
-  const handleClosePermissionModal = () => {
-    setUserForPermission(null);
-    setShowPermissionModal(false);
+  const handleConfirmProAction = async () => {
+    if (proActionType === 'activate') {
+      await dispatch(activatePro(selectedUserForPro._id, proExpiryDate || null, authToken));
+    } else {
+      await dispatch(deactivatePro(selectedUserForPro._id, authToken));
+    }
+    setShowProModal(false);
+    setSelectedUserForPro(null);
+    setProExpiryDate("");
   };
 
-  const usersToShow = search.trim() !== "" ? searchResults : homeUsers.users;
+  const isProActive = (user) => {
+    return user?.isPro && (!user?.proExpiryDate || new Date(user.proExpiryDate) > new Date());
+  };
+
+  const getDaysLeft = (user) => {
+    if (!user?.proExpiryDate) return null;
+    const daysLeft = Math.ceil((new Date(user.proExpiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+    return daysLeft > 0 ? daysLeft : 0;
+  };
+
+  const usersToShow = getFilteredUsers();
   const hasMore = search.trim() !== "" ? hasMoreSearch : homeUsers.result >= 9;
 
   if (initialLoad) {
@@ -323,6 +325,40 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
         </Col>
       </Row>
 
+      <Tabs
+        activeKey={activeTab}
+        onSelect={(k) => setActiveTab(k)}
+        className="mb-4"
+      >
+        <Tab 
+          eventKey="all" 
+          title={
+            <span>
+              📋 Tous les utilisateurs
+              <Badge bg="secondary" className="ms-2">{homeUsers.users?.length || 0}</Badge>
+            </span>
+          } 
+        />
+        <Tab 
+          eventKey="pro" 
+          title={
+            <span>
+              ⭐ Utilisateurs Pro
+              <Badge bg="primary" className="ms-2">{homeUsers.users?.filter(u => u.isPro === true).length || 0}</Badge>
+            </span>
+          } 
+        />
+        <Tab 
+          eventKey="non-pro" 
+          title={
+            <span>
+              👤 Utilisateurs standard
+              <Badge bg="secondary" className="ms-2">{homeUsers.users?.filter(u => !u.isPro || u.isPro === false).length || 0}</Badge>
+            </span>
+          } 
+        />
+      </Tabs>
+
       <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
         <Modal.Header closeButton className="border-0 pb-0">
           <Modal.Title className="text-danger">
@@ -340,6 +376,69 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
           <Button variant="danger" onClick={handleDeleteUser}>
             <TrashFill className="me-2" />
             Supprimer
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={showProModal} onHide={() => setShowProModal(false)} centered>
+        <Modal.Header closeButton className={proActionType === 'activate' ? "bg-primary text-white" : "bg-warning text-dark"}>
+          <Modal.Title>
+            {proActionType === 'activate' ? (
+              <><StarFill className="me-2" /> Activer le compte Pro</>
+            ) : (
+              <><XCircleFill className="me-2" /> Désactiver le compte Pro</>
+            )}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>
+            <strong>Utilisateur :</strong> {selectedUserForPro?.username}
+            <br />
+            <strong>Email :</strong> {selectedUserForPro?.email}
+          </p>
+          
+          {proActionType === 'activate' ? (
+            <>
+              <Form.Group className="mb-3">
+                <Form.Label>
+                  <CalendarCheck className="me-2" />
+                  Date d'expiration (optionnelle)
+                </Form.Label>
+                <Form.Control
+                  type="datetime-local"
+                  value={proExpiryDate}
+                  onChange={(e) => setProExpiryDate(e.target.value)}
+                />
+                <Form.Text className="text-muted">
+                  Laissez vide pour un abonnement sans expiration (à vie)
+                </Form.Text>
+              </Form.Group>
+              <Alert variant="info" className="mt-2">
+                <StarFill className="me-2" />
+                L'utilisateur bénéficiera de tous les avantages Pro.
+              </Alert>
+            </>
+          ) : (
+            <Alert variant="warning" className="mt-2">
+              <XCircleFill className="me-2" />
+              Êtes-vous sûr de vouloir désactiver le compte Pro de cet utilisateur ?
+              Il perdra tous ses avantages.
+            </Alert>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowProModal(false)}>
+            Annuler
+          </Button>
+          <Button 
+            variant={proActionType === 'activate' ? "primary" : "danger"}
+            onClick={handleConfirmProAction}
+          >
+            {proActionType === 'activate' ? (
+              <><StarFill className="me-2" /> Activer Pro</>
+            ) : (
+              <><XCircleFill className="me-2" /> Désactiver Pro</>
+            )}
           </Button>
         </Modal.Footer>
       </Modal>
@@ -374,11 +473,16 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                 {usersToShow.map((user, index) => (
                   <Accordion.Item key={user._id} eventKey={user._id} className="mb-3 border-0 shadow-sm rounded">
                     <Accordion.Header className="bg-white">
-                      <div className="d-flex align-items-center w-100">
-                        <Badge bg="primary" className="me-3 rounded-circle" style={{ width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          {index + 1}
-                        </Badge>
-                        <UserCard user={user} />
+                      <div className="d-flex align-items-center w-100 justify-content-between">
+                        <div className="d-flex align-items-center">
+                          <Badge bg="primary" className="me-3 rounded-circle" style={{ width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            {index + 1}
+                          </Badge>
+                          <UserCard user={user} />
+                        </div>
+                        {isProActive(user) && (
+                          <StarFill className="text-warning me-2" size={18} />
+                        )}
                       </div>
                     </Accordion.Header>
                     <Accordion.Body className="bg-light">
@@ -394,18 +498,6 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                               </Badge>
                             ) : (
                               <Badge bg="secondary" className="w-100">Déconnecté</Badge>
-                            )}
-                          </div>
-                        </Col>
-                        <Col xs={6}>
-                          <div className="p-2 bg-white rounded">
-                            <small className="text-muted d-block mb-1">Dernière déconnexion</small>
-                            {user.lastDisconnectedAt ? (
-                              <small className="text-dark fw-semibold">
-                                {moment(user.lastDisconnectedAt).fromNow()}
-                              </small>
-                            ) : (
-                              <span className="text-muted">--</span>
                             )}
                           </div>
                         </Col>
@@ -429,22 +521,18 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                         </Col>
                         <Col xs={6}>
                           <div className="p-2 bg-white rounded">
-                            <small className="text-muted d-block mb-1">Statut compte</small>
-                            {user.isActive ? (
-                              <Badge bg="success" className="w-100">Actif</Badge>
+                            <small className="text-muted d-block mb-1">Statut Pro</small>
+                            {isProActive(user) ? (
+                              <Badge bg="primary" className="w-100">
+                                <StarFill className="me-1" size={12} /> PRO
+                                {getDaysLeft(user) && getDaysLeft(user) <= 30 && (
+                                  <small className="ms-1">({getDaysLeft(user)}j)</small>
+                                )}
+                              </Badge>
+                            ) : user?.isPro ? (
+                              <Badge bg="warning" text="dark" className="w-100">Expiré</Badge>
                             ) : (
-                              <Badge bg="warning" text="dark" className="w-100">Inactif</Badge>
-                            )}
-                          </div>
-                        </Col>
-                        <Col xs={6}>
-                          <div className="p-2 bg-white rounded">
-                            <small className="text-muted d-block mb-1">Blocage</small>
-                            {/* 🔥 CORREGIDO: usar isBlocked en lugar de esBloqueado */}
-                            {user.isBlocked ? (
-                              <Badge bg="danger" className="w-100">Bloqué</Badge>
-                            ) : (
-                              <Badge bg="success" className="w-100">Non bloqué</Badge>
+                              <Badge bg="secondary" className="w-100">Standard</Badge>
                             )}
                           </div>
                         </Col>
@@ -456,48 +544,10 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                           Actions
                         </Dropdown.Toggle>
                         <Dropdown.Menu className="w-100 shadow">
-                          <Dropdown.Item disabled className="text-muted">
-                            <PencilFill className="me-2" /> Modifier
-                          </Dropdown.Item>
-                          <Dropdown.Divider />
-
                           <Dropdown.Item className="text-danger" onClick={() => confirmDelete(user._id)}>
                             <TrashFill className="me-2" /> Supprimer
                           </Dropdown.Item>
-
-                          <Dropdown.Item onClick={() => handleOpenPermissionModal(user)}>
-                            🛡️ Gérer les permissions
-                          </Dropdown.Item>
-
                           <Dropdown.Divider />
-
-                          <Dropdown.Item
-                            className={user.isActive ? "text-warning" : "text-success"}
-                            onClick={() => handleToggleActiveStatus(user._id)}
-                          >
-                            {user.isActive ? (
-                              <LockFill className="me-2" />
-                            ) : (
-                              <UnlockFill className="me-2" />
-                            )}
-                            {user.isActive ? "Désactiver" : "Activer"}
-                          </Dropdown.Item>
-
-                          {/* 🔥 CORREGIDO: usar isBlocked en lugar de esBloqueado */}
-                          <Dropdown.Item
-                            className={user.isBlocked ? "text-success" : "text-danger"}
-                            onClick={() =>
-                              user.isBlocked ? handleUnblockUser(user) : handleOpenModal(user)
-                            }
-                          >
-                            {user.isBlocked ? (
-                              <UnlockFill className="me-2" />
-                            ) : (
-                              <LockFill className="me-2" />
-                            )}
-                            {user.isBlocked ? "Débloquer" : "Bloquer"}
-                          </Dropdown.Item>
-
                           <Dropdown.Item
                             className={user.isVerified ? "text-danger" : "text-success"}
                             onClick={() => handleToggleVerification(user._id)}
@@ -509,6 +559,22 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                             )}
                             {user.isVerified ? "Dévérifier" : "Vérifier"}
                           </Dropdown.Item>
+                          <Dropdown.Divider />
+                          {!isProActive(user) && !user?.isPro ? (
+                            <Dropdown.Item 
+                              className="text-primary"
+                              onClick={() => handleOpenProModal(user, 'activate')}
+                            >
+                              <StarFill className="me-2" /> Activer Pro
+                            </Dropdown.Item>
+                          ) : isProActive(user) || user?.isPro ? (
+                            <Dropdown.Item 
+                              className="text-warning"
+                              onClick={() => handleOpenProModal(user, 'deactivate')}
+                            >
+                              <XCircleFill className="me-2" /> Désactiver Pro
+                            </Dropdown.Item>
+                          ) : null}
                         </Dropdown.Menu>
                       </Dropdown>
                     </Accordion.Body>
@@ -528,18 +594,16 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                     <th className="text-white border-0 py-3">#</th>
                     <th className="text-white border-0 py-3">Utilisateur</th>
                     <th className="text-white border-0 py-3">Statut</th>
-                    <th className="text-white border-0 py-3">Dernière déconnexion</th>
                     <th className="text-white border-0 py-3">Inscription</th>
                     <th className="text-white border-0 py-3">Vérification</th>
-                    <th className="text-white border-0 py-3">Statut compte</th>
-                    <th className="text-white border-0 py-3">Blocage</th>
+                    <th className="text-white border-0 py-3">Statut Pro</th>
                     <th className="text-white border-0 py-3 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {usersToShow.length === 0 ? (
                     <tr>
-                      <td colSpan="9" className="text-center py-5">
+                      <td colSpan="7" className="text-center py-5">
                         <i className="bi bi-inbox" style={{ fontSize: "3rem", color: "#ccc" }}></i>
                         <p className="mt-3 mb-0 text-muted fs-5">
                           {search ? "Aucun utilisateur trouvé" : "Aucun utilisateur disponible"}
@@ -550,7 +614,14 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                     usersToShow.map((user, index) => (
                       <tr key={user._id} style={{ borderBottom: "1px solid #f0f0f0" }}>
                         <td className="fw-bold text-primary">{index + 1}</td>
-                        <td><UserCard user={user} /></td>
+                        <td>
+                          <div className="d-flex align-items-center gap-2">
+                            <UserCard user={user} />
+                            {isProActive(user) && (
+                              <StarFill className="text-warning" size={16} title="Utilisateur Pro" />
+                            )}
+                          </div>
+                        </td>
                         <td>
                           {online.some((u) => u._id === user._id) ? (
                             <Badge bg="success" className="px-3 py-2">En ligne</Badge>
@@ -563,15 +634,8 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                           )}
                         </td>
                         <td>
-                          {user.lastDisconnectedAt ? (
-                            <small className="text-muted" title={new Date(user.lastDisconnectedAt).toLocaleString()}>
-                              {moment(user.lastDisconnectedAt).fromNow()}
-                            </small>
-                          ) : (
-                            <span className="text-muted">--</span>
-                          )}
+                          <small className="text-muted">{new Date(user.createdAt).toLocaleDateString()}</small>
                         </td>
-                        <td><small className="text-muted">{new Date(user.createdAt).toLocaleDateString()}</small></td>
                         <td>
                           {user.isVerified ? (
                             <Badge bg="success" className="px-3 py-2"><CheckCircleFill className="me-1" /> Vérifié</Badge>
@@ -580,18 +644,17 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                           )}
                         </td>
                         <td>
-                          {user.isActive ? (
-                            <Badge bg="success" className="px-3 py-2">Actif</Badge>
+                          {isProActive(user) ? (
+                            <Badge bg="primary" className="px-3 py-2">
+                              <StarFill className="me-1" size={12} /> PRO
+                              {getDaysLeft(user) && getDaysLeft(user) <= 30 && (
+                                <small className="ms-1 text-white-50">({getDaysLeft(user)}j)</small>
+                              )}
+                            </Badge>
+                          ) : user?.isPro ? (
+                            <Badge bg="warning" text="dark" className="px-3 py-2">Expiré</Badge>
                           ) : (
-                            <Badge bg="warning" text="dark" className="px-3 py-2">Inactif</Badge>
-                          )}
-                        </td>
-                        <td>
-                          {/* 🔥 CORREGIDO: usar isBlocked en lugar de esBloqueado */}
-                          {user.isBlocked ? (
-                            <Badge bg="danger" className="px-3 py-2">Bloqué</Badge>
-                          ) : (
-                            <Badge bg="success" className="px-3 py-2">Non bloqué</Badge>
+                            <Badge bg="secondary" className="px-3 py-2">Standard</Badge>
                           )}
                         </td>
                         <td className="text-center">
@@ -605,34 +668,32 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
                               </Dropdown.Item>
                               <Dropdown.Divider />
                               <Dropdown.Item
-                                className={user.isActive ? "text-warning" : "text-success"}
-                                onClick={() => handleToggleActiveStatus(user._id)}
-                              >
-                                {user.isActive ? <LockFill className="me-2" /> : <UnlockFill className="me-2" />}
-                                {user.isActive ? "Désactiver" : "Activer"}
-                              </Dropdown.Item>
-                              {/* 🔥 CORREGIDO: usar isBlocked en lugar de esBloqueado */}
-                              <Dropdown.Item
-                                className={user.isBlocked ? "text-success" : "text-danger"}
-                                onClick={() => user.isBlocked ? handleUnblockUser(user) : handleOpenModal(user)}
-                              >
-                                {user.isBlocked ? <UnlockFill className="me-2" /> : <LockFill className="me-2" />}
-                                {user.isBlocked ? "Débloquer" : "Bloquer"}
-                              </Dropdown.Item>
-                              <Dropdown.Item
                                 className={user.isVerified ? "text-danger" : "text-success"}
                                 onClick={() => handleToggleVerification(user._id)}
                               >
-                                {user.isVerified ? <XCircleFill className="me-2" /> : <CheckCircleFill className="me-2" />}
+                                {user.isVerified ? (
+                                  <XCircleFill className="me-2" />
+                                ) : (
+                                  <CheckCircleFill className="me-2" />
+                                )}
                                 {user.isVerified ? "Dévérifier" : "Vérifier"}
                               </Dropdown.Item>
                               <Dropdown.Divider />
-                              <Dropdown.Item disabled className="text-muted">
-                                <PencilFill className="me-2" /> Modifier
-                              </Dropdown.Item>
-                              <Dropdown.Item onClick={() => handleOpenPermissionModal(user)}>
-                                🛡️ Gérer les permissions
-                              </Dropdown.Item>
+                              {!isProActive(user) && !user?.isPro ? (
+                                <Dropdown.Item 
+                                  className="text-primary"
+                                  onClick={() => handleOpenProModal(user, 'activate')}
+                                >
+                                  <StarFill className="me-2" /> Activer Pro
+                                </Dropdown.Item>
+                              ) : isProActive(user) || user?.isPro ? (
+                                <Dropdown.Item 
+                                  className="text-warning"
+                                  onClick={() => handleOpenProModal(user, 'deactivate')}
+                                >
+                                  <XCircleFill className="me-2" /> Désactiver Pro
+                                </Dropdown.Item>
+                              ) : null}
                             </Dropdown.Menu>
                           </Dropdown>
                         </td>
@@ -670,23 +731,6 @@ const UsersTab = ({ filters = {}, token: propToken }) => {
             />
           </Col>
         </Row>
-      )}
-
-      {showPermissionModal && userForPermission && (
-        <ModalPrivilegios
-          user={userForPermission}
-          setShowModal={setShowPermissionModal}
-          token={authToken}
-        />
-      )}
-
-      {showBlockModal && selectedUser && (
-        <BloqueModalUser
-          show={showBlockModal}
-          handleClose={handleCloseModal}
-          handleBlock={handleBlockUser}
-          user={selectedUser}
-        />
       )}
     </Container>
   );

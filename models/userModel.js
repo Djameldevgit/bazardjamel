@@ -86,13 +86,26 @@ role: {
         type: Boolean,
         default: false
     },
-    
-    isActive: {
-        type: Boolean,
-        default: true,
-        index: true
+    isActive: { type: Boolean, default: true },
+  
+    // Estado de bloqueo
+    isBlocked: { type: Boolean, default: false },
+    isPro: { type: Boolean, default: false },
+    proExpiryDate: {
+        type: Date,
+        default: null
+      },
+
+
+    // Detalles del bloqueo
+    blockDetails: {
+      reason: { type: String, default: null },
+      description: { type: String, default: null },
+      blockDate: { type: Date, default: null },
+      blockExpiryDate: { type: Date, default: null },
+      blockedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'user', default: null }
     },
-    esBloqueado: { type: Boolean, default: false },
+    
     // ============ INTERACCIONES ============
     followers: [{
         type: mongoose.Types.ObjectId,
@@ -108,11 +121,7 @@ role: {
         type: mongoose.Types.ObjectId,
         ref: 'user'
     }],
-    isBlocked: {
-        type: Boolean,
-        default: false,
-        index: true
-    },
+    
 }, {
     timestamps: true
 });
