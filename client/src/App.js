@@ -39,7 +39,7 @@ import MesProductsBoutiques from './pages/boutiqueProduct/MesProductsBoutiques';
 import DetailProduct from './pages/boutiqueProduct/DetailProduct';
 import AdminDashboard from './pages/administration/AdminDashborad';
 import PaymentBoutique from './pages/boutique/PayementBoutique';
-import CreateVideoPage from './pages/video/CreateVideoPage';
+import CreateVideoWizard from './pages/video/CreateVideoWizard';
 import DetailVideoPage from './pages/video/DetailVideoPage';
 
 
@@ -149,7 +149,7 @@ function App() {
           <Route exact path="/create-boutique" component={CreateBoutiquePage} />
 
   {/* 🔥 RUTAS DE DASHBOARD - GESTIÓN DE VIDEOS */}
-  <Route exact path="/create-video-page" component={CreateVideoPage} />
+  <Route exact path="/create-video-page" component={CreateVideoWizard} />
   <Route exact  path="/video/:id" component={DetailVideoPage}/>
 
 

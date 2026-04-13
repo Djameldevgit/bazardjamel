@@ -3,6 +3,17 @@ const Boutique = require('../models/boutiqueModel');
 const Category = require('../models/categoryModel');
 const User = require('../models/userModel');
 
+ 
+const cloudinary = require('cloudinary').v2;
+ 
+ 
+
+// Configurar Cloudinary (si no está configurado globalmente)
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dfjipgj2o',
+  api_key: process.env.CLOUDINARY_API_KEY || '213981915435275',
+  api_secret: process.env.CLOUDINARY_API_SECRET || 'wv_IiCM9zzhdiWDNXXo8HZi7wX4'
+});
 // Función para generar slug único (compatible con Node antiguo)
 const generateUniqueSlug = function(base) {
   if (!base) base = 'boutique';
@@ -570,29 +581,178 @@ aprobarBoutique: async function(req, res) {
   // ============================================
   // DELETE BOUTIQUE
   // ============================================
-  deleteBoutique: async function(req, res) {
+   deleteBoutique : async (req, res) => {
     try {
-      var id = req.params.boutiqueId;
-      var user = req.user;
-      
-      var boutique = await Boutique.findById(id);
+      const boutiqueId = req.params.boutiqueId;
+      const userId = req.user._id;
+      const userRole = req.user.role;
+  
+      console.log('🗑️ Eliminando boutique:', boutiqueId);
+      console.log('👤 Usuario:', userId, 'Rol:', userRole);
+  
+      // Buscar la boutique
+      const boutique = await Boutique.findById(boutiqueId);
       if (!boutique) {
-        return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Boutique non trouvée' 
+        });
       }
+  
+      // Verificar permisos (dueño o admin)
+      const isOwner = boutique.user.toString() === userId.toString();
+      const isAdmin = userRole === 'admin' || userRole === 'moderator';
       
-      if (boutique.user.toString() !== user._id.toString()) {
-        return res.status(403).json({ success: false, message: 'Non autorisé' });
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Non autorisé à supprimer cette boutique' 
+        });
       }
+  
+      // Array para almacenar errores
+      const deletionErrors = [];
+  
+      // ============================================
+      // 1. ELIMINAR PRODUCTOS DE LA BOUTIQUE
+      // ============================================
+      const products = await BoutiqueProduct.find({ boutique: boutiqueId });
       
-      await Boutique.findByIdAndDelete(id);
+      if (products.length > 0) {
+        console.log(`📦 Eliminando ${products.length} productos de la boutique...`);
+        
+        for (const product of products) {
+          // Eliminar imágenes del producto de Cloudinary
+          if (product.images && product.images.length > 0) {
+            for (const image of product.images) {
+              if (image.public_id) {
+                try {
+                  await cloudinary.uploader.destroy(image.public_id);
+                  console.log(`  ✅ Imagen de producto eliminada: ${image.public_id}`);
+                } catch (err) {
+                  console.error(`  ❌ Error eliminando imagen ${image.public_id}:`, err.message);
+                  deletionErrors.push(`Producto ${product._id} - Imagen: ${err.message}`);
+                }
+              }
+            }
+          }
+          
+          // Eliminar el producto de la base de datos
+          await BoutiqueProduct.findByIdAndDelete(product._id);
+        }
+        console.log('✅ Todos los productos eliminados');
+      }
+  
+      // ============================================
+      // 2. ELIMINAR IMÁGENES DE LA BOUTIQUE DE CLOUDINARY
+      // ============================================
       
-      res.json({ success: true, message: 'Boutique supprimée' });
+      // Eliminar imágenes del logo/header
+      if (boutique.images && boutique.images.length > 0) {
+        console.log(`🖼️ Eliminando ${boutique.images.length} imágenes de boutique...`);
+        
+        for (const image of boutique.images) {
+          if (image.public_id) {
+            try {
+              await cloudinary.uploader.destroy(image.public_id);
+              console.log(`  ✅ Imagen de boutique eliminada: ${image.public_id}`);
+            } catch (err) {
+              console.error(`  ❌ Error eliminando imagen ${image.public_id}:`, err.message);
+              deletionErrors.push(`Imagen boutique: ${err.message}`);
+            }
+          } else if (image.url && image.url.includes('cloudinary.com')) {
+            // Intentar extraer public_id de la URL
+            try {
+              const cloudinaryUrlPattern = /\/upload\/(?:v\d+\/)?(.+?)\.\w+$/;
+              const match = image.url.match(cloudinaryUrlPattern);
+              if (match) {
+                const publicId = match[1];
+                await cloudinary.uploader.destroy(publicId);
+                console.log(`  ✅ Imagen eliminada por URL: ${publicId}`);
+              }
+            } catch (err) {
+              console.error(`  ❌ Error eliminando imagen por URL:`, err.message);
+            }
+          }
+        }
+      }
+  
+      // Eliminar header_images
+      if (boutique.header_images && boutique.header_images.length > 0) {
+        console.log(`📸 Eliminando ${boutique.header_images.length} header images...`);
+        
+        for (const headerImage of boutique.header_images) {
+          if (headerImage.public_id) {
+            try {
+              await cloudinary.uploader.destroy(headerImage.public_id);
+              console.log(`  ✅ Header image eliminada: ${headerImage.public_id}`);
+            } catch (err) {
+              console.error(`  ❌ Error eliminando header image:`, err.message);
+              deletionErrors.push(`Header image: ${err.message}`);
+            }
+          }
+        }
+      }
+  
+      // ============================================
+      // 3. LIMPIAR REFERENCIAS EN USUARIOS
+      // ============================================
       
+      // Eliminar de followers
+      if (boutique.followers && boutique.followers.length > 0) {
+        try {
+          await User.updateMany(
+            { _id: { $in: boutique.followers } },
+            { $pull: { followingBoutiques: boutiqueId } }
+          );
+          console.log('✅ Referencias de followers limpiadas');
+        } catch (err) {
+          console.error('❌ Error limpiando followers:', err.message);
+          deletionErrors.push(`Followers: ${err.message}`);
+        }
+      }
+  
+      // Eliminar de likes
+      if (boutique.likes && boutique.likes.length > 0) {
+        try {
+          await User.updateMany(
+            { _id: { $in: boutique.likes } },
+            { $pull: { likedBoutiques: boutiqueId } }
+          );
+          console.log('✅ Referencias de likes limpiadas');
+        } catch (err) {
+          console.error('❌ Error limpiando likes:', err.message);
+          deletionErrors.push(`Likes: ${err.message}`);
+        }
+      }
+  
+      // ============================================
+      // 4. ELIMINAR LA BOUTIQUE DE LA BASE DE DATOS
+      // ============================================
+      await Boutique.findByIdAndDelete(boutiqueId);
+      console.log('✅ Boutique eliminada de la base de datos');
+  
+      // Respuesta final
+      const message = deletionErrors.length > 0 
+        ? `Boutique supprimée, mais avec quelques avertissements: ${deletionErrors.join(', ')}`
+        : 'Boutique supprimée avec succès';
+  
+      res.json({ 
+        success: true, 
+        message: message,
+        deletedBoutiqueId: boutiqueId,
+        deletedProductsCount: products.length,
+        warnings: deletionErrors.length > 0 ? deletionErrors : undefined
+      });
+  
     } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
+      console.error('❌ Error en deleteBoutique:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: error.message 
+      });
     }
   },
-  
   // ============================================
   // FILTER BOUTIQUES (Home)
   // ============================================

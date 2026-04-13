@@ -3,7 +3,15 @@
 const Boutique = require('../models/boutiqueModel');
 const BoutiqueProduct = require('../models/boutiqueProductModel'); // ← Así debe ser
 const Category = require('../models/categoryModel');
+const cloudinary = require('cloudinary').v2;
+ 
 
+// Configurar Cloudinary (si no está configurado globalmente)
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dfjipgj2o',
+  api_key: process.env.CLOUDINARY_API_KEY || '213981915435275',
+  api_secret: process.env.CLOUDINARY_API_SECRET || 'wv_IiCM9zzhdiWDNXXo8HZi7wX4'
+});
 const boutiqueProductCtrl = {
 
   // ===========================================
@@ -502,44 +510,134 @@ getProductById: async (req, res) => {
   // ===========================================
   // DELETE BOUTIQUE PRODUCT
   // ===========================================
-  deleteBoutiqueProduct: async (req, res) => {
+  deleteBoutiqueProduct : async (req, res) => {
     try {
       const { boutiqueId, productId } = req.params;
       const userId = req.user._id;
-
+      const userRole = req.user.role;
+  
+      console.log('🗑️ Eliminando producto:', productId);
+      console.log('📦 De boutique:', boutiqueId);
+      console.log('👤 Usuario:', userId, 'Rol:', userRole);
+  
       // Verificar boutique
       const boutique = await Boutique.findById(boutiqueId);
       if (!boutique) {
-        return res.status(404).json({ success: false, message: 'Boutique non trouvée' });
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Boutique non trouvée' 
+        });
       }
-
-      if (boutique.user.toString() !== userId.toString()) {
-        return res.status(403).json({ success: false, message: 'Non autorisé' });
+  
+      // Verificar permisos
+      const isOwner = boutique.user.toString() === userId.toString();
+      const isAdmin = userRole === 'admin' || userRole === 'moderator';
+      
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Non autorisé à supprimer ce produit' 
+        });
       }
-
-      // 🔥 ELIMINAR DE BOUTIQUEPRODUCT
-      const product = await BoutiqueProduct.findOneAndDelete({
+  
+      // Buscar el producto
+      const product = await BoutiqueProduct.findOne({
         _id: productId,
         boutique: boutiqueId
       });
-
+  
       if (!product) {
-        return res.status(404).json({ success: false, message: 'Produit non trouvé' });
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Produit non trouvé' 
+        });
       }
-
-      // Actualizar estadísticas de la boutique
+  
+      // Array para almacenar errores
+      const deletionErrors = [];
+  
+      // ============================================
+      // 1. ELIMINAR IMÁGENES DEL PRODUCTO DE CLOUDINARY
+      // ============================================
+      if (product.images && product.images.length > 0) {
+        console.log(`🖼️ Eliminando ${product.images.length} imágenes del producto...`);
+        
+        for (let i = 0; i < product.images.length; i++) {
+          const image = product.images[i];
+          
+          if (image.public_id) {
+            try {
+              await cloudinary.uploader.destroy(image.public_id);
+              console.log(`  ✅ Imagen eliminada: ${image.public_id}`);
+            } catch (err) {
+              console.error(`  ❌ Error eliminando imagen ${image.public_id}:`, err.message);
+              deletionErrors.push(`Imagen ${i + 1}: ${err.message}`);
+            }
+          } else if (image.url && image.url.includes('cloudinary.com')) {
+            // Intentar extraer public_id de la URL
+            try {
+              const cloudinaryUrlPattern = /\/upload\/(?:v\d+\/)?(.+?)\.\w+$/;
+              const match = image.url.match(cloudinaryUrlPattern);
+              if (match) {
+                const publicId = match[1];
+                await cloudinary.uploader.destroy(publicId);
+                console.log(`  ✅ Imagen eliminada por URL: ${publicId}`);
+              }
+            } catch (err) {
+              console.error(`  ❌ Error eliminando imagen por URL:`, err.message);
+              deletionErrors.push(`Imagen ${i + 1}: ${err.message}`);
+            }
+          }
+        }
+      }
+  
+      // ============================================
+      // 2. ELIMINAR VIDEO DEL PRODUCTO (si existe)
+      // ============================================
+      if (product.videoPublicId) {
+        try {
+          await cloudinary.uploader.destroy(product.videoPublicId, {
+            resource_type: 'video'
+          });
+          console.log(`✅ Video del producto eliminado: ${product.videoPublicId}`);
+        } catch (err) {
+          console.error('❌ Error eliminando video del producto:', err.message);
+          deletionErrors.push(`Video: ${err.message}`);
+        }
+      }
+  
+      // ============================================
+      // 3. ELIMINAR EL PRODUCTO DE LA BASE DE DATOS
+      // ============================================
+      await BoutiqueProduct.findByIdAndDelete(productId);
+      console.log('✅ Producto eliminado de la base de datos');
+  
+      // ============================================
+      // 4. ACTUALIZAR ESTADÍSTICAS DE LA BOUTIQUE
+      // ============================================
       await Boutique.findByIdAndUpdate(boutiqueId, {
         $inc: { 'stats.produits': -1 }
       });
-
+      console.log('✅ Estadísticas de boutique actualizadas');
+  
+      // Respuesta final
+      const message = deletionErrors.length > 0 
+        ? `Produit supprimé, mais avec quelques avertissements: ${deletionErrors.join(', ')}`
+        : 'Produit supprimé avec succès';
+  
       res.json({
         success: true,
-        deletedProductId: productId
+        message: message,
+        deletedProductId: productId,
+        warnings: deletionErrors.length > 0 ? deletionErrors : undefined
       });
-
+  
     } catch (error) {
       console.error('❌ Error en deleteBoutiqueProduct:', error);
-      res.status(500).json({ success: false, message: error.message });
+      res.status(500).json({ 
+        success: false, 
+        message: error.message 
+      });
     }
   },
 

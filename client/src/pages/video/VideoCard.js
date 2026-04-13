@@ -4,15 +4,12 @@ import { Card, Badge, Button } from 'react-bootstrap';
 import { PlayFill, Heart, HeartFill, Eye, Clock, Share, Bookmark, BookmarkFill } from 'react-bootstrap-icons';
 import { useHistory } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { likeVideo } from '../redux/actions/videoAction';
+import { likeVideo } from '../../redux/actions/videoAction';
 import moment from 'moment';
 import 'moment/locale/fr';
 
-// ✅ Data URL para placeholder de video (no requiere petición HTTP)
+// ✅ Data URL para placeholder (no requiere petición HTTP)
 const DEFAULT_THUMBNAIL = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="225" viewBox="0 0 400 225"%3E%3Crect width="400" height="225" fill="%23333333"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23ffffff" font-size="16"%3E🎬 Vidéo%3C/text%3E%3C/svg%3E';
-
-// ✅ Data URL para avatar por defecto (no requiere petición HTTP)
-const DEFAULT_AVATAR = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"%3E%3Ccircle cx="20" cy="20" r="20" fill="%23667eea"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="white" font-size="16"%3E👤%3C/text%3E%3C/svg%3E';
 
 const VideoCard = ({ video, showActions = true, onVideoClick }) => {
   const history = useHistory();
@@ -22,15 +19,14 @@ const VideoCard = ({ video, showActions = true, onVideoClick }) => {
   const [likesCount, setLikesCount] = useState(video?.likes?.length || 0);
   const [saved, setSaved] = useState(false);
   const [showShare, setShowShare] = useState(false);
-  const [thumbnailError, setThumbnailError] = useState(false);
-  const [avatarError, setAvatarError] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   moment.locale('fr');
 
-  // ✅ Determinar thumbnail (sin peticiones HTTP fallidas)
+  // ✅ Determinar tipo de video y obtener thumbnail (sin petición HTTP fallida)
   const getThumbnail = () => {
     // Si ya hubo error, usar placeholder
-    if (thumbnailError) {
+    if (imgError) {
       return DEFAULT_THUMBNAIL;
     }
     
@@ -39,10 +35,8 @@ const VideoCard = ({ video, showActions = true, onVideoClick }) => {
       return `https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`;
     }
     
-    // Si tiene thumbnail personalizado y no es el placeholder problematico
-    if (video.thumbnail && video.thumbnail !== '' && 
-        video.thumbnail !== '/video-placeholder.jpg' &&
-        !video.thumbnail.includes('video-placeholder')) {
+    // Si tiene thumbnail personalizado
+    if (video.thumbnail && video.thumbnail !== '' && video.thumbnail !== '/video-placeholder.jpg') {
       return video.thumbnail;
     }
     
@@ -50,36 +44,12 @@ const VideoCard = ({ video, showActions = true, onVideoClick }) => {
     return DEFAULT_THUMBNAIL;
   };
 
-  // ✅ Obtener avatar (sin peticiones HTTP fallidas)
-  const getAvatar = () => {
-    if (avatarError) {
-      return DEFAULT_AVATAR;
-    }
-    
-    if (video.user?.avatar && video.user?.avatar !== '' && 
-        video.user?.avatar !== '/default-avatar.png' &&
-        !video.user?.avatar.includes('default-avatar')) {
-      return video.user.avatar;
-    }
-    
-    return DEFAULT_AVATAR;
-  };
-
-  // ✅ Manejar error de thumbnail
-  const handleThumbnailError = (e) => {
-    if (!thumbnailError) {
-      setThumbnailError(true);
+  // ✅ Manejar error de imagen (solo una vez)
+  const handleImageError = (e) => {
+    if (!imgError) {
+      setImgError(true);
       e.target.src = DEFAULT_THUMBNAIL;
-      e.target.onerror = null; // Evitar bucle infinito
-    }
-  };
-
-  // ✅ Manejar error de avatar
-  const handleAvatarError = (e) => {
-    if (!avatarError) {
-      setAvatarError(true);
-      e.target.src = DEFAULT_AVATAR;
-      e.target.onerror = null; // Evitar bucle infinito
+      e.target.onerror = null; // ✅ Evitar bucle infinito
     }
   };
 
@@ -158,7 +128,7 @@ const VideoCard = ({ video, showActions = true, onVideoClick }) => {
             transition: 'transform 0.3s ease'
           }}
           className="video-thumbnail"
-          onError={handleThumbnailError}
+          onError={handleImageError}
         />
         
         {/* Overlay de play */}
@@ -194,10 +164,10 @@ const VideoCard = ({ video, showActions = true, onVideoClick }) => {
         {/* Información del usuario */}
         <div className="d-flex align-items-center gap-2 mb-2">
           <img
-            src={getAvatar()}
-            alt={video.user?.username || 'Utilisateur'}
+            src={video.user?.avatar || '/default-avatar.png'}
+            alt={video.user?.username}
             style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }}
-            onError={handleAvatarError}
+            onError={(e) => { e.target.src = '/default-avatar.png'; }}
           />
           <small className="text-muted">{video.user?.username || 'Utilisateur'}</small>
           <small className="text-muted">•</small>

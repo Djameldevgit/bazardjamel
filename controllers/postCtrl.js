@@ -793,66 +793,77 @@ getPostsPendientesCount: async (req, res) => {
     });
   },
 
-  deletePost: async (req, res) => {
+    deletePost : async (req, res) => {
     try {
       const postId = req.params.id;
       const userId = req.user._id;
-
+      const userRole = req.user.role;
+  
       const post = await Post.findById(postId);
-
+  
       if (!post) {
-        return res.status(404).json({ msg: 'Post not found' });
+        return res.status(404).json({ success: false, msg: 'Post no encontrado' });
       }
-
-      if (post.user.toString() !== userId.toString() && req.user.role !== 'admin') {
-        return res.status(403).json({ msg: 'Not authorized to delete this post' });
+  
+      // Verificar permisos
+      if (post.user.toString() !== userId.toString() && userRole !== 'admin' && userRole !== 'moderator') {
+        return res.status(403).json({ success: false, msg: 'No autorizado' });
       }
-
+  
+      // ✅ Eliminar imágenes de Cloudinary
       if (post.images && post.images.length > 0) {
         for (const image of post.images) {
           if (image.public_id) {
             try {
               await cloudinary.uploader.destroy(image.public_id);
-            } catch (cloudinaryErr) {
-              console.error('❌ Error borrando imagen:', cloudinaryErr);
+              console.log(`✅ Imagen eliminada: ${image.public_id}`);
+            } catch (err) {
+              console.error(`❌ Error eliminando imagen ${image.public_id}:`, err.message);
             }
           }
         }
       }
-
-      const commentsToDelete = post.comments || [];
-      const likesToCleanup = post.likes || [];
-
-      await Post.findByIdAndDelete(postId);
-
-      if (commentsToDelete.length > 0) {
-        await Comments.deleteMany({ _id: { $in: commentsToDelete } });
+  
+      // ✅ Eliminar video de Cloudinary (si existe)
+      if (post.videoPublicId) {
+        try {
+          await cloudinary.uploader.destroy(post.videoPublicId, { resource_type: 'video' });
+          console.log(`✅ Video eliminado: ${post.videoPublicId}`);
+        } catch (err) {
+          console.error(`❌ Error eliminando video:`, err.message);
+        }
       }
-
-      if (likesToCleanup.length > 0) {
-        await Users.updateMany(
-          { _id: { $in: likesToCleanup } },
-          { $pull: { likes: postId } }
-        );
+  
+      // ✅ Eliminar comentarios
+      if (post.comments && post.comments.length > 0) {
+        await Comments.deleteMany({ _id: { $in: post.comments } });
       }
-
-      await Users.updateMany(
+  
+      // ✅ Limpiar referencias en usuarios
+      await User.updateMany(
+        { _id: { $in: post.likes || [] } },
+        { $pull: { likes: postId } }
+      );
+      
+      await User.updateMany(
         { saved: postId },
         { $pull: { saved: postId } }
       );
-
+  
+      // ✅ Eliminar post
+      await Post.findByIdAndDelete(postId);
+  
       res.json({
-        msg: 'Post deleted successfully!',
-        deletedPostId: postId,
-        deletedImagesCount: post.images ? post.images.length : 0
+        success: true,
+        msg: 'Post eliminado correctamente',
+        deletedPostId: postId
       });
-
+  
     } catch (err) {
-      console.error('Error in deletePost:', err);
-      return res.status(500).json({ msg: err.message });
+      console.error('Error en deletePost:', err);
+      return res.status(500).json({ success: false, msg: err.message });
     }
   },
-
   getFeaturedPosts: async (req, res) => {
     try {
       const limit = parseInt(req.query.limit) || 6;
