@@ -20,6 +20,9 @@ import EtatField from '../camposComun/EtatField';
 import { getFieldsForCategory } from '../FieldConfig';
 import WilayaCommuneField from '../camposComun/WilayaCommuneField';
 import EmailField from '../camposComun/EmailField';
+ 
+import ModeloField from '../camposComun/ModeloField';
+import MarcaField from '../camposComun/MarcaField';
 
 const BaseCategoryField = ({ 
   fieldName,
@@ -83,7 +86,31 @@ const BaseCategoryField = ({
         t={t}
       />
     ),
-    
+    'marca': (
+      <MarcaField
+        key="marca"
+        mainCategory={mainCategory}
+        subCategory={subCategory}
+        fieldName="marca"
+        postData={postData}
+        handleChangeInput={handleChangeInput}
+        isRTL={isRTL}
+        t={t}
+      />
+    ),
+    'modelo': (
+      <ModeloField
+        key="modelo"
+        mainCategory={mainCategory}
+        subCategory={subCategory}
+        fieldName="modelo"
+        postData={postData}
+        handleChangeInput={handleChangeInput}
+        isRTL={isRTL}
+        t={t}
+      />
+    ),
+
     'description': (
       <DescriptionField
         key="description"

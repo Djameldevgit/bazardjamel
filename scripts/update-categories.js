@@ -1,4 +1,6 @@
-// node scripts/update-categories.js //asigna categoria
+// node scripts/update-categories.js
+// Actualización específica para la categoría Boutiques
+
 require('dotenv').config();
 const mongoose = require('mongoose');
 const Category = require('../models/categoryModel');
@@ -33,15 +35,11 @@ async function updateCategoryPath(category) {
 
 // Helper: Reconstruir paths de todos los descendientes
 async function rebuildDescendantsPaths(category) {
-  const descendants = await Category.find({ 
-    ancestors: category._id 
-  });
-  
+  const descendants = await Category.find({ ancestors: category._id });
   for (const descendant of descendants) {
     await updateCategoryPath(descendant);
     await descendant.save();
   }
-  
   if (descendants.length > 0) {
     console.log(`   • Reconstruidos paths de ${descendants.length} descendientes`);
   }
@@ -50,9 +48,7 @@ async function rebuildDescendantsPaths(category) {
 // Helper: Actualizar hasChildren basado en hijos existentes
 async function updateHasChildrenFlag(categoryId) {
   const childrenCount = await Category.countDocuments({ parent: categoryId });
-  await Category.findByIdAndUpdate(categoryId, { 
-    hasChildren: childrenCount > 0 
-  });
+  await Category.findByIdAndUpdate(categoryId, { hasChildren: childrenCount > 0 });
 }
 
 // Helper: Encontrar categoría por slug
@@ -62,41 +58,33 @@ async function findCategoryBySlug(slug) {
 
 // Helper: Encontrar categoría por nombre y padre
 async function findCategoryByNameAndParent(name, parentId = null) {
-  return await Category.findOne({ 
+  return await Category.findOne({
     name: { $regex: new RegExp(`^${name}$`, 'i') },
     parent: parentId
   });
 }
 
-// ==================== OPERACIONES DE ACTUALIZACIÓN ====================
+// ==================== OPERACIONES ====================
 
-// 1. Agregar nueva categoría
 async function addCategory(categoryData) {
   try {
     let parentId = null;
     let parent = null;
-    
     if (categoryData.parentSlug) {
       parent = await findCategoryBySlug(categoryData.parentSlug);
       if (!parent) {
-        console.log(`❌ No se encontró la categoría padre: ${categoryData.parentSlug}`);
+        console.log(`❌ No se encontró el padre: ${categoryData.parentSlug}`);
         return false;
       }
       parentId = parent._id;
     }
 
-    // Verificar si la categoría ya existe
-    const existing = await findCategoryByNameAndParent(
-      categoryData.name, 
-      parentId
-    );
-    
+    const existing = await findCategoryByNameAndParent(categoryData.name, parentId);
     if (existing) {
       console.log(`⚠️ La categoría "${categoryData.name}" ya existe, omitiendo...`);
       return false;
     }
 
-    // Crear la categoría
     const category = new Category({
       name: categoryData.name,
       slug: categoryData.slug,
@@ -111,33 +99,22 @@ async function addCategory(categoryData) {
       postCount: 0
     });
 
-    // Actualizar path y ancestors
     await updateCategoryPath(category);
     await category.save();
-    
     console.log(`✅ Categoría agregada: ${categoryData.name}`);
     console.log(`   • Slug: ${category.slug}`);
-    console.log(`   • Nivel: ${category.level}`);
     console.log(`   • Path: ${category.path}`);
-    console.log(`   • Icono: ${category.icon}`);
 
-    // Actualizar hasChildren del padre
     if (parentId) {
       await updateHasChildrenFlag(parentId);
-      console.log(`   • Padre "${parent.name}" actualizado (hasChildren: true)`);
+      console.log(`   • Padre "${parent.name}" actualizado`);
     }
 
-    // Si tiene hijos, agregarlos recursivamente
     if (categoryData.children && categoryData.children.length > 0) {
-      console.log(`   • Agregando ${categoryData.children.length} subcategorías...`);
       for (const childData of categoryData.children) {
-        await addCategory({
-          ...childData,
-          parentSlug: category.slug
-        });
+        await addCategory({ ...childData, parentSlug: category.slug });
       }
     }
-
     return true;
   } catch (error) {
     console.error(`❌ Error al agregar "${categoryData.name}":`, error.message);
@@ -145,7 +122,6 @@ async function addCategory(categoryData) {
   }
 }
 
-// 2. Actualizar categoría existente
 async function updateCategory(findSlug, updates) {
   try {
     const category = await findCategoryBySlug(findSlug);
@@ -153,41 +129,14 @@ async function updateCategory(findSlug, updates) {
       console.log(`❌ No se encontró la categoría: ${findSlug}`);
       return false;
     }
-
-    // Guardar valores antiguos para log
-    const oldValues = {
-      name: category.name,
-      slug: category.slug,
-      icon: category.icon,
-      order: category.order,
-      isActive: category.isActive
-    };
-
-    // Aplicar actualizaciones
-    Object.keys(updates).forEach(key => {
-      if (key !== 'children') {
-        category[key] = updates[key];
-      }
-    });
-
-    // Si se actualizó el slug, necesitamos actualizar path
+    const oldValues = { name: category.name, slug: category.slug, icon: category.icon, order: category.order, isActive: category.isActive };
+    Object.keys(updates).forEach(key => { if (key !== 'children') category[key] = updates[key]; });
     if (updates.slug && updates.slug !== oldValues.slug) {
       await updateCategoryPath(category);
-      console.log(`   • Slug cambiado: ${oldValues.slug} → ${updates.slug}`);
-      console.log(`   • Path actualizado: ${category.path}`);
-      
-      // Reconstruir paths de todos los descendientes
       await rebuildDescendantsPaths(category);
     }
-
     await category.save();
-    
     console.log(`✅ Categoría actualizada: ${findSlug} → ${category.name}`);
-    console.log(`   • Nombre: ${oldValues.name} → ${category.name}`);
-    console.log(`   • Icono: ${oldValues.icon} → ${category.icon}`);
-    console.log(`   • Orden: ${oldValues.order} → ${category.order}`);
-    console.log(`   • Activo: ${oldValues.isActive} → ${category.isActive}`);
-    
     return true;
   } catch (error) {
     console.error(`❌ Error al actualizar ${findSlug}:`, error.message);
@@ -195,21 +144,13 @@ async function updateCategory(findSlug, updates) {
   }
 }
 
-// 3. Deshabilitar categoría
 async function disableCategory(slug) {
   try {
     const category = await findCategoryBySlug(slug);
-    if (!category) {
-      console.log(`❌ No se encontró la categoría: ${slug}`);
-      return false;
-    }
-
+    if (!category) return false;
     category.isActive = false;
     await category.save();
-    
     console.log(`⛔ Categoría deshabilitada: ${slug}`);
-    console.log(`   • Nombre: ${category.name}`);
-    console.log(`   • Path: ${category.path}`);
     return true;
   } catch (error) {
     console.error(`❌ Error al deshabilitar ${slug}:`, error.message);
@@ -217,21 +158,13 @@ async function disableCategory(slug) {
   }
 }
 
-// 4. Activar categoría
 async function activateCategory(slug) {
   try {
     const category = await findCategoryBySlug(slug);
-    if (!category) {
-      console.log(`❌ No se encontró la categoría: ${slug}`);
-      return false;
-    }
-
+    if (!category) return false;
     category.isActive = true;
     await category.save();
-    
     console.log(`✅ Categoría activada: ${slug}`);
-    console.log(`   • Nombre: ${category.name}`);
-    console.log(`   • Path: ${category.path}`);
     return true;
   } catch (error) {
     console.error(`❌ Error al activar ${slug}:`, error.message);
@@ -239,36 +172,15 @@ async function activateCategory(slug) {
   }
 }
 
-// 5. Eliminar categoría permanentemente
 async function deleteCategory(slug) {
   try {
     const category = await findCategoryBySlug(slug);
-    if (!category) {
-      console.log(`❌ No se encontró la categoría: ${slug}`);
-      return false;
-    }
-
-    // Buscar todas las subcategorías
-    const descendants = await Category.find({ 
-      ancestors: category._id 
-    });
+    if (!category) return false;
+    const descendants = await Category.find({ ancestors: category._id });
     const allIds = [category._id, ...descendants.map(d => d._id)];
-    
-    // Eliminar todas
     const result = await Category.deleteMany({ _id: { $in: allIds } });
-    
-    console.log(`🗑️ Categoría y subcategorías eliminadas: ${slug}`);
-    console.log(`   • Total eliminadas: ${result.deletedCount}`);
-    console.log(`   • Incluye: ${descendants.length} subcategorías`);
-    
-    // Actualizar hasChildren del padre si existe
-    if (category.parent) {
-      await updateHasChildrenFlag(category.parent);
-      const parent = await Category.findById(category.parent);
-      if (parent) {
-        console.log(`   • Padre "${parent.name}" actualizado`);
-      }
-    }
+    console.log(`🗑️ Eliminada: ${slug} (${result.deletedCount} registros)`);
+    if (category.parent) await updateHasChildrenFlag(category.parent);
     return true;
   } catch (error) {
     console.error(`❌ Error al eliminar ${slug}:`, error.message);
@@ -276,24 +188,17 @@ async function deleteCategory(slug) {
   }
 }
 
-// 6. Reordenar categorías
 async function reorderCategories(parentSlug = null, orderedSlugs) {
   try {
     let parentId = null;
     let parent = null;
-    
     if (parentSlug) {
       parent = await findCategoryBySlug(parentSlug);
-      if (!parent) {
-        console.log(`❌ No se encontró la categoría padre: ${parentSlug}`);
-        return false;
-      }
+      if (!parent) return false;
       parentId = parent._id;
     }
-    
     const query = parentId ? { parent: parentId } : { parent: null, level: 1 };
     const categories = await Category.find(query);
-    
     for (let i = 0; i < orderedSlugs.length; i++) {
       const category = categories.find(c => c.slug === orderedSlugs[i]);
       if (category) {
@@ -301,9 +206,7 @@ async function reorderCategories(parentSlug = null, orderedSlugs) {
         await category.save();
       }
     }
-    
-    console.log(`✅ Reordenamiento completado para ${parentSlug || 'categorías principales'}`);
-    console.log(`   • Total categorías reordenadas: ${orderedSlugs.length}`);
+    console.log(`✅ Reordenado ${parentSlug || 'categorías principales'} (${orderedSlugs.length} elementos)`);
     return true;
   } catch (error) {
     console.error(`❌ Error al reordenar:`, error.message);
@@ -311,73 +214,29 @@ async function reorderCategories(parentSlug = null, orderedSlugs) {
   }
 }
 
-// 7. Mover categoría a otro padre
 async function moveCategory(slug, newParentSlug = null) {
   try {
     const category = await findCategoryBySlug(slug);
-    if (!category) {
-      console.log(`❌ No se encontró la categoría: ${slug}`);
-      return false;
-    }
-    
+    if (!category) return false;
     const oldParent = category.parent;
     let newParent = null;
     let newParentId = null;
-    
     if (newParentSlug) {
       newParent = await findCategoryBySlug(newParentSlug);
-      if (!newParent) {
-        console.log(`❌ No se encontró el nuevo padre: ${newParentSlug}`);
-        return false;
-      }
+      if (!newParent) return false;
       newParentId = newParent._id;
-      
-      // Verificar que no se mueva a sí mismo o a un descendiente
-      if (newParentId.equals(category._id)) {
-        console.log(`❌ No se puede mover una categoría a sí misma`);
-        return false;
-      }
-      
-      const isDescendant = await Category.findOne({ 
-        _id: newParentId, 
-        ancestors: category._id 
-      });
-      if (isDescendant) {
-        console.log(`❌ No se puede mover a un descendiente`);
-        return false;
-      }
+      if (newParentId.equals(category._id)) return false;
+      const isDescendant = await Category.findOne({ _id: newParentId, ancestors: category._id });
+      if (isDescendant) return false;
     }
-    
-    // Actualizar nivel
-    const newLevel = newParent ? newParent.level + 1 : 1;
-    category.level = newLevel;
+    category.level = newParent ? newParent.level + 1 : 1;
     category.parent = newParentId;
-    
-    // Actualizar path y ancestors
     await updateCategoryPath(category);
     await category.save();
-    
-    console.log(`🔄 Categoría movida: ${slug}`);
-    console.log(`   • De padre: ${oldParent ? 'si tenía' : 'ninguno'} → A padre: ${newParent ? newParent.name : 'raíz'}`);
-    console.log(`   • Nuevo nivel: ${newLevel}`);
-    console.log(`   • Nuevo path: ${category.path}`);
-    
-    // Reconstruir paths de todos los descendientes
     await rebuildDescendantsPaths(category);
-    
-    // Actualizar flags hasChildren de los padres afectados
-    if (oldParent) {
-      await updateHasChildrenFlag(oldParent);
-      const oldParentDoc = await Category.findById(oldParent);
-      if (oldParentDoc) {
-        console.log(`   • Padre antiguo "${oldParentDoc.name}" actualizado`);
-      }
-    }
-    if (newParentId) {
-      await updateHasChildrenFlag(newParentId);
-      console.log(`   • Padre nuevo "${newParent.name}" actualizado`);
-    }
-    
+    if (oldParent) await updateHasChildrenFlag(oldParent);
+    if (newParentId) await updateHasChildrenFlag(newParentId);
+    console.log(`🔄 Categoría movida: ${slug}`);
     return true;
   } catch (error) {
     console.error(`❌ Error al mover ${slug}:`, error.message);
@@ -385,187 +244,95 @@ async function moveCategory(slug, newParentSlug = null) {
   }
 }
 
-// ==================== CONFIGURACIÓN DE ACTUALIZACIONES ====================
+// ==================== CONFIGURACIÓN PARA BOUTIQUES ====================
 
 const updates = {
-  // 1. Agregar nuevas categorías
   addCategories: [
-    // ==================== NUEVA CATEGORÍA VIDEOS ====================
+    // Agregar subcategoría "Art" dentro de Boutiques (si no existe)
     {
-      name: 'Vidéos',
-      slug: 'videos',
-      parentSlug: null, // Categoría principal (nivel 1)
-      icon: '/categories/videos/videos.png',
+      name: 'Art',
+      slug: 'art',
+      parentSlug: 'boutiques',  // categoría padre
+      icon: '/categories/boutiques/art.png',
       iconType: 'image-png',
-      order: 99, // Orden al final
-      children: [
-        { name: 'Véhicules', slug: 'videos-vehicules', icon: '/categories/videos/videos-vehicules.png', order: 1, children: [] },
-        { name: 'Immobilier', slug: 'videos-immobilier', icon: '/categories/videos/videos-immobilier.png', order: 2, children: [] },
-        { name: 'Téléphones', slug: 'videos-telephones', icon: '/categories/videos/videos-telephones.png', order: 3, children: [] },
-        { name: 'Informatique', slug: 'videos-informatique', icon: '/categories/videos/videos-informatique.png', order: 4, children: [] },
-        { name: 'Électroménager', slug: 'videos-electromenager', icon: '/categories/videos/videos-electromenager.png', order: 5, children: [] },
-        { name: 'Mode & Vêtements', slug: 'videos-mode-vetements', icon: '/categories/videos/videos-mode-vetements.png', order: 6, children: [] },
-        { name: 'Maison & Jardin', slug: 'videos-maison-jardin', icon: '/categories/videos/videos-maison-jardin.png', order: 7, children: [] },
-        { name: 'Sport & Loisirs', slug: 'videos-sport-loisirs', icon: '/categories/videos/videos-sport-loisirs.png', order: 8, children: [] },
-        { name: 'Alimentaires', slug: 'videos-alimentaires', icon: '/categories/videos/videos-alimentaires.png', order: 9, children: [] },
-        { name: 'Meubles', slug: 'videos-meubles', icon: '/categories/videos/videos-meubles.png', order: 10, children: [] },
-        { name: 'Pièces Détachées', slug: 'videos-pieces-detachees', icon: '/categories/videos/videos-pieces-detachees.png', order: 11, children: [] },
-        { name: 'Santé & Beauté', slug: 'videos-sante-beaute', icon: '/categories/videos/videos-sante-beaute.png', order: 12, children: [] },
-        { name: 'Services', slug: 'videos-services', icon: '/categories/videos/videos-services.png', order: 13, children: [] },
-        { name: 'Emploi', slug: 'videos-emploi', icon: '/categories/videos/videos-emploi.png', order: 14, children: [] },
-        { name: 'Voyages', slug: 'videos-voyages', icon: '/categories/videos/videos-voyages.png', order: 15, children: [] },
-        { name: 'Boutiques', slug: 'videos-boutiques', icon: '/categories/videos/videos-boutiques.png', order: 16, children: [] },
-        { name: 'Tutoriels', slug: 'videos-tutoriels', icon: '/categories/videos/videos-tutoriels.png', order: 17, children: [] },
-        { name: 'Reviews', slug: 'videos-reviews', icon: '/categories/videos/videos-reviews.png', order: 18, children: [] }
-      ]
+      order: 51,   // Al final, después de las 50 existentes
+      children: []
     }
   ],
-
-  // 2. Actualizar categorías existentes
-  updateCategories: [],
-
-  // 3. Reordenar categorías principales
+  updateCategories: [
+    // Si necesitas actualizar alguna subcategoría existente, ponla aquí
+  ],
   reorderCategoriesList: [
+    // Reordenar las subcategorías de Boutiques para mantener el orden y que "Art" quede al final
     {
-      parentSlug: null,
+      parentSlug: 'boutiques',
       orderedSlugs: [
-        'vehicules',
-        'immobilier',
-        'telephones',
-        'informatique',
-        'electromenager',
-        'vetements',
-        'meubles',
-        'sport',
-        'alimentaires',
-        'sante-beaute',
-        'loisirs',
-        'materiaux',
-        'pieces-detachees',
-        'services',
-        'emploi',
-        'voyages',
-        'boutiques',
-        'videos'  // ← Videos agregado al final
+        'agences-immobilieres', 'promotions-immobilieres', 'showroom-automobiles', 'showroom-moto', 'camions-engins',
+        'pieces-accessoires-vehicules', 'location-voitures', 'reparation-services-vehicules', 'telephones-accessoires',
+        'magasin-informatique', 'magasin-electromenager', 'equipements-securite', 'audiovisuel', 'electronique',
+        'vetements-accessoires-mode', 'cosmetiques-et-beaute', 'maison-meubles', 'meubles-et-bureau', 'vaisselles',
+        'puericultures-jouets', 'jardinages', 'fournitures-articles-scolaires', 'articles-sport', 'consoles-jeux-video',
+        'librairie-papeterie', 'instruments-et-musique', 'chasse-et-peche', 'outillages-quincaillerie', 'materiaux-et-construction',
+        'materiel-et-professionnel', 'matieres-et-premieres', 'agences-voyages', 'animaleries', 'alimentaire',
+        'transport-et-demenagement', 'travaux-construction-amenagement', 'ecoles-et-formations', 'publicite-et-communication',
+        'service-nettoyage-entretien', 'froid-et-climatisation', 'traiteur-gateaux', 'hotels', 'restaurants-salles-fetes',
+        'services-sante', 'etudes-consulting', 'logiciel-web-services', 'esthetique-bien-etre', 'comptabilite-finance',
+        'couture-et-confection', 'reparation-electronique-electromenager',
+        'art'   // ← Aseguramos que Art vaya al final
       ]
     }
   ],
-
-  // 4. Deshabilitar categorías
   disableCategories: [],
-
-  // 5. Activar categorías
-  activateCategories: [],
-
-  // 6. Eliminar categorías permanentemente
+  activateCategories: [
+    { slug: 'boutiques' }  // Activar la categoría principal por si acaso
+  ],
   deleteCategories: [],
-
-  // 7. Mover categorías a otro padre
   moveCategories: []
 };
 
-// ==================== FUNCIÓN PRINCIPAL ====================
+// ==================== EJECUCIÓN ====================
 
 async function runUpdates() {
   try {
-    console.log('🔄 Iniciando actualizaciones de categorías...\n');
-    
-    // Mostrar estadísticas iniciales
-    const totalCategories = await Category.countDocuments();
-    const level1Count = await Category.countDocuments({ level: 1 });
-    const level2Count = await Category.countDocuments({ level: 2 });
-    const level3Count = await Category.countDocuments({ level: 3 });
-    
-    console.log('📊 Estadísticas iniciales:');
-    console.log(`   • Total categorías: ${totalCategories}`);
-    console.log(`   • Nivel 1: ${level1Count}`);
-    console.log(`   • Nivel 2: ${level2Count}`);
-    console.log(`   • Nivel 3: ${level3Count}`);
-    console.log();
+    console.log('🔄 Iniciando actualizaciones para Boutiques...\n');
 
-    // 1. Reordenar categorías
-    if (updates.reorderCategoriesList.length > 0) {
-      console.log('🔄 Reordenando categorías...');
-      for (const reorder of updates.reorderCategoriesList) {
-        await reorderCategories(reorder.parentSlug, reorder.orderedSlugs);
-      }
-      console.log();
-    }
+    // Estadísticas iniciales
+    const total = await Category.countDocuments();
+    const level1 = await Category.countDocuments({ level: 1 });
+    const level2 = await Category.countDocuments({ level: 2 });
+    console.log(`📊 Inicial: Total=${total}, N1=${level1}, N2=${level2}\n`);
 
-    // 2. Mover categorías
-    if (updates.moveCategories.length > 0) {
-      console.log('🚚 Moviendo categorías...');
-      for (const move of updates.moveCategories) {
-        await moveCategory(move.slug, move.newParentSlug);
-      }
-      console.log();
-    }
-
-    // 3. Actualizar categorías existentes
-    if (updates.updateCategories.length > 0) {
-      console.log('📝 Actualizando categorías existentes...');
-      for (const update of updates.updateCategories) {
-        await updateCategory(update.findSlug, update.updates);
-      }
-      console.log();
-    }
-
-    // 4. Agregar nuevas categorías
-    if (updates.addCategories.length > 0) {
-      console.log('➕ Agregando nuevas categorías...');
-      for (const category of updates.addCategories) {
-        await addCategory(category);
-      }
-      console.log();
-    }
-
-    // 5. Deshabilitar categorías
-    if (updates.disableCategories.length > 0) {
-      console.log('⛔ Deshabilitando categorías...');
-      for (const cat of updates.disableCategories) {
-        await disableCategory(cat.slug);
-      }
-      console.log();
-    }
-
-    // 6. Activar categorías
-    if (updates.activateCategories.length > 0) {
+    // 1. Activar categoría Boutiques
+    if (updates.activateCategories.length) {
       console.log('✅ Activando categorías...');
-      for (const cat of updates.activateCategories) {
-        await activateCategory(cat.slug);
-      }
+      for (const cat of updates.activateCategories) await activateCategory(cat.slug);
       console.log();
     }
 
-    // 7. Eliminar categorías permanentemente
-    if (updates.deleteCategories.length > 0) {
-      console.log('🗑️ Eliminando categorías permanentemente...');
-      for (const cat of updates.deleteCategories) {
-        await deleteCategory(cat.slug);
-      }
+    // 2. Agregar subcategoría Art
+    if (updates.addCategories.length) {
+      console.log('➕ Agregando subcategorías...');
+      for (const cat of updates.addCategories) await addCategory(cat);
+      console.log();
+    }
+
+    // 3. Reordenar subcategorías de Boutiques
+    if (updates.reorderCategoriesList.length) {
+      console.log('🔄 Reordenando subcategorías de Boutiques...');
+      for (const reorder of updates.reorderCategoriesList) await reorderCategories(reorder.parentSlug, reorder.orderedSlugs);
       console.log();
     }
 
     // Mostrar estadísticas finales
     const finalTotal = await Category.countDocuments();
     const finalActive = await Category.countDocuments({ isActive: true });
-    const finalInactive = await Category.countDocuments({ isActive: false });
     const finalLevel1 = await Category.countDocuments({ level: 1 });
     const finalLevel2 = await Category.countDocuments({ level: 2 });
-    const finalLevel3 = await Category.countDocuments({ level: 3 });
-    
-    console.log('✨ Actualizaciones completadas exitosamente');
-    console.log('\n📊 Estadísticas finales:');
-    console.log(`   • Total categorías: ${finalTotal}`);
-    console.log(`   • Nivel 1: ${finalLevel1}`);
-    console.log(`   • Nivel 2: ${finalLevel2}`);
-    console.log(`   • Nivel 3: ${finalLevel3}`);
-    console.log(`   • Activas: ${finalActive}`);
-    console.log(`   • Inactivas: ${finalInactive}`);
-    
+    console.log('✨ Actualización completada');
+    console.log(`📊 Final: Total=${finalTotal}, N1=${finalLevel1}, N2=${finalLevel2}, Activas=${finalActive}`);
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error en las actualizaciones:', error);
+    console.error('❌ Error:', error);
     process.exit(1);
   }
 }

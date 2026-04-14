@@ -1393,328 +1393,67 @@ const categoriesData = [
       { name: 'Couture & Confection', slug: 'couture-et-confection', level: 2, icon: '/categories/boutiques/couture-et-confection.png', order: 49, children: [] },
       { name: 'Réparation Electronique & Electroménager', slug: 'reparation-electronique-electromenager', level: 2, icon: '/categories/boutiques/reparation-electronique-electromenager.png', order: 50, children: [] }
     ]
-  },
-  // ==================== 17. TÉLÉPHONE ====================
-
-
+  }, 
+  
   {
-    name: 'Vidéos', slug: 'videos', level: 1, icon: '/categories/videos/videos.png', order: 0, children: [
+    name: 'Vidéos',
+    slug: 'videos',
+    level: 1,
+    icon: '/categories/videos/videos.png',
+    order: 0,
+    children: [
       { name: 'Véhicules', slug: 'videos-vehicules', level: 2, icon: '/categories/videos/videos-vehicules.png', order: 1, children: [] },
       { name: 'Immobilier', slug: 'videos-immobilier', level: 2, icon: '/categories/videos/videos-immobilier.png', order: 2, children: [] },
       { name: 'Téléphones', slug: 'videos-telephones', level: 2, icon: '/categories/videos/videos-telephones.png', order: 3, children: [] },
       { name: 'Informatique', slug: 'videos-informatique', level: 2, icon: '/categories/videos/videos-informatique.png', order: 4, children: [] },
       { name: 'Électroménager', slug: 'videos-electromenager', level: 2, icon: '/categories/videos/videos-electromenager.png', order: 5, children: [] },
       { name: 'Mode & Vêtements', slug: 'videos-mode-vetements', level: 2, icon: '/categories/videos/videos-mode-vetements.png', order: 6, children: [] },
-      { name: 'Maison & Jardin', slug: 'videos-maison-jardin', level: 2, icon: '/categories/videos/videos-maison-jardin.png', order: 7, children: [] },
-      { name: 'Sport & Loisirs', slug: 'videos-sport-loisirs', level: 2, icon: '/categories/videos/videos-sport-loisirs.png', order: 8, children: [] },
-      { name: 'Alimentaires', slug: 'videos-alimentaires', level: 2, icon: '/categories/videos/videos-alimentaires.png', order: 9, children: [] },
-      { name: 'Meubles', slug: 'videos-meubles', level: 2, icon: '/categories/videos/videos-meubles.png', order: 10, children: [] },
-      { name: 'Pièces Détachées', slug: 'videos-pieces-detachees', level: 2, icon: '/categories/videos/videos-pieces-detachees.png', order: 11, children: [] },
-      { name: 'Santé & Beauté', slug: 'videos-sante-beaute', level: 2, icon: '/categories/videos/videos-sante-beaute.png', order: 12, children: [] },
-      { name: 'Services', slug: 'videos-services', level: 2, icon: '/categories/videos/videos-services.png', order: 13, children: [] },
-      { name: 'Emploi', slug: 'videos-emploi', level: 2, icon: '/categories/videos/videos-emploi.png', order: 14, children: [] },
-      { name: 'Voyages', slug: 'videos-voyages', level: 2, icon: '/categories/videos/videos-voyages.png', order: 15, children: [] },
-      { name: 'Boutiques', slug: 'videos-boutiques', level: 2, icon: '/categories/videos/videos-boutiques.png', order: 16, children: [] },
-      { name: 'Tutoriels', slug: 'videos-tutoriels', level: 2, icon: '/categories/videos/videos-tutoriels.png', order: 17, children: [] },
-      { name: 'Reviews', slug: 'videos-reviews', level: 2, icon: '/categories/videos/videos-reviews.png', order: 18, children: [] }
+      // 👇 ART ahora va aquí (order 7) y los siguientes se desplazan
+      { name: 'Art', slug: 'art', level: 2, icon: '/categories/videos/art.png', order: 7, children: [] },
+      { name: 'Maison & Jardin', slug: 'videos-maison-jardin', level: 2, icon: '/categories/videos/videos-maison-jardin.png', order: 8, children: [] },
+      { name: 'Sport & Loisirs', slug: 'videos-sport-loisirs', level: 2, icon: '/categories/videos/videos-sport-loisirs.png', order: 9, children: [] },
+      { name: 'Alimentaires', slug: 'videos-alimentaires', level: 2, icon: '/categories/videos/videos-alimentaires.png', order: 10, children: [] },
+      { name: 'Meubles', slug: 'videos-meubles', level: 2, icon: '/categories/videos/videos-meubles.png', order: 11, children: [] },
+      { name: 'Pièces Détachées', slug: 'videos-pieces-detachees', level: 2, icon: '/categories/videos/videos-pieces-detachees.png', order: 12, children: [] },
+      { name: 'Santé & Beauté', slug: 'videos-sante-beaute', level: 2, icon: '/categories/videos/videos-sante-beaute.png', order: 13, children: [] },
+      { name: 'Services', slug: 'videos-services', level: 2, icon: '/categories/videos/videos-services.png', order: 14, children: [] },
+      { name: 'Emploi', slug: 'videos-emploi', level: 2, icon: '/categories/videos/videos-emploi.png', order: 15, children: [] },
+      { name: 'Voyages', slug: 'videos-voyages', level: 2, icon: '/categories/videos/videos-voyages.png', order: 16, children: [] },
+      { name: 'Boutiques', slug: 'videos-boutiques', level: 2, icon: '/categories/videos/videos-boutiques.png', order: 17, children: [] },
+      { name: 'Tutoriels', slug: 'videos-tutoriels', level: 2, icon: '/categories/videos/videos-tutoriels.png', order: 18, children: [] },
+      { name: 'Reviews', slug: 'videos-reviews', level: 2, icon: '/categories/videos/videos-reviews.png', order: 19, children: [] }
     ]
   },
-  {
-    name: 'Téléphones',
-    slug: 'videos-telephones',
-    level: 2,
-    icon: '/categories/videos/telephones.png',
-    order: 3,
-    children: [
-      { name: 'Smartphones', slug: 'videos-smartphones', level: 3, icon: '/categories/videos/smartphones.png', order: 1, children: [] },
-      { name: 'Tablettes', slug: 'videos-tablettes', level: 3, icon: '/categories/videos/tablettes.png', order: 2, children: [] },
-      { name: 'Accessoires', slug: 'videos-accessoires-telephones', level: 3, icon: '/categories/videos/accessoires-telephones.png', order: 3, children: [] }
-    ]
-  },
-  {
-    name: 'Informatique',
-    slug: 'videos-informatique',
-    level: 2,
-    icon: '/categories/videos/informatique.png',
-    order: 4,
-    children: [
-      { name: 'Ordinateurs portables', slug: 'videos-ordinateurs-portables', level: 3, icon: '/categories/videos/ordinateurs-portables.png', order: 1, children: [] },
-      { name: 'Ordinateurs bureau', slug: 'videos-ordinateurs-bureau', level: 3, icon: '/categories/videos/ordinateurs-bureau.png', order: 2, children: [] },
-      { name: 'Composants PC', slug: 'videos-composants-pc', level: 3, icon: '/categories/videos/composants-pc.png', order: 3, children: [] },
-      { name: 'Périphériques', slug: 'videos-peripheriques', level: 3, icon: '/categories/videos/peripheriques.png', order: 4, children: [] }
-    ]
-  },
-  {
-    name: 'Électroménager',
-    slug: 'videos-electromenager',
-    level: 2,
-    icon: '/categories/videos/electromenager.png',
-    order: 5,
-    children: [
-      { name: 'Réfrigérateurs', slug: 'videos-refrigerateurs', level: 3, icon: '/categories/videos/refrigerateurs.png', order: 1, children: [] },
-      { name: 'Lave-linge', slug: 'videos-lave-linge', level: 3, icon: '/categories/videos/lave-linge.png', order: 2, children: [] },
-      { name: 'Cuisinières', slug: 'videos-cuisinieres', level: 3, icon: '/categories/videos/cuisinieres.png', order: 3, children: [] },
-      { name: 'Petit électroménager', slug: 'videos-petit-electromenager', level: 3, icon: '/categories/videos/petit-electromenager.png', order: 4, children: [] }
-    ]
-  },
-  {
-    name: 'Mode & Vêtements',
-    slug: 'videos-mode-vetements',
-    level: 2,
-    icon: '/categories/videos/mode-vetements.png',
-    order: 6,
-    children: [
-      { name: 'Vêtements homme', slug: 'videos-vetements-homme', level: 3, icon: '/categories/videos/vetements-homme.png', order: 1, children: [] },
-      { name: 'Vêtements femme', slug: 'videos-vetements-femme', level: 3, icon: '/categories/videos/vetements-femme.png', order: 2, children: [] },
-      { name: 'Chaussures', slug: 'videos-chaussures', level: 3, icon: '/categories/videos/chaussures.png', order: 3, children: [] },
-      { name: 'Accessoires', slug: 'videos-accessoires-mode', level: 3, icon: '/categories/videos/accessoires-mode.png', order: 4, children: [] }
-    ]
-  },
-  {
-    name: 'Maison & Jardin',
-    slug: 'videos-maison-jardin',
-    level: 2,
-    icon: '/categories/videos/maison-jardin.png',
-    order: 7,
-    children: [
-      { name: 'Meubles', slug: 'videos-meubles', level: 3, icon: '/categories/videos/meubles.png', order: 1, children: [] },
-      { name: 'Décoration', slug: 'videos-decoration', level: 3, icon: '/categories/videos/decoration.png', order: 2, children: [] },
-      { name: 'Jardinage', slug: 'videos-jardinage', level: 3, icon: '/categories/videos/jardinage.png', order: 3, children: [] }
-    ]
-  },
-  {
-    name: 'Sport & Loisirs',
-    slug: 'videos-sport-loisirs',
-    level: 2,
-    icon: '/categories/videos/sport-loisirs.png',
-    order: 8,
-    children: [
-      { name: 'Équipement sportif', slug: 'videos-equipement-sportif', level: 3, icon: '/categories/videos/equipement-sportif.png', order: 1, children: [] },
-      { name: 'Jeux vidéo', slug: 'videos-jeux-video', level: 3, icon: '/categories/videos/jeux-video.png', order: 2, children: [] },
-      { name: 'Instruments musique', slug: 'videos-instruments-musique', level: 3, icon: '/categories/videos/instruments-musique.png', order: 3, children: [] }
-    ]
-  },
-
-  // ============================================
-  // VIDEOS DE BOUTIQUES (Pro)
-  // ============================================
-  {
-    name: 'Boutiques',
-    slug: 'videos-boutiques',
-    level: 2,
-    icon: '/categories/videos/boutiques.png',
-    order: 9,
-    children: [
-      { name: 'Présentation boutique', slug: 'videos-presentation-boutique', level: 3, icon: '/categories/videos/presentation-boutique.png', order: 1, children: [] },
-      { name: 'Catalogue produits', slug: 'videos-catalogue-produits', level: 3, icon: '/categories/videos/catalogue-produits.png', order: 2, children: [] },
-      { name: 'Promotions & Soldes', slug: 'videos-promotions-soldes', level: 3, icon: '/categories/videos/promotions-soldes.png', order: 3, children: [] },
-      { name: 'Services', slug: 'videos-services', level: 3, icon: '/categories/videos/services.png', order: 4, children: [] }
-    ]
-  },
-
-  // ============================================
-  // VIDEOS TIPO TUTORIAL
-  // ============================================
-  {
-    name: 'Tutoriels',
-    slug: 'videos-tutoriels',
-    level: 2,
-    icon: '/categories/videos/tutoriels.png',
-    order: 10,
-    children: [
-      { name: 'Utilisation produit', slug: 'videos-utilisation-produit', level: 3, icon: '/categories/videos/utilisation-produit.png', order: 1, children: [] },
-      { name: 'Installation', slug: 'videos-installation', level: 3, icon: '/categories/videos/installation.png', order: 2, children: [] },
-      { name: 'Entretien', slug: 'videos-entretien', level: 3, icon: '/categories/videos/entretien.png', order: 3, children: [] },
-      { name: 'Réparation', slug: 'videos-reparation', level: 3, icon: '/categories/videos/reparation.png', order: 4, children: [] }
-    ]
-  },
-
-  // ============================================
-  // VIDEOS DE REVIEWS
-  // ============================================
-  {
-    name: 'Reviews',
-    slug: 'videos-reviews',
-    level: 2,
-    icon: '/categories/videos/reviews.png',
-    order: 11,
-    children: [
-      { name: 'Tests produits', slug: 'videos-tests-produits', level: 3, icon: '/categories/videos/tests-produits.png', order: 1, children: [] },
-      { name: 'Comparatifs', slug: 'videos-comparatifs', level: 3, icon: '/categories/videos/comparatifs.png', order: 2, children: [] },
-      { name: 'Unboxing', slug: 'videos-unboxing', level: 3, icon: '/categories/videos/unboxing.png', order: 3, children: [] }
-    ]
-  },
-
-
-
-
-
-
-
-
-
-
+ 
 
   {
-    name: 'Téléphone',
-    slug: 'telephone',
+    name: 'Art',
+    slug: 'art',
     level: 1,
-    icon: '/categories/telephone/telephone.png',
-    order: 4,
+    icon: '/categories/art/art.png',
+    order: 12,
     children: [
-      { name: 'Smartphones', slug: 'smartphones', level: 2, icon: '/categories/telephone/smartphones.png', order: 1, children: [] },
-      { name: 'Téléphones cellulaires', slug: 'telephones-cellulaires', level: 2, icon: '/categories/telephone/telephones-cellulaires.png', order: 2, children: [] },
-      { name: 'Tablettes', slug: 'tablettes', level: 2, icon: '/categories/telephone/tablettes.png', order: 3, children: [] },
-      { name: 'Fixes & Fax', slug: 'fixes-fax', level: 2, icon: '/categories/telephone/fixes-fax.png', order: 4, children: [] },
-      { name: 'Smartwatchs', slug: 'smartwatchs', level: 2, icon: '/categories/telephone/smartwatchs.png', order: 5, children: [] },
-      { name: 'Pièces de rechange', slug: 'pieces-rechange-telephone', level: 2, icon: '/categories/telephone/pieces-rechange-telephone.png', order: 7, children: [] },
-      { name: 'Offres & Abonnements', slug: 'offres-abonnements', level: 2, icon: '/categories/telephone/offres-abonnements.png', order: 8, children: [] },
-      {
-        name: 'Accessoires',
-        slug: 'accessoires-telephone',
-        level: 2,
-        icon: '/categories/telephone/accessoires-telephone.png',
-        order: 6,
-        children: [
-          { name: 'Étuis', slug: 'etuis', level: 3, icon: '/categories/telephone/accessoires-telephone/etuis.png', children: [] },
-          { name: 'Films de protection', slug: 'films-protection', level: 3, icon: '/categories/telephone/accessoires-telephone/films-protection.png', children: [] },
-          { name: 'Protections d\'écran', slug: 'protections-ecran', level: 3, icon: '/categories/telephone/accessoires-telephone/protections-ecran.png', children: [] },
-          { name: 'Coques & Antichoc', slug: 'coques-antichoc', level: 3, icon: '/categories/telephone/accessoires-telephone/coques-antichoc.png', children: [] },
-          { name: 'Protections de caméra', slug: 'protections-camera', level: 3, icon: '/categories/telephone/accessoires-telephone/protections-camera.png', children: [] }
-        ]
-      },
-      {
-        name: 'Protection & Antichoc',
-        slug: 'protection-antichoc',
-        level: 2,
-        icon: '/categories/telephone/protection-antichoc.png',
-        order: 9,
-        children: [
-          { name: 'Protections d\'écran renforcées', slug: 'protections-ecran-renforcees', level: 3, icon: '/categories/telephone/protection-antichoc/protections-ecran-renforcees.png', children: [] },
-          { name: 'Coques antichoc', slug: 'coques-antichoc-pro', level: 3, icon: '/categories/telephone/protection-antichoc/coques-antichoc-pro.png', children: [] },
-          { name: 'Films de protection', slug: 'films-protection-antichoc', level: 3, icon: '/categories/telephone/protection-antichoc/films-protection-antichoc.png', children: [] },
-          { name: 'Étuis renforcés', slug: 'etuis-renforces', level: 3, icon: '/categories/telephone/protection-antichoc/etuis-renforces.png', children: [] },
-          { name: 'Protections de caméra', slug: 'protections-camera-antichoc', level: 3, icon: '/categories/telephone/protection-antichoc/protections-camera-antichoc.png', children: [] }
-        ]
-      },
-      {
-        name: 'Ecouteurs & Son',
-        slug: 'ecouteurs-son',
-        level: 2,
-        icon: '/categories/telephone/ecouteurs-son.png',
-        order: 10,
-        children: [
-          { name: 'Écouteurs filaires', slug: 'ecouteurs-filaires', level: 3, icon: '/categories/telephone/ecouteurs-son/ecouteurs-filaires.png', children: [] },
-          { name: 'Écouteurs Bluetooth', slug: 'ecouteurs-bluetooth', level: 3, icon: '/categories/telephone/ecouteurs-son/ecouteurs-bluetooth.png', children: [] },
-          { name: 'Casques audio', slug: 'casques-audio', level: 3, icon: '/categories/telephone/ecouteurs-son/casques-audio.png', children: [] },
-          { name: 'Hauts-parleurs portables', slug: 'hauts-parleurs-portables', level: 3, icon: '/categories/telephone/ecouteurs-son/hauts-parleurs-portables.png', children: [] },
-          { name: 'Adaptateurs audio', slug: 'adaptateurs-audio', level: 3, icon: '/categories/telephone/ecouteurs-son/adaptateurs-audio.png', children: [] }
-        ]
-      },
-      {
-        name: 'Chargeurs & Câbles',
-        slug: 'chargeurs-cables',
-        level: 2,
-        icon: '/categories/telephone/chargeurs-cables.png',
-        order: 11,
-        children: [
-          { name: 'Chargeurs mural', slug: 'chargeurs-mural', level: 3, icon: '/categories/telephone/chargeurs-cables/chargeurs-mural.png', children: [] },
-          { name: 'Chargeurs voiture', slug: 'chargeurs-voiture', level: 3, icon: '/categories/telephone/chargeurs-cables/chargeurs-voiture.png', children: [] },
-          { name: 'Chargeurs sans fil', slug: 'chargeurs-sans-fil', level: 3, icon: '/categories/telephone/chargeurs-cables/chargeurs-sans-fil.png', children: [] },
-          { name: 'Câbles USB', slug: 'cables-usb', level: 3, icon: '/categories/telephone/chargeurs-cables/cables-usb.png', children: [] },
-          { name: 'Câbles Lightning', slug: 'cables-lightning', level: 3, icon: '/categories/telephone/chargeurs-cables/cables-lightning.png', children: [] },
-          { name: 'Câbles Type-C', slug: 'cables-type-c', level: 3, icon: '/categories/telephone/chargeurs-cables/cables-type-c.png', children: [] },
-          { name: 'Hubs chargeurs', slug: 'hubs-chargeurs', level: 3, icon: '/categories/telephone/chargeurs-cables/hubs-chargeurs.png', children: [] }
-        ]
-      },
-      {
-        name: 'Supports & Stabilisateurs',
-        slug: 'supports-stabilisateurs',
-        level: 2,
-        icon: '/categories/telephone/supports-stabilisateurs.png',
-        order: 12,
-        children: [
-          { name: 'Supports téléphone', slug: 'supports-telephone', level: 3, icon: '/categories/telephone/supports-stabilisateurs/supports-telephone.png', children: [] },
-          { name: 'Stabilisateurs', slug: 'stabilisateurs', level: 3, icon: '/categories/telephone/supports-stabilisateurs/stabilisateurs.png', children: [] },
-          { name: 'Barres de selfies', slug: 'barres-selfies', level: 3, icon: '/categories/telephone/supports-stabilisateurs/barres-selfies.png', children: [] },
-          { name: 'Pieds pour téléphone', slug: 'pieds-telephone', level: 3, icon: '/categories/telephone/supports-stabilisateurs/pieds-telephone.png', children: [] },
-          { name: 'Ventouses voiture', slug: 'ventouses-voiture', level: 3, icon: '/categories/telephone/supports-stabilisateurs/ventouses-voiture.png', children: [] }
-        ]
-      },
-      {
-        name: 'Manettes',
-        slug: 'manettes-telephone',
-        level: 2,
-        icon: '/categories/telephone/manettes-telephone.png',
-        order: 13,
-        children: [
-          { name: 'Manettes Bluetooth', slug: 'manettes-bluetooth', level: 3, icon: '/categories/telephone/manettes-telephone/manettes-bluetooth.png', children: [] },
-          { name: 'Manettes filaires', slug: 'manettes-filaires', level: 3, icon: '/categories/telephone/manettes-telephone/manettes-filaires.png', children: [] },
-          { name: 'Manettes pour téléphone', slug: 'manettes-pour-telephone', level: 3, icon: '/categories/telephone/manettes-telephone/manettes-pour-telephone.png', children: [] },
-          { name: 'Manettes pour tablette', slug: 'manettes-pour-tablette', level: 3, icon: '/categories/telephone/manettes-telephone/manettes-pour-tablette.png', children: [] },
-          { name: 'Accessoires pour manettes', slug: 'accessoires-manettes', level: 3, icon: '/categories/telephone/manettes-telephone/accessoires-manettes.png', children: [] }
-        ]
-      },
-      {
-        name: 'VR',
-        slug: 'vr-telephone',
-        level: 2,
-        icon: '/categories/telephone/vr-telephone.png',
-        order: 14,
-        children: [
-          { name: 'Casques VR', slug: 'casques-vr', level: 3, icon: '/categories/telephone/vr-telephone/casques-vr.png', children: [] },
-          { name: 'Lunettes VR', slug: 'lunettes-vr', level: 3, icon: '/categories/telephone/vr-telephone/lunettes-vr.png', children: [] },
-          { name: 'Accessoires VR', slug: 'accessoires-vr', level: 3, icon: '/categories/telephone/vr-telephone/accessoires-vr.png', children: [] },
-          { name: 'Contrôleurs VR', slug: 'controleurs-vr', level: 3, icon: '/categories/telephone/vr-telephone/controleurs-vr.png', children: [] },
-          { name: 'Jeux VR', slug: 'jeux-vr', level: 3, icon: '/categories/telephone/vr-telephone/jeux-vr.png', children: [] }
-        ]
-      },
-      {
-        name: 'Power banks',
-        slug: 'power-banks',
-        level: 2,
-        icon: '/categories/telephone/power-banks.png',
-        order: 15,
-        children: [
-          { name: 'Power bank 10,000mAh', slug: 'power-bank-10000mah', level: 3, icon: '/categories/telephone/power-banks/power-bank-10000mah.png', children: [] },
-          { name: 'Power bank 20,000mAh', slug: 'power-bank-20000mah', level: 3, icon: '/categories/telephone/power-banks/power-bank-20000mah.png', children: [] },
-          { name: 'Power bank solaire', slug: 'power-bank-solaire', level: 3, icon: '/categories/telephone/power-banks/power-bank-solaire.png', children: [] },
-          { name: 'Power bank charge rapide', slug: 'power-bank-rapide', level: 3, icon: '/categories/telephone/power-banks/power-bank-rapide.png', children: [] },
-          { name: 'Power bank compact', slug: 'power-bank-compact', level: 3, icon: '/categories/telephone/power-banks/power-bank-compact.png', children: [] }
-        ]
-      },
-      {
-        name: 'Stylets',
-        slug: 'stylets',
-        level: 2,
-        icon: '/categories/telephone/stylets.png',
-        order: 16,
-        children: [
-          { name: 'Stylets actifs', slug: 'stylets-actifs', level: 3, icon: '/categories/telephone/stylets/stylets-actifs.png', children: [] },
-          { name: 'Stylets passifs', slug: 'stylets-passifs', level: 3, icon: '/categories/telephone/stylets/stylets-passifs.png', children: [] },
-          { name: 'Stylets Bluetooth', slug: 'stylets-bluetooth', level: 3, icon: '/categories/telephone/stylets/stylets-bluetooth.png', children: [] },
-          { name: 'Stylets pour tablette', slug: 'stylets-tablette', level: 3, icon: '/categories/telephone/stylets/stylets-tablette.png', children: [] },
-          { name: 'Recharges pour stylet', slug: 'recharges-stylet', level: 3, icon: '/categories/telephone/stylets/recharges-stylet.png', children: [] }
-        ]
-      },
-      {
-        name: 'Cartes Mémoire',
-        slug: 'cartes-memoire',
-        level: 2,
-        icon: '/categories/telephone/cartes-memoire.png',
-        order: 17,
-        children: [
-          { name: 'Cartes SD', slug: 'cartes-sd', level: 3, icon: '/categories/telephone/cartes-memoire/cartes-sd.png', children: [] },
-          { name: 'Cartes Micro SD', slug: 'cartes-micro-sd', level: 3, icon: '/categories/telephone/cartes-memoire/cartes-micro-sd.png', children: [] },
-          { name: 'Cartes SDHC', slug: 'cartes-sdhc', level: 3, icon: '/categories/telephone/cartes-memoire/cartes-sdhc.png', children: [] },
-          { name: 'Cartes SDXC', slug: 'cartes-sdxc', level: 3, icon: '/categories/telephone/cartes-memoire/cartes-sdxc.png', children: [] },
-          { name: 'Adaptateurs de carte', slug: 'adaptateurs-carte', level: 3, icon: '/categories/telephone/cartes-memoire/adaptateurs-carte.png', children: [] },
-          { name: 'Lecteurs de carte', slug: 'lecteurs-carte', level: 3, icon: '/categories/telephone/cartes-memoire/lecteurs-carte.png', children: [] }
-        ]
-      }
+      { name: 'Peinture', slug: 'peinture', level: 2, icon: '/categories/art/peinture.png', order: 1, children: [] },
+      { name: 'Sculpture', slug: 'sculpture', level: 2, icon: '/categories/art/sculpture.png', order: 2, children: [] },
+      { name: 'Photographie', slug: 'photographie', level: 2, icon: '/categories/art/photographie.png', order: 3, children: [] },
+      { name: 'Dessin', slug: 'dessin', level: 2, icon: '/categories/art/dessin.png', order: 4, children: [] },
+      { name: 'Gravure', slug: 'gravure', level: 2, icon: '/categories/art/gravure.png', order: 5, children: [] },
+      { name: 'Art numérique', slug: 'art-numerique', level: 2, icon: '/categories/art/art-numerique.png', order: 6, children: [] },
+      { name: 'Collage', slug: 'collage', level: 2, icon: '/categories/art/collage.png', order: 7, children: [] },
+      { name: 'Art textile', slug: 'art-textile', level: 2, icon: '/categories/art/art-textile.png', order: 8, children: [] },
+      { name: 'Céramique', slug: 'ceramique', level: 2, icon: '/categories/art/ceramique.png', order: 9, children: [] },
+      { name: 'Bijouterie artisanale', slug: 'bijouterie-artisanale', level: 2, icon: '/categories/art/bijouterie-artisanale.png', order: 10, children: [] },
+      { name: 'Art du verre', slug: 'art-verre', level: 2, icon: '/categories/art/art-verre.png', order: 11, children: [] },
+      { name: 'Art du bois', slug: 'art-bois', level: 2, icon: '/categories/art/art-bois.png', order: 12, children: [] },
+      { name: 'Mosaïque', slug: 'mosaique', level: 2, icon: '/categories/art/mosaique.png', order: 13, children: [] },
+      { name: 'Autre art', slug: 'autre-art', level: 2, icon: '/categories/art/autre-art.png', order: 14, children: [] }
     ]
   }
 ];
+
+
+
+ 
 
 const seedCategories = async () => {
   try {

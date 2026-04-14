@@ -288,10 +288,13 @@ const categories = {
       "videos-reviews.png"
     ],
     "level3": []
+  },
+
+  "art": {
+    "level1": ["art.png"],
+    "level2": ["peinture.png", "sculpture.png", "photographie.png", "dessin.png", "gravure.png", "art-numerique.png", "collage.png", "art-textile.png", "ceramique.png", "bijouterie-artisanale.png", "art-verre.png", "art-bois.png", "mosaique.png", "autre-art.png"],
+    "level3": []
   }
-
-
-
 
 
 };

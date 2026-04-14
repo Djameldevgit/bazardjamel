@@ -21,7 +21,11 @@ import SportField from './specificFields/SportFields';
 import VoyagesField from './specificFields/VoyagesFields';
 import EmploiField from './specificFields/EmploiFields';
 import PiecesDetacheesField from './specificFields/PiecesDetacheesFields';
+import ArtField from './specificFields/ArtFields';
 
+
+
+ 
 // Mapa de categorías a componentes específicos
 const CATEGORY_COMPONENTS = {
   'alimentaires': AlimentairesField,
@@ -30,6 +34,7 @@ const CATEGORY_COMPONENTS = {
   'telephone': TelephonesField,
   'vetements': VetementsField,
   'electromenager': ElectromenagerField,
+  'art':ArtField,
   'informatique': InformatiqueField,
   'loisirs': LoisirsField,
   'services': ServicesField,
@@ -62,6 +67,7 @@ const getDefaultEmoji = (categoryId) => {
     'telephone': '📱',
     'informatique': '💻',
     'electromenager': '🔌',
+    'art': '🔌',
     'pieces-detachees': '⚙️',
     'vetements': '👕',
     'alimentaires': '🍎',

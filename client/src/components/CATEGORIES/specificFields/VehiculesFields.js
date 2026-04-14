@@ -361,7 +361,6 @@ const VehiculesFields = (props) => {
     'marque': <MarqueModelVehicule {...props} brandField="marque" modelField="modele" />,
     'annee': <AnneeField {...props} />,
    
-    'modele': null, // Viene dentro de marque
     'finition': <FinitionField {...props} />,
     'motorisation': <MotorisationField {...props} />,
     'moteur': <MoteurField {...props} />,
