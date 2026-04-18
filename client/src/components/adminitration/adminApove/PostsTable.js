@@ -1,5 +1,5 @@
 // 📂 components/admin/PostsTable.js
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { 
@@ -8,69 +8,91 @@ import {
 import { 
   FaCheck, FaTrash, FaEye, FaClipboardList, FaCheckDouble, FaCheckCircle
 } from 'react-icons/fa';
- import { getPostsPendientes , aprovarPostPendiente} from '../../../redux/actions/postAproveAction';
- 
+import { getPostsPendientes, aprovarPostPendiente } from '../../../redux/actions/postAproveAction';
 import { deletePost } from '../../../redux/actions/postAction';
 
-const PostsTable = ({ selectedCategory, onLoadingChange }) => {
+const PostsTable = ({ selectedCategory, onLoadingChange, onPaginationUpdate }) => {
   const dispatch = useDispatch();
-  const { postsPendientes, loading, total, page, totalPages } = useSelector(state => state.postAprove);
   const { auth, socket } = useSelector(state => state);
+  const { postsPendientes = [], loading = false, total = 0, page = 1, totalPages = 1 } = useSelector(state => state.postAprove || {});
   
   const [selectedPosts, setSelectedPosts] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
-  const [showMessage, setShowMessage] = useState({ show: false, text: '', type: '' });
+  const [message, setMessage] = useState({ show: false, text: '', type: '' });
   const [currentPage, setCurrentPage] = useState(1);
   const postsPerPage = 10;
-  
-// 📂 components/admin/PostsTable.js - VERIFICAR el useEffect
 
-// 📂 components/admin/PostsTable.js - Actualizar useEffect
+  // ✅ Refs para evitar bucles
+  const hasLoadedRef = useRef(false);
+  const onLoadingChangeRef = useRef(onLoadingChange);
+  const onPaginationUpdateRef = useRef(onPaginationUpdate);
 
-useEffect(() => {
-  const filters = {};
-  
-  // Si hay una categoría seleccionada
-  if (selectedCategory) {
-    // Usar categorie si existe (para subcategorías)
-    if (selectedCategory.categorie) {
-      filters.categorie = selectedCategory.categorie;
-      console.log('🔍 Filtrando por categoría padre:', selectedCategory.categorie);
+  // ✅ Actualizar refs cuando cambian
+  useEffect(() => {
+    onLoadingChangeRef.current = onLoadingChange;
+    onPaginationUpdateRef.current = onPaginationUpdate;
+  }, [onLoadingChange, onPaginationUpdate]);
+
+  // ✅ Notificar loading sin causar bucles
+  useEffect(() => {
+    if (onLoadingChangeRef.current) {
+      onLoadingChangeRef.current(loading);
+    }
+  }, [loading]);
+
+  // ✅ Notificar paginación sin causar bucles
+  useEffect(() => {
+    if (onPaginationUpdateRef.current && total > 0) {
+      onPaginationUpdateRef.current({ total, page, totalPages });
+    }
+  }, [total, page, totalPages]);
+
+  // ✅ Construir filtros basados en selectedCategory
+  const buildFilters = useCallback(() => {
+    const filters = {};
+    
+    if (selectedCategory) {
+      if (selectedCategory.categorie) {
+        filters.categorie = selectedCategory.categorie;
+      }
+      if (selectedCategory.slug && !selectedCategory.categorie) {
+        filters.categorie = selectedCategory.slug;
+      }
+      if (selectedCategory.subCategory) {
+        filters.subCategory = selectedCategory.subCategory;
+      }
     }
     
-    // Usar slug si es categoría principal
-    if (selectedCategory.slug && !selectedCategory.categorie) {
-      filters.categorie = selectedCategory.slug;
-      console.log('🔍 Filtrando por categoría:', selectedCategory.slug);
+    return filters;
+  }, [selectedCategory]);
+
+  // ✅ Cargar posts solo cuando cambia currentPage o selectedCategory
+  const loadPosts = useCallback((pageNum) => {
+    if (auth?.token) {
+      const filters = buildFilters();
+      console.log('🔍 Cargando posts con filtros:', filters);
+      dispatch(getPostsPendientes(auth.token, pageNum, postsPerPage, filters));
     }
-    
-    // Filtrar por subcategoría
-    if (selectedCategory.subCategory) {
-      filters.subCategory = selectedCategory.subCategory;
-      console.log('🔍 Filtrando por subcategoría:', selectedCategory.subCategory);
-    }
-  }
-  
-  console.log('🔍 Dispatch con filtros:', filters);
-  
-  dispatch(getPostsPendientes(auth.token, currentPage, postsPerPage, filters));
-}, [dispatch, auth.token, currentPage, selectedCategory]);
-  
+  }, [dispatch, auth?.token, postsPerPage, buildFilters]);
+
+  // ✅ Efecto de carga inicial y cambio de página/categoría
+  useEffect(() => {
+    loadPosts(currentPage);
+    hasLoadedRef.current = true;
+  }, [currentPage, selectedCategory, loadPosts]);
+
+  // ✅ Reset selección cuando cambian los posts o la categoría
   useEffect(() => {
     setSelectedPosts([]);
     setSelectAll(false);
-  }, [postsPendientes, selectedCategory]);
-  
-  useEffect(() => {
-    if (onLoadingChange) onLoadingChange(loading);
-  }, [loading, onLoadingChange]);
-  
+  }, [postsPendientes?.length, selectedCategory]);
+
   const handleSelectPost = (postId) => {
     setSelectedPosts(prev => 
       prev.includes(postId) ? prev.filter(id => id !== postId) : [...prev, postId]
     );
   };
-  
+
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedPosts([]);
@@ -79,11 +101,15 @@ useEffect(() => {
     }
     setSelectAll(!selectAll);
   };
-  
+
+  const showMessage = (text, type) => {
+    setMessage({ show: true, text, type });
+    setTimeout(() => setMessage({ show: false, text: '', type: '' }), 3000);
+  };
+
   const handleApproveSelected = () => {
     if (selectedPosts.length === 0) {
-      setShowMessage({ show: true, text: 'Sélectionnez au moins un post', type: 'warning' });
-      setTimeout(() => setShowMessage({ show: false, text: '', type: '' }), 3000);
+      showMessage('Sélectionnez au moins un post', 'warning');
       return;
     }
     
@@ -94,74 +120,70 @@ useEffect(() => {
           dispatch(aprovarPostPendiente({ post, estado: 'aprobado', auth, socket }));
         }
       });
-      setShowMessage({ show: true, text: `${selectedPosts.length} post(s) approuvé(s)`, type: 'success' });
+      showMessage(`${selectedPosts.length} post(s) approuvé(s)`, 'success');
       setSelectedPosts([]);
       setSelectAll(false);
-      setTimeout(() => setShowMessage({ show: false, text: '', type: '' }), 3000);
+      loadPosts(currentPage);
     }
   };
-  
-  const handleAprobar = (post) => {
+
+  const handleApprove = (post) => {
     if (window.confirm(`Approuver le post "${post.title}" ?`)) {
       dispatch(aprovarPostPendiente({ post, estado: 'aprobado', auth, socket }));
-      setShowMessage({ show: true, text: 'Post approuvé', type: 'success' });
-      setTimeout(() => setShowMessage({ show: false, text: '', type: '' }), 2000);
+      showMessage('Post approuvé avec succès', 'success');
+      loadPosts(currentPage);
     }
   };
-  
-  const handleDeletePost = (post) => {
-    if (window.confirm(`Supprimer le post "${post.title}" ?`)) {
+
+  const handleDelete = (post) => {
+    if (window.confirm(`Supprimer définitivement le post "${post.title}" ? Cette action est irréversible.`)) {
       dispatch(deletePost({ post, auth, socket }));
-      setShowMessage({ show: true, text: 'Post supprimé', type: 'success' });
-      setTimeout(() => setShowMessage({ show: false, text: '', type: '' }), 2000);
+      showMessage('Post supprimé', 'warning');
+      loadPosts(currentPage);
     }
   };
-  
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  // ✅ Función para formatear fecha (formato DD/MM/YYYY)
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
   if (loading && postsPendientes.length === 0) {
     return (
       <Card className="border-0 shadow-sm text-center py-5">
         <Spinner animation="border" variant="primary" />
-        <p className="mt-3">Chargement des posts...</p>
+        <p className="mt-3">Chargement des posts en attente...</p>
       </Card>
     );
   }
-  
+
   return (
     <>
-      {showMessage.show && (
-        <Alert 
-          variant={showMessage.type} 
-          dismissible 
-          onClose={() => setShowMessage({ show: false, text: '', type: '' })}
-          className="mb-4"
-        >
-          {showMessage.text}
+      {message.show && (
+        <Alert variant={message.type} dismissible onClose={() => setMessage({ show: false })}>
+          {message.text}
         </Alert>
       )}
-      
-      {selectedPosts.length > 0 && (
-        <Card className="border-0 shadow-sm mb-4 bg-light">
-          <Card.Body className="p-3">
-            <div className="d-flex justify-content-between align-items-center">
-              <h6 className="fw-bold mb-0">
-                <FaCheckCircle className="me-2 text-success" />
-                {selectedPosts.length} post(s) sélectionné(s)
-              </h6>
-              <Button variant="success" size="sm" onClick={handleApproveSelected}>
-                <FaCheckDouble className="me-2" /> Approuver la sélection
-              </Button>
-            </div>
-          </Card.Body>
-        </Card>
-      )}
-      
+
       <Card className="border-0 shadow-sm">
         <Card.Header className="bg-white border-0 py-3">
-          <div className="d-flex justify-content-between align-items-center">
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
               <h5 className="mb-0 fw-bold">
-                <FaClipboardList className="me-2 text-primary" />
-                Posts en Attente
+                <FaClipboardList className="me-2" style={{ color: '#0D6EFD' }} />
+                Posts en attente
                 {selectedCategory && selectedCategory.name && selectedCategory.name !== 'posts' && (
                   <Badge bg="info" className="ms-2">
                     {selectedCategory.name}
@@ -169,20 +191,41 @@ useEffect(() => {
                 )}
               </h5>
               <small className="text-muted">
-                Page {page} sur {totalPages} - Total: {total} posts
+                Page {page} sur {totalPages} - Total: {total} post(s)
               </small>
             </div>
-            <Form.Check
-              type="checkbox"
-              label="Tout sélectionner"
-              checked={selectAll}
-              onChange={handleSelectAll}
-              className="fw-semibold"
-              disabled={postsPendientes.length === 0}
-            />
+            {postsPendientes.length > 0 && (
+              <Form.Check
+                type="checkbox"
+                label="Tout sélectionner"
+                checked={selectAll}
+                onChange={handleSelectAll}
+                className="fw-semibold"
+              />
+            )}
           </div>
         </Card.Header>
-        
+
+        {selectedPosts.length > 0 && (
+          <Card.Body className="bg-light py-2">
+            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <span className="fw-semibold">
+                <FaCheckCircle className="me-2 text-success" />
+                {selectedPosts.length} post(s) sélectionné(s)
+              </span>
+              <div className="d-flex gap-2">
+                <Button
+                  size="sm"
+                  variant="success"
+                  onClick={handleApproveSelected}
+                >
+                  <FaCheckDouble className="me-1" /> Approuver sélection
+                </Button>
+              </div>
+            </div>
+          </Card.Body>
+        )}
+
         {postsPendientes.length === 0 ? (
           <Card.Body className="text-center py-5">
             <FaClipboardList className="fs-1 text-muted mb-3 opacity-50" />
@@ -196,9 +239,13 @@ useEffect(() => {
                 <thead className="table-light">
                   <tr>
                     <th style={{ width: '40px' }} className="text-center">
-                      <Form.Check type="checkbox" checked={selectAll} onChange={handleSelectAll} />
+                      <Form.Check 
+                        type="checkbox" 
+                        checked={selectAll} 
+                        onChange={handleSelectAll} 
+                      />
                     </th>
-                    <th style={{ width: '60px' }}>Image</th>
+                    <th style={{ width: '80px' }}>Image</th>
                     <th>Titre</th>
                     <th>Catégorie</th>
                     <th>Utilisateur</th>
@@ -218,24 +265,28 @@ useEffect(() => {
                         />
                       </td>
                       <td>
-                        {post.images?.[0]?.url ? (
-                          <Image 
-                            src={post.images[0].url} 
-                            width="50"
-                            height="50"
-                            className="rounded-3"
-                            style={{ objectFit: 'cover' }}
-                          />
-                        ) : (
-                          <div className="bg-light rounded d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
-                            <small>No img</small>
-                          </div>
-                        )}
+                        <Link to={`/post/${post._id}`}>
+                          {post.images?.[0]?.url ? (
+                            <Image 
+                              src={post.images[0].url} 
+                              width="60"
+                              height="40"
+                              className="rounded"
+                              style={{ objectFit: 'cover' }}
+                            />
+                          ) : (
+                            <div className="bg-light rounded d-flex align-items-center justify-content-center" style={{ width: '60px', height: '40px' }}>
+                              <FaClipboardList className="text-muted opacity-50" size={20} />
+                            </div>
+                          )}
+                        </Link>
                       </td>
                       <td>
                         <Link to={`/post/${post._id}`} className="text-decoration-none fw-medium">
                           {post.title?.length > 40 ? post.title.substring(0, 40) + '...' : post.title}
                         </Link>
+                        <br />
+                        <small className="text-muted">{post.type}</small>
                       </td>
                       <td>
                         <Badge bg="info" className="rounded-pill">
@@ -243,82 +294,74 @@ useEffect(() => {
                         </Badge>
                       </td>
                       <td>
-                        <small className="text-muted">{post.user?.username}</small>
+                        <div className="d-flex flex-column">
+                          <span className="small fw-medium">{post.user?.username || 'N/A'}</span>
+                          <small className="text-muted">{post.user?.email}</small>
+                        </div>
                       </td>
                       <td className="fw-bold text-primary">
                         {post.price?.toLocaleString()} DA
                       </td>
                       <td>
                         <small className="text-muted">
-                          {new Date(post.createdAt).toLocaleDateString()}
+                          {formatDate(post.createdAt)}
                         </small>
                       </td>
                       <td>
-                        <div className="d-flex gap-2 justify-content-center">
-                          <Button 
-                            as={Link} 
+                        <div className="d-flex gap-1 justify-content-center">
+                          <Button
+                            as={Link}
                             to={`/post/${post._id}`}
-                            variant="outline-primary" 
+                            variant="outline-primary"
                             size="sm"
                             title="Voir détails"
                           >
                             <FaEye />
                           </Button>
-                          <Button 
-                            variant="outline-success" 
+                          <Button
+                            variant="outline-success"
                             size="sm"
-                            onClick={() => handleAprobar(post)}
+                            onClick={() => handleApprove(post)}
                             title="Approuver"
                           >
                             <FaCheck />
                           </Button>
-                          <Button 
-                            variant="outline-danger" 
+                          <Button
+                            variant="outline-danger"
                             size="sm"
-                            onClick={() => handleDeletePost(post)}
+                            onClick={() => handleDelete(post)}
                             title="Supprimer"
                           >
                             <FaTrash />
                           </Button>
                         </div>
-                       </td>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </Table>
             </div>
-            
+
             {totalPages > 1 && (
               <Card.Footer className="bg-white border-0 py-3">
                 <div className="d-flex justify-content-center">
                   <Pagination>
-                    <Pagination.Prev 
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
+                    <Pagination.Prev
+                      onClick={() => handlePageChange(page - 1)}
+                      disabled={page === 1}
                     />
-                    {[...Array(totalPages)].map((_, idx) => {
-                      const pageNum = idx + 1;
-                      if (totalPages <= 7 || 
-                          pageNum === 1 || 
-                          pageNum === totalPages ||
-                          (pageNum >= currentPage - 2 && pageNum <= currentPage + 2)) {
-                        return (
-                          <Pagination.Item 
-                            key={pageNum}
-                            active={pageNum === currentPage}
-                            onClick={() => setCurrentPage(pageNum)}
-                          >
-                            {pageNum}
-                          </Pagination.Item>
-                        );
-                      } else if (pageNum === currentPage - 3 || pageNum === currentPage + 3) {
-                        return <Pagination.Ellipsis key={pageNum} />;
-                      }
-                      return null;
-                    })}
-                    <Pagination.Next 
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
+                    {[...Array(Math.min(totalPages, 5))].map((_, idx) => (
+                      <Pagination.Item
+                        key={idx + 1}
+                        active={page === idx + 1}
+                        onClick={() => handlePageChange(idx + 1)}
+                      >
+                        {idx + 1}
+                      </Pagination.Item>
+                    ))}
+                    <Pagination.Next
+                      onClick={() => handlePageChange(page + 1)}
+                      disabled={page === totalPages}
                     />
                   </Pagination>
                 </div>

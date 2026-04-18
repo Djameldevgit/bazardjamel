@@ -321,7 +321,14 @@ const CreateAnnoncePage = () => {
       };
 
       if (isEdit && postToEdit?._id) {
-        await dispatch(updatePost({ postId: postToEdit._id, postData: postContent, images, auth }));
+        await dispatch(updatePost({ 
+          postId: postToEdit._id, 
+          postData: postContent, 
+          images, 
+          auth,
+          socket,           // ✅ Añadir socket
+          oldPostData: postToEdit  // ✅ Para notificar al dueño anterior si cambia
+        }));
         showAlertMessage('✅ Modifié!', "success");
         setTimeout(() => history.push('/'), 1200);
       } else {

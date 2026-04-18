@@ -12,7 +12,8 @@ const notifyReducer = (state = initialState, action) => {
         case NOTIFY_TYPES.GET_NOTIFIES:
             return {
                 ...state,
-                data: action.payload
+                data: action.payload,
+                loading: false
             };
         case NOTIFY_TYPES.CREATE_NOTIFY:
             return {
@@ -39,12 +40,16 @@ const notifyReducer = (state = initialState, action) => {
         case NOTIFY_TYPES.DELETE_ALL_NOTIFIES:
             return {
                 ...state,
-                data: action.payload
+                data: [] // ✅ Cambiado: directamente un array vacío
+            };
+        case NOTIFY_TYPES.LOADING: // ✅ Añadir este caso opcional
+            return {
+                ...state,
+                loading: action.payload
             };
         default:
             return state;
     }
 }
-
 
 export default notifyReducer

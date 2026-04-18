@@ -1,8 +1,9 @@
-// redux/actions/boutiqueProductAction.js - VERSIÓN ACTUALIZADA CON NUEVAS RUTAS
+// redux/actions/boutiqueProductAction.js - VERSIÓN ACTUALIZADA CON NOTIFICACIONES
 
 import { GLOBALTYPES } from './globalTypes';
 import { postDataAPI, getDataAPI, patchDataAPI, deleteDataAPI } from '../../utils/fetchData';
 import { imageUpload } from '../../utils/imageUpload';
+import { createNotify } from './notifyAction'; // ✅ Importar createNotify
 
 export const BOUTIQUE_PRODUCT_TYPES = {
   DELETE_BOUTIQUE_PRODUCT: 'DELETE_BOUTIQUE_PRODUCT',
@@ -14,21 +15,20 @@ export const BOUTIQUE_PRODUCT_TYPES = {
   GET_BOUTIQUE_STATS: 'GET_BOUTIQUE_STATS',
   LOADING_BOUTIQUE_PRODUCTS: 'LOADING_BOUTIQUE_PRODUCTS',
   RESET_BOUTIQUE_PRODUCTS: 'RESET_BOUTIQUE_PRODUCTS',
-  GET_USER_PRODUCTS: 'GET_USER_PRODUCTS' , // 🔥 NUEVO
-
-  GET_BOUTIQUE_PRODUCT_DETAIL: 'GET_BOUTIQUE_PRODUCT_DETAIL', // 🔥 NUEVO
-  CLEAR_BOUTIQUE_PRODUCT_DETAIL: 'CLEAR_BOUTIQUE_PRODUCT_DETAIL', // 🔥 NUEVO
+  GET_USER_PRODUCTS: 'GET_USER_PRODUCTS',
+  GET_BOUTIQUE_PRODUCT_DETAIL: 'GET_BOUTIQUE_PRODUCT_DETAIL',
+  CLEAR_BOUTIQUE_PRODUCT_DETAIL: 'CLEAR_BOUTIQUE_PRODUCT_DETAIL',
   GET_SAME_BOUTIQUE_PRODUCTS: 'GET_SAME_BOUTIQUE_PRODUCTS',
   GET_SIMILAR_PRODUCTS: 'GET_SIMILAR_PRODUCTS'
-
 };
 
-// ============ CREATE BOUTIQUE PRODUCT ============
+// ============ CREATE BOUTIQUE PRODUCT CON NOTIFICACIÓN ============
 export const createBoutiqueProduct = ({ 
   boutiqueId, 
   productData, 
   images, 
-  auth 
+  auth,
+  socket  // ✅ Añadir socket como parámetro
 }) => async (dispatch) => {
   try {
     console.log('📝 createBoutiqueProduct iniciado', { 
@@ -65,7 +65,6 @@ export const createBoutiqueProduct = ({
 
     console.log('📤 Enviando petición POST...');
     
-    // 🔥 RUTA ACTUALIZADA
     const res = await postDataAPI(`boutique/${boutiqueId}/products`, productToSend, auth.token);
     
     console.log('✅ Respuesta:', res.data);
@@ -78,6 +77,22 @@ export const createBoutiqueProduct = ({
       }
     });
 
+    // ✅ Enviar notificación al dueño de la boutique
+    const product = res.data.product;
+    if (product && product.boutique?.user?._id) {
+      const msg = {
+        id: auth.user._id,
+        text: '📦 Un nouveau produit a été ajouté à votre boutique',
+        recipients: [product.boutique.user._id],
+        url: `/product/${product._id}`,
+        content: product.title,
+        image: product.images?.[0]?.url,
+        type: 'product'
+      };
+      
+      dispatch(createNotify({ msg, auth, socket }));
+    }
+
     dispatch({ 
       type: GLOBALTYPES.ALERT, 
       payload: { success: '✅ Produit ajouté à la boutique avec succès!' }
@@ -87,6 +102,136 @@ export const createBoutiqueProduct = ({
 
   } catch (err) {
     console.error('❌ Error en createBoutiqueProduct:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || err.message }
+    });
+    throw err;
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
+  }
+};
+
+// ============ UPDATE BOUTIQUE PRODUCT CON NOTIFICACIÓN ============
+export const updateBoutiqueProduct = ({ 
+  boutiqueId, 
+  productId, 
+  productData, 
+  images, 
+  auth,
+  socket  // ✅ Añadir socket como parámetro
+}) => async (dispatch) => {
+  try {
+    console.log('📝 updateBoutiqueProduct iniciado', { boutiqueId, productId });
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+
+    let finalImages = [];
+    if (images && images.length > 0) {
+      const newImages = images.filter(img => !img.isExisting && img.url?.startsWith('blob:'));
+      const existingImages = images.filter(img => img.isExisting);
+
+      if (newImages.length > 0) {
+        const uploaded = await imageUpload(newImages);
+        finalImages = [...existingImages, ...uploaded];
+      } else {
+        finalImages = existingImages;
+      }
+    }
+
+    const productToSend = {
+      ...productData,
+      images: finalImages.length > 0 ? finalImages : productData.images
+    };
+
+    const res = await patchDataAPI(`boutique/${boutiqueId}/products/${productId}`, productToSend, auth.token);
+
+    dispatch({ 
+      type: BOUTIQUE_PRODUCT_TYPES.UPDATE_BOUTIQUE_PRODUCT,
+      payload: {
+        boutiqueId,
+        product: res.data.product
+      }
+    });
+
+    // ✅ Enviar notificación al dueño de la boutique
+    const product = res.data.product;
+    if (product && product.boutique?.user?._id) {
+      const msg = {
+        id: auth.user._id,
+        text: '✏️ Un produit de votre boutique a été modifié',
+        recipients: [product.boutique.user._id],
+        url: `/product/${product._id}`,
+        content: product.title,
+        image: product.images?.[0]?.url,
+        type: 'product'
+      };
+      
+      dispatch(createNotify({ msg, auth, socket }));
+    }
+
+    dispatch({ 
+      type: GLOBALTYPES.ALERT, 
+      payload: { success: '✅ Produit mis à jour avec succès!' }
+    });
+
+    return res.data;
+
+  } catch (err) {
+    console.error('❌ Error en updateBoutiqueProduct:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || err.message }
+    });
+    throw err;
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
+  }
+};
+
+// ============ DELETE BOUTIQUE PRODUCT CON NOTIFICACIÓN ============
+export const deleteBoutiqueProduct = ({ 
+  boutiqueId, 
+  productId, 
+  auth,
+  productData,  // ✅ Añadir productData para tener info del producto
+  socket         // ✅ Añadir socket como parámetro
+}) => async (dispatch) => {
+  try {
+    console.log('🗑️ deleteBoutiqueProduct iniciado', { boutiqueId, productId });
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+
+    await deleteDataAPI(`boutique/${boutiqueId}/products/${productId}`, auth.token);
+
+    dispatch({ 
+      type: BOUTIQUE_PRODUCT_TYPES.DELETE_BOUTIQUE_PRODUCT,
+      payload: {
+        boutiqueId,
+        productId
+      }
+    });
+
+    // ✅ Enviar notificación al dueño de la boutique
+    if (productData && productData.boutique?.user?._id) {
+      const msg = {
+        id: auth.user._id,
+        text: '🗑️ Un produit a été supprimé de votre boutique',
+        recipients: [productData.boutique.user._id],
+        url: `/boutique/${boutiqueId}`,
+        content: productData.title || 'Produit supprimé',
+        image: productData.images?.[0]?.url,
+        type: 'product'
+      };
+      
+      dispatch(createNotify({ msg, auth, socket }));
+    }
+
+    dispatch({ 
+      type: GLOBALTYPES.ALERT, 
+      payload: { success: '✅ Produit supprimé avec succès!' }
+    });
+
+  } catch (err) {
+    console.error('❌ Error en deleteBoutiqueProduct:', err);
     dispatch({
       type: GLOBALTYPES.ALERT,
       payload: { error: err.response?.data?.message || err.message }
@@ -110,7 +255,6 @@ export const getBoutiqueProducts = (boutiqueId, filters = {}, reset = false) => 
       payload: true 
     });
 
-    // Construir query string
     const params = new URLSearchParams();
     params.append('page', page);
     params.append('limit', filters.limit || 12);
@@ -121,7 +265,6 @@ export const getBoutiqueProducts = (boutiqueId, filters = {}, reset = false) => 
     if (filters.etat) params.append('etat', filters.etat);
     if (filters.wilaya) params.append('wilaya', filters.wilaya);
 
-    // 🔥 RUTA ACTUALIZADA
     const res = await getDataAPI(`boutique/${boutiqueId}/products?${params.toString()}`);
     
     dispatch({
@@ -154,7 +297,7 @@ export const getBoutiqueProducts = (boutiqueId, filters = {}, reset = false) => 
   }
 };
 
-// ============ GET USER PRODUCTS (para MesProductsBoutiques) ============
+// ============ GET USER PRODUCTS ============
 export const getUserProducts = (auth) => async (dispatch) => {
   try {
     console.log('📦 getUserProducts iniciado');
@@ -165,7 +308,6 @@ export const getUserProducts = (auth) => async (dispatch) => {
       throw new Error('Veuillez vous reconnecter');
     }
 
-    // 🔥 NUEVA RUTA: /api/user/products
     const res = await getDataAPI('user/products', auth.token);
     
     console.log('✅ getUserProducts respuesta:', res.data);
@@ -192,105 +334,7 @@ export const getUserProducts = (auth) => async (dispatch) => {
   }
 };
 
-// ============ UPDATE BOUTIQUE PRODUCT ============
-export const updateBoutiqueProduct = ({ 
-  boutiqueId, 
-  productId, 
-  productData, 
-  images, 
-  auth 
-}) => async (dispatch) => {
-  try {
-    console.log('📝 updateBoutiqueProduct iniciado', { boutiqueId, productId });
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
-
-    let finalImages = [];
-    if (images && images.length > 0) {
-      const newImages = images.filter(img => !img.isExisting && img.url?.startsWith('blob:'));
-      const existingImages = images.filter(img => img.isExisting);
-
-      if (newImages.length > 0) {
-        const uploaded = await imageUpload(newImages);
-        finalImages = [...existingImages, ...uploaded];
-      } else {
-        finalImages = existingImages;
-      }
-    }
-
-    const productToSend = {
-      ...productData,
-      images: finalImages.length > 0 ? finalImages : productData.images
-    };
-
-    // 🔥 RUTA ACTUALIZADA
-    const res = await patchDataAPI(`boutique/${boutiqueId}/products/${productId}`, productToSend, auth.token);
-
-    dispatch({ 
-      type: BOUTIQUE_PRODUCT_TYPES.UPDATE_BOUTIQUE_PRODUCT,
-      payload: {
-        boutiqueId,
-        product: res.data.product
-      }
-    });
-
-    dispatch({ 
-      type: GLOBALTYPES.ALERT, 
-      payload: { success: '✅ Produit mis à jour avec succès!' }
-    });
-
-    return res.data;
-
-  } catch (err) {
-    console.error('❌ Error en updateBoutiqueProduct:', err);
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { error: err.response?.data?.message || err.message }
-    });
-    throw err;
-  } finally {
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
-  }
-};
-
-// ============ DELETE BOUTIQUE PRODUCT ============
-export const deleteBoutiqueProduct = ({ 
-  boutiqueId, 
-  productId, 
-  auth 
-}) => async (dispatch) => {
-  try {
-    console.log('🗑️ deleteBoutiqueProduct iniciado', { boutiqueId, productId });
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
-
-    // 🔥 RUTA ACTUALIZADA
-    await deleteDataAPI(`boutique/${boutiqueId}/products/${productId}`, auth.token);
-
-    dispatch({ 
-      type: BOUTIQUE_PRODUCT_TYPES.DELETE_BOUTIQUE_PRODUCT,
-      payload: {
-        boutiqueId,
-        productId
-      }
-    });
-
-    dispatch({ 
-      type: GLOBALTYPES.ALERT, 
-      payload: { success: '✅ Produit supprimé avec succès!' }
-    });
-
-  } catch (err) {
-    console.error('❌ Error en deleteBoutiqueProduct:', err);
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { error: err.response?.data?.message || err.message }
-    });
-    throw err;
-  } finally {
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
-  }
-};
-// 📂 redux/actions/boutiqueProductAction.js - CORREGIR
-
+// ============ GET PRODUCT BY ID ============
 export const getBoutiqueProductById = (productId) => async (dispatch) => {
   try {
     console.log('📦 getBoutiqueProductById para ID:', productId);
@@ -300,15 +344,11 @@ export const getBoutiqueProductById = (productId) => async (dispatch) => {
     const res = await getDataAPI(`product/${productId}`);
     
     console.log('✅ Producto recibido:', res.data);
-    console.log('📦 Imágenes del producto:', res.data.product?.images);
     
-    // 🔥 NORMALIZAR LAS IMÁGENES ANTES DE GUARDAR EN EL REDUCER
     const normalizedProduct = {
       ...res.data.product,
       images: normalizeImages(res.data.product?.images)
     };
-    
-    console.log('📦 Imágenes normalizadas:', normalizedProduct.images);
     
     dispatch({
       type: BOUTIQUE_PRODUCT_TYPES.GET_BOUTIQUE_PRODUCT_DETAIL,
@@ -329,29 +369,25 @@ export const getBoutiqueProductById = (productId) => async (dispatch) => {
   }
 };
 
-// 🔥 FUNCIÓN AUXILIAR PARA NORMALIZAR IMÁGENES
+// ============ FUNCIÓN AUXILIAR PARA NORMALIZAR IMÁGENES ============
 const normalizeImages = (images) => {
   if (!images || !Array.isArray(images)) return [];
   
   return images.map(img => {
-    // Si es string, devolver string
     if (typeof img === 'string') return img;
-    
-    // Si es objeto con url, devolver url
     if (typeof img === 'object' && img.url) return img.url;
-    
-    // Si es objeto con otra estructura, intentar encontrar la URL
     if (typeof img === 'object') {
       return img.image || img.src || img.secure_url || null;
     }
-    
     return null;
   }).filter(url => url);
 };
+
 // ============ CLEAR PRODUCT DETAIL ============
 export const clearBoutiqueProductDetail = () => (dispatch) => {
   dispatch({ type: BOUTIQUE_PRODUCT_TYPES.CLEAR_BOUTIQUE_PRODUCT_DETAIL });
 };
+
 // ============ RESET BOUTIQUE PRODUCTS ============
 export const resetBoutiqueProducts = (boutiqueId) => (dispatch) => {
   dispatch({
@@ -360,20 +396,13 @@ export const resetBoutiqueProducts = (boutiqueId) => (dispatch) => {
   });
 };
 
- 
 // ============ GET PRODUCTS FROM SAME BOUTIQUE ============
-// En boutiqueProductAction.js - Agregar normalización a todas las funciones que traen productos
-
- 
-
-// Similar para getProductsFromSameBoutique
 export const getProductsFromSameBoutique = (productId, limit = 6) => async (dispatch) => {
   try {
     console.log('📦 getProductsFromSameBoutique para:', productId);
     
     const res = await getDataAPI(`product/${productId}/same-boutique?limit=${limit}`);
     
-    // 🔥 NORMALIZAR LAS IMÁGENES
     const normalizedProducts = (res.data.products || []).map(product => ({
       ...product,
       images: normalizeImages(product.images)
@@ -392,14 +421,13 @@ export const getProductsFromSameBoutique = (productId, limit = 6) => async (disp
   }
 };
 
-// Similar para getSimilarProducts
+// ============ GET SIMILAR PRODUCTS ============
 export const getSimilarProducts = (productId, limit = 6) => async (dispatch) => {
   try {
     console.log('📦 getSimilarProducts para:', productId);
     
     const res = await getDataAPI(`product/${productId}/similar?limit=${limit}`);
     
-    // 🔥 NORMALIZAR LAS IMÁGENES
     const normalizedProducts = (res.data.products || []).map(product => ({
       ...product,
       images: normalizeImages(product.images)
@@ -417,5 +445,3 @@ export const getSimilarProducts = (productId, limit = 6) => async (dispatch) => 
     return { products: [] };
   }
 };
-// ============ GET SIMILAR PRODUCTS ============
- 

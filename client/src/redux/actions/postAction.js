@@ -82,7 +82,8 @@ export const loadMorePostsFail = (error) => ({
 export const createPost = ({
   postData,
   images,
-  auth
+  auth,
+  socket  // ✅ Añadir socket como parámetro
 }) => async (dispatch) => {
   console.time('⏱️ createPost action time');
   let media = []
@@ -91,16 +92,12 @@ export const createPost = ({
     console.log('🟡 createPost action iniciada');
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } })
 
-    // Verificar si hay imágenes para subir
     if (images.length > 0) {
       console.log(`📤 Subiendo ${images.length} imágenes...`);
-      console.time('🖼️ Image upload time');
       media = await imageUpload(images);
-      console.timeEnd('🖼️ Image upload time');
       console.log('✅ Imágenes subidas:', media.length);
     }
 
-    // 📌 Preparar datos finales para enviar
     const postToSend = {
       ...postData,
       images: media
@@ -108,10 +105,7 @@ export const createPost = ({
 
     console.log('📦 Datos a enviar al API:', postToSend);
 
-    // 📌 ENVIAR DATOS AL API
-    console.time('🌐 API call time');
     const res = await postDataAPI('posts', postToSend, auth.token);
-    console.timeEnd('🌐 API call time');
 
     console.log('✅ Respuesta del API:', res.data);
 
@@ -124,9 +118,21 @@ export const createPost = ({
       }
     });
 
+    // ✅ Enviar notificación a administradores
+    const newPost = res.data.newPost;
+    const msg = {
+      id: auth.user._id,
+      text: '📝 Un nouveau post a été créé et attend votre approbation',
+      recipients: [], // Se enviará a todos los admins (backend)
+      url: `/admin/posts/pendientes`,
+      content: newPost.title,
+      image: newPost.images?.[0]?.url,
+      type: 'post'
+    };
+    
+    dispatch(createNotify({ msg, auth, socket }));
+
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
-
-
 
   } catch (err) {
     console.error('❌ Error en createPost action:', err);
@@ -139,20 +145,16 @@ export const createPost = ({
   }
 }
 
-// 📂 redux/actions/postAction.js
-
-// 🎯 ACCIÓN UPDATE - CORREGIDA para recibir postId en lugar de status
-// actions/postAction.js - updatePost DEBE SER ASÍ
-// 📂 redux/actions/postAction.js - updatePost CORREGIDO
-
-// 📂 redux/actions/postAction.js - updatePost CORREGIDO
-// 📂 redux/actions/postAction.js - updatePost CON MÁS LOGS
-
+// ============================================
+// ✅ UPDATE POST CON NOTIFICACIÓN (ACTUALIZAR)
+// ============================================
 export const updatePost = ({
   postId,
   postData,
   images,
-  auth
+  auth,
+  socket,      // ✅ Añadir socket como parámetro
+  oldPostData  // ✅ Añadir datos del post anterior para notificación
 }) => async (dispatch) => {
   console.time('⏱️ updatePost action time');
   let media = [];
@@ -160,69 +162,29 @@ export const updatePost = ({
   try {
     console.log('🟡 ========== UPDATE POST INICIADO ==========');
     console.log('📌 postId:', postId);
-    console.log('📌 images recibidas:', images.length);
-    console.log('📌 Detalle de imágenes:', images.map(img => ({ 
-      hasUrl: !!img.url, 
-      urlPreview: img.url?.substring(0, 50),
-      isExisting: img.isExisting,
-      hasPublicId: !!img.public_id
-    })));
     
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
 
-    // ✅ SEPARAR IMÁGENES
     const newImages = images.filter(img => !img.isExisting && img.url?.startsWith('blob:'));
     const existingImages = images.filter(img => img.isExisting && img.url && !img.url.startsWith('blob:'));
 
-    console.log('📸 Clasificación de imágenes:', {
-      nuevas: newImages.length,
-      existentes: existingImages.length,
-      nuevasPreview: newImages.map(img => img.url?.substring(0, 50)),
-      existentesPreview: existingImages.map(img => img.url?.substring(0, 50))
-    });
-
-    // Subir imágenes nuevas
     if (newImages.length > 0) {
       console.log(`📤 Subiendo ${newImages.length} imágenes nuevas...`);
       media = await imageUpload(newImages);
-      console.log('✅ Imágenes subidas:', media.map(m => ({ url: m.url?.substring(0, 50), public_id: m.public_id })));
-    } else {
-      console.log('⏭️ No hay imágenes nuevas para subir');
     }
 
-    // Combinar imágenes existentes con las nuevas
     const finalImages = [
       ...existingImages.map(img => ({ url: img.url, public_id: img.public_id })),
       ...media
     ];
 
-    console.log('📦 Imágenes finales para enviar:', finalImages.length);
-
-    // ✅ PREPARAR DATOS PARA ENVIAR
     const postToSend = {
       ...postData,
       images: finalImages,
       categorySpecificData: postData.categorySpecificData || {}
     };
 
-    console.log('📦 Datos a enviar:', {
-      postId,
-      title: postToSend.title,
-      categorie: postToSend.categorie,
-      subCategory: postToSend.subCategory,
-      imagesCount: postToSend.images?.length,
-      hasCategorySpecificData: !!postToSend.categorySpecificData,
-      categorySpecificDataKeys: Object.keys(postToSend.categorySpecificData || {})
-    });
-
     const res = await patchDataAPI(`post/${postId}`, postToSend, auth.token);
-
-    console.log('✅ Respuesta del backend:', {
-      success: res.data.success,
-      categoryChanged: res.data.categoryChanged,
-      postId: res.data.post?._id,
-      imagesCount: res.data.post?.images?.length
-    });
 
     dispatch({
       type: POST_TYPES.UPDATE_POST,
@@ -235,6 +197,22 @@ export const updatePost = ({
       }
     });
 
+    // ✅ Enviar notificación al dueño del post (si no es el mismo usuario)
+    const updatedPost = res.data.post;
+    if (oldPostData && oldPostData.user?._id && oldPostData.user._id !== auth.user._id) {
+      const msg = {
+        id: auth.user._id,
+        text: '✏️ Votre annonce a été modifiée',
+        recipients: [oldPostData.user._id],
+        url: `/post/${updatedPost._id}`,
+        content: updatedPost.title,
+        image: updatedPost.images?.[0]?.url,
+        type: 'post'
+      };
+      
+      dispatch(createNotify({ msg, auth, socket }));
+    }
+
     dispatch({ 
       type: GLOBALTYPES.ALERT, 
       payload: { success: "Post mis à jour avec succès!" } 
@@ -242,8 +220,6 @@ export const updatePost = ({
 
   } catch (err) {
     console.error('❌ Error en updatePost:', err);
-    console.error('❌ Respuesta de error:', err.response?.data);
-    console.error('❌ Status:', err.response?.status);
     dispatch({
       type: GLOBALTYPES.ALERT,
       payload: { error: err.response?.data?.msg || err.message }
@@ -253,6 +229,7 @@ export const updatePost = ({
     console.timeEnd('⏱️ updatePost action time');
   }
 };
+ 
 export const getPost = (id) => async (dispatch) => {
   try {
     console.log('🔍 Fetching post with ID:', id)
@@ -452,7 +429,7 @@ export const deletePost = ({ post, auth, socket }) => async (dispatch) => {
   try {
     const res = await deleteDataAPI(`post/${post._id}`, auth.token)
 
-    // Notify
+    // ✅ Notify (ya implementado correctamente)
     const msg = {
       id: post._id,
       text: 'added a new post.',
@@ -469,6 +446,7 @@ export const deletePost = ({ post, auth, socket }) => async (dispatch) => {
   }
 }
 
+
 export const likePost = ({ post, auth, socket }) => async (dispatch) => {
   const newPost = { ...post, likes: [...post.likes, auth.user] }
   dispatch({ type: POST_TYPES.UPDATE_POST, payload: newPost })
@@ -478,7 +456,6 @@ export const likePost = ({ post, auth, socket }) => async (dispatch) => {
   try {
     await patchDataAPI(`post/${post._id}/like`, null, auth.token)
 
-    // Notify
     const msg = {
       id: auth.user._id,
       text: 'liked your post.',
@@ -498,7 +475,9 @@ export const likePost = ({ post, auth, socket }) => async (dispatch) => {
   }
 }
 
-
+// ============================================
+// ✅ UNLIKE POST (YA TIENE NOTIFICACIÓN - VERIFICADO)
+// ============================================
 export const unLikePost = ({ post, auth, socket }) => async (dispatch) => {
   const newPost = { ...post, likes: post.likes.filter(like => like._id !== auth.user._id) }
   dispatch({ type: POST_TYPES.UPDATE_POST, payload: newPost })
@@ -508,7 +487,6 @@ export const unLikePost = ({ post, auth, socket }) => async (dispatch) => {
   try {
     await patchDataAPI(`post/${post._id}/unlike`, null, auth.token)
 
-    // Notify
     const msg = {
       id: auth.user._id,
       text: 'unliked your post.',
@@ -524,10 +502,6 @@ export const unLikePost = ({ post, auth, socket }) => async (dispatch) => {
     })
   }
 }
-
-/**
- * Guardar post
- */
 export const savePost = ({ post, auth }) => async (dispatch) => {
   const newUser = { ...auth.user, saved: [...auth.user.saved, post._id] }
   dispatch({ type: GLOBALTYPES.AUTH, payload: { ...auth, user: newUser } })

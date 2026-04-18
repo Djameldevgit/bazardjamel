@@ -266,14 +266,12 @@ const CreateBoutiqueProductPage = () => {
 
       if (isEdit && productId) {
         await dispatch(updateBoutiqueProduct({
-          boutiqueId, productId, productData: productContent, images, auth
+          boutiqueId, productId, productData: productContent, images, auth, socket // ✅ Añadir socket
         }));
-        showAlert("✅ Produit mis à jour avec succès!", "success");
       } else {
         await dispatch(createBoutiqueProduct({
-          boutiqueId, productData: productContent, images, auth
+          boutiqueId, productData: productContent, images, auth, socket // ✅ Añadir socket
         }));
-        showAlert("✅ Produit ajouté à la boutique avec succès!", "success");
       }
       
       setTimeout(() => history.push(`/boutique/${boutiqueId}`), 1500);

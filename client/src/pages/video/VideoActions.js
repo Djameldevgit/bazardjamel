@@ -1,4 +1,4 @@
-// components/Video/VideoActions.jsx - Estilo TikTok
+// components/Video/VideoActions.jsx - Estilo TikTok CON NOTIFICACIONES
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
@@ -9,7 +9,7 @@ import { updateVideo, deleteVideo } from '../../redux/actions/videoAction';
 const VideoActions = ({ video, onVideoUpdate, onVideoDelete }) => {
   const dispatch = useDispatch();
   const history = useHistory();
-  const { auth } = useSelector(state => state);
+  const { auth, socket } = useSelector(state => state); // ✅ Añadir socket
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -36,14 +36,22 @@ const VideoActions = ({ video, onVideoUpdate, onVideoDelete }) => {
     { name: 'Reviews', slug: 'videos-reviews' }
   ];
   
+  // ✅ Editar video CON SOCKET
   const handleEdit = async () => {
     setLoading(true);
-    const result = await dispatch(updateVideo(video._id, {
-      title: editData.title,
-      description: editData.description,
-      tags: editData.tags.split(',').map(t => t.trim()).filter(t => t),
-      categorySlug: editData.categorySlug
-    }, auth.token));
+    const result = await dispatch(updateVideo(
+      video._id, 
+      {
+        title: editData.title,
+        description: editData.description,
+        tags: editData.tags.split(',').map(t => t.trim()).filter(t => t),
+        categorySlug: editData.categorySlug
+      }, 
+      auth.token,
+      auth,
+      socket,
+      video  // ✅ Pasar videoData para la notificación
+    ));
     
     if (result.success) {
       setShowEditModal(false);
@@ -52,9 +60,16 @@ const VideoActions = ({ video, onVideoUpdate, onVideoDelete }) => {
     setLoading(false);
   };
   
+  // ✅ Eliminar video CON SOCKET
   const handleDelete = async () => {
     setLoading(true);
-    const result = await dispatch(deleteVideo(video._id, auth.token));
+    const result = await dispatch(deleteVideo(
+      video._id, 
+      auth.token,
+      auth,
+      socket,
+      video  // ✅ Pasar videoData para la notificación
+    ));
     
     if (result.success) {
       setShowDeleteModal(false);
@@ -104,7 +119,7 @@ const VideoActions = ({ video, onVideoUpdate, onVideoDelete }) => {
         </Dropdown.Menu>
       </Dropdown>
       
-      {/* Modales... (igual que antes) */}
+      {/* Modal de edición */}
       <Modal show={showEditModal} onHide={() => setShowEditModal(false)} size="lg">
         <Modal.Header closeButton>
           <Modal.Title>Modifier la vidéo</Modal.Title>
@@ -166,6 +181,7 @@ const VideoActions = ({ video, onVideoUpdate, onVideoDelete }) => {
         </Modal.Footer>
       </Modal>
       
+      {/* Modal de eliminación */}
       <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Supprimer la vidéo</Modal.Title>

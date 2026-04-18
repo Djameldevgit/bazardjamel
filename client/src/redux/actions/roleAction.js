@@ -1,18 +1,20 @@
 import { patchDataAPI } from "../../utils/fetchData";
-import { GLOBALTYPES } from './globalTypes'
+import { GLOBALTYPES } from './globalTypes';
+import { createNotify } from './notifyAction'; // ✅ Importar createNotify
+
 export const ROLES_TYPES = {
   LOADING: 'LOADING',
   USER_ROLE: 'USER_ROLE',
   SUPERUSER_ROLE: 'SUPERUSER_ROLE',
   MODERADOR_ROLE: 'MODERADOR_ROLE',
   ADMIN_ROLE: 'ADMIN_ROLE',
-
-  UPDATE_ROLE: 'UPDATE_ROLE' // 🚀 este faltaba
+  UPDATE_ROLE: 'UPDATE_ROLE'
 }
- // actions/roleAction.js
- 
-// actions/roleAction.js
-export const updateUserRole = (userId, newRole, token) => async (dispatch, getState) => {
+
+// ============================================
+// ✅ ACTUALIZAR ROL CON NOTIFICACIÓN (FUNCIÓN UNIFICADA)
+// ============================================
+export const updateUserRole = (userId, newRole, token, auth, socket, userData) => async (dispatch, getState) => {
   try {
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
 
@@ -28,20 +30,40 @@ export const updateUserRole = (userId, newRole, token) => async (dispatch, getSt
       }
     });
 
-    // 🔥 Solo si el usuario modificado es el mismo logueado
-    const { auth } = getState();
-    if (auth.user?._id === userId) {
+    // ✅ Enviar notificación al usuario cuyo rol cambió
+    if (userData && userData._id !== auth.user?._id) {
+      const roleMessages = {
+        'admin': '👑 Vous avez été promu Administrateur',
+        'Super-utilisateur': '⭐ Vous avez été promu Super Utilisateur',
+        'Moderateur': '🛡️ Vous avez été promu Modérateur',
+        'user': '👤 Votre rôle a été changé à Utilisateur'
+      };
+
+      const msg = {
+        id: auth.user._id,
+        text: roleMessages[newRole] || `Votre rôle a été changé à ${newRole}`,
+        recipients: [userId],
+        url: `/profile/${userId}`,
+        content: `Nouveau rôle: ${newRole}`,
+        image: userData.avatar,
+        type: 'role'
+      };
+      
+      dispatch(createNotify({ msg, auth, socket }));
+    }
+
+    // Si el usuario modificado es el mismo logueado
+    const { auth: stateAuth } = getState();
+    if (stateAuth.user?._id === userId) {
       dispatch({
         type: GLOBALTYPES.AUTH,
         payload: {
-          ...auth,
-          user: res.data.user // sustituye todo el objeto user
+          ...stateAuth,
+          user: res.data.user
         }
       });
     }
-    if (getState().app.refreshUI) {
-      getState().app.refreshUI();
-    }
+
     dispatch({ 
       type: GLOBALTYPES.ALERT, 
       payload: { success: res.data.msg } 
@@ -60,27 +82,48 @@ export const updateUserRole = (userId, newRole, token) => async (dispatch, getSt
   }
 };
 
-export const roleuserautenticado = (user, auth) => async (dispatch) => {
+// ============================================
+// ✅ ROLE USER CON NOTIFICACIÓN
+// ============================================
+export const roleuserautenticado = (user, auth, socket) => async (dispatch) => {
   try {
-    dispatch({ type: ROLES_TYPES.LOADING, payload: true })
+    dispatch({ type: ROLES_TYPES.LOADING, payload: true });
     const res = await patchDataAPI(`user/${user._id}/roleuser`, { role: 'user' }, auth.token);
+    
     dispatch({
       type: ROLES_TYPES.USER_ROLE,
       payload: { user, res: res.data }
     });
 
-    dispatch({ type: ROLES_TYPES.LOADING, payload: false })
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { success: res.data.msg } })
+    // ✅ Notificar al usuario cuyo rol cambió
+    if (user._id !== auth.user?._id) {
+      const msg = {
+        id: auth.user._id,
+        text: '👤 Votre rôle a été changé à Utilisateur',
+        recipients: [user._id],
+        url: `/profile/${user._id}`,
+        content: `Nouveau rôle: Utilisateur`,
+        image: user.avatar,
+        type: 'role'
+      };
+      dispatch(createNotify({ msg, auth, socket }));
+    }
+
+    dispatch({ type: ROLES_TYPES.LOADING, payload: false });
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { success: res.data.msg } });
   } catch (err) {
     dispatch({
       type: GLOBALTYPES.ALERT,
-      payload: { error: err.response.data.msg }
+      payload: { error: err.response?.data?.msg || err.message }
     });
+    dispatch({ type: ROLES_TYPES.LOADING, payload: false });
   }
 };
 
-// Ejemplo de acción para actualizar el rol a "superuser"
-export const rolesuperuser = (user, auth) => async (dispatch) => {
+// ============================================
+// ✅ ROLE SUPERUSER CON NOTIFICACIÓN
+// ============================================
+export const rolesuperuser = (user, auth, socket) => async (dispatch) => {
   try {
     dispatch({ type: ROLES_TYPES.LOADING, payload: true });
 
@@ -88,54 +131,106 @@ export const rolesuperuser = (user, auth) => async (dispatch) => {
 
     dispatch({
       type: ROLES_TYPES.SUPERUSER_ROLE,
-      payload: { user: { ...user, role: 'Super-utilisateur' } } // Se envía el usuario con el rol actualizado
+      payload: { user: { ...user, role: 'Super-utilisateur' } }
     });
+
+    // ✅ Notificar al usuario cuyo rol cambió
+    if (user._id !== auth.user?._id) {
+      const msg = {
+        id: auth.user._id,
+        text: '⭐ Vous avez été promu Super Utilisateur',
+        recipients: [user._id],
+        url: `/profile/${user._id}`,
+        content: `Nouveau rôle: Super Utilisateur`,
+        image: user.avatar,
+        type: 'role'
+      };
+      dispatch(createNotify({ msg, auth, socket }));
+    }
 
     dispatch({ type: GLOBALTYPES.ALERT, payload: { success: res.data.msg } });
     dispatch({ type: ROLES_TYPES.LOADING, payload: false });
   } catch (err) {
     dispatch({
       type: GLOBALTYPES.ALERT,
-      payload: { error: err.response.data.msg },
+      payload: { error: err.response?.data?.msg || err.message }
     });
     dispatch({ type: ROLES_TYPES.LOADING, payload: false });
   }
 };
 
-export const rolemoderador = (user, auth) => async (dispatch) => {
+// ============================================
+// ✅ ROLE MODERADOR CON NOTIFICACIÓN
+// ============================================
+export const rolemoderador = (user, auth, socket) => async (dispatch) => {
   try {
-    dispatch({ type: ROLES_TYPES.LOADING, payload: true })
+    dispatch({ type: ROLES_TYPES.LOADING, payload: true });
     const res = await patchDataAPI(`user/${user._id}/rolemoderador`, { role: 'moderador' }, auth.token);
 
     dispatch({
       type: ROLES_TYPES.MODERADOR_ROLE,
       payload: { user, res: res.data }
     });
-    dispatch({ type: ROLES_TYPES.LOADING, payload: false })
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { success: res.data.msg } })
+
+    // ✅ Notificar al usuario cuyo rol cambió
+    if (user._id !== auth.user?._id) {
+      const msg = {
+        id: auth.user._id,
+        text: '🛡️ Vous avez été promu Modérateur',
+        recipients: [user._id],
+        url: `/profile/${user._id}`,
+        content: `Nouveau rôle: Modérateur`,
+        image: user.avatar,
+        type: 'role'
+      };
+      dispatch(createNotify({ msg, auth, socket }));
+    }
+
+    dispatch({ type: ROLES_TYPES.LOADING, payload: false });
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { success: res.data.msg } });
   } catch (err) {
     dispatch({
       type: GLOBALTYPES.ALERT,
-      payload: { error: err.response.data.msg }
+      payload: { error: err.response?.data?.msg || err.message }
     });
+    dispatch({ type: ROLES_TYPES.LOADING, payload: false });
   }
 };
-export const roleadmin = (user, auth) => async (dispatch) => {
+
+// ============================================
+// ✅ ROLE ADMIN CON NOTIFICACIÓN
+// ============================================
+export const roleadmin = (user, auth, socket) => async (dispatch) => {
   try {
-    dispatch({ type: ROLES_TYPES.LOADING, payload: true })
+    dispatch({ type: ROLES_TYPES.LOADING, payload: true });
     const res = await patchDataAPI(`user/${user._id}/roleadmin`, { role: 'admin' }, auth.token);
 
     dispatch({
       type: ROLES_TYPES.ADMIN_ROLE,
       payload: { user, res: res.data }
     });
-    dispatch({ type: ROLES_TYPES.LOADING, payload: false })
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { success: res.data.msg } })
+
+    // ✅ Notificar al usuario cuyo rol cambió
+    if (user._id !== auth.user?._id) {
+      const msg = {
+        id: auth.user._id,
+        text: '👑 Vous avez été promu Administrateur',
+        recipients: [user._id],
+        url: `/profile/${user._id}`,
+        content: `Nouveau rôle: Administrateur`,
+        image: user.avatar,
+        type: 'role'
+      };
+      dispatch(createNotify({ msg, auth, socket }));
+    }
+
+    dispatch({ type: ROLES_TYPES.LOADING, payload: false });
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { success: res.data.msg } });
   } catch (err) {
     dispatch({
       type: GLOBALTYPES.ALERT,
-      payload: { error: err.response.data.msg }
+      payload: { error: err.response?.data?.msg || err.message }
     });
+    dispatch({ type: ROLES_TYPES.LOADING, payload: false });
   }
 };
-

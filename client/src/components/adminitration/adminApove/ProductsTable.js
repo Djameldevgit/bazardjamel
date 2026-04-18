@@ -1,15 +1,14 @@
-// 📂 components/admin/ProductsTable.js - VERSIÓN ACTUALIZADA CON REDUX
-
-import React, { useState, useEffect, useCallback } from 'react';
+// 📂 components/admin/ProductsTable.js
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Table, Button, Badge, Card, Pagination, Image, Alert, Spinner } from 'react-bootstrap';
 import { FaCheck, FaTrash, FaEye, FaBox, FaStore, FaMoneyBillWave } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { getProductsPendientes, aprobarProducto, rechazarProducto } from '../../../redux/actions/boutiqueAproveAction';
 
-const ProductsTable = ({ selectedCategory, onLoadingChange }) => {
+const ProductsTable = ({ selectedCategory, onLoadingChange, onPaginationUpdate }) => {
   const dispatch = useDispatch();
-  const { auth } = useSelector(state => state);
+  const { auth, socket } = useSelector(state => state); // ✅ Obtener socket del estado global
   const { 
     products = [], 
     loading = false, 
@@ -23,140 +22,156 @@ const ProductsTable = ({ selectedCategory, onLoadingChange }) => {
   const [message, setMessage] = useState({ show: false, text: '', type: '' });
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 10;
-  
-  // Cargar productos usando Redux
-  const loadProducts = useCallback((page = 1) => {
-    if (auth?.token) {
-      const filters = {};
-      if (selectedCategory?.slug && selectedCategory.slug !== 'products') {
-        filters.categorie = selectedCategory.slug;
-      }
-      dispatch(getProductsPendientes(auth.token, page, limit, filters));
+
+  // ✅ Refs para evitar bucles
+  const hasLoadedRef = useRef(false);
+  const onLoadingChangeRef = useRef(onLoadingChange);
+  const onPaginationUpdateRef = useRef(onPaginationUpdate);
+
+  // ✅ Actualizar refs cuando cambian
+  useEffect(() => {
+    onLoadingChangeRef.current = onLoadingChange;
+    onPaginationUpdateRef.current = onPaginationUpdate;
+  }, [onLoadingChange, onPaginationUpdate]);
+
+  // ✅ Notificar loading sin causar bucles
+  useEffect(() => {
+    if (onLoadingChangeRef.current) {
+      onLoadingChangeRef.current(loading);
     }
-  }, [dispatch, auth?.token, limit, selectedCategory]);
-  
+  }, [loading]);
+
+  // ✅ Notificar paginación sin causar bucles
   useEffect(() => {
-    loadProducts(currentPage);
-  }, [loadProducts, currentPage]);
-  
+    if (onPaginationUpdateRef.current && totalProducts > 0) {
+      onPaginationUpdateRef.current({ total: totalProducts, page: pageProducts, totalPages: totalPagesProducts });
+    }
+  }, [totalProducts, pageProducts, totalPagesProducts]);
+
+  // ✅ Construir filtros basados en selectedCategory
+  const buildFilters = useCallback(() => {
+    const filters = {};
+    if (selectedCategory?.slug && selectedCategory.slug !== 'products') {
+      filters.categorie = selectedCategory.slug;
+    }
+    return filters;
+  }, [selectedCategory]);
+
+  // ✅ Cargar productos solo cuando cambia currentPage
+  const loadProducts = useCallback((pageNum) => {
+    if (auth?.token) {
+      const filters = buildFilters();
+      dispatch(getProductsPendientes(auth.token, pageNum, limit, filters));
+    }
+  }, [dispatch, auth?.token, limit, buildFilters]);
+
+  // ✅ Efecto de carga inicial y cambio de página
   useEffect(() => {
-    if (onLoadingChange) onLoadingChange(loading);
-  }, [loading, onLoadingChange]);
-  
+    if (!hasLoadedRef.current || currentPage !== pageProducts) {
+      loadProducts(currentPage);
+      hasLoadedRef.current = true;
+    }
+  }, [currentPage, loadProducts, pageProducts]);
+
+  // ✅ Reset selección cuando cambian los productos
   useEffect(() => {
     setSelectedItems([]);
     setSelectAll(false);
-  }, [products]);
-  
-  const safeProducts = Array.isArray(products) ? products : [];
-  
+  }, [products.length]);
+
   const handleSelectItem = (id) => {
-    setSelectedItems(prev => 
+    setSelectedItems(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
   };
-  
+
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedItems([]);
     } else {
-      setSelectedItems(safeProducts.map(p => p._id));
+      setSelectedItems(products.map(p => p._id));
     }
     setSelectAll(!selectAll);
   };
-  
+
+  const showMessage = (text, type) => {
+    setMessage({ show: true, text, type });
+    setTimeout(() => setMessage({ show: false, text: '', type: '' }), 3000);
+  };
+
+  // ✅ APROBAR - con auth y socket desde el estado
   const handleApprove = async (product) => {
-    if (window.confirm(`Approuver le produit "${product.title}" ?`)) {
-      try {
-        await dispatch(aprobarProducto(product._id, auth.token));
-        setMessage({ show: true, text: 'Produit approuvé', type: 'success' });
-        setTimeout(() => setMessage({ show: false, text: '', type: '' }), 3000);
-        // Recargar la página actual
-        loadProducts(currentPage);
-      } catch (error) {
-        setMessage({ show: true, text: 'Erreur lors de l\'approbation', type: 'danger' });
-      }
-    }
-  };
-  
-  const handleApproveSelected = async () => {
-    if (selectedItems.length === 0) {
-      setMessage({ show: true, text: 'Sélectionnez au moins un produit', type: 'warning' });
-      setTimeout(() => setMessage({ show: false, text: '', type: '' }), 3000);
-      return;
-    }
-    
-    if (window.confirm(`Approuver ${selectedItems.length} produit(s) ?`)) {
-      for (const id of selectedItems) {
-        await dispatch(aprobarProducto(id, auth.token));
-      }
-      setMessage({ show: true, text: `${selectedItems.length} produit(s) approuvé(s)`, type: 'success' });
-      setSelectedItems([]);
-      setSelectAll(false);
-      setTimeout(() => setMessage({ show: false, text: '', type: '' }), 3000);
+    if (!window.confirm(`Approuver le produit "${product.title}" ?`)) return;
+
+    const result = await dispatch(aprobarProducto(product._id, auth.token, auth, socket));
+    if (result?.success) {
+      showMessage('Produit approuvé avec succès', 'success');
       loadProducts(currentPage);
+    } else {
+      showMessage(result?.error || 'Erreur lors de l\'approbation', 'danger');
     }
   };
-  
-  const handleReject = async (product) => {
-    if (!window.confirm(`Rejeter le produit "${product.title}" ?`)) return;
-    
-    try {
-      await dispatch(rechazarProducto(product._id, auth.token));
-      setMessage({ show: true, text: 'Produit rejeté', type: 'warning' });
-      setTimeout(() => setMessage({ show: false, text: '', type: '' }), 3000);
+
+  // ✅ RECHAZAR - con auth y socket desde el estado
+  const handleDelete = async (product) => {
+    if (!window.confirm(`Supprimer définitivement le produit "${product.title}" ? Cette action est irréversible.`)) return;
+
+    const result = await dispatch(rechazarProducto(product._id, auth.token, auth, socket));
+    if (result?.success) {
+      showMessage('Produit supprimé', 'warning');
       loadProducts(currentPage);
-    } catch (error) {
-      setMessage({ show: true, text: 'Erreur lors du rejet', type: 'danger' });
+    } else {
+      showMessage(result?.error || 'Erreur lors de la suppression', 'danger');
     }
   };
-  
+
   const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPagesProducts) {
+    if (newPage >= 1 && newPage <= totalPagesProducts && newPage !== currentPage) {
       setCurrentPage(newPage);
     }
   };
-  
-  if (loading && safeProducts.length === 0) {
+
+  // ✅ Función para formatear fecha
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  // ✅ Función para navegar al detalle del producto
+  const handleViewProduct = (productId) => {
+    console.log('🖱️ Navegando a producto:', productId);
+    // history.push(`/product/${productId}`);
+  };
+
+  if (loading && products.length === 0) {
     return (
       <Card className="border-0 shadow-sm text-center py-5">
         <Spinner animation="border" variant="primary" />
-        <p className="mt-3">Chargement des produits...</p>
+        <p className="mt-3">Chargement des produits en attente...</p>
       </Card>
     );
   }
-  
+
   return (
     <>
       {message.show && (
-        <Alert variant={message.type} dismissible onClose={() => setMessage({ show: false, text: '', type: '' })}>
+        <Alert variant={message.type} dismissible onClose={() => setMessage({ show: false })}>
           {message.text}
         </Alert>
       )}
-      
-      {selectedItems.length > 0 && (
-        <Card className="border-0 shadow-sm mb-3 bg-light">
-          <Card.Body className="p-3">
-            <div className="d-flex justify-content-between align-items-center">
-              <span className="fw-semibold">
-                <FaCheck className="me-2 text-success" />
-                {selectedItems.length} produit(s) sélectionné(s)
-              </span>
-              <Button size="sm" variant="success" onClick={handleApproveSelected}>
-                <FaCheck className="me-1" /> Approuver la sélection
-              </Button>
-            </div>
-          </Card.Body>
-        </Card>
-      )}
-      
+
       <Card className="border-0 shadow-sm">
         <Card.Header className="bg-white border-0 py-3">
           <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
               <h5 className="mb-0 fw-bold">
                 <FaBox className="me-2" style={{ color: '#EC4899' }} />
-                Produits de boutique à vérifier
+                Produits en attente
                 {selectedCategory?.name && selectedCategory.name !== 'products' && (
                   <Badge bg="info" className="ms-2">
                     {selectedCategory.name}
@@ -164,23 +179,49 @@ const ProductsTable = ({ selectedCategory, onLoadingChange }) => {
                 )}
               </h5>
               <small className="text-muted">
-                Page {pageProducts} sur {totalPagesProducts} - Total: {totalProducts}
+                Page {pageProducts} sur {totalPagesProducts} - Total: {totalProducts} produit(s)
               </small>
             </div>
-            <div className="form-check">
-              <input
-                type="checkbox"
-                className="form-check-input"
-                checked={selectAll}
-                onChange={handleSelectAll}
-                disabled={safeProducts.length === 0}
-              />
-              <label className="form-check-label small">Tout sélectionner</label>
-            </div>
+            {products.length > 0 && (
+              <div className="form-check">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  checked={selectAll}
+                  onChange={handleSelectAll}
+                />
+                <label className="form-check-label small">Tout sélectionner</label>
+              </div>
+            )}
           </div>
         </Card.Header>
-        
-        {safeProducts.length === 0 ? (
+
+        {selectedItems.length > 0 && (
+          <Card.Body className="bg-light py-2">
+            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <span className="fw-semibold">
+                <FaCheck className="me-2 text-success" />
+                {selectedItems.length} produit(s) sélectionné(s)
+              </span>
+              <div className="d-flex gap-2">
+                <Button
+                  size="sm"
+                  variant="success"
+                  onClick={() => {
+                    selectedItems.forEach(id => {
+                      const product = products.find(p => p._id === id);
+                      if (product) handleApprove(product);
+                    });
+                  }}
+                >
+                  <FaCheck className="me-1" /> Approuver sélection
+                </Button>
+              </div>
+            </div>
+          </Card.Body>
+        )}
+
+        {products.length === 0 ? (
           <Card.Body className="text-center py-5">
             <FaBox className="fs-1 text-muted mb-3 opacity-50" />
             <h5 className="text-muted">Aucun produit en attente</h5>
@@ -195,7 +236,7 @@ const ProductsTable = ({ selectedCategory, onLoadingChange }) => {
                     <th style={{ width: '40px' }}>
                       <input type="checkbox" checked={selectAll} onChange={handleSelectAll} />
                     </th>
-                    <th style={{ width: '60px' }}>Image</th>
+                    <th style={{ width: '80px' }}>Image</th>
                     <th>Produit</th>
                     <th>Boutique</th>
                     <th>Prix</th>
@@ -206,7 +247,7 @@ const ProductsTable = ({ selectedCategory, onLoadingChange }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {safeProducts.map(product => (
+                  {products.map(product => (
                     <tr key={product._id} className={selectedItems.includes(product._id) ? 'table-primary' : ''}>
                       <td>
                         <input
@@ -216,65 +257,72 @@ const ProductsTable = ({ selectedCategory, onLoadingChange }) => {
                         />
                       </td>
                       <td>
-                        {product.images?.[0]?.url ? (
-                          <Image
-                            src={product.images[0].url}
-                            width="50"
-                            height="50"
-                            className="rounded-3"
-                            style={{ objectFit: 'cover' }}
-                          />
-                        ) : (
-                          <div className="bg-light rounded-3 d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
-                            <FaBox className="text-muted" />
-                          </div>
-                        )}
-                      </td>
-                      <td>
-                        <Link to={`/product/${product._id}`} className="text-decoration-none fw-medium">
-                          {product.title?.length > 35 ? product.title.substring(0, 35) + '...' : product.title}
-                        </Link>
-                        <br />
-                        <small className="text-muted">{product.subCategory}</small>
-                      </td>
-                      <td>
-                        <div className="d-flex align-items-center gap-1">
-                          <FaStore className="text-muted small" />
-                          <Link to={`/boutique/${product.boutique?._id}`} className="small text-decoration-none">
-                            {product.boutique?.nom_boutique || 'N/A'}
-                          </Link>
+                        <div 
+                          onClick={() => handleViewProduct(product._id)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {product.images?.[0]?.url ? (
+                            <Image
+                              src={product.images[0].url}
+                              width="60"
+                              height="40"
+                              className="rounded"
+                              style={{ objectFit: 'cover' }}
+                            />
+                          ) : (
+                            <div className="bg-dark rounded d-flex align-items-center justify-content-center" style={{ width: '60px', height: '40px', cursor: 'pointer' }}>
+                              <FaBox className="text-white opacity-50" size={20} />
+                            </div>
+                          )}
                         </div>
                       </td>
-                      <td className="fw-bold text-primary">
-                        <FaMoneyBillWave className="me-1" />
-                        {product.price?.toLocaleString()} DA
-                        </td>
                       <td>
-                        <Badge bg={
-                          product.etat === 'neuf' ? 'success' :
-                          product.etat === 'comme-neuf' ? 'info' :
-                          product.etat === 'bon-etat' ? 'warning' : 'secondary'
-                        } className="rounded-pill">
+                        <div className="fw-medium">{product.title?.substring(0, 40)}</div>
+                        <small className="text-muted">{product.subCategory}</small>
+                       </td>
+                      <td>
+                        <div className="d-flex flex-column">
+                          <div className="d-flex align-items-center gap-1">
+                            <FaStore className="text-muted small" />
+                            <span className="small fw-medium">{product.boutique?.nom_boutique || 'N/A'}</span>
+                          </div>
+                          <small className="text-muted">{product.boutique?.user?.email}</small>
+                        </div>
+                       </td>
+                      <td>
+                        <div className="fw-bold text-primary">
+                          <FaMoneyBillWave className="me-1" size={12} />
+                          {product.price?.toLocaleString()} DA
+                        </div>
+                       </td>
+                      <td>
+                        <Badge 
+                          bg={
+                            product.etat === 'neuf' ? 'success' :
+                            product.etat === 'comme-neuf' ? 'info' :
+                            product.etat === 'bon-etat' ? 'warning' : 'secondary'
+                          } 
+                          className="rounded-pill"
+                        >
                           {product.etat}
                         </Badge>
-                      </td>
+                       </td>
                       <td>
                         <Badge bg="info" className="rounded-pill">
                           {product.categorie}
                         </Badge>
-                      </td>
+                       </td>
                       <td>
                         <small className="text-muted">
-                          {new Date(product.createdAt).toLocaleDateString()}
+                          {formatDate(product.createdAt)}
                         </small>
-                      </td>
+                       </td>
                       <td>
-                        <div className="d-flex gap-2">
+                        <div className="d-flex gap-1">
                           <Button
-                            as={Link}
-                            to={`/product/${product._id}`}
                             variant="outline-primary"
                             size="sm"
+                            onClick={() => handleViewProduct(product._id)}
                             title="Voir détails"
                           >
                             <FaEye />
@@ -290,8 +338,8 @@ const ProductsTable = ({ selectedCategory, onLoadingChange }) => {
                           <Button
                             variant="outline-danger"
                             size="sm"
-                            onClick={() => handleReject(product)}
-                            title="Rejeter"
+                            onClick={() => handleDelete(product)}
+                            title="Supprimer"
                           >
                             <FaTrash />
                           </Button>
@@ -302,16 +350,16 @@ const ProductsTable = ({ selectedCategory, onLoadingChange }) => {
                 </tbody>
               </Table>
             </div>
-            
+
             {totalPagesProducts > 1 && (
               <Card.Footer className="bg-white border-0 py-3">
                 <div className="d-flex justify-content-center">
                   <Pagination>
-                    <Pagination.Prev 
+                    <Pagination.Prev
                       onClick={() => handlePageChange(pageProducts - 1)}
                       disabled={pageProducts === 1}
                     />
-                    {[...Array(Math.min(totalPagesProducts, 10))].map((_, idx) => (
+                    {[...Array(Math.min(totalPagesProducts, 5))].map((_, idx) => (
                       <Pagination.Item
                         key={idx + 1}
                         active={pageProducts === idx + 1}
@@ -320,7 +368,7 @@ const ProductsTable = ({ selectedCategory, onLoadingChange }) => {
                         {idx + 1}
                       </Pagination.Item>
                     ))}
-                    <Pagination.Next 
+                    <Pagination.Next
                       onClick={() => handlePageChange(pageProducts + 1)}
                       disabled={pageProducts === totalPagesProducts}
                     />

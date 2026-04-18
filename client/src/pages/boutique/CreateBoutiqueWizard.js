@@ -1,4 +1,4 @@
-// 📂 pages/CreateBoutiqueWizard.jsx
+// 📂 pages/CreateBoutiqueWizard.jsx - VERSIÓN CON NOTIFICACIONES
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Alert, Spinner, Badge, ProgressBar, Form, Row, Col } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
@@ -14,7 +14,7 @@ const DEFAULT_LOGO = 'https://res.cloudinary.com/dfjipgj2o/image/upload/q_auto/f
 const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }) => {
   const dispatch = useDispatch();
   const history = useHistory();
-  const { auth, alert } = useSelector(state => state);
+  const { auth, socket } = useSelector(state => state); // ✅ Añadir socket
 
   const [currentStep, setCurrentStep] = useState(1);
   const [error, setError] = useState('');
@@ -153,24 +153,24 @@ const CreateBoutiqueWizard = ({ onSuccess, isEdit = false, boutiqueData = null }
     setFormData(prev => ({ ...prev, couleur_theme: color.hex }));
   };
   
-// En CreateBoutiqueWizard.jsx, asegúrate que esta función existe antes del return
-const handlePlanSelect = (planData) => {
-  console.log('🎯 handlePlanSelect recibió:', planData);
+  const handlePlanSelect = (planData) => {
+    console.log('🎯 handlePlanSelect recibió:', planData);
+    
+    setSelectedPlan(planData);
+    setIsFreePlan(planData.isFree);
+    setPlanConfirmed(true);
+    
+    setFormData(prev => ({
+      ...prev,
+      categorie: planData.categorie,
+      subCategory: planData.subCategory,
+      plan: planData.plan,
+      duree: planData.duree,
+      montant_initial: planData.montant || 0,
+      montant_ttc: planData.montant || 0
+    }));
+  };
   
-  setSelectedPlan(planData);
-  setIsFreePlan(planData.isFree);
-  setPlanConfirmed(true);
-  
-  setFormData(prev => ({
-    ...prev,
-    categorie: planData.categorie,
-    subCategory: planData.subCategory,
-    plan: planData.plan,
-    duree: planData.duree,
-    montant_initial: planData.montant || 0,
-    montant_ttc: planData.montant || 0
-  }));
-};
   const validateStep = (step) => {
     switch (step) {
       case 1:
@@ -230,141 +230,145 @@ const handlePlanSelect = (planData) => {
     return `${finalBase}-${timestamp}`;
   };
   
-// En CreateBoutiqueWizard.jsx - Función prepareSubmitData corregida
-const prepareSubmitData = () => {
-  // Generar subCategory si no existe
-  const generateSubCategory = (categorie) => {
-    if (!categorie) return '';
-    return 'boutique-' + categorie
-      .toLowerCase()
-      .replace(/[&]/g, 'et')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
+  const prepareSubmitData = () => {
+    const generateSubCategory = (categorie) => {
+      if (!categorie) return '';
+      return 'boutique-' + categorie
+        .toLowerCase()
+        .replace(/[&]/g, 'et')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+    };
+    
+    const baseSlug = formData.nom_boutique || 'boutique';
+    const slug = generateUniqueSlug(baseSlug);
+    const domaine_boutique = formData.domaine_boutique?.trim() || slug;
+    const subCategory = generateSubCategory(formData.categorie);
+    
+    let userId = null;
+    if (typeof formData.user === 'object' && formData.user?._id) {
+      userId = formData.user._id;
+    } else if (formData.user) {
+      userId = formData.user;
+    } else if (auth?.user?._id) {
+      userId = auth.user._id;
+    } else if (auth?.user?.id) {
+      userId = auth.user.id;
+    }
+    
+    console.log('👤 User ID obtenido:', userId);
+    
+    if (!userId) {
+      console.error('❌ No se pudo obtener el userId');
+      throw new Error('Utilisateur non identifié');
+    }
+    
+    const submitData = {
+      nom_boutique: formData.nom_boutique || '',
+      categorie: formData.categorie || '',
+      user: userId,
+      domaine_boutique: domaine_boutique,
+      slug: slug,
+      slogan_boutique: formData.slogan_boutique || '',
+      description_boutique: formData.description_boutique || '',
+      date_debut: formData.date_debut || new Date().toISOString().split('T')[0],
+      subCategory: subCategory,
+      plan: formData.plan || 'gratuit',
+      duree_abonnement: formData.duree === '1' ? '1mois' : 
+                       formData.duree === '3' ? '3mois' :
+                       formData.duree === '6' ? '6mois' : '1an',
+      date_expiration: formData.date_expiration || null,
+      proprietaire: {
+        nom: formData.proprietaire?.nom || auth?.user?.name || '',
+        email: formData.proprietaire?.email || auth?.user?.email || '',
+        telephone: formData.proprietaire?.telephone || auth?.user?.mobile || '',
+        wilaya: formData.proprietaire?.wilaya || '',
+        adresse: formData.proprietaire?.adresse || ''
+      },
+      reseaux_sociaux: formData.reseaux_sociaux || {
+        facebook: '',
+        instagram: '',
+        tiktok: '',
+        whatsapp: '',
+        website: ''
+      },
+      couleur_theme: formData.couleur_theme || '#2563eb',
+      montant_initial: formData.montant_initial || 0,
+      mois_offerts: formData.mois_offerts || 0,
+      montant_ttc: formData.montant_ttc || 0,
+      methode_paiement: formData.methode_paiement || '',
+      transaction_id: transactionId,
+      client_nom: formData.client_nom || auth?.user?.name || '',
+      client_telephone: formData.client_telephone || auth?.user?.mobile || ''
+    };
+    
+    console.log('📦 Datos preparados para enviar:', {
+      nom_boutique: submitData.nom_boutique,
+      categorie: submitData.categorie,
+      user: submitData.user,
+      domaine_boutique: submitData.domaine_boutique,
+      plan: submitData.plan
+    });
+    
+    return submitData;
   };
   
-  const baseSlug = formData.nom_boutique || 'boutique';
-  const slug = generateUniqueSlug(baseSlug);
-  const domaine_boutique = formData.domaine_boutique?.trim() || slug;
-  const subCategory = generateSubCategory(formData.categorie);
-  
-  // Obtener el userId correctamente
-  let userId = null;
-  if (typeof formData.user === 'object' && formData.user?._id) {
-    userId = formData.user._id;
-  } else if (formData.user) {
-    userId = formData.user;
-  } else if (auth?.user?._id) {
-    userId = auth.user._id;
-  } else if (auth?.user?.id) {
-    userId = auth.user.id;
-  }
-  
-  console.log('👤 User ID obtenido:', userId);
-  
-  if (!userId) {
-    console.error('❌ No se pudo obtener el userId');
-    throw new Error('Utilisateur non identifié');
-  }
-  
-  const submitData = {
-    // Campos REQUERIDOS
-    nom_boutique: formData.nom_boutique || '',
-    categorie: formData.categorie || '',
-    user: userId,
-    domaine_boutique: domaine_boutique,
+  // ✅ HANDLE SUBMIT ACTUALIZADO CON SOCKET
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    // Campos opcionales con valores por defecto
-    slug: slug,
-    slogan_boutique: formData.slogan_boutique || '',
-    description_boutique: formData.description_boutique || '',
-    date_debut: formData.date_debut || new Date().toISOString().split('T')[0],
-    subCategory: subCategory,
-    plan: formData.plan || 'gratuit',
-    duree_abonnement: formData.duree === '1' ? '1mois' : 
-                     formData.duree === '3' ? '3mois' :
-                     formData.duree === '6' ? '6mois' : '1an',
-    date_expiration: formData.date_expiration || null,
-    proprietaire: {
-      nom: formData.proprietaire?.nom || auth?.user?.name || '',
-      email: formData.proprietaire?.email || auth?.user?.email || '',
-      telephone: formData.proprietaire?.telephone || auth?.user?.mobile || '',
-      wilaya: formData.proprietaire?.wilaya || '',
-      adresse: formData.proprietaire?.adresse || ''
-    },
-    reseaux_sociaux: formData.reseaux_sociaux || {
-      facebook: '',
-      instagram: '',
-      tiktok: '',
-      whatsapp: '',
-      website: ''
-    },
-    couleur_theme: formData.couleur_theme || '#2563eb',
-    montant_initial: formData.montant_initial || 0,
-    mois_offerts: formData.mois_offerts || 0,
-    montant_ttc: formData.montant_ttc || 0,
-    methode_paiement: formData.methode_paiement || '',
-    transaction_id: transactionId,
-    client_nom: formData.client_nom || auth?.user?.name || '',
-    client_telephone: formData.client_telephone || auth?.user?.mobile || ''
+    if (!formData.nom_boutique?.trim()) {
+      setError('Le nom de la boutique est requis');
+      return;
+    }
+    
+    if (!formData.categorie) {
+      setError('La catégorie est requise');
+      return;
+    }
+    
+    if (!auth?.user?._id && !formData.user) {
+      setError('Utilisateur non identifié');
+      return;
+    }
+    
+    if (!isFreePlan && images.length === 0) {
+      setError('Au moins une image est requise pour votre boutique');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setError('');
+    
+    try {
+      const submitData = prepareSubmitData();
+      console.log('📦 Enviando al backend:', submitData);
+      
+      // ✅ Pasar socket a la acción createBoutique
+      const result = await dispatch(createBoutique({ 
+        boutiqueData: submitData, 
+        images: isFreePlan ? [] : images, 
+        auth,
+        socket  // ✅ Añadir socket
+      }));
+      
+      setSuccess(result?.message || 'Boutique créée avec succès!');
+      
+      setTimeout(() => {
+        if (onSuccess) {
+          onSuccess(result?.boutique);
+        } else {
+          history.push('/mes-boutiques');
+        }
+      }, 2000);
+      
+    } catch (err) {
+      console.error('❌ Error en submit:', err);
+      setError(err.response?.data?.message || err.message || 'Erreur lors de la création');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-  
-  console.log('📦 Datos preparados para enviar:', {
-    nom_boutique: submitData.nom_boutique,
-    categorie: submitData.categorie,
-    user: submitData.user,
-    domaine_boutique: submitData.domaine_boutique,
-    plan: submitData.plan
-  });
-  
-  return submitData;
-};
-  
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  // Validación previa
-  if (!formData.nom_boutique?.trim()) {
-    setError('Le nom de la boutique est requis');
-    return;
-  }
-  
-  if (!formData.categorie) {
-    setError('La catégorie est requise');
-    return;
-  }
-  
-  if (!auth?.user?._id && !formData.user) {
-    setError('Utilisateur non identifié');
-    return;
-  }
-  
-  // Para planes pagos, validar imágenes
-  if (!isFreePlan && images.length === 0) {
-    setError('Au moins une image est requise pour votre boutique');
-    return;
-  }
-  
-  setIsSubmitting(true);
-  setError('');
-  
-  try {
-    const submitData = prepareSubmitData();
-    console.log('📦 Enviando al backend:', submitData);
-    
-    const result = await dispatch(createBoutique({ 
-      boutiqueData: submitData, 
-      images: isFreePlan ? [] : images, 
-      auth 
-    }));
-    
-    // ... resto del código
-  } catch (err) {
-    console.error('❌ Error en submit:', err);
-    setError(err.response?.data?.message || err.message || 'Erreur lors de la création');
-  } finally {
-    setIsSubmitting(false);
-  }
-};
   
   useEffect(() => {
     if (isEdit && boutiqueData) {

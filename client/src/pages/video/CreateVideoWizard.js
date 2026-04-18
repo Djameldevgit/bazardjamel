@@ -1,4 +1,4 @@
-// components/Video/CreateVideoWizard.jsx
+// components/Video/CreateVideoWizard.jsx - VERSIÓN CON NOTIFICACIONES
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
@@ -46,7 +46,7 @@ const getCategoryBySlug = (slug) => {
 const CreateVideoWizard = ({ onSuccess, onCancel }) => {
   const dispatch = useDispatch();
   const history = useHistory();
-  const { auth } = useSelector(state => state);
+  const { auth, socket } = useSelector(state => state); // ✅ Añadir socket
   const { user } = auth;
   
   const [currentStep, setCurrentStep] = useState(1);
@@ -145,7 +145,7 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
     return null;
   };
   
-  // ✅ FUNCIÓN PRINCIPAL DE ENVÍO USANDO videoUpload
+  // ✅ FUNCIÓN PRINCIPAL DE ENVÍO CON SOCKET
   const handleSubmit = async () => {
     if (!validateStep(3)) return;
     
@@ -156,7 +156,7 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
     try {
       let videoUrl, videoId, thumbnail, videoDuration;
       
-      // 🔥 SUBIR VIDEO A CLOUDINARY USANDO videoUpload
+      // Subir video a Cloudinary usando videoUpload
       if (wizardData.videoSource === 'gallery' || wizardData.videoSource === 'camera') {
         if (!wizardData.videoFile) {
           throw new Error('No hay archivo de video');
@@ -165,7 +165,6 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
         console.log('📹 Subiendo video a Cloudinary usando videoUpload...');
         console.log('Archivo:', wizardData.videoFile.name, `${(wizardData.videoFile.size / 1024 / 1024).toFixed(2)} MB`);
         
-        // ✅ Usar la función videoUpload importada
         const result = await videoUpload(wizardData.videoFile, (progress) => {
           console.log(`📊 Progreso de subida: ${progress}%`);
           setUploadProgress(progress);
@@ -179,7 +178,6 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
         videoDuration = wizardData.videoDuration;
         
       } else if (wizardData.videoSource === 'link') {
-        // Video por link (YouTube/Vimeo)
         videoUrl = wizardData.videoUrl;
         videoId = extractVideoId(wizardData.videoUrl);
         thumbnail = wizardData.videoType === 'youtube' 
@@ -211,12 +209,12 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
         } : null
       };
       
-      console.log('📤 Enviando a API:', videoData);
+      console.log('📤 Enviando a API con socket:', videoData);
       
-      const result = await dispatch(createVideo(videoData, auth.token));
+      // ✅ Pasar auth y socket a la acción createVideo
+      const result = await dispatch(createVideo(videoData, auth.token, auth, socket));
       
       if (result?.success) {
-        // Limpiar preview local
         if (wizardData.videoPreview && wizardData.videoPreview.startsWith('blob:')) {
           URL.revokeObjectURL(wizardData.videoPreview);
         }
@@ -293,6 +291,7 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
               <StepVideoInfo 
                 wizardData={wizardData}
                 updateData={updateWizardData}
+                videoCategories={videoCategories}
               />
             )}
           </div>

@@ -48,7 +48,7 @@ export const getProductsPendientes = (token, page = 1, limit = 10, filters = {})
 };
 
 // 🔥 APROBAR PRODUCTO
-export const aprobarProducto = (id, token) => async (dispatch) => {
+export const aprobarProducto = (id, token, auth, socket) => async (dispatch) => {
   try {
     const res = await putDataAPI(`boutiques/products/aprobar/${id}`, {}, token);
     
@@ -57,20 +57,37 @@ export const aprobarProducto = (id, token) => async (dispatch) => {
       payload: { id }
     });
     
+    // ✅ Enviar notificación al dueño del producto
+    const product = res.data.product;
+    const msg = {
+      id: auth.user._id,
+      text: '✅ Votre produit a été approuvé par l\'administrateur',
+      recipients: [product.user?._id || product.boutique?.user?._id],
+      url: `/product/${product._id}`,
+      content: product.title,
+      image: product.images?.[0]?.url,
+      type: 'product'
+    };
+    
+    dispatch(createNotify({ msg, auth, socket }));
+    
     dispatch({
       type: GLOBALTYPES.ALERT,
       payload: { success: res.data.message }
     });
+    
+    return { success: true };
   } catch (err) {
     dispatch({
       type: GLOBALTYPES.ALERT,
       payload: { error: err.response?.data?.message || err.message }
     });
+    return { success: false, error: err.response?.data?.message };
   }
 };
 
 // 🔥 RECHAZAR PRODUCTO
-export const rechazarProducto = (id, token) => async (dispatch) => {
+export const rechazarProducto = (id, token, auth, socket) => async (dispatch) => {
   try {
     const res = await deleteDataAPI(`boutiques/products/rechazar/${id}`, token);
     
@@ -79,15 +96,32 @@ export const rechazarProducto = (id, token) => async (dispatch) => {
       payload: { id }
     });
     
+    // ✅ Enviar notificación al dueño del producto
+    const product = res.data.product;
+    const msg = {
+      id: auth.user._id,
+      text: '❌ Votre produit a été rejeté par l\'administrateur',
+      recipients: [product.user?._id || product.boutique?.user?._id],
+      url: `/product/${product._id}`,
+      content: product.title,
+      image: product.images?.[0]?.url,
+      type: 'product'
+    };
+    
+    dispatch(createNotify({ msg, auth, socket }));
+    
     dispatch({
       type: GLOBALTYPES.ALERT,
       payload: { success: res.data.message }
     });
+    
+    return { success: true };
   } catch (err) {
     dispatch({
       type: GLOBALTYPES.ALERT,
       payload: { error: err.response?.data?.message || err.message }
     });
+    return { success: false, error: err.response?.data?.message };
   }
 };
 

@@ -113,11 +113,23 @@ const VideosTable = ({ onLoadingChange, onPaginationUpdate }) => {
     }
   };
 
+  // ✅ Función para formatear duración (ahora muestra 0:00 si no hay datos)
   const formatDuration = (seconds) => {
-    if (!seconds) return 'N/A';
+    if (!seconds && seconds !== 0) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // ✅ Función para formatear fecha SIN MOMENT (usando JavaScript nativo)
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   };
 
   // ✅ Función para navegar al detalle del video
@@ -125,10 +137,6 @@ const VideosTable = ({ onLoadingChange, onPaginationUpdate }) => {
     console.log('🖱️ Navegando a video:', videoId);
     history.push(`/video/${videoId}`);
   };
-
-
-
-
 
   if (loading && videos.length === 0) {
     return (
@@ -153,7 +161,7 @@ const VideosTable = ({ onLoadingChange, onPaginationUpdate }) => {
             <div>
               <h5 className="mb-0 fw-bold">
                 <FaVideo className="me-2" style={{ color: '#EC4899' }} />
-                Vidéos en attente d'approbation
+                Vidéos en attente  
               </h5>
               <small className="text-muted">
                 Page {page} sur {totalPages} - Total: {total} vidéo(s)
@@ -245,27 +253,26 @@ const VideosTable = ({ onLoadingChange, onPaginationUpdate }) => {
                           onChange={() => handleSelectItem(video._id)}
                         />
                       </td>
-                     
-<td>
-  <div 
-    onClick={() => handleViewVideo(video._id)}
-    style={{ cursor: 'pointer' }}
-  >
-    {video.thumbnail ? (
-      <Image
-        src={video.thumbnail}
-        width="60"
-        height="40"
-        className="rounded"
-        style={{ objectFit: 'cover' }}
-      />
-    ) : (
-      <div className="bg-dark rounded d-flex align-items-center justify-content-center" style={{ width: '60px', height: '40px', cursor: 'pointer' }}>
-        <FaVideo className="text-white opacity-50" size={20} />
-      </div>
-    )}
-  </div>
-</td>
+                      <td>
+                        <div 
+                          onClick={() => handleViewVideo(video._id)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {video.thumbnail ? (
+                            <Image
+                              src={video.thumbnail}
+                              width="60"
+                              height="40"
+                              className="rounded"
+                              style={{ objectFit: 'cover' }}
+                            />
+                          ) : (
+                            <div className="bg-dark rounded d-flex align-items-center justify-content-center" style={{ width: '60px', height: '40px', cursor: 'pointer' }}>
+                              <FaVideo className="text-white opacity-50" size={20} />
+                            </div>
+                          )}
+                        </div>
+                      </td>
                       <td>
                         <div className="fw-medium">{video.title?.substring(0, 40)}</div>
                         <small className="text-muted">{video.videoType}</small>
@@ -291,8 +298,9 @@ const VideosTable = ({ onLoadingChange, onPaginationUpdate }) => {
                         <small>{video.views || 0} vues</small>
                       </td>
                       <td>
+                        {/* ✅ Usando la función formatDate sin moment */}
                         <small className="text-muted">
-                          {new Date(video.createdAt).toLocaleDateString()}
+                          {formatDate(video.createdAt)}
                         </small>
                       </td>
                       <td>

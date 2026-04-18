@@ -25,7 +25,7 @@ import { debounce } from 'lodash';
 
 // Recibimos props del AdminDashboard
 const RolesTab = ({ filters = {}, token: propToken }) => {
-  const { homeUsers, auth, alert, languageReducer } = useSelector(state => state);
+  const { homeUsers, auth, alert, languageReducer, socket } = useSelector(state => state);
   const dispatch = useDispatch();
   
   // Token prioritario: el que viene por props o el de Redux
@@ -182,16 +182,16 @@ const RolesTab = ({ filters = {}, token: propToken }) => {
     try {
       switch (selectedRole) {
         case 'user':
-          await dispatch(roleuserautenticado(user, { token: authToken }));
+          await dispatch(roleuserautenticado(user, auth, socket)); // ✅ Añadir socket
           break;
         case 'Super-utilisateur':
-          await dispatch(rolesuperuser(user, { token: authToken }));
+          await dispatch(rolesuperuser(user, auth, socket)); // ✅ Añadir socket
           break;
         case 'Moderateur':
-          await dispatch(rolemoderador(user, { token: authToken }));
+          await dispatch(rolemoderador(user, auth, socket)); // ✅ Añadir socket
           break;
         case 'admin':
-          await dispatch(roleadmin(user, { token: authToken }));
+          await dispatch(roleadmin(user, auth, socket)); // ✅ Añadir socket
           break;
         default:
           break;
