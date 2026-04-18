@@ -22,14 +22,54 @@ export const VIDEO_TYPES = {
   DELETE_COMMENT: 'DELETE_COMMENT',
   LIKE_COMMENT: 'LIKE_COMMENT',
   ADD_COMMENT_REPLY: 'ADD_COMMENT_REPLY',
-  CLEAR_COMMENTS: 'CLEAR_COMMENTS'
+  CLEAR_COMMENTS: 'CLEAR_COMMENTS',
+
+  MUSIC_LOADING: 'MUSIC_LOADING',
+  GET_MUSIC_LIBRARY: 'GET_MUSIC_LIBRARY',
+  MUSIC_ERROR: 'MUSIC_ERROR',
+
+
 };
 
 // ============================================
-// ACCIONES PRINCIPALES
+// ACCIONES DE MÚSICA
 // ============================================
 
-// ✅ Obtener videos con filtros (UNIFICADO - para CategoryPage)
+ 
+const getMusicLibrary = async (req, res) => {
+  try {
+    const { q = 'background', limit = 20 } = req.query;
+    const perPage = Math.min(parseInt(limit), 50);
+
+    const response = await axios.get(PIXABAY_API_URL, {
+      params: {
+        key: PIXABAY_API_KEY,
+        q: `${q} music`,
+        per_page: perPage,
+        editors_choice: true,
+        safesearch: true,
+      },
+    });
+
+    const hits = response.data.hits.map(video => ({
+      id: video.id,
+      title: video.tags.split(',')[0],
+      tags: video.tags,
+      user: video.user,
+      duration: video.duration,
+      audio: video.videos.tiny.url || video.videos.small.url || '',
+      thumbnail: video.previewURL,
+      genre: 'Pop',
+    })).filter(item => item.audio);
+
+    res.json({ success: true, hits });
+  } catch (error) {
+    console.error('Error fetching music:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudo cargar la música' });
+  }
+};
+
+ 
 export const getVideos = (categorySlug = null, subCategory = null, page = 1, limit = 12, sortBy = 'recent', searchTerm = null) => async (dispatch) => {
   try {
     dispatch({ type: VIDEO_TYPES.LOADING, payload: true });

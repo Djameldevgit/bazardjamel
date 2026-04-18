@@ -1,14 +1,15 @@
-// 📂 pages/admin/Posts.js - VERSIÓN CON BOTÓN INTEGRADO
+// pages/admin/Posts.js - Actualizado con pestaña Videos
 import React, { useEffect, useState } from 'react';
-import {   useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useLocation, useHistory } from 'react-router-dom';
 import { Container, Button, Alert } from 'react-bootstrap';
-import { FaBars, FaSync } from 'react-icons/fa';
+import { FaBars, FaSync, FaVideo } from 'react-icons/fa';
 
 import AdminSidebar from '../../components/adminitration/adminApove/AdminSidebar';
 import PostsTable from '../../components/adminitration/adminApove/PostsTable';
 import BoutiquesTable from '../../components/adminitration/adminApove/BoutiquesTable';
 import ProductsTable from '../../components/adminitration/adminApove/ProductsTable';
+import VideosTable from '../../components/adminitration/adminApove/VideosTable';
  
 const Posts = () => {
   const location = useLocation();
@@ -25,14 +26,15 @@ const Posts = () => {
   const [pagination, setPagination] = useState({
     posts: { total: 0, page: 1, totalPages: 1 },
     boutiques: { total: 0, page: 1, totalPages: 1 },
-    productos: { total: 0, page: 1, totalPages: 1 }
+    productos: { total: 0, page: 1, totalPages: 1 },
+    videos: { total: 0, page: 1, totalPages: 1 }
   });
   
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
-      setSidebarOpen(false);
+      if (!mobile) setSidebarOpen(false);
     };
     
     handleResize();
@@ -46,7 +48,7 @@ const Posts = () => {
     const category = params.get('category');
     const subcategory = params.get('subcategory');
     
-    if (tab && ['posts', 'boutiques', 'products'].includes(tab)) {
+    if (tab && ['posts', 'boutiques', 'products', 'videos'].includes(tab)) {
       setActiveTab(tab);
     }
     
@@ -71,14 +73,14 @@ const Posts = () => {
     setActiveTab(tab);
     setSelectedCategory(category);
     updateUrl(tab, category?.slug, category?.subcategory);
-    setTimeout(() => setSidebarOpen(false), 300);
+    if (isMobile) setTimeout(() => setSidebarOpen(false), 300);
   };
   
   const handleSelectTab = (tab) => {
     setActiveTab(tab);
     setSelectedCategory(null);
     updateUrl(tab, null, null);
-    setTimeout(() => setSidebarOpen(false), 300);
+    if (isMobile) setTimeout(() => setSidebarOpen(false), 300);
   };
   
   const handleRefresh = () => {
@@ -129,7 +131,6 @@ const Posts = () => {
       )}
       
       <div className="adm-main-content">
-        {/* Header con título y refresh */}
         <div className="adm-content-header">
           <div className="adm-header-left">
             <div>
@@ -137,9 +138,10 @@ const Posts = () => {
                 {activeTab === 'posts' && '📋 Gestion des Posts'}
                 {activeTab === 'boutiques' && '🏪 Gestion des Boutiques'}
                 {activeTab === 'products' && '📦 Gestion des Produits'}
+                {activeTab === 'videos' && '🎬 Gestion des Vidéos'}
               </h4>
               <p className="adm-subtitle">
-                {selectedCategory ? `Filtré par: ${selectedCategory.name}` : 'Tous les éléments en attente de validation'}
+                {selectedCategory ? `Filtré par: ${selectedCategory.name}` : 'Éléments en attente de validation'}
               </p>
             </div>
           </div>
@@ -149,7 +151,7 @@ const Posts = () => {
           </button>
         </div>
         
-        {/* Tabs con botón de menú integrado a la derecha */}
+        {/* 🔥 Tabs con iconos - estilo móvil horizontal */}
         <div className="adm-tabs-container-with-menu">
           <div className="adm-tabs-wrapper">
             <button
@@ -182,9 +184,18 @@ const Posts = () => {
                 <span className="adm-tab-count">{pagination.productos.total}</span>
               )}
             </button>
+            <button
+              className={`adm-tab ${activeTab === 'videos' ? 'adm-tab-active' : ''}`}
+              onClick={() => handleSelectTab('videos')}
+            >
+              <span>🎬</span>
+              <span>Vidéos</span>
+              {pagination.videos.total > 0 && (
+                <span className="adm-tab-count">{pagination.videos.total}</span>
+              )}
+            </button>
           </div>
           
-          {/* 🔥 BOTÓN DE MENÚ INTEGRADO A LA DERECHA */}
           <button 
             className="adm-menu-integrated-btn"
             onClick={() => setSidebarOpen(true)}
@@ -219,6 +230,14 @@ const Posts = () => {
               selectedCategory={selectedCategory}
               onLoadingChange={setLoading}
               onPaginationUpdate={(data) => handlePaginationUpdate('productos', data)}
+            />
+          )}
+          
+          {activeTab === 'videos' && (
+            <VideosTable
+              key={`videos-${refreshKey}`}
+              onLoadingChange={setLoading}
+              onPaginationUpdate={(data) => handlePaginationUpdate('videos', data)}
             />
           )}
         </div>

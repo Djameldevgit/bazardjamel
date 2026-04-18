@@ -1,64 +1,242 @@
-// controllers/videoCtrl.js - Versión completa
-
-const Video = require('../models/videoModel');
+// controllers/videoCtrl.js
+const Video = require('../models/VideoModel');
 const User = require('../models/userModel');
 const mongoose = require('mongoose');
+const cloudinary = require('cloudinary').v2;
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
-// ============================================
-// FUNCIONES PÚBLICAS
-// ============================================
+const axios = require('axios');
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
-// ✅ Obtener video por ID (con auth opcional)
-// controllers/videoCtrl.js - Corregir getVideoById
+// Configuración de Pixabay
+const PIXABAY_API_KEY = process.env.PIXABAY_API_KEY;
+const PIXABAY_VIDEO_API_URL = 'https://pixabay.com/api/videos/';
 
-// ✅ Obtener video por ID (con auth opcional)
-// controllers/videoCtrl.js - Versión con validación para Node.js antiguo
+// Música de respaldo (fallback)
+const MOCK_MUSIC = [
+  { id: 1, title: 'Électro Algérien', user: 'DJ Mesta', duration: 210, audio: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', tags: 'electro', genre: 'Électro' },
+  { id: 2, title: 'Chaabi Moderne', user: 'Cheb Momo', duration: 252, audio: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', tags: 'chaabi', genre: 'Chaabi' },
+  { id: 3, title: 'Rap Oranais', user: 'MC Blida', duration: 210, audio: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', tags: 'rap', genre: 'Rap' },
+  { id: 4, title: 'Ambiance Café', user: 'Groupe Tizi', duration: 300, audio: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', tags: 'acoustique', genre: 'Acoustique' },
+  { id: 5, title: 'Sahara Sunset', user: 'Karim DZ', duration: 285, audio: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3', tags: 'ambient', genre: 'Ambient' },
+  { id: 6, title: 'Raï Moderne', user: 'Cheb Bilal', duration: 235, audio: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3', tags: 'raï', genre: 'Raï' },
+];
 
-// controllers/videoCtrl.js - getVideoById mejorado
+const getMusicLibrary = async (req, res) => {
+  const q = req.query.q || 'background';
+  const limit = parseInt(req.query.limit) || 20;
+  const perPage = Math.min(limit, 50);
 
- 
+  try {
+    if (!PIXABAY_API_KEY) {
+      console.warn('⚠️ Sin API key, usando música mock');
+      const filtered = MOCK_MUSIC.filter(track => 
+        track.title.toLowerCase().includes(q.toLowerCase()) || 
+        track.tags.toLowerCase().includes(q.toLowerCase())
+      ).slice(0, perPage);
+      return res.json({ success: true, hits: filtered });
+    }
 
-// ✅ Obtener videos del usuario (con paginación)
+    const response = await axios.get(PIXABAY_VIDEO_API_URL, {
+      params: {
+        key: PIXABAY_API_KEY,
+        q: q,
+        per_page: perPage,
+        editors_choice: true,
+        video_type: 'music',
+      },
+    });
+
+    const hits = response.data.hits.map(video => ({
+      id: video.id,
+      title: video.tags ? video.tags.split(',')[0] : 'Son títre',
+      tags: video.tags || '',
+      user: video.user || 'Artiste Inconue',
+      duration: video.duration || 0,
+      audio: video.videos.tiny.url || video.videos.small.url || '',
+      thumbnail: video.previewURL || '',
+      genre: 'Pop',
+    })).filter(item => item.audio);
+
+    res.json({ success: true, hits });
+  } catch (error) {
+    console.error('Error en API música Pixabay:', error.message);
+    const filtered = MOCK_MUSIC.filter(track =>
+      track.title.toLowerCase().includes(q.toLowerCase())
+    ).slice(0, perPage);
+    res.json({ success: true, hits: filtered, warning: 'Usando música de respaldo' });
+  }
+};
+
+// ========== FUNCIONES PÚBLICAS ==========
+
+// ✅ Obtener videos por categoría (HOME - slider)
+const getVideosByCategory = async (req, res) => {
+  try {
+    const { categorySlug } = req.params;
+    const { page = 1, limit = 12, sortBy = 'recent' } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // 🔥 CORREGIDO: usar 'pendiente' en lugar de 'status'
+    let filter = { 
+      pendiente: false,
+      isActive: true 
+    };
+    
+    if (categorySlug && categorySlug !== 'videos') {
+      filter.categorySlug = categorySlug;
+    }
+
+    let sortOptions = {};
+    switch(sortBy) {
+      case 'popular': sortOptions = { views: -1 }; break;
+      case 'liked': sortOptions = { likesCount: -1 }; break;
+      default: sortOptions = { createdAt: -1 };
+    }
+
+    const pipeline = [
+      { $match: filter },
+      { $addFields: { likesCount: { $size: '$likes' } } },
+      { $sort: sortOptions },
+      { $skip: skip },
+      { $limit: parseInt(limit) },
+      { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
+      { $unwind: '$user' },
+      { $project: { 'user.password': 0, 'user.email': 0 } }
+    ];
+
+    const [videos, total] = await Promise.all([
+      Video.aggregate(pipeline),
+      Video.countDocuments(filter)
+    ]);
+
+    const subCategories = await Video.aggregate([
+      { $match: { pendiente: false, isActive: true } },
+      { $group: { _id: { slug: '$categorySlug', name: '$category' }, count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 20 }
+    ]);
+
+    const children = subCategories.map(cat => ({
+      slug: cat._id.slug,
+      name: cat._id.name,
+      count: cat.count,
+      level: 2
+    }));
+
+    res.json({
+      success: true,
+      videos,
+      total,
+      page: parseInt(page),
+      totalPages: Math.ceil(total / parseInt(limit)),
+      limit: parseInt(limit),
+      hasMore: skip + videos.length < total,
+      children
+    });
+  } catch (error) {
+    console.error('Error getVideosByCategory:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ Obtener video por ID
+const getVideoById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: 'ID inválido' });
+    }
+
+    const video = await Video.findById(id)
+      .populate('user', 'username avatar isPro role')
+      .populate('comments.user', 'username avatar isPro')
+      .populate('comments.replies.user', 'username avatar isPro')
+      .lean();
+
+    if (!video) {
+      return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    }
+
+    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'moderator');
+    if (video.pendiente === true && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'Video en attente d\'approbation' });
+    }
+
+    if (!video.pendiente || isAdmin) {
+      Video.findByIdAndUpdate(id, { $inc: { views: 1 } }).exec();
+      if (req.user && req.user._id) {
+        Video.findByIdAndUpdate(id, { $addToSet: { uniqueViews: req.user._id } }).exec();
+      }
+    }
+
+    let liked = false;
+    if (req.user && req.user._id && video.likes) {
+      const userIdStr = req.user._id.toString();
+      liked = video.likes.some(likeId => likeId && likeId.toString() === userIdStr);
+    }
+
+    const videoData = { ...video, liked };
+    res.json({ success: true, video: videoData });
+  } catch (error) {
+    console.error('Error getVideoById:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ Obtener videos del usuario
 const getUserVideos = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { page = 1, limit = 12, status = 'approved' } = req.query;
+    const { page = 1, limit = 12 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
     
-    // Construir filtro
-    const filter = { user: userId };
-    
-    // Si es el mismo usuario o admin, puede ver todos los estados
+    const match = { user: new mongoose.Types.ObjectId(userId) };
     const isOwnerOrAdmin = req.user && (req.user._id.toString() === userId || req.user.role === 'admin');
     
     if (!isOwnerOrAdmin) {
-      filter.status = 'approved';
-      filter.isActive = true;
-    } else if (status !== 'all') {
-      filter.status = status;
+      match.pendiente = false;
+      match.isActive = true;
     }
-    
-    const videos = await Video.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit))
-      .populate('user', 'username avatar email isPro')
-      .populate('boutique', 'nom_boutique slug')
-      .populate('product', 'title images price');
-    
-    const total = await Video.countDocuments(filter);
-    
-    // Agregar estadísticas adicionales para el owner
+
+    const [videos, total] = await Promise.all([
+      Video.aggregate([
+        { $match: match },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: parseInt(limit) },
+        { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
+        { $unwind: '$user' },
+        { $lookup: { from: 'boutiques', localField: 'boutique', foreignField: '_id', as: 'boutique' } },
+        { $unwind: { path: '$boutique', preserveNullAndEmptyArrays: true } },
+        { $lookup: { from: 'posts', localField: 'product', foreignField: '_id', as: 'product' } },
+        { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
+        { $project: { 'user.password': 0, 'user.email': 0 } }
+      ]),
+      Video.countDocuments(match)
+    ]);
+
     let stats = null;
     if (isOwnerOrAdmin) {
-      stats = {
-        totalViews: videos.reduce((sum, v) => sum + v.views, 0),
-        totalLikes: videos.reduce((sum, v) => sum + v.likes.length, 0),
-        totalComments: videos.reduce((sum, v) => sum + v.comments.length, 0),
-        totalShares: videos.reduce((sum, v) => sum + (v.shares.length || 0), 0)
-      };
+      const statsAgg = await Video.aggregate([
+        { $match: match },
+        { $group: {
+          _id: null,
+          totalViews: { $sum: '$views' },
+          totalLikes: { $sum: { $size: '$likes' } },
+          totalComments: { $sum: { $size: '$comments' } },
+          totalShares: { $sum: { $size: { $ifNull: ['$shares', []] } } }
+        }}
+      ]);
+      stats = statsAgg[0] || null;
     }
-    
+
     res.json({
       success: true,
       videos,
@@ -74,17 +252,95 @@ const getUserVideos = async (req, res) => {
   }
 };
 
-// ✅ Obtener videos por categoría
- 
+// ✅ Filtrar videos (HOME y búsquedas)
+const filterVideos = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
+    const { category, subCategory, searchTerm, sortBy = 'recent' } = req.query;
+
+    let match = { pendiente: false, isActive: true };
+    
+    if (subCategory && subCategory !== 'undefined' && subCategory !== 'videos') {
+      match.categorySlug = subCategory;
+    } else if (category && category !== 'undefined' && category !== 'videos') {
+      match.categorySlug = category;
+    }
+    
+    if (searchTerm && searchTerm.trim() !== '') {
+      match.$or = [
+        { title: { $regex: searchTerm, $options: 'i' } },
+        { description: { $regex: searchTerm, $options: 'i' } }
+      ];
+    }
+    
+    let sort = {};
+    switch(sortBy) {
+      case 'popular': sort = { views: -1 }; break;
+      case 'liked': sort = { likesCount: -1 }; break;
+      default: sort = { createdAt: -1 };
+    }
+
+    const pipeline = [
+      { $match: match },
+      { $addFields: { likesCount: { $size: '$likes' }, commentsCount: { $size: '$comments' } } },
+      { $sort: sort },
+      { $skip: skip },
+      { $limit: limit },
+      { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
+      { $unwind: '$user' },
+      { $project: { 'user.password': 0, 'user.email': 0 } }
+    ];
+
+    const [videos, total] = await Promise.all([
+      Video.aggregate(pipeline),
+      Video.countDocuments(match)
+    ]);
+
+    const subCategories = await Video.aggregate([
+      { $match: { pendiente: false, isActive: true } },
+      { $group: { _id: { slug: '$categorySlug', name: '$category' }, count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 20 }
+    ]);
+
+    const children = subCategories.map(cat => ({
+      slug: cat._id.slug,
+      name: cat._id.name,
+      count: cat.count,
+      level: 2
+    }));
+
+    res.json({
+      success: true,
+      videos,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      limit,
+      hasMore: skip + videos.length < total,
+      children,
+      appliedFilters: { category, subCategory, searchTerm, sortBy }
+    });
+  } catch (error) {
+    console.error('Error filterVideos:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // ✅ Videos destacados
 const getFeaturedVideos = async (req, res) => {
   try {
     const { limit = 10 } = req.query;
-    const videos = await Video.find({ isFeatured: true, status: 'approved', isActive: true })
+    const videos = await Video.find({ 
+      isFeatured: true, 
+      pendiente: false, 
+      isActive: true 
+    })
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
-      .populate('user', 'username avatar');
-
+      .populate('user', 'username avatar isPro');
     res.json({ success: true, videos });
   } catch (error) {
     console.error('Error getFeaturedVideos:', error);
@@ -92,18 +348,60 @@ const getFeaturedVideos = async (req, res) => {
   }
 };
 
-// ✅ Videos populares (más vistos)
+// ✅ Videos populares
 const getPopularVideos = async (req, res) => {
   try {
     const { limit = 10 } = req.query;
-    const videos = await Video.find({ status: 'approved', isActive: true })
-      .sort({ views: -1 })
-      .limit(parseInt(limit))
-      .populate('user', 'username avatar');
-
+    const videos = await Video.aggregate([
+      { $match: { pendiente: false, isActive: true } },
+      { $addFields: { likesCount: { $size: '$likes' } } },
+      { $sort: { views: -1, likesCount: -1, createdAt: -1 } },
+      { $limit: parseInt(limit) },
+      { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
+      { $unwind: '$user' },
+      { $project: { 'user.password': 0, 'user.email': 0 } }
+    ]);
     res.json({ success: true, videos });
   } catch (error) {
     console.error('Error getPopularVideos:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ Videos tendencia
+const getTrendingVideos = async (req, res) => {
+  try {
+    const { limit = 10, timeRange = 'week' } = req.query;
+    let dateFilter = {};
+    const now = new Date();
+    if (timeRange === 'day') dateFilter = { createdAt: { $gte: new Date(now.setDate(now.getDate() - 1)) } };
+    else if (timeRange === 'week') dateFilter = { createdAt: { $gte: new Date(now.setDate(now.getDate() - 7)) } };
+    else if (timeRange === 'month') dateFilter = { createdAt: { $gte: new Date(now.setMonth(now.getMonth() - 1)) } };
+
+    const videos = await Video.aggregate([
+      { $match: { pendiente: false, isActive: true, ...dateFilter } },
+      { $addFields: {
+          likesCount: { $size: '$likes' },
+          commentsCount: { $size: '$comments' },
+          sharesCount: { $size: { $ifNull: ['$shares', []] } }
+      } },
+      { $addFields: {
+          totalEngagement: { $add: [
+            { $multiply: ['$likesCount', 2] },
+            { $multiply: ['$commentsCount', 3] },
+            { $multiply: ['$sharesCount', 4] }
+          ] }
+      } },
+      { $addFields: { engagementScore: { $min: [ { $multiply: [ { $divide: ['$totalEngagement', { $ifNull: ['$views', 1] }] }, 100 ] }, 100 ] } } },
+      { $sort: { engagementScore: -1, views: -1 } },
+      { $limit: parseInt(limit) },
+      { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
+      { $unwind: '$user' },
+      { $project: { 'user.password': 0, 'user.email': 0 } }
+    ]);
+    res.json({ success: true, videos });
+  } catch (error) {
+    console.error('Error getTrendingVideos:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -113,22 +411,29 @@ const getRelatedVideos = async (req, res) => {
   try {
     const { id } = req.params;
     const { limit = 6 } = req.query;
-    
+
     const currentVideo = await Video.findById(id);
     if (!currentVideo) {
       return res.status(404).json({ success: false, message: 'Video no encontrado' });
     }
-    
-    const relatedVideos = await Video.find({
-      _id: { $ne: id },
-      categorySlug: currentVideo.categorySlug,
-      status: 'approved',
-      isActive: true
-    })
-      .sort({ views: -1, createdAt: -1 })
-      .limit(parseInt(limit))
-      .populate('user', 'username avatar');
-    
+
+    const relatedVideos = await Video.aggregate([
+      {
+        $match: {
+          _id: { $ne: currentVideo._id },
+          categorySlug: currentVideo.categorySlug,
+          pendiente: false,
+          isActive: true
+        }
+      },
+      { $addFields: { likesCount: { $size: '$likes' } } },
+      { $sort: { views: -1, likesCount: -1, createdAt: -1 } },
+      { $limit: parseInt(limit) },
+      { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
+      { $unwind: '$user' },
+      { $project: { 'user.password': 0, 'user.email': 0 } }
+    ]);
+
     res.json({ success: true, videos: relatedVideos });
   } catch (error) {
     console.error('Error getRelatedVideos:', error);
@@ -136,86 +441,39 @@ const getRelatedVideos = async (req, res) => {
   }
 };
 
-// ✅ Videos tendencia (por engagement)
-const getTrendingVideos = async (req, res) => {
-  try {
-    const { limit = 10, timeRange = 'week' } = req.query;
-    
-    let dateFilter = {};
-    const now = new Date();
-    
-    switch(timeRange) {
-      case 'day':
-        dateFilter = { createdAt: { $gte: new Date(now.setDate(now.getDate() - 1)) } };
-        break;
-      case 'week':
-        dateFilter = { createdAt: { $gte: new Date(now.setDate(now.getDate() - 7)) } };
-        break;
-      case 'month':
-        dateFilter = { createdAt: { $gte: new Date(now.setMonth(now.getMonth() - 1)) } };
-        break;
-    }
-    
-    const videos = await Video.find({
-      status: 'approved',
-      isActive: true,
-      ...dateFilter
-    })
-    .sort({ engagementScore: -1, views: -1 })
-    .limit(parseInt(limit))
-    .populate('user', 'username avatar');
-    
-    res.json({ success: true, videos });
-  } catch (error) {
-    console.error('Error getTrendingVideos:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// ============================================
-// FUNCIONES PROTEGIDAS (requieren auth)
-// ============================================
-
 // ✅ Crear video
 const createVideo = async (req, res) => {
   try {
-    const { title, description, shortDescription, videoUrl, videoType, videoId, thumbnail, category, categorySlug, boutiqueId, productId, tags } = req.body;
+    const { title, description, shortDescription, videoUrl, videoType, videoId, thumbnail, category, categorySlug, boutiqueId, productId, tags, duration } = req.body;
     const userId = req.user._id;
 
-    // Verificar si el usuario es Pro
     const user = await User.findById(userId);
-    if (!user.isPro && user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Se requiere cuenta Pro para crear videos'
-      });
+    const isProValid = user.isPro && (!user.proExpiryDate || new Date(user.proExpiryDate) > new Date());
+    const isAdmin = user.role === 'admin';
+    
+    if (!isProValid && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'Se requiere cuenta Pro activa para crear videos' });
+    }
+
+    const MAX_DURATION_FREE = 15;
+    const MAX_DURATION_PRO = 60;
+    const maxAllowed = (isProValid || isAdmin) ? MAX_DURATION_PRO : MAX_DURATION_FREE;
+    
+    if (videoType === 'local' && duration && duration > maxAllowed) {
+      return res.status(400).json({ success: false, message: `La duración máxima permitida es ${maxAllowed} segundos` });
     }
 
     const video = new Video({
-      title,
-      description,
-      shortDescription: shortDescription || description.substring(0, 300),
-      videoUrl,
-      videoType,
-      videoId,
-      thumbnail,
-      user: userId,
-      boutique: boutiqueId || null,
-      product: productId || null,
-      category,
-      categorySlug,
-      tags: tags || [],
-      status: user.role === 'admin' ? 'approved' : 'pending'
+      title, description, shortDescription: shortDescription || description.substring(0, 300),
+      videoUrl, videoType, videoId, thumbnail,
+      user: userId, boutique: boutiqueId || null, product: productId || null,
+      category, categorySlug, tags: tags || [],
+      duration: duration || 0,
+      pendiente: isAdmin ? false : true
     });
 
     await video.save();
-
-    res.status(201).json({
-      success: true,
-      message: 'Video creado correctamente',
-      video
-    });
-
+    res.status(201).json({ success: true, message: 'Video creado correctamente', video });
   } catch (error) {
     console.error('Error createVideo:', error);
     res.status(500).json({ success: false, message: error.message });
@@ -227,15 +485,10 @@ const updateVideo = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, shortDescription, thumbnail, tags } = req.body;
-    const userId = req.user._id;
-
     const video = await Video.findById(id);
-    if (!video) {
-      return res.status(404).json({ success: false, message: 'Video no encontrado' });
-    }
-
-    // Verificar propietario
-    if (video.user.toString() !== userId.toString() && req.user.role !== 'admin') {
+    if (!video) return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    
+    if (video.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'No autorizado' });
     }
 
@@ -244,9 +497,7 @@ const updateVideo = async (req, res) => {
     video.shortDescription = shortDescription || description.substring(0, 300) || video.shortDescription;
     video.thumbnail = thumbnail || video.thumbnail;
     video.tags = tags || video.tags;
-
     await video.save();
-
     res.json({ success: true, message: 'Video actualizado', video });
   } catch (error) {
     console.error('Error updateVideo:', error);
@@ -258,125 +509,55 @@ const updateVideo = async (req, res) => {
 const deleteVideo = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
-    const userRole = req.user.role;
-
-    console.log('🗑️ Eliminando video:', id);
-    console.log('👤 Usuario:', userId, 'Rol:', userRole);
-
-    // Buscar el video
     const video = await Video.findById(id);
-    if (!video) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Video no encontrado' 
-      });
-    }
+    if (!video) return res.status(404).json({ success: false, message: 'Video no encontrado' });
 
-    // Verificar propietario o admin
-    const isOwner = video.user.toString() === userId.toString();
-    const isAdmin = userRole === 'admin' || userRole === 'moderator';
-    
+    const isOwner = video.user.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'moderator';
     if (!isOwner && !isAdmin) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'No autorizado para eliminar este video' 
-      });
+      return res.status(403).json({ success: false, message: 'No autorizado' });
     }
 
-    // Array para almacenar errores de eliminación
     const deletionErrors = [];
 
-    // ✅ Eliminar recursos de Cloudinary según el tipo de video
     if (video.videoType === 'local' && video.videoId) {
       try {
-        console.log('☁️ Eliminando video de Cloudinary:', video.videoId);
-        
-        // Eliminar el video
-        const videoResult = await cloudinary.uploader.destroy(video.videoId, {
-          resource_type: 'video'
-        });
-        
-        console.log('📹 Resultado eliminación video:', videoResult);
-        
-        if (videoResult.result !== 'ok' && videoResult.result !== 'not found') {
-          deletionErrors.push(`Video: ${videoResult.result}`);
-        }
-        
+        const result = await cloudinary.uploader.destroy(video.videoId, { resource_type: 'video' });
+        if (result.result !== 'ok' && result.result !== 'not found') deletionErrors.push(`Video: ${result.result}`);
       } catch (err) {
-        console.error('❌ Error eliminando video de Cloudinary:', err.message);
         deletionErrors.push(`Video: ${err.message}`);
       }
     }
 
-    // ✅ Eliminar miniatura si existe y es de Cloudinary
     if (video.thumbnail && video.thumbnail.includes('cloudinary.com')) {
       try {
-        // Extraer public_id de la URL
-        let thumbnailPublicId = video.thumbnail.split('/').pop().split('.')[0];
-        // Si la URL tiene una carpeta, mantener la ruta completa
-        const cloudinaryUrlPattern = /\/upload\/(?:v\d+\/)?(.+?)\.\w+$/;
-        const match = video.thumbnail.match(cloudinaryUrlPattern);
-        if (match) {
-          thumbnailPublicId = match[1];
-        }
-        
-        console.log('☁️ Eliminando miniatura de Cloudinary:', thumbnailPublicId);
-        
-        const thumbResult = await cloudinary.uploader.destroy(thumbnailPublicId, {
-          resource_type: 'image'
-        });
-        
-        console.log('🖼️ Resultado eliminación miniatura:', thumbResult);
-        
-        if (thumbResult.result !== 'ok' && thumbResult.result !== 'not found') {
-          deletionErrors.push(`Miniatura: ${thumbResult.result}`);
-        }
-        
+        let publicId = video.thumbnail.split('/').pop().split('.')[0];
+        const match = video.thumbnail.match(/\/upload\/(?:v\d+\/)?(.+?)\.\w+$/);
+        if (match) publicId = match[1];
+        const result = await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+        if (result.result !== 'ok' && result.result !== 'not found') deletionErrors.push(`Miniatura: ${result.result}`);
       } catch (err) {
-        console.error('❌ Error eliminando miniatura de Cloudinary:', err.message);
         deletionErrors.push(`Miniatura: ${err.message}`);
       }
     }
 
-    // ✅ Eliminar de la base de datos
     await video.deleteOne();
-    console.log('✅ Video eliminado de la base de datos');
-
-    // Respuesta con advertencias si hubo errores en Cloudinary
-    const message = deletionErrors.length > 0 
-      ? `Video eliminado de la base de datos, pero hubo problemas eliminando recursos de Cloudinary: ${deletionErrors.join(', ')}`
-      : 'Video eliminado correctamente';
-
-    res.json({ 
-      success: true, 
-      message: message,
-      warnings: deletionErrors.length > 0 ? deletionErrors : undefined
-    });
-    
+    const message = deletionErrors.length ? `Video eliminado de BD, pero problemas en Cloudinary: ${deletionErrors.join(', ')}` : 'Video eliminado correctamente';
+    res.json({ success: true, message, warnings: deletionErrors.length ? deletionErrors : undefined });
   } catch (error) {
-    console.error('❌ Error deleteVideo:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    });
+    console.error('Error deleteVideo:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// ✅ Dar/quitar like a video
+// ✅ Like a video
 const toggleLikeVideo = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
-
     const video = await Video.findById(id);
-    if (!video) {
-      return res.status(404).json({ success: false, message: 'Video no encontrado' });
-    }
-
-    await video.toggleLike(userId);
-
-    res.json({ success: true, likes: video.likes.length, liked: video.likes.includes(userId) });
+    if (!video) return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    const { liked, likesCount } = await video.toggleLike(req.user._id);
+    res.json({ success: true, likes: likesCount, liked });
   } catch (error) {
     console.error('Error toggleLikeVideo:', error);
     res.status(500).json({ success: false, message: error.message });
@@ -387,26 +568,10 @@ const toggleLikeVideo = async (req, res) => {
 const shareVideo = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
-    
     const video = await Video.findById(id);
-    if (!video) {
-      return res.status(404).json({ success: false, message: 'Video no encontrado' });
-    }
-    
-    if (!video.shares) video.shares = [];
-    
-    if (!video.shares.includes(userId)) {
-      video.shares.push(userId);
-      await video.updateEngagementScore();
-      await video.save();
-    }
-    
-    res.json({ 
-      success: true, 
-      shares: video.shares.length,
-      shared: true 
-    });
+    if (!video) return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    const { shared, sharesCount } = await video.share(req.user._id);
+    res.json({ success: true, shares: sharesCount, shared });
   } catch (error) {
     console.error('Error shareVideo:', error);
     res.status(500).json({ success: false, message: error.message });
@@ -418,15 +583,9 @@ const trackWatchTime = async (req, res) => {
   try {
     const { id } = req.params;
     const { watchTime } = req.body;
-    const userId = req.user._id;
-    
     const video = await Video.findById(id);
-    if (!video) {
-      return res.status(404).json({ success: false, message: 'Video no encontrado' });
-    }
-    
-    await video.updateWatchTime(userId, watchTime);
-    
+    if (!video) return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    await video.updateWatchTime(req.user._id, watchTime);
     res.json({ success: true, averageWatchTime: video.averageWatchTime });
   } catch (error) {
     console.error('Error trackWatchTime:', error);
@@ -435,14 +594,123 @@ const trackWatchTime = async (req, res) => {
 };
 
 // ✅ Agregar comentario
- 
+const addComment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text } = req.body;
+    const video = await Video.findById(id);
+    if (!video) return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    const comment = await video.addComment(req.user._id, text);
+    const user = await User.findById(req.user._id).select('username avatar isPro');
+    const commentResponse = {
+      _id: comment._id,
+      text: comment.text,
+      createdAt: comment.createdAt,
+      likes: [],
+      replies: [],
+      user: { _id: user._id, username: user.username, avatar: user.avatar, isPro: user.isPro }
+    };
+    res.json({ success: true, comment: commentResponse });
+  } catch (error) {
+    console.error('Error addComment:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ Like a comentario
+const likeComment = async (req, res) => {
+  try {
+    const { id, commentId } = req.params;
+    const video = await Video.findById(id);
+    if (!video) return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    const result = await video.toggleCommentLike(commentId, req.user._id);
+    if (!result) return res.status(404).json({ success: false, message: 'Comentario no encontrado' });
+    res.json({ success: true, likes: result.likesCount, liked: result.liked });
+  } catch (error) {
+    console.error('Error likeComment:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ Responder comentario
+const addCommentReply = async (req, res) => {
+  try {
+    const { id, commentId } = req.params;
+    const { text } = req.body;
+    const video = await Video.findById(id);
+    if (!video) return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    const reply = await video.addCommentReply(commentId, req.user._id, text);
+    if (!reply) return res.status(404).json({ success: false, message: 'Comentario no encontrado' });
+    const user = await User.findById(req.user._id).select('username avatar isPro');
+    const replyResponse = {
+      _id: reply._id,
+      text: reply.text,
+      createdAt: reply.createdAt,
+      user: { _id: user._id, username: user.username, avatar: user.avatar, isPro: user.isPro }
+    };
+    res.json({ success: true, reply: replyResponse });
+  } catch (error) {
+    console.error('Error addCommentReply:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ Eliminar comentario
+const deleteCommentCtrl = async (req, res) => {
+  try {
+    const { id, commentId } = req.params;
+    const video = await Video.findById(id);
+    if (!video) return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    const deleted = await video.deleteComment(commentId, req.user._id, req.user.role);
+    if (!deleted) return res.status(403).json({ success: false, message: 'No autorizado o comentario no encontrado' });
+    res.json({ success: true, message: 'Comentario eliminado' });
+  } catch (error) {
+    console.error('Error deleteCommentCtrl:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ Obtener comentarios paginados
+const getVideoComments = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { page = 1, limit = 20 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const video = await Video.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(id) } },
+      { $project: { comments: 1, totalComments: { $size: '$comments' } } },
+      { $unwind: '$comments' },
+      { $sort: { 'comments.createdAt': -1 } },
+      { $skip: skip },
+      { $limit: parseInt(limit) },
+      { $lookup: { from: 'users', localField: 'comments.user', foreignField: '_id', as: 'comments.user' } },
+      { $unwind: '$comments.user' },
+      { $project: { 'comments.user.password': 0, 'comments.user.email': 0 } }
+    ]);
+    
+    const total = video.length ? video[0].totalComments || 0 : 0;
+    const comments = video.map(v => v.comments);
+    
+    res.json({
+      success: true,
+      comments,
+      total,
+      hasMore: skip + comments.length < total,
+      page: parseInt(page)
+    });
+  } catch (error) {
+    console.error('Error getVideoComments:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // ✅ Estadísticas del usuario
 const getUserVideoStats = async (req, res) => {
   try {
     const userId = req.user._id;
-    
     const stats = await Video.aggregate([
-      { $match: { user: new mongoose.Types.ObjectId(userId), status: 'approved' } },
+      { $match: { user: new mongoose.Types.ObjectId(userId), pendiente: false } },
       { $group: {
         _id: null,
         totalVideos: { $sum: 1 },
@@ -455,28 +723,15 @@ const getUserVideoStats = async (req, res) => {
       }}
     ]);
     
-    // Videos por categoría
     const videosByCategory = await Video.aggregate([
-      { $match: { user: new mongoose.Types.ObjectId(userId), status: 'approved' } },
-      { $group: {
-        _id: '$category',
-        count: { $sum: 1 },
-        totalViews: { $sum: '$views' }
-      }},
+      { $match: { user: new mongoose.Types.ObjectId(userId), pendiente: false } },
+      { $group: { _id: '$category', count: { $sum: 1 }, totalViews: { $sum: '$views' } } },
       { $sort: { count: -1 } }
     ]);
     
     res.json({
       success: true,
-      stats: stats[0] || {
-        totalVideos: 0,
-        totalViews: 0,
-        totalLikes: 0,
-        totalComments: 0,
-        totalShares: 0,
-        avgEngagement: 0,
-        totalWatchTime: 0
-      },
+      stats: stats[0] || { totalVideos: 0, totalViews: 0, totalLikes: 0, totalComments: 0, totalShares: 0, avgEngagement: 0, totalWatchTime: 0 },
       videosByCategory
     });
   } catch (error) {
@@ -485,24 +740,22 @@ const getUserVideoStats = async (req, res) => {
   }
 };
 
-// ============================================
-// FUNCIONES DE ADMIN
-// ============================================
+// ========== FUNCIONES DE ADMIN ==========
 
-// ✅ Obtener videos pendientes
-const getPendingVideos = async (req, res) => {
+// ✅ Obtener videos pendientes (ADMIN)
+const getVideosPendientesAdmin = async (req, res) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
+    const { page = 1, limit = 10 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    const videos = await Video.find({ status: 'pending' })
+    
+    const videos = await Video.find({ pendiente: true, isActive: true })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
-      .populate('user', 'username avatar email');
-
-    const total = await Video.countDocuments({ status: 'pending' });
-
+      .populate('user', 'username email avatar');
+    
+    const total = await Video.countDocuments({ pendiente: true, isActive: true });
+    
     res.json({
       success: true,
       videos,
@@ -511,665 +764,65 @@ const getPendingVideos = async (req, res) => {
       totalPages: Math.ceil(total / parseInt(limit))
     });
   } catch (error) {
-    console.error('Error getPendingVideos:', error);
+    console.error('Error getVideosPendientesAdmin:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// ✅ Aprobar video
-const approveVideo = async (req, res) => {
+// ✅ Aprobar video (ADMIN)
+const aprobarVideoAdmin = async (req, res) => {
   try {
     const { id } = req.params;
     const video = await Video.findById(id);
     if (!video) {
       return res.status(404).json({ success: false, message: 'Video no encontrado' });
     }
-
-    video.status = 'approved';
+    
+    video.pendiente = false;
     await video.save();
-
-    res.json({ success: true, message: 'Video aprobado' });
+    
+    res.json({ success: true, message: 'Video aprobado correctamente' });
   } catch (error) {
-    console.error('Error approveVideo:', error);
+    console.error('Error aprobarVideoAdmin:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// ✅ Rechazar video
-const rejectVideo = async (req, res) => {
+// ✅ Eliminar video (ADMIN)
+const eliminarVideoAdmin = async (req, res) => {
   try {
     const { id } = req.params;
     const video = await Video.findById(id);
     if (!video) {
       return res.status(404).json({ success: false, message: 'Video no encontrado' });
     }
-
-    video.status = 'rejected';
-    await video.save();
-
-    res.json({ success: true, message: 'Video rechazado' });
+    
+    if (video.videoType === 'local' && video.videoId) {
+      await cloudinary.uploader.destroy(video.videoId, { resource_type: 'video' });
+    }
+    if (video.thumbnail && video.thumbnail.includes('cloudinary.com')) {
+      let publicId = video.thumbnail.split('/').pop().split('.')[0];
+      await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+    }
+    
+    await video.deleteOne();
+    res.json({ success: true, message: 'Video eliminado correctamente' });
   } catch (error) {
-    console.error('Error rejectVideo:', error);
+    console.error('Error eliminarVideoAdmin:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
-// controllers/videoCtrl.js - Añadir esta función
-
-// ✅ Obtener comentarios paginados
- 
-
-
-const addComment = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { text } = req.body;
-    const userId = req.user._id;
-    
-    console.log('Add comment - Video ID:', id);
-    console.log('Add comment - User ID:', userId);
-    console.log('Add comment - Text:', text);
-    
-    const video = await Video.findById(id);
-    if (!video) {
-      return res.status(404).json({ success: false, message: 'Video no encontrado' });
-    }
-    
-    const comment = {
-      _id: new mongoose.Types.ObjectId(),
-      user: userId,
-      text: text,
-      likes: [],
-      replies: [],
-      createdAt: new Date()
-    };
-    
-    video.comments.unshift(comment); // Agregar al principio
-    await video.save();
-    await video.updateEngagementScore();
-    
-    // Obtener información del usuario
-    const user = await User.findById(userId).select('username avatar isPro');
-    
-    const commentResponse = {
-      _id: comment._id,
-      text: comment.text,
-      createdAt: comment.createdAt,
-      likes: [],
-      replies: [],
-      user: { 
-        _id: user._id, 
-        username: user.username, 
-        avatar: user.avatar,
-        isPro: user.isPro 
-      }
-    };
-    
-    res.json({
-      success: true,
-      comment: commentResponse
-    });
-  } catch (error) {
-    console.error('Error addComment:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// ✅ Like a comentario (CORREGIDO)
-const likeComment = async (req, res) => {
-  try {
-    const { id, commentId } = req.params;
-    const userId = req.user._id;
-    
-    console.log('Like comment - Video ID:', id);
-    console.log('Like comment - Comment ID:', commentId);
-    console.log('Like comment - User ID:', userId);
-    
-    const video = await Video.findById(id);
-    if (!video) {
-      return res.status(404).json({ success: false, message: 'Video no encontrado' });
-    }
-    
-    const comment = video.comments.id(commentId);
-    if (!comment) {
-      return res.status(404).json({ success: false, message: 'Comentario no encontrado' });
-    }
-    
-    if (!comment.likes) comment.likes = [];
-    
-    const likeIndex = comment.likes.findIndex(id => id.toString() === userId.toString());
-    let liked;
-    
-    if (likeIndex === -1) {
-      comment.likes.push(userId);
-      liked = true;
-    } else {
-      comment.likes.splice(likeIndex, 1);
-      liked = false;
-    }
-    
-    await video.save();
-    
-    res.json({ 
-      success: true, 
-      likes: comment.likes.length,
-      liked: liked
-    });
-  } catch (error) {
-    console.error('Error likeComment:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// ✅ Responder comentario (CORREGIDO)
-const addCommentReply = async (req, res) => {
-  try {
-    const { id, commentId } = req.params;
-    const { text } = req.body;
-    const userId = req.user._id;
-    
-    console.log('Add reply - Video ID:', id);
-    console.log('Add reply - Comment ID:', commentId);
-    console.log('Add reply - User ID:', userId);
-    console.log('Add reply - Text:', text);
-    
-    const video = await Video.findById(id);
-    if (!video) {
-      return res.status(404).json({ success: false, message: 'Video no encontrado' });
-    }
-    
-    const comment = video.comments.id(commentId);
-    if (!comment) {
-      return res.status(404).json({ success: false, message: 'Comentario no encontrado' });
-    }
-    
-    if (!comment.replies) comment.replies = [];
-    
-    const reply = {
-      _id: new mongoose.Types.ObjectId(),
-      user: userId,
-      text: text,
-      createdAt: new Date()
-    };
-    
-    comment.replies.push(reply);
-    await video.save();
-    
-    // Obtener información del usuario
-    const user = await User.findById(userId).select('username avatar isPro');
-    
-    res.json({
-      success: true,
-      reply: {
-        _id: reply._id,
-        text: reply.text,
-        createdAt: reply.createdAt,
-        user: { 
-          _id: user._id, 
-          username: user.username, 
-          avatar: user.avatar,
-          isPro: user.isPro 
-        }
-      }
-    });
-  } catch (error) {
-    console.error('Error addCommentReply:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// ✅ Eliminar comentario (CORREGIDO)
-const deleteCommentCtrl = async (req, res) => {
-  try {
-    const { id, commentId } = req.params;
-    const userId = req.user._id;
-    const userRole = req.user.role;
-    
-    console.log('Delete comment - Video ID:', id);
-    console.log('Delete comment - Comment ID:', commentId);
-    console.log('Delete comment - User ID:', userId);
-    
-    const video = await Video.findById(id);
-    if (!video) {
-      return res.status(404).json({ success: false, message: 'Video no encontrado' });
-    }
-    
-    const comment = video.comments.id(commentId);
-    if (!comment) {
-      return res.status(404).json({ success: false, message: 'Comentario no encontrado' });
-    }
-    
-    // Verificar permisos: owner del comentario, owner del video, admin o moderator
-    const isCommentOwner = comment.user.toString() === userId.toString();
-    const isVideoOwner = video.user.toString() === userId.toString();
-    const isAdmin = userRole === 'admin' || userRole === 'moderator';
-    
-    if (!isCommentOwner && !isVideoOwner && !isAdmin) {
-      return res.status(403).json({ success: false, message: 'No autorizado para eliminar este comentario' });
-    }
-    
-    // Eliminar el comentario
-    comment.remove();
-    await video.save();
-    
-    res.json({ success: true, message: 'Comentario eliminado' });
-  } catch (error) {
-    console.error('Error deleteCommentCtrl:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// ✅ Obtener comentarios paginados (CORREGIDO)
-const getVideoComments = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { page = 1, limit = 20 } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    
-    console.log('Get comments - Video ID:', id);
-    console.log('Get comments - Page:', page);
-    
-    const video = await Video.findById(id)
-      .select('comments')
-      .populate('comments.user', 'username avatar isPro')
-      .populate('comments.replies.user', 'username avatar isPro');
-    
-    if (!video) {
-      return res.status(404).json({ success: false, message: 'Video no encontrado' });
-    }
-    
-    // Ordenar comentarios por fecha descendente (más recientes primero)
-    const sortedComments = [...video.comments].sort((a, b) => b.createdAt - a.createdAt);
-    const total = sortedComments.length;
-    const comments = sortedComments.slice(skip, skip + parseInt(limit));
-    
-    res.json({
-      success: true,
-      comments,
-      total,
-      hasMore: skip + parseInt(limit) < total,
-      page: parseInt(page)
-    });
-  } catch (error) {
-    console.error('Error getVideoComments:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-
-// controllers/videoCtrl.js - Versión para Node.js antiguo
-const getVideoById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    console.log('Video ID:', id);
-    
-    // Validación simple de ID
-    if (!id) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'ID de video no proporcionado' 
-      });
-    }
-    
-    // Buscar video con populate básico
-    const video = await Video.findById(id)
-      .populate('user', 'username avatar')
-      .populate('comments.user', 'username avatar');
-    
-    if (!video) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Video no encontrado' 
-      });
-    }
-    
-    // Incrementar vistas - versión simple
-    video.views = video.views + 1;
-    await video.save();
-    
-    // Verificar like - versión simple
-    let liked = false;
-    if (req.user && req.user._id) {
-      const userId = req.user._id.toString();
-      for (let i = 0; i < video.likes.length; i++) {
-        if (video.likes[i].toString() === userId) {
-          liked = true;
-          break;
-        }
-      }
-    }
-    
-    // Preparar respuesta
-    const videoData = {
-      _id: video._id,
-      title: video.title,
-      description: video.description,
-      shortDescription: video.shortDescription,
-      videoUrl: video.videoUrl,
-      videoType: video.videoType,
-      videoId: video.videoId,
-      thumbnail: video.thumbnail,
-      user: video.user,
-      boutique: video.boutique,
-      product: video.product,
-      category: video.category,
-      categorySlug: video.categorySlug,
-      views: video.views,
-      likes: video.likes,
-      comments: video.comments,
-      status: video.status,
-      isActive: video.isActive,
-      isFeatured: video.isFeatured,
-      duration: video.duration,
-      tags: video.tags,
-      createdAt: video.createdAt,
-      updatedAt: video.updatedAt,
-      liked: liked
-    };
-    
-    res.json({ 
-      success: true, 
-      video: videoData
-    });
-    
-  } catch (error) {
-    console.error('Error getVideoById:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    });
-  }
-};
-
-// controllers/videoCtrl.js - Añadir esta función
-
-// ✅ Obtener videos por categoría (similar a boutiques)
-const getVideosByCategory = async (req, res) => {
-  try {
-    const { categorySlug } = req.params;
-    const { page = 1, limit = 12, sortBy = 'recent' } = req.query;
-    
-    console.log('=== getVideosByCategory ===');
-    console.log('Category slug:', categorySlug);
-    console.log('Page:', page);
-    console.log('Limit:', limit);
-    console.log('SortBy:', sortBy);
-    
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    
-    // Construir filtro
-    let filter = { 
-      status: 'approved', 
-      isActive: true 
-    };
-    
-    // Si categorySlug no es 'videos', filtrar por categoría específica
-    if (categorySlug && categorySlug !== 'videos') {
-      filter.categorySlug = categorySlug;
-    }
-    
-    console.log('Filter:', filter);
-    
-    // Determinar ordenamiento
-    let sortOptions = {};
-    switch(sortBy) {
-      case 'popular':
-        sortOptions = { views: -1 };
-        break;
-      case 'liked':
-        sortOptions = { likes: -1 };
-        break;
-      case 'recent':
-      default:
-        sortOptions = { createdAt: -1 };
-        break;
-    }
-    
-    // Buscar videos
-    const videos = await Video.find(filter)
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(parseInt(limit))
-      .populate('user', 'username avatar isPro');
-    
-    const total = await Video.countDocuments(filter);
-    
-    // Obtener subcategorías (categorías hijas) para el slider
-    const subCategories = await Video.aggregate([
-      { $match: filter },
-      { $group: {
-        _id: { slug: '$categorySlug', name: '$category' },
-        count: { $sum: 1 }
-      }},
-      { $sort: { count: -1 } },
-      { $limit: 20 }
-    ]);
-    
-    const children = subCategories.map(cat => ({
-      slug: cat._id.slug,
-      name: cat._id.name,
-      count: cat.count,
-      level: 2
-    }));
-    
-    console.log(`✅ Encontrados ${videos.length} videos de ${total} totales`);
-    
-    res.json({
-      success: true,
-      videos,
-      total,
-      page: parseInt(page),
-      totalPages: Math.ceil(total / parseInt(limit)),
-      limit: parseInt(limit),
-      hasMore: skip + parseInt(limit) < total,
-      children: children,
-      filterMetadata: {
-        sortOptions: ['recent', 'popular', 'liked'],
-        categories: children
-      }
-    });
-    
-  } catch (error) {
-    console.error('Error getVideosByCategory:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    });
-  }
-};
-
-
-// controllers/videoCtrl.js - Añadir esta función
-
-// ============================================
-// FILTER VIDEOS (similar a filterBoutiques)
-// ============================================
-// controllers/videoCtrl.js - Asegurar que existe esta función
-
-// controllers/videoCtrl.js - Asegurar que existe esta función
-
-// controllers/videoCtrl.js - filterVideos corregido
-
-const filterVideos = async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 12;
-    const skip = (page - 1) * limit;
-    
-    // ✅ Recibir todos los parámetros posibles
-    const { category, subCategory, searchTerm, sortBy = 'recent' } = req.query;
-    
-    console.log('🎬 filterVideos llamado:');
-    console.log('  - page:', page);
-    console.log('  - limit:', limit);
-    console.log('  - category:', category);
-    console.log('  - subCategory:', subCategory);
-    console.log('  - searchTerm:', searchTerm);
-    console.log('  - sortBy:', sortBy);
-    
-    // 🔥 CONSTRUIR FILTRO
-    let filter = { 
-      status: 'approved', 
-      isActive: true 
-    };
-    
-    // ✅ Prioridad: subCategory tiene más peso que category
-    if (subCategory && subCategory !== 'undefined' && subCategory !== 'videos') {
-      // Si hay subCategory, filtrar por esa categoría específica
-      filter.categorySlug = subCategory;
-      console.log('🔍 Filtrando por subCategory:', subCategory);
-    } 
-    else if (category && category !== 'undefined' && category !== 'videos') {
-      // Si solo hay category (y no es 'videos'), filtrar por esa categoría
-      filter.categorySlug = category;
-      console.log('🔍 Filtrando por category:', category);
-    }
-    else {
-      // Si no hay filtro de categoría, mostrar TODOS los videos
-      console.log('📹 Mostrando TODOS los videos (sin filtro de categoría)');
-    }
-    
-    // ✅ Búsqueda por título o descripción
-    if (searchTerm && searchTerm !== 'undefined' && searchTerm.trim() !== '') {
-      filter.$or = [
-        { title: { $regex: searchTerm, $options: 'i' } },
-        { description: { $regex: searchTerm, $options: 'i' } }
-      ];
-      console.log('🔍 Búsqueda por:', searchTerm);
-    }
-    
-    // ✅ ORDENAMIENTO
-    let sort = {};
-    switch(sortBy) {
-      case 'popular':
-        sort = { views: -1 };
-        break;
-      case 'liked':
-        sort = { 'likes.length': -1 };
-        break;
-      case 'recent':
-      default:
-        sort = { createdAt: -1 };
-        break;
-    }
-    
-    console.log('📊 Filtro final:', JSON.stringify(filter, null, 2));
-    console.log('📊 Ordenamiento:', sort);
-    
-    // Ejecutar consulta
-    const videos = await Video.find(filter)
-      .sort(sort)
-      .skip(skip)
-      .limit(limit)
-      .populate('user', 'username avatar isPro')
-      .lean();
-    
-    const total = await Video.countDocuments(filter);
-    const hasMore = skip + videos.length < total;
-    const totalPages = Math.ceil(total / limit);
-    
-    console.log(`✅ Encontrados ${videos.length} videos de ${total} totales`);
-    
-    // Obtener todas las subcategorías disponibles para el slider
-    const allSubCategories = await Video.aggregate([
-      { $match: { status: 'approved', isActive: true } },
-      { $group: {
-        _id: { slug: '$categorySlug', name: '$category' },
-        count: { $sum: 1 }
-      }},
-      { $sort: { count: -1 } }
-    ]);
-    
-    // Obtener subcategorías específicas para el contexto actual
-    let children = [];
-    
-    if (subCategory && subCategory !== 'videos') {
-      // Si estamos en una subcategoría, mostrar solo esa (o sus hijas)
-      const currentSub = allSubCategories.find(c => c._id.slug === subCategory);
-      if (currentSub) {
-        children = [{
-          _id: currentSub._id.slug,
-          slug: currentSub._id.slug,
-          name: currentSub._id.name,
-          count: currentSub.count,
-          level: 2,
-          active: true
-        }];
-      }
-    } else {
-      // En la página principal de videos, mostrar todas las subcategorías
-      children = allSubCategories.map(cat => ({
-        _id: cat._id.slug,
-        slug: cat._id.slug,
-        name: cat._id.name,
-        count: cat.count,
-        level: 2,
-        icon: getIconForCategory(cat._id.slug)
-      }));
-    }
-    
-    res.json({
-      success: true,
-      videos,
-      total,
-      page,
-      totalPages,
-      limit,
-      hasMore,
-      children,
-      appliedFilters: {
-        category: category || null,
-        subCategory: subCategory || null,
-        searchTerm: searchTerm || null,
-        sortBy
-      }
-    });
-    
-  } catch (error) {
-    console.error('❌ Error en filterVideos:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    });
-  }
-};
-
-// Función auxiliar para iconos
-function getIconForCategory(slug) {
-  const icons = {
-    'videos-vehicules': '🚗',
-    'videos-immobilier': '🏠',
-    'videos-telephones': '📱',
-    'videos-informatique': '💻',
-    'videos-electromenager': '🔌',
-    'videos-mode-vetements': '👕',
-    'videos-maison-jardin': '🏡',
-    'videos-sport-loisirs': '⚽',
-    'videos-alimentaires': '🍔',
-    'videos-meubles': '🛋️',
-    'videos-pieces-detachees': '🔧',
-    'videos-sante-beaute': '💄',
-    'videos-services': '🔨',
-    'videos-emploi': '💼',
-    'videos-voyages': '✈️',
-    'videos-boutiques': '🏪',
-    'videos-tutoriels': '📚',
-    'videos-reviews': '⭐'
-  };
-  return icons[slug] || '🎬';
-}
- 
 
 module.exports = {
   // Públicas
   getVideoById,
   getUserVideos,
+  filterVideos,
   getVideosByCategory,
   getFeaturedVideos,
   getPopularVideos,
   getRelatedVideos,
   getTrendingVideos,
-  
   // Protegidas
   createVideo,
   updateVideo,
@@ -1180,14 +833,13 @@ module.exports = {
   addComment,
   likeComment,
   addCommentReply,
-  getUserVideoStats,
-  
-  // Admin
-  getPendingVideos,
-  approveVideo,
-  rejectVideo,
-  getVideoComments,
   deleteCommentCtrl,
-  filterVideos 
-
+  getVideoComments,
+  getUserVideoStats,
+  // Música
+  getMusicLibrary,
+  // Admin
+  getVideosPendientesAdmin,
+  aprobarVideoAdmin,
+  eliminarVideoAdmin
 };

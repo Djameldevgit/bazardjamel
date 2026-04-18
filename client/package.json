@@ -17,6 +17,7 @@
     "date-fns": "^4.1.0",
     "emoji-picker-react": "^4.13.3",
     "framer-motion": "^6.5.1",
+    "howler": "^2.2.4",
     "i": "^0.3.7",
     "i18next": "^23.4.4",
     "i18next-browser-languagedetector": "^7.1.0",

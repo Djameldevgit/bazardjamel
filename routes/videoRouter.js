@@ -4,11 +4,7 @@ const router = require('express').Router();
 const videoCtrl = require('../controllers/videoCtrl');
 const auth = require('../middleware/auth');
  
-// ============================================
-// ✅ RUTAS ESPECÍFICAS (DEBEN IR PRIMERO)
-// ============================================
-
-// Filtrar videos (DEBE IR ANTES de /:id)
+ router.get('/music', videoCtrl.getMusicLibrary); 
 router.get('/videos/filter', videoCtrl.filterVideos);
 
 // Videos destacados
@@ -63,8 +59,12 @@ router.get('/users/:userId/videos', auth, videoCtrl.getUserVideos);
 // ============================================
 // RUTAS DE ADMIN
 // ============================================
-router.get('/admin/videos/pending', auth, videoCtrl.getPendingVideos);
-router.patch('/admin/videos/:id/approve', auth, videoCtrl.approveVideo);
-router.delete('/admin/videos/:id/reject', auth, videoCtrl.rejectVideo);
+ 
+
+router.get('/admin/videos/pendientes', auth, videoCtrl.getVideosPendientesAdmin);
+router.patch('/admin/videos/:id/approve', auth, videoCtrl.aprobarVideoAdmin);
+router.delete('/admin/videos/:id', auth, videoCtrl.eliminarVideoAdmin);
+
+
 
 module.exports = router;

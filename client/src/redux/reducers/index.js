@@ -36,7 +36,7 @@ import productAprove from './productAproveReducer'
 import filter from './filterReducer.'
 import carousel from './carouselReducer'
 import video  from './videoReducer'
-
+import videoApprove from './videoApproveReducer';
 export default combineReducers({
     auth,
     alert,
@@ -73,5 +73,5 @@ export default combineReducers({
     category,
     accordionReducer,
     filter,
-    carousel,video 
+    carousel,video ,videoApprove,
 })
