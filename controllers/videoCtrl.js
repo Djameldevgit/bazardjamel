@@ -1,5 +1,5 @@
 // controllers/videoCtrl.js
-const Video = require('../models/VideoModel');
+const Video = require('../models/videoModel');
 const User = require('../models/userModel');
 const mongoose = require('mongoose');
 const cloudinary = require('cloudinary').v2;
