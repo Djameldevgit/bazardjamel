@@ -53,7 +53,7 @@ router.patch('/post/:id/view', postCtrl.addView);
 // ============================================
 // 7️⃣ RUTAS CON ID (deben ir al final)
 // ============================================
-router.get('/post/:id', postCtrl.getPost);
+router.get('/post/:id',  postCtrl.getPost);
 router.get('/posts/:id', postCtrl.getPostById);
 
 router.route('/post/:id')

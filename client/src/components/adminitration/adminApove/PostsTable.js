@@ -27,6 +27,11 @@ const PostsTable = ({ selectedCategory, onLoadingChange, onPaginationUpdate }) =
   const onLoadingChangeRef = useRef(onLoadingChange);
   const onPaginationUpdateRef = useRef(onPaginationUpdate);
 
+  // ✅ Función para obtener la URL del post (la misma para todos, PostId maneja el token)
+  const getPostUrl = (postId) => {
+    return `/post/${postId}`;
+  };
+
   // ✅ Actualizar refs cuando cambian
   useEffect(() => {
     onLoadingChangeRef.current = onLoadingChange;
@@ -265,7 +270,7 @@ const PostsTable = ({ selectedCategory, onLoadingChange, onPaginationUpdate }) =
                         />
                       </td>
                       <td>
-                        <Link to={`/post/${post._id}`}>
+                        <Link to={getPostUrl(post._id)}>
                           {post.images?.[0]?.url ? (
                             <Image 
                               src={post.images[0].url} 
@@ -282,7 +287,7 @@ const PostsTable = ({ selectedCategory, onLoadingChange, onPaginationUpdate }) =
                         </Link>
                       </td>
                       <td>
-                        <Link to={`/post/${post._id}`} className="text-decoration-none fw-medium">
+                        <Link to={getPostUrl(post._id)} className="text-decoration-none fw-medium">
                           {post.title?.length > 40 ? post.title.substring(0, 40) + '...' : post.title}
                         </Link>
                         <br />
@@ -311,7 +316,7 @@ const PostsTable = ({ selectedCategory, onLoadingChange, onPaginationUpdate }) =
                         <div className="d-flex gap-1 justify-content-center">
                           <Button
                             as={Link}
-                            to={`/post/${post._id}`}
+                            to={getPostUrl(post._id)}
                             variant="outline-primary"
                             size="sm"
                             title="Voir détails"
@@ -350,15 +355,18 @@ const PostsTable = ({ selectedCategory, onLoadingChange, onPaginationUpdate }) =
                       onClick={() => handlePageChange(page - 1)}
                       disabled={page === 1}
                     />
-                    {[...Array(Math.min(totalPages, 5))].map((_, idx) => (
-                      <Pagination.Item
-                        key={idx + 1}
-                        active={page === idx + 1}
-                        onClick={() => handlePageChange(idx + 1)}
-                      >
-                        {idx + 1}
-                      </Pagination.Item>
-                    ))}
+                    {[...Array(Math.min(totalPages, 5))].map((_, idx) => {
+                      const pageNum = idx + 1;
+                      return (
+                        <Pagination.Item
+                          key={pageNum}
+                          active={page === pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                        >
+                          {pageNum}
+                        </Pagination.Item>
+                      );
+                    })}
                     <Pagination.Next
                       onClick={() => handlePageChange(page + 1)}
                       disabled={page === totalPages}

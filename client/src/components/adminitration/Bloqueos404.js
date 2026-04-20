@@ -167,30 +167,7 @@ const Bloqueos404 = () => {
             </Container>
         );
     }
-
-    // SI NON BLOQUÉ - afficher statut normal
-    if (!isBlocked) {
-        return (
-            <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
-                <Card className="text-center shadow" style={{ width: '100%', maxWidth: '600px' }}>
-                    <Card.Header className="bg-success text-white">
-                        <h4 className="mb-0">Statut du compte</h4>
-                    </Card.Header>
-                    <Card.Body>
-                        <PersonLock size={48} className="text-success mb-3" />
-                        <Card.Title>Compte actif</Card.Title>
-                        <Card.Text>
-                            Votre compte est actif et sans restriction.
-                            Vous pouvez continuer à utiliser la plateforme normalement.
-                        </Card.Text>
-                        <Button variant="primary" href="/">
-                            Accueil
-                        </Button>
-                    </Card.Body>
-                </Card>
-            </Container>
-        );
-    }
+ 
 
     // SI BLOQUÉ - afficher page de blocage avec détails
     return (

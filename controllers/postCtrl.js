@@ -1,7 +1,7 @@
 const Post = require('../models/postModel');
 const Category = require('../models/categoryModel');
 const Users = require('../models/userModel');
- 
+const Notify = require('../models/notifyModel'); // ✅ Agregar esta línea
 const Comments = require('../models/commentModel');
 const mongoose = require('mongoose');
 
@@ -58,7 +58,7 @@ const postCtrl = {
   createPost: async (req, res) => {
     try {
       const userId = req.user._id;
-
+  
       const {
         categorie,
         subCategory,
@@ -69,15 +69,15 @@ const postCtrl = {
         images,
         categorySpecificData
       } = req.body;
-
+  
       if (!categorie || !subCategory || !wilaya || !commune || !images) {
         return res.status(400).json({ msg: "Champs requis manquants" });
       }
-
+  
       if (!title || title.trim() === "") {
         return res.status(400).json({ msg: "Le titre est requis" });
       }
-
+  
       const category = await Category.findOne({
         $or: [
           { slug: categorie },
@@ -85,11 +85,11 @@ const postCtrl = {
         ],
         isActive: true
       }).select('_id').lean();
-
+  
       if (!category) {
         return res.status(404).json({ msg: "Catégorie non trouvée" });
       }
-
+  
       const postData = {
         user: userId,
         categorie: categorie.trim(),
@@ -109,15 +109,16 @@ const postCtrl = {
         categorySpecificData: categorySpecificData || {},
         pendiente: true
       };
-
+  
       const newPost = new Post(postData);
       await newPost.save();
-
+  
       Category.findByIdAndUpdate(
         category._id,
         { $inc: { postCount: 1 } }
       ).catch(() => {});
-
+  
+      // ✅ Respuesta simple, las notificaciones se manejan en el frontend
       res.status(201).json({
         success: true,
         newPost: {
@@ -132,15 +133,12 @@ const postCtrl = {
           }
         }
       });
-
+  
     } catch (err) {
       console.error("❌ createPost error:", err.message);
       res.status(500).json({ msg: "Erreur serveur" });
     }
   },
-
- 
-
  // 📂 controllers/postCtrl.js - CORREGIR getPostsPendientes
 
 getPostsPendientes: async (req, res) => {
@@ -1170,60 +1168,73 @@ getPostsPendientesCount: async (req, res) => {
 
   // 📂 controllers/postCtrl.js - CORREGIDO
 
-getPost: async (req, res) => {
-  try {
-    const post = await Post.findById(req.params.id)
-      .populate("user likes", "avatar username fullname followers")
-      .populate({
-        path: "comments",
-        populate: {
-          path: "user likes",
-          select: "-password"
+  getPost: async (req, res) => {
+    try {
+      const post = await Post.findById(req.params.id)
+        .populate("user likes", "avatar username fullname followers")
+        .populate({
+          path: "comments",
+          populate: {
+            path: "user likes",
+            select: "-password"
+          }
+        });
+  
+      if (!post) {
+        return res.status(404).json({ msg: 'This post does not exist.' });
+      }
+  
+      const user = req.user || null;
+      const isAdmin = user && (user.role === 'admin' || user.role === 'moderator');
+      const isOwner = user && post.user && post.user._id.toString() === user._id.toString();
+      
+      // ✅ CORRECCIÓN: Verificar el orden de las condiciones
+      if (post.pendiente) {
+        // ✅ PRIMERO: Verificar si es admin o dueño (TIENEN PERMISO)
+        if (isAdmin || isOwner) {
+          return res.json({ 
+            post,
+            pendiente: true,
+            isAdmin: isAdmin,
+            isOwner: isOwner
+          });
         }
-      })
-
-    if (!post) return res.status(400).json({ msg: 'This post does not exist.' })
-
-    const user = req.user || null;
-    const isAdmin = user && (user.role === 'admin' || user.role === 'moderator');
-    const isOwner = user && post.user && post.user._id.toString() === user._id.toString();
-    
-    // ✅ PERMITIR admin y moderador ver posts pendientes
-    if (post.pendiente && !isAdmin && !isOwner) {
-      return res.status(403).json({ msg: 'Ce post est en attente de validation.' });
+        
+        // ✅ DESPUÉS: Si no es admin ni dueño, DENEGAR acceso
+        return res.status(403).json({ 
+          msg: 'Ce post est en attente de validation.',
+          pendiente: true
+        });
+      }
+  
+      // Post aprobado - todos pueden verlo
+      res.json({ post });
+  
+    } catch (err) {
+      console.error('❌ Error en getPost:', err);
+      return res.status(500).json({ msg: err.message });
     }
-
-    res.json({ post })
-
-  } catch (err) {
-    return res.status(500).json({ msg: err.message })
-  }
-},
-
-getPostById: async (req, res) => {
-  try {
-    const post = await Post.findById(req.params.id)
-      .populate('category', 'name slug level parent');
-
-    if (!post) {
-      return res.status(404).json({ error: 'Post not found' });
+  },
+  getPostById: async (req, res) => {
+    try {
+      // ✅ Buscar SOLO posts aprobados (pendiente: false)
+      const post = await Post.findOne({ 
+        _id: req.params.id,
+        pendiente: false  // ✅ Solo posts aprobados
+      }).populate('category', 'name slug level parent');
+  
+      if (!post) {
+        return res.status(404).json({ error: 'Post not found or pending approval' });
+      }
+  
+      // ✅ Sin verificaciones de admin/dueño - es ruta pública
+      res.json({ success: true, post });
+      
+    } catch (error) {
+      console.error('Error fetching post:', error);
+      res.status(500).json({ error: error.message });
     }
-
-    const user = req.user || null;
-    const isAdmin = user && (user.role === 'admin' || user.role === 'moderator');
-    const isOwner = user && post.user && post.user.toString() === user._id.toString();
-    
-    // ✅ PERMITIR admin y moderador ver posts pendientes
-    if (post.pendiente && !isAdmin && !isOwner) {
-      return res.status(403).json({ error: 'Post pending approval' });
-    }
-
-    res.json({ success: true, post });
-  } catch (error) {
-    console.error('Error fetching post:', error);
-    res.status(500).json({ error: error.message });
-  }
-},
+  },
 
   addView: async (req, res) => {
     try {

@@ -148,15 +148,40 @@ const SocketServer = (socket) => {
     })
 
     // Notification - Funciones existentes
-    socket.on('createNotify', msg => {
-        const client = users.find(user => msg.recipients.includes(user.id))
-        client && socket.to(`${client.socketId}`).emit('createNotifyToClient', msg)
-    })
+   // Notification - Funciones existentes
+socket.on('createNotify', msg => {
+    // ✅ Validar que msg.recipients existe y es un array
+    if (!msg || !msg.recipients || !Array.isArray(msg.recipients)) {
+        console.log('❌ createNotify: recipients no válido', msg);
+        return;
+    }
 
-    socket.on('removeNotify', msg => {
-        const client = users.find(user => msg.recipients.includes(user.id))
-        client && socket.to(`${client.socketId}`).emit('removeNotifyToClient', msg)
-    })
+    // ✅ Buscar todos los clientes que están en recipients
+    const clients = users.filter(user => msg.recipients.includes(user.id));
+    
+    // ✅ Enviar a cada cliente encontrado
+    if (clients.length > 0) {
+        clients.forEach(client => {
+            socket.to(`${client.socketId}`).emit('createNotifyToClient', msg);
+        });
+    }
+});
+
+socket.on('removeNotify', msg => {
+    // ✅ Validar que msg.recipients existe y es un array
+    if (!msg || !msg.recipients || !Array.isArray(msg.recipients)) {
+        console.log('❌ removeNotify: recipients no válido', msg);
+        return;
+    }
+
+    const clients = users.filter(user => msg.recipients.includes(user.id));
+    
+    if (clients.length > 0) {
+        clients.forEach(client => {
+            socket.to(`${client.socketId}`).emit('removeNotifyToClient', msg);
+        });
+    }
+});
 
     // Message - Funciones existentes
     socket.on('addMessage', msg => {

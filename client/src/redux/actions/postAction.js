@@ -79,23 +79,14 @@ export const loadMorePostsFail = (error) => ({
 });
 
 
-export const createPost = ({
-  postData,
-  images,
-  auth,
-  socket  // ✅ Añadir socket como parámetro
-}) => async (dispatch) => {
-  console.time('⏱️ createPost action time');
-  let media = []
+export const createPost = ({ postData, images, auth, socket }) => async (dispatch) => {
+  let media = [];
 
   try {
-    console.log('🟡 createPost action iniciada');
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } })
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
 
     if (images.length > 0) {
-      console.log(`📤 Subiendo ${images.length} imágenes...`);
       media = await imageUpload(images);
-      console.log('✅ Imágenes subidas:', media.length);
     }
 
     const postToSend = {
@@ -103,51 +94,115 @@ export const createPost = ({
       images: media
     };
 
-    console.log('📦 Datos a enviar al API:', postToSend);
-
     const res = await postDataAPI('posts', postToSend, auth.token);
 
-    console.log('✅ Respuesta del API:', res.data);
+    const newPost = res.data.newPost;
 
     dispatch({
       type: POST_TYPES.CREATE_POST,
       payload: {
-        ...res.data.newPost,
+        ...newPost,
         user: auth.user,
         categorySpecificData: postData.categorySpecificData || {}
       }
     });
 
-    // ✅ Enviar notificación a administradores
-    const newPost = res.data.newPost;
-    const msg = {
+    socket.emit('createPost', newPost);
+
+    // ✅ NOTIFICACIÓN 1: Para el creador (post pendiente)
+    const msgForCreator = {
       id: auth.user._id,
-      text: '📝 Un nouveau post a été créé et attend votre approbation',
-      recipients: [], // Se enviará a todos los admins (backend)
-      url: `/admin/posts/pendientes`,
+      text: '⏳ Votre annonce est en attente d\'approbation',
+      recipients: [auth.user._id],
+      url: `/post/${newPost._id}`,
       content: newPost.title,
-      image: newPost.images?.[0]?.url,
-      type: 'post'
+      image: newPost.images?.[0]?.url || null,
+      type: 'post_pending'
     };
     
-    dispatch(createNotify({ msg, auth, socket }));
+    console.log('📨 Enviando notificación al creador:', msgForCreator);
+    dispatch(createNotify({ msg: msgForCreator, auth, socket }));
+
+    // ✅ NOTIFICACIÓN 2: Para admins (nuevo post para aprobar)
+    const msgForAdmin = {
+      id: auth.user._id,
+      text: '📝 Un nouveau post est en attente d\'approbation',
+      recipients: ["admin"], // El string "admin" será procesado por el backend
+      url: `/admin/posts/pendientes`,
+      content: newPost.title,
+      image: newPost.images?.[0]?.url || null,
+      type: 'post_admin'
+    };
+    
+    console.log('📨 Enviando notificación al admin:', msgForAdmin);
+    dispatch(createNotify({ msg: msgForAdmin, auth, socket }));
+
+    // ✅ NOTIFICACIÓN 3: Para followers (opcional)
+    if (auth.user.followers && auth.user.followers.length > 0) {
+      const msgForFollowers = {
+        id: auth.user._id,
+        text: 'a créé un nouveau post.',
+        recipients: auth.user.followers,
+        url: `/post/${newPost._id}`,
+        content: newPost.title,
+        image: newPost.images?.[0]?.url || null,
+        type: 'post'
+      };
+      
+      console.log('📨 Enviando notificación a followers:', msgForFollowers);
+      dispatch(createNotify({ msg: msgForFollowers, auth, socket }));
+    }
 
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
+    
+    // Mostrar mensaje de éxito
+    dispatch({ 
+      type: GLOBALTYPES.ALERT, 
+      payload: { 
+        success: 'Votre annonce a été créée et est en attente d\'approbation' 
+      } 
+    });
 
   } catch (err) {
-    console.error('❌ Error en createPost action:', err);
+    console.error('❌ Error en createPost:', err);
     dispatch({
       type: GLOBALTYPES.ALERT,
       payload: { error: err.response?.data?.msg || err.message }
     });
-  } finally {
-    console.timeEnd('⏱️ createPost action time');
   }
-}
+};
+/*export const getPost = (id) => async (dispatch) => {
+  try {
+    console.log('🔍 Fetching post with ID:', id)
 
-// ============================================
-// ✅ UPDATE POST CON NOTIFICACIÓN (ACTUALIZAR)
-// ============================================
+    // ✅ Usar axios directamente con BASE_URL
+    const res = await axios.get(`${BASE_URL}/api/post/${id}`)
+
+    console.log('✅ Post response:', res.data)
+
+    dispatch({
+      type: POST_TYPES.GET_POST,
+      payload: res.data.post
+    })
+
+  } catch (err) {
+    console.error('❌ Error getting post:', {
+      message: err.message,
+      response: err.response?.data,
+      status: err.response?.status,
+      url: `${BASE_URL}/api/post/${id}`
+    })
+
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: {
+        error: err.response?.data?.msg ||
+          err.message ||
+          'Error loading post'
+      }
+    })
+  }
+}*/
 export const updatePost = ({
   postId,
   postData,

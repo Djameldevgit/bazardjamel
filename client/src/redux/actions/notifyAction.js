@@ -12,7 +12,13 @@ export const NOTIFY_TYPES = {
 
 export const createNotify = ({msg, auth, socket}) => async (dispatch) => {
     try {
-        const res = await postDataAPI('notify', msg, auth.token)
+        // ✅ Asegurar que recipients sea siempre un array
+        const notifyMsg = {
+            ...msg,
+            recipients: Array.isArray(msg.recipients) ? msg.recipients : [msg.recipients]
+        };
+        
+        const res = await postDataAPI('notify', notifyMsg, auth.token);
 
         socket.emit('createNotify', {
             ...res.data.notify,
@@ -20,11 +26,11 @@ export const createNotify = ({msg, auth, socket}) => async (dispatch) => {
                 username: auth.user.username,
                 avatar: auth.user.avatar
             }
-        })
+        });
     } catch (err) {
-        dispatch({type: GLOBALTYPES.ALERT, payload: {error: err.response.data.msg}})
+        dispatch({type: GLOBALTYPES.ALERT, payload: {error: err.response.data.msg}});
     }
-}
+};
 
 export const removeNotify = ({msg, auth, socket}) => async (dispatch) => {
     try {
