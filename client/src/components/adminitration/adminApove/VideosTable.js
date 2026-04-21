@@ -4,11 +4,12 @@ import { useHistory } from 'react-router-dom';
 import { Table, Button, Badge, Card, Pagination, Image, Alert, Spinner } from 'react-bootstrap';
 import { FaCheck, FaTrash, FaEye, FaVideo, FaClock } from 'react-icons/fa';
 import { getVideosPendientes, aprobarVideo, eliminarVideo } from '../../../redux/actions/videoApproveAction';
+import { getVideoByIdPrivate } from '../../../redux/actions/videoAction';
 
 const VideosTable = ({ onLoadingChange, onPaginationUpdate }) => {
   const dispatch = useDispatch();
   const history = useHistory();
-  const { auth } = useSelector(state => state);
+  const { auth, socket } = useSelector(state => state);
   const { videos = [], loading = false, total = 0, page = 1, totalPages = 1 } = useSelector(state => state.videoApprove || {});
 
   const [selectedItems, setSelectedItems] = useState([]);
@@ -17,39 +18,39 @@ const VideosTable = ({ onLoadingChange, onPaginationUpdate }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 10;
 
-  // ✅ Refs para evitar bucles
+  // Refs para evitar bucles
   const hasLoadedRef = useRef(false);
   const onLoadingChangeRef = useRef(onLoadingChange);
   const onPaginationUpdateRef = useRef(onPaginationUpdate);
 
-  // ✅ Actualizar refs cuando cambian
+  // Actualizar refs cuando cambian
   useEffect(() => {
     onLoadingChangeRef.current = onLoadingChange;
     onPaginationUpdateRef.current = onPaginationUpdate;
   }, [onLoadingChange, onPaginationUpdate]);
 
-  // ✅ Notificar loading sin causar bucles
+  // Notificar loading sin causar bucles
   useEffect(() => {
     if (onLoadingChangeRef.current) {
       onLoadingChangeRef.current(loading);
     }
   }, [loading]);
 
-  // ✅ Notificar paginación sin causar bucles
+  // Notificar paginación sin causar bucles
   useEffect(() => {
     if (onPaginationUpdateRef.current && total > 0) {
       onPaginationUpdateRef.current({ total, page, totalPages });
     }
   }, [total, page, totalPages]);
 
-  // ✅ Cargar videos solo cuando cambia currentPage
+  // Cargar videos solo cuando cambia currentPage
   const loadVideos = useCallback((pageNum) => {
     if (auth?.token) {
       dispatch(getVideosPendientes(auth.token, pageNum, limit));
     }
   }, [dispatch, auth?.token, limit]);
 
-  // ✅ Efecto de carga inicial y cambio de página
+  // Efecto de carga inicial y cambio de página
   useEffect(() => {
     if (!hasLoadedRef.current || currentPage !== page) {
       loadVideos(currentPage);
@@ -57,7 +58,7 @@ const VideosTable = ({ onLoadingChange, onPaginationUpdate }) => {
     }
   }, [currentPage, loadVideos, page]);
 
-  // ✅ Reset selección cuando cambian los videos
+  // Reset selección cuando cambian los videos
   useEffect(() => {
     setSelectedItems([]);
     setSelectAll(false);
@@ -86,7 +87,7 @@ const VideosTable = ({ onLoadingChange, onPaginationUpdate }) => {
   const handleApprove = async (video) => {
     if (!window.confirm(`Approuver la vidéo "${video.title}" ? Elle sera visible sur le site.`)) return;
 
-    const result = await dispatch(aprobarVideo(video._id, auth.token));
+    const result = await dispatch(aprobarVideo(video._id, auth.token, auth, socket, video));
     if (result?.success) {
       showMessage('Vidéo approuvée avec succès', 'success');
       loadVideos(currentPage);
@@ -98,12 +99,26 @@ const VideosTable = ({ onLoadingChange, onPaginationUpdate }) => {
   const handleDelete = async (video) => {
     if (!window.confirm(`Supprimer définitivement la vidéo "${video.title}" ? Cette action est irréversible.`)) return;
 
-    const result = await dispatch(eliminarVideo(video._id, auth.token));
+    const result = await dispatch(eliminarVideo(video._id, auth.token, auth, socket, video));
     if (result?.success) {
       showMessage('Vidéo supprimée', 'warning');
       loadVideos(currentPage);
     } else {
       showMessage(result?.error || 'Erreur lors de la suppression', 'danger');
+    }
+  };
+
+  const handleViewVideo = async (videoId) => {
+    try {
+      const result = await dispatch(getVideoByIdPrivate(videoId, auth.token));
+      if (result?.success) {
+        history.push(`/video/${videoId}`);
+      } else {
+        showMessage('Impossible de voir la vidéo en attente', 'warning');
+      }
+    } catch (error) {
+      console.error('Error viewing video:', error);
+      showMessage('Erreur lors du chargement de la vidéo', 'danger');
     }
   };
 
@@ -113,7 +128,6 @@ const VideosTable = ({ onLoadingChange, onPaginationUpdate }) => {
     }
   };
 
-  // ✅ Función para formatear duración (ahora muestra 0:00 si no hay datos)
   const formatDuration = (seconds) => {
     if (!seconds && seconds !== 0) return '0:00';
     const mins = Math.floor(seconds / 60);
@@ -121,7 +135,6 @@ const VideosTable = ({ onLoadingChange, onPaginationUpdate }) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // ✅ Función para formatear fecha SIN MOMENT (usando JavaScript nativo)
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -130,12 +143,6 @@ const VideosTable = ({ onLoadingChange, onPaginationUpdate }) => {
       month: '2-digit',
       year: 'numeric'
     });
-  };
-
-  // ✅ Función para navegar al detalle del video
-  const handleViewVideo = (videoId) => {
-    console.log('🖱️ Navegando a video:', videoId);
-    history.push(`/video/${videoId}`);
   };
 
   if (loading && videos.length === 0) {
@@ -298,7 +305,6 @@ const VideosTable = ({ onLoadingChange, onPaginationUpdate }) => {
                         <small>{video.views || 0} vues</small>
                       </td>
                       <td>
-                        {/* ✅ Usando la función formatDate sin moment */}
                         <small className="text-muted">
                           {formatDate(video.createdAt)}
                         </small>

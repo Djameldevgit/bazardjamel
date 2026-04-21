@@ -32,6 +32,15 @@ router.get('/videos/:id/comments', videoCtrl.getVideoComments);
 // Obtener video por ID (va al final porque captura cualquier cosa)
 router.get('/videos/:id',   videoCtrl.getVideoById);
 
+
+router.get('/videos/public/:id', videoCtrl.getVideoByIdPublic);
+
+ 
+router.get('/videos/private/:id', auth, videoCtrl.getVideoByIdPrivate);
+
+// ✅ La ruta ya existe
+ 
+
 // ============================================
 // RUTAS PROTEGIDAS (requieren autenticación)
 // ============================================

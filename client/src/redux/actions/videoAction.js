@@ -409,11 +409,21 @@ export const getVideos = (categorySlug = null, subCategory = null, page = 1, lim
   }
 };
 
+ 
+export const getFeaturedVideos = (limit = 10) => async (dispatch) => {
+  try {
+    const res = await getDataAPI(`videos/featured?limit=${limit}`);
+    dispatch({ type: VIDEO_TYPES.GET_FEATURED_VIDEOS, payload: res.data.videos });
+  } catch (err) {
+    console.error('Error getFeaturedVideos:', err);
+  }
+};
 export const getVideoById = (id) => async (dispatch) => {
   try {
     dispatch({ type: VIDEO_TYPES.LOADING, payload: true });
     
-    const res = await getDataAPI(`videos/${id}`);
+    // Usar ruta pública
+    const res = await getDataAPI(`videos/public/${id}`);
     
     dispatch({
       type: VIDEO_TYPES.GET_VIDEO,
@@ -429,15 +439,39 @@ export const getVideoById = (id) => async (dispatch) => {
   }
 };
 
-export const getFeaturedVideos = (limit = 10) => async (dispatch) => {
+// ✅ Para ver videos en el panel de admin (privado)
+// ✅ Esto ya está en videoAction.js
+export const getVideoByIdPrivate = (id, token) => async (dispatch) => {
   try {
-    const res = await getDataAPI(`videos/featured?limit=${limit}`);
-    dispatch({ type: VIDEO_TYPES.GET_FEATURED_VIDEOS, payload: res.data.videos });
+    dispatch({ type: VIDEO_TYPES.LOADING, payload: true });
+    const res = await getDataAPI(`videos/private/${id}`, token);
+    dispatch({
+      type: VIDEO_TYPES.GET_VIDEO,
+      payload: res.data.video
+    });
+    return res.data;
   } catch (err) {
-    console.error('Error getFeaturedVideos:', err);
+    console.error('Error getVideoByIdPrivate:', err);
+    return null;
+  } finally {
+    dispatch({ type: VIDEO_TYPES.LOADING, payload: false });
   }
 };
+// ✅ Ya existe la acción
+// redux/actions/videoAction.js (añadir/verificar esta función)
 
+// ✅ Tracking tiempo de visualización
+export const trackWatchTime = (id, watchTime, token) => async (dispatch) => {
+  try {
+    if (!token || !id || !watchTime) return;
+    
+    const res = await postDataAPI(`videos/${id}/watch-time`, { watchTime }, token);
+    console.log(`📊 WatchTime registrado: ${watchTime}s para video ${id}`);
+    return res.data;
+  } catch (err) {
+    console.error('❌ Error trackWatchTime:', err.response?.data?.message || err.message);
+  }
+};
 export const getPopularVideos = (limit = 10) => async (dispatch) => {
   try {
     const res = await getDataAPI(`videos/popular?limit=${limit}`);
@@ -494,13 +528,7 @@ export const getComments = (videoId, page = 1, limit = 20) => async (dispatch) =
   }
 };
 
-export const trackWatchTime = (id, watchTime, token) => async (dispatch) => {
-  try {
-    await postDataAPI(`videos/${id}/watch-time`, { watchTime }, token);
-  } catch (err) {
-    console.error('Error trackWatchTime:', err);
-  }
-};
+ 
 
 export const getUserVideoStats = (token) => async (dispatch) => {
   try {

@@ -4,7 +4,7 @@ const User = require('../models/userModel');
 const mongoose = require('mongoose');
 const cloudinary = require('cloudinary').v2;
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
@@ -145,8 +145,110 @@ const getVideosByCategory = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+// controllers/videoCtrl.js
 
+// ✅ Para PÚBLICO - Solo videos aprobados
+// controllers/videoCtrl.js
+
+// ✅ Para PÚBLICO - Solo videos aprobados
+const getVideoByIdPublic = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: 'ID inválido' });
+    }
+
+    const video = await Video.findById(id)
+      .populate('user', 'username avatar isPro role')
+      .populate('comments.user', 'username avatar isPro')
+      .populate('comments.replies.user', 'username avatar isPro')
+      .lean();
+
+    if (!video) {
+      return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    }
+
+    // ✅ Solo mostrar si está aprobado
+    if (video.pendiente === true) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Video non disponible ou en cours de vérification' 
+      });
+    }
+
+    // ✅ Incrementar views
+    Video.findByIdAndUpdate(id, { $inc: { views: 1 } }).exec();
+
+    let liked = false;
+    // Nota: Como es público, no hay usuario autenticado, siempre false
+
+    const videoData = { ...video, liked };
+    res.json({ success: true, video: videoData });
+  } catch (error) {
+    console.error('Error getVideoByIdPublic:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ Para ADMIN/DUEÑO - Puede ver videos pendientes
+const getVideoByIdPrivate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: 'ID inválido' });
+    }
+
+    const video = await Video.findById(id)
+      .populate('user', 'username avatar isPro role')
+      .populate('comments.user', 'username avatar isPro')
+      .populate('comments.replies.user', 'username avatar isPro')
+      .lean();
+
+    if (!video) {
+      return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    }
+
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'moderator';
+    const isOwner = video.user._id.toString() === req.user._id.toString();
+
+    // ✅ Verificar permisos
+    if (video.pendiente === true && !isAdmin && !isOwner) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Vous n\'avez pas la permission de voir cette vidéo' 
+      });
+    }
+
+    // ✅ Mensaje especial para el dueño si está pendiente
+    if (video.pendiente === true && isOwner && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: '📹 Votre vidéo est en attente d\'approbation par un administrateur. Vous serez notifié dès qu\'elle sera publiée.',
+        pending: true
+      });
+    }
+
+    // ✅ Incrementar views (solo si no es admin viendo pendiente)
+    if (!video.pendiente || isAdmin) {
+      Video.findByIdAndUpdate(id, { $inc: { views: 1 } }).exec();
+      Video.findByIdAndUpdate(id, { $addToSet: { uniqueViews: req.user._id } }).exec();
+    }
+
+    let liked = false;
+    if (req.user && req.user._id && video.likes) {
+      const userIdStr = req.user._id.toString();
+      liked = video.likes.some(likeId => likeId && likeId.toString() === userIdStr);
+    }
+
+    const videoData = { ...video, liked };
+    res.json({ success: true, video: videoData });
+  } catch (error) {
+    console.error('Error getVideoByIdPrivate:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 // ✅ Obtener video por ID
+// ✅ Versión corregida de getVideoById
 const getVideoById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -164,11 +266,26 @@ const getVideoById = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Video no encontrado' });
     }
 
+    // ✅ Verificar si es admin correctamente
     const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'moderator');
+    
+    // ✅ LOG para depuración
+    console.log('🔍 getVideoById - Video:', { 
+      id: video._id, 
+      pendiente: video.pendiente,
+      userRole: req.user.role,
+      isAdmin: isAdmin
+    });
+    
+    // ✅ Permitir a admin ver videos pendientes
     if (video.pendiente === true && !isAdmin) {
-      return res.status(403).json({ success: false, message: 'Video en attente d\'approbation' });
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Video en attente d\'approbation. Veuillez patienter.' 
+      });
     }
 
+    // ✅ Incrementar views solo si no es admin o el video está aprobado
     if (!video.pendiente || isAdmin) {
       Video.findByIdAndUpdate(id, { $inc: { views: 1 } }).exec();
       if (req.user && req.user._id) {
@@ -189,7 +306,6 @@ const getVideoById = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 // ✅ Obtener videos del usuario
 const getUserVideos = async (req, res) => {
   try {
@@ -579,20 +695,7 @@ const shareVideo = async (req, res) => {
 };
 
 // ✅ Tracking tiempo de visualización
-const trackWatchTime = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { watchTime } = req.body;
-    const video = await Video.findById(id);
-    if (!video) return res.status(404).json({ success: false, message: 'Video no encontrado' });
-    await video.updateWatchTime(req.user._id, watchTime);
-    res.json({ success: true, averageWatchTime: video.averageWatchTime });
-  } catch (error) {
-    console.error('Error trackWatchTime:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
+ 
 // ✅ Agregar comentario
 const addComment = async (req, res) => {
   try {
@@ -770,10 +873,11 @@ const getVideosPendientesAdmin = async (req, res) => {
 };
 
 // ✅ Aprobar video (ADMIN)
+// En videoCtrl.js - aprobarVideoAdmin
 const aprobarVideoAdmin = async (req, res) => {
   try {
     const { id } = req.params;
-    const video = await Video.findById(id);
+    const video = await Video.findById(id).populate('user', 'username email avatar');
     if (!video) {
       return res.status(404).json({ success: false, message: 'Video no encontrado' });
     }
@@ -781,7 +885,8 @@ const aprobarVideoAdmin = async (req, res) => {
     video.pendiente = false;
     await video.save();
     
-    res.json({ success: true, message: 'Video aprobado correctamente' });
+    // ✅ Devolver el video con el usuario poblado para las notificaciones
+    res.json({ success: true, message: 'Video aprobado correctamente', video });
   } catch (error) {
     console.error('Error aprobarVideoAdmin:', error);
     res.status(500).json({ success: false, message: error.message });
@@ -812,7 +917,20 @@ const eliminarVideoAdmin = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
+// ✅ Ya existe en tu controlador
+const trackWatchTime = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { watchTime } = req.body;
+    const video = await Video.findById(id);
+    if (!video) return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    await video.updateWatchTime(req.user._id, watchTime);
+    res.json({ success: true, averageWatchTime: video.averageWatchTime });
+  } catch (error) {
+    console.error('Error trackWatchTime:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 module.exports = {
   // Públicas
   getVideoById,
@@ -841,5 +959,8 @@ module.exports = {
   // Admin
   getVideosPendientesAdmin,
   aprobarVideoAdmin,
-  eliminarVideoAdmin
+  eliminarVideoAdmin,
+  getVideoByIdPrivate ,
+  getVideoByIdPublic
+
 };
