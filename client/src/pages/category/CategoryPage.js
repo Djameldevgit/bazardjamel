@@ -1,12 +1,14 @@
-// pages/CategoryPage.jsx
+// pages/CategoryPage.jsx - VERSIÓN ACTUALIZADA CON SOPORTE PARA GRID DE VIDEOS
+
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useHistory, useLocation } from "react-router-dom";
 import { Container, Spinner, Row, Col, Button, Nav } from "react-bootstrap";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { Funnel, CameraVideo, Shop, Grid, ArrowUp } from 'react-bootstrap-icons';
+import { Funnel, CameraVideo, Shop, Grid, ArrowUp, Grid3x3, Film } from 'react-bootstrap-icons';
 import PostCard from "../../components/post-card/PostCard";
 import VideoCard from "../../components/VideoCard";
+import VideoReelItem from "../video/VideoReelItem";
 import { getCategoryPosts } from "../../redux/actions/categoryAction";
 import { getBoutiquesByCategory } from "../../redux/actions/boutiqueAction";
 import { getVideos } from "../../redux/actions/videoAction";
@@ -25,6 +27,12 @@ const CONTENT_TYPES = {
   VIDEOS: 'videos'
 };
 
+// 🆕 Modo de visualización para videos
+const VIDEO_VIEW_MODE = {
+  REEL: 'reel',  // TikTok style (pantalla completa)
+  GRID: 'grid'   // YouTube style (grid de tarjetas)
+};
+
 const CategoryPage = () => {
   const dispatch = useDispatch();
   const history = useHistory();
@@ -32,6 +40,11 @@ const CategoryPage = () => {
   const { slug, subSlug, articleSlug, page } = useParams();
 
   const [activeContentType, setActiveContentType] = useState(CONTENT_TYPES.POSTS);
+  const [videoViewMode, setVideoViewMode] = useState(() => {
+    // Si es la página principal de videos, usar modo reel por defecto
+    // Si es una subcategoría de videos, usar grid
+    return slug === 'videos' && !subSlug ? VIDEO_VIEW_MODE.REEL : VIDEO_VIEW_MODE.GRID;
+  });
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const videoReelsRef = useRef(null);
@@ -125,7 +138,7 @@ const CategoryPage = () => {
   // MODO REEL - DETECCIÓN DE SCROLL MANUAL
   // ============================================
   useEffect(() => {
-    if (!isVideo) return;
+    if (!isVideo || videoViewMode !== VIDEO_VIEW_MODE.REEL) return;
     
     const handleScroll = () => {
       if (isScrollingRef.current) return;
@@ -150,7 +163,7 @@ const CategoryPage = () => {
       container.addEventListener('scroll', handleScroll);
       return () => container.removeEventListener('scroll', handleScroll);
     }
-  }, [videos.length, activeVideoIndex, isVideo]);
+  }, [videos.length, activeVideoIndex, isVideo, videoViewMode]);
 
   const scrollToTop = () => {
     if (videoReelsRef.current) {
@@ -368,6 +381,10 @@ const CategoryPage = () => {
         activeFilters?.wilaya || '', activeFilters?.commune || '',
         null, null, activeFilters?.sortBy || 'recent'));
     } else if (isVideo) {
+      // 🆕 Al cambiar de categoría, resetear a modo grid si hay subcategoría
+      if (newFilters.sub) {
+        setVideoViewMode(VIDEO_VIEW_MODE.GRID);
+      }
       dispatch(getVideos(slug, newFilters.sub, 1, 12,
         activeFilters?.sortBy || 'recent', activeFilters?.searchTerm || null));
     } else {
@@ -453,12 +470,106 @@ const CategoryPage = () => {
   const hasMore = isBoutique ? hasMoreBoutiques : (isVideo ? hasMoreVideos : hasMorePosts);
   const paginationData = isBoutique ? boutiquePagination : (isVideo ? videoPagination : rawPagination);
 
+  // 🆕 Función para renderizar videos en modo grid (usando VideoCard)
+  const renderVideoGrid = () => {
+    if (error) {
+      return (
+        <div className="text-center py-5">
+          <h5 className="text-danger">Error</h5>
+          <p className="text-muted">{error}</p>
+        </div>
+      );
+    }
+
+    if (isLoading && items.length === 0 && isInitialLoad) {
+      return (
+        <div className="text-center py-5">
+          <Spinner animation="border" variant="primary" />
+          <p className="mt-3 text-muted">Chargement des vidéos...</p>
+        </div>
+      );
+    }
+
+    if (items.length > 0) {
+      return (
+        <>
+          <InfiniteScroll
+            dataLength={items.length}
+            hasMore={hasMore}
+            loader={
+              <div className="text-center py-4">
+                <Spinner animation="border" size="sm" variant="primary" />
+                <p className="text-muted small mt-2">Chargement supplémentaire...</p>
+              </div>
+            }
+            next={loadMore}
+            scrollThreshold={0.9}
+          >
+            <Row xs={1} sm={2} md={3} lg={4} className="g-4">
+              {items.map((video) => (
+                <Col key={video._id}>
+                  <VideoCard video={video} showActions={true} />
+                </Col>
+              ))}
+            </Row>
+          </InfiniteScroll>
+
+          {paginationData.totalPages > 1 && (
+            <div className="mt-4">
+              <PaginationComponent
+                currentPage={paginationData.currentPage}
+                totalPages={paginationData.totalPages}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          )}
+        </>
+      );
+    }
+
+    return (
+      <div className="text-center py-5">
+        <h4 className="text-secondary mb-3">Aucune vidéo trouvée</h4>
+        <p className="text-muted">
+          {currentSub
+            ? `Aucune vidéo dans "${currentSub.name}"`
+            : "Essayez une autre catégorie"}
+        </p>
+      </div>
+    );
+  };
+
   // ============================================
-  // RENDER MODO REEL PARA VIDEOS - SIN AUTO-AVANCE
+  // RENDER MODO REEL PARA VIDEOS (TIKTOK STYLE)
   // ============================================
-  if (isVideo) {
+  if (isVideo && videoViewMode === VIDEO_VIEW_MODE.REEL) {
     return (
       <>
+        {/* 🆕 Botón para cambiar a modo grid */}
+        <button
+          onClick={() => setVideoViewMode(VIDEO_VIEW_MODE.GRID)}
+          style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            zIndex: 1001,
+            background: 'rgba(0,0,0,0.6)',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '8px 12px',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            cursor: 'pointer',
+            backdropFilter: 'blur(5px)',
+            fontSize: '14px'
+          }}
+        >
+          <Grid3x3 size={18} />
+          Mode Grid
+        </button>
+
         <div 
           ref={videoReelsRef}
           className="video-reels-container"
@@ -471,18 +582,10 @@ const CategoryPage = () => {
           }}
         >
           {videos.map((video, index) => (
-            <VideoCard
+            <VideoReelItem
               key={video._id}
               video={video}
-              mode="reel"
               isActive={index === activeVideoIndex}
-              autoPlay={true}
-              muted={index !== activeVideoIndex}
-              loop={true}  // ✅ El video se repite en bucle hasta que el usuario hace scroll
-              onVideoEnd={() => {
-                // ❌ NO HACER NADA - El video se repite automáticamente por loop={true}
-                // El usuario debe hacer scroll manualmente para ver el siguiente video
-              }}
               onVisibilityChange={(isVisible) => {
                 if (isVisible) {
                   console.log(`🎬 Video ${index} activo: ${video.title}`);
@@ -551,9 +654,14 @@ const CategoryPage = () => {
   }
 
   // ============================================
-  // RENDER NORMAL PARA POSTS Y BOUTIQUES
+  // RENDER NORMAL PARA POSTS, BOUTIQUES Y VIDEOS EN MODO GRID
   // ============================================
   const renderContent = () => {
+    // 🆕 Si es video y está en modo grid, usar renderVideoGrid
+    if (isVideo && videoViewMode === VIDEO_VIEW_MODE.GRID) {
+      return renderVideoGrid();
+    }
+
     if (error) {
       return (
         <div className="text-center py-5">
@@ -636,7 +744,7 @@ const CategoryPage = () => {
       <main className="category-content">
         <Container>
           {!isBoutique && (
-            <div className="mb-4">
+            <div className="mb-4 d-flex justify-content-between align-items-center">
               <Nav variant="tabs" activeKey={activeContentType} onSelect={(k) => setActiveContentType(k)}>
                 <Nav.Item>
                   <Nav.Link eventKey={CONTENT_TYPES.POSTS}>
@@ -654,6 +762,30 @@ const CategoryPage = () => {
                   </Nav.Link>
                 </Nav.Item>
               </Nav>
+
+              {/* 🆕 Botón para cambiar modo de vista en videos */}
+              {activeContentType === CONTENT_TYPES.VIDEOS && isVideo && (
+                <div className="d-flex gap-2">
+                  <Button
+                    variant={videoViewMode === VIDEO_VIEW_MODE.REEL ? "primary" : "outline-secondary"}
+                    size="sm"
+                    onClick={() => setVideoViewMode(VIDEO_VIEW_MODE.REEL)}
+                    className="d-flex align-items-center gap-1"
+                  >
+                    <Film size={14} />
+                    Reels
+                  </Button>
+                  <Button
+                    variant={videoViewMode === VIDEO_VIEW_MODE.GRID ? "primary" : "outline-secondary"}
+                    size="sm"
+                    onClick={() => setVideoViewMode(VIDEO_VIEW_MODE.GRID)}
+                    className="d-flex align-items-center gap-1"
+                  >
+                    <Grid3x3 size={14} />
+                    Grille
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
@@ -677,7 +809,7 @@ const CategoryPage = () => {
           <div className="d-flex justify-content-between align-items-center mb-3">
             <div>
               <h4 className="mb-0">
-                {isBoutique ? 'Boutiques' : 'Annonces'}
+                {isBoutique ? 'Boutiques' : (isVideo ? 'Vidéos' : 'Annonces')}
                 {currentSub && <span className="text-muted ms-2">- {currentSub.name}</span>}
               </h4>
               {activeFilterCount > 0 && (
@@ -709,9 +841,7 @@ const CategoryPage = () => {
             {activeContentType === CONTENT_TYPES.BOUTIQUES && (
               <CategoryPage slug="boutiques" {...({})} />
             )}
-            {activeContentType === CONTENT_TYPES.VIDEOS && (
-              <CategoryPage slug="videos" {...({})} />
-            )}
+            {activeContentType === CONTENT_TYPES.VIDEOS && renderContent()}
           </section>
         </Container>
       </main>

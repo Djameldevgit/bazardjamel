@@ -15,6 +15,14 @@ export const VIDEO_TYPES = {
   DELETE_VIDEO: 'DELETE_VIDEO',
   LIKE_VIDEO: 'LIKE_VIDEO',
   SHARE_VIDEO: 'SHARE_VIDEO',
+  
+  // ============================================
+  // 🆕 TIPOS FALTANTES PARA TRACKING
+  // ============================================
+  UPDATE_VIDEO_STATS: 'UPDATE_VIDEO_STATS',
+  UPDATE_VIDEO_ENGAGEMENT: 'UPDATE_VIDEO_ENGAGEMENT',
+  INCREMENT_VIEW: 'INCREMENT_VIEW',
+  
   // Tipos para comentarios
   COMMENTS_LOADING: 'COMMENTS_LOADING',
   GET_COMMENTS: 'GET_COMMENTS',
@@ -26,12 +34,37 @@ export const VIDEO_TYPES = {
   MUSIC_LOADING: 'MUSIC_LOADING',
   GET_MUSIC_LIBRARY: 'GET_MUSIC_LIBRARY',
   MUSIC_ERROR: 'MUSIC_ERROR',
+  
+  // 🆕 TIPO PARA LOADING POR CATEGORÍA (si no existe)
+  LOADING_BY_CATEGORY: 'LOADING_BY_CATEGORY',
+  GET_VIDEOS_BY_CATEGORY: 'GET_VIDEOS_BY_CATEGORY',
+  GET_TRENDING_VIDEOS: 'GET_TRENDING_VIDEOS',
 };
 
 // ============================================
 // ACCIONES DE VIDEOS CON NOTIFICACIONES
 // ============================================
-
+export const incrementView = (videoId, token) => async (dispatch) => {
+  try {
+    const res = await patchDataAPI(`videos/${videoId}/view`, {}, token);
+    
+    if (res.data.success) {
+      // Actualizar el video en el estado global
+      dispatch({
+        type: VIDEO_TYPES.UPDATE_VIDEO_STATS,
+        payload: {
+          videoId,
+          stats: { views: res.data.views }
+        }
+      });
+      
+      return { success: true, views: res.data.views };
+    }
+  } catch (err) {
+    console.error('Error incrementando vista:', err);
+    return { success: false, error: err.response?.data?.message };
+  }
+};
 // ✅ Crear video CON NOTIFICACIÓN
 export const createVideo = (videoData, token, auth, socket) => async (dispatch) => {
   try {

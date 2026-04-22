@@ -1030,71 +1030,77 @@ const Drawer = ({
         
         {/* Selector de idioma y botón cerrar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ 
-            display: 'flex', 
-            gap: '6px', 
-            marginRight: '10px',
-            background: '#f3f4f6',
-            padding: '4px',
-            borderRadius: '12px'
-          }}>
-            {[
-              { code: 'ar', label: 'ع', title: 'العربية' },
-              { code: 'fr', label: 'FR', title: 'Français' },
-              { code: 'en', label: 'EN', title: 'English' }
-            ].map((lang) => {
-              const isActive = currentLang === lang.code;
-              const useGoogleTranslate = localStorage.getItem('useGoogleTranslate') === 'true';
-              const isTranslateActive = useGoogleTranslate && localStorage.getItem('targetTranslateLang') === lang.code;
-              
-              return (
-                <button
-                  key={lang.code}
-                  onClick={() => handleLanguageChange(lang.code)}
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '8px',
-                    background: isActive || isTranslateActive ? '#667eea' : 'transparent',
-                    border: isTranslateActive ? '2px solid #10b981' : 'none',
-                    color: isActive || isTranslateActive ? 'white' : '#6b7280',
-                    fontWeight: '600',
-                    fontSize: lang.code === 'ar' ? '1rem' : '0.75rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.2s ease'
-                  }}
-                  title={lang.title}
-                >
-                  {lang.label}
-                </button>
-              );
-            })}
-          </div>
-         
-          <button
-            onClick={onHide}
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '10px',
-              background: '#f3f4f6',
-              border: 'none',
-              color: '#6b7280',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.1rem',
-              transition: 'all 0.2s ease'
-            }}
-            title="Fermer"
-          >
-            ✕
-          </button>
-        </div>
+  <div style={{ 
+    display: 'flex', 
+    gap: '6px', 
+    marginRight: '10px',
+    background: '#f3f4f6',
+    padding: '4px',
+    borderRadius: '12px'
+  }}>
+    {[
+      { code: 'ar', label: 'AR', title: 'العربية' },
+      { code: 'fr', label: 'FR', title: 'Français' },
+      { code: 'en', label: 'EN', title: 'English' }
+    ].map((lang) => {
+      const isActive = currentLang === lang.code;
+      const useGoogleTranslate = localStorage.getItem('useGoogleTranslate') === 'true';
+      const isTranslateActive = useGoogleTranslate && localStorage.getItem('targetTranslateLang') === lang.code;
+      
+      return (
+        <button
+          key={lang.code}
+          onClick={() => handleLanguageChange(lang.code)}
+          style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '8px',
+            background: isActive || isTranslateActive ? '#667eea' : 'transparent',
+            border: isTranslateActive ? '2px solid #10b981' : 'none',
+            color: isActive || isTranslateActive ? 'white' : '#6b7280',
+            fontWeight: '600',
+            fontSize: lang.code === 'ar' ? '1rem' : '0.75rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.2s ease'
+          }}
+          title={lang.title}
+          className="notranslate"
+          translate="no"
+        >
+          <span className="notranslate" translate="no">
+            {lang.label}
+          </span>
+        </button>
+      );
+    })}
+  </div>
+ 
+  <button
+    onClick={onHide}
+    style={{
+      width: '36px',
+      height: '36px',
+      borderRadius: '10px',
+      background: '#f3f4f6',
+      border: 'none',
+      color: '#6b7280',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '1.1rem',
+      transition: 'all 0.2s ease'
+    }}
+    title="Fermer"
+    className="notranslate"
+    translate="no"
+  >
+    <span className="notranslate" translate="no">✕</span>
+  </button>
+</div>
       </div>
       
       {/* Contenido del Drawer */}

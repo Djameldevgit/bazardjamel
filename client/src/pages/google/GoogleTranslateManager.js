@@ -1,4 +1,5 @@
 // components/GoogleTranslateManager.js - Solo lógica, sin UI
+
 import React, { useState, useEffect } from 'react';
 
 const GoogleTranslateManager = () => {
@@ -11,6 +12,9 @@ const GoogleTranslateManager = () => {
     { code: 'ar', name: 'العربية', flag: '🇸🇦' }
   ];
 
+  // 🆕 Idioma por defecto: ÁRABE
+  const DEFAULT_LANG = 'ar';
+
   // Función para traducir la página (disponible globalmente)
   const translatePage = (targetLang) => {
     try {
@@ -21,16 +25,8 @@ const GoogleTranslateManager = () => {
         selectElement.dispatchEvent(new Event('change'));
         
         setTimeout(() => {
+          // Guardar en localStorage
           localStorage.setItem('selectedLang', targetLang);
-          
-          // Para árabe, ajustar dirección RTL
-          if (targetLang === 'ar') {
-            document.documentElement.setAttribute('dir', 'rtl');
-            document.body.style.direction = 'rtl';
-          } else {
-            document.documentElement.setAttribute('dir', 'ltr');
-            document.body.style.direction = 'ltr';
-          }
         }, 500);
       } else {
         setTimeout(() => translatePage(targetLang), 500);
@@ -77,10 +73,13 @@ const GoogleTranslateManager = () => {
         
         setScriptLoaded(true);
         
-        // Recuperar idioma guardado
+        // 🆕 Recuperar idioma guardado o usar árabe por defecto
         const savedLang = localStorage.getItem('selectedLang');
-        if (savedLang && savedLang !== 'fr') {
-          setTimeout(() => translatePage(savedLang), 1000);
+        const langToUse = savedLang || DEFAULT_LANG;
+        
+        // Traducir al idioma (si no es francés)
+        if (langToUse !== 'fr') {
+          setTimeout(() => translatePage(langToUse), 1000);
         }
       } catch (error) {
         console.error('Error inicializando Google Translate:', error);

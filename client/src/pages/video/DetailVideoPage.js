@@ -37,7 +37,7 @@ import VideoActions from './VideoActions';
 import { GLOBALTYPES } from '../../redux/actions/globalTypes';
 import moment from 'moment';
 import 'moment/locale/fr';
-import VideoComments from './VideoComments';
+import VideoComments from './VideoCommentsSheet';
 import './css/video.css';
 
 const DetailVideoPage = () => {
