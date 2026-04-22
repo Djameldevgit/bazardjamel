@@ -3,43 +3,30 @@
 const router = require('express').Router();
 const videoCtrl = require('../controllers/videoCtrl');
 const auth = require('../middleware/auth');
- 
- router.get('/music', videoCtrl.getMusicLibrary); 
+
+// ============================================
+// ✅ RUTAS ESPECÍFICAS (DEBEN IR ANTES QUE :id)
+// ============================================
+
+router.get('/music', videoCtrl.getMusicLibrary); 
 router.get('/videos/filter', videoCtrl.filterVideos);
-
-// Videos destacados
 router.get('/videos/featured', videoCtrl.getFeaturedVideos);
-
-// Videos populares
 router.get('/videos/popular', videoCtrl.getPopularVideos);
-
-// Videos tendencia
 router.get('/videos/trending', videoCtrl.getTrendingVideos);
-
-// Videos por categoría (DEBE IR ANTES de /:id)
 router.get('/videos/category/:categorySlug', videoCtrl.getVideosByCategory);
 
-// ============================================
-// ✅ RUTAS CON PARÁMETRO :id (VAN DESPUÉS DE LAS ESPECÍFICAS)
-// ============================================
-
-// Videos relacionados
-router.get('/videos/:id/related', videoCtrl.getRelatedVideos);
-
-// Comentarios paginados
-router.get('/videos/:id/comments', videoCtrl.getVideoComments);
-
-// Obtener video por ID (va al final porque captura cualquier cosa)
-router.get('/videos/:id',   videoCtrl.getVideoById);
-
-
+// ✅ RUTAS PÚBLICAS ESPECÍFICAS (ANTES DE :id)
 router.get('/videos/public/:id', videoCtrl.getVideoByIdPublic);
 
- 
+// ✅ RUTAS PRIVADAS ESPECÍFICAS (ANTES DE :id)
 router.get('/videos/private/:id', auth, videoCtrl.getVideoByIdPrivate);
 
-// ✅ La ruta ya existe
- 
+// ✅ RUTAS CON :id (VAN DESPUÉS DE LAS ESPECÍFICAS)
+router.get('/videos/:id/related', videoCtrl.getRelatedVideos);
+router.get('/videos/:id/comments', videoCtrl.getVideoComments);
+
+// ⚠️ ESTA RUTA CAPTURA CUALQUIER /videos/:id - DEBE IR AL FINAL
+router.get('/videos/:id', videoCtrl.getVideoById);
 
 // ============================================
 // RUTAS PROTEGIDAS (requieren autenticación)
@@ -68,12 +55,8 @@ router.get('/users/:userId/videos', auth, videoCtrl.getUserVideos);
 // ============================================
 // RUTAS DE ADMIN
 // ============================================
- 
-
 router.get('/admin/videos/pendientes', auth, videoCtrl.getVideosPendientesAdmin);
 router.patch('/admin/videos/:id/approve', auth, videoCtrl.aprobarVideoAdmin);
 router.delete('/admin/videos/:id', auth, videoCtrl.eliminarVideoAdmin);
-
-
 
 module.exports = router;

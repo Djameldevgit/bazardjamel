@@ -38,34 +38,42 @@ export const getVideosPendientes = (token, page = 1, limit = 10) => async (dispa
 };
 
 // ✅ Aprobar video CON NOTIFICACIÓN
-export const aprobarVideo = (videoId, token, auth, socket, videoData) => async (dispatch) => {
+// redux/actions/videoApproveAction.js - aprobarVideo CORREGIDO
+
+// ✅ Aprobar video CON NOTIFICACIÓN al usuario dueño
+// redux/actions/videoApproveAction.js - aprobarVideo CORREGIDO
+
+export const aprobarVideo = (id, token, auth, socket, videoData) => async (dispatch) => {
   try {
-    const res = await patchDataAPI(`admin/videos/${videoId}/approve`, {}, token);
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+    
+    const res = await patchDataAPI(`admin/videos/${id}/approve`, {}, token);
     
     dispatch({
       type: VIDEO_APPROVE_TYPES.APROBAR_VIDEO,
-      payload: videoId
+      payload: id
     });
     
-    // ✅ Notificar al dueño del video que fue aprobado
     const video = res.data.video || videoData;
-    if (video && video.user?._id) {
+    
+    // ✅ Notificar al dueño del video que fue aprobado
+    if (video && video.user && video.user._id) {
       const msg = {
         id: auth.user._id,
-        text: '✅ Votre vidéo a été approuvée et est maintenant visible',
-        recipients: [video.user._id],
+        text: `✅ Votre vidéo "${video.title}" a été approuvée et est maintenant visible sur le site.`,
+        recipients: [video.user._id], // Enviar solo al dueño
         url: `/video/${video._id}`,
         content: video.title,
         image: video.thumbnail,
-        type: 'video'
+        type: 'video_approved'
       };
       
-      dispatch(createNotify({ msg, auth, socket }));
+      await dispatch(createNotify({ msg, auth, socket }));
     }
     
     dispatch({
       type: GLOBALTYPES.ALERT,
-      payload: { success: res.data?.message || 'Vidéo approuvée avec succès' }
+      payload: { success: 'Vidéo approuvée avec succès' }
     });
     
     return { success: true, data: res.data };
@@ -76,38 +84,46 @@ export const aprobarVideo = (videoId, token, auth, socket, videoData) => async (
       payload: { error: err.response?.data?.message || 'Erreur lors de l\'approbation' }
     });
     return { success: false, error: err.response?.data?.message };
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
   }
 };
-
 // ✅ Eliminar video (rechazar) CON NOTIFICACIÓN
-export const eliminarVideo = (videoId, token, auth, socket, videoData) => async (dispatch) => {
+// redux/actions/videoApproveAction.js - eliminarVideo CORREGIDO
+
+// redux/actions/videoApproveAction.js - eliminarVideo CORREGIDO
+
+export const eliminarVideo = (id, token, auth, socket, videoData) => async (dispatch) => {
   try {
-    const res = await deleteDataAPI(`admin/videos/${videoId}`, token);
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+    
+    const res = await deleteDataAPI(`admin/videos/${id}`, token);
     
     dispatch({
       type: VIDEO_APPROVE_TYPES.ELIMINAR_VIDEO,
-      payload: videoId
+      payload: id
     });
     
-    // ✅ Notificar al dueño del video que fue rechazado
     const video = res.data?.video || videoData;
-    if (video && video.user?._id) {
+    
+    // ✅ Notificar al dueño del video que fue rechazado
+    if (video && video.user && video.user._id) {
       const msg = {
         id: auth.user._id,
-        text: '❌ Votre vidéo a été rejetée par l\'administrateur',
-        recipients: [video.user._id],
-        url: `/video/${video._id}`,
+        text: `❌ Votre vidéo "${video.title}" a été rejetée par l'administrateur. Veuillez vérifier les conditions d'utilisation.`,
+        recipients: [video.user._id], // Enviar solo al dueño
+        url: `/create-video`,
         content: video.title,
         image: video.thumbnail,
-        type: 'video'
+        type: 'video_rejected'
       };
       
-      dispatch(createNotify({ msg, auth, socket }));
+      await dispatch(createNotify({ msg, auth, socket }));
     }
     
     dispatch({
       type: GLOBALTYPES.ALERT,
-      payload: { success: res.data?.message || 'Vidéo supprimée avec succès' }
+      payload: { success: 'Vidéo supprimée avec succès' }
     });
     
     return { success: true, data: res.data };
@@ -118,6 +134,8 @@ export const eliminarVideo = (videoId, token, auth, socket, videoData) => async 
       payload: { error: err.response?.data?.message || 'Erreur lors de la suppression' }
     });
     return { success: false, error: err.response?.data?.message };
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
   }
 };
 

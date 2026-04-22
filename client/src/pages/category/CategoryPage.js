@@ -1,4 +1,4 @@
-// pages/CategoryPage.jsx - VERSIÓN ACTUALIZADA CON SOPORTE PARA GRID DE VIDEOS
+// pages/CategoryPage.jsx - VERSIÓN COMPLETAMENTE ACTUALIZADA
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -27,10 +27,10 @@ const CONTENT_TYPES = {
   VIDEOS: 'videos'
 };
 
-// 🆕 Modo de visualización para videos
+// Modo de visualización para videos
 const VIDEO_VIEW_MODE = {
-  REEL: 'reel',  // TikTok style (pantalla completa)
-  GRID: 'grid'   // YouTube style (grid de tarjetas)
+  REEL: 'reel',
+  GRID: 'grid'
 };
 
 const CategoryPage = () => {
@@ -39,10 +39,11 @@ const CategoryPage = () => {
   const location = useLocation();
   const { slug, subSlug, articleSlug, page } = useParams();
 
+  // ✅ Obtener auth y socket del store global
+  const { auth, socket } = useSelector(state => state);
+
   const [activeContentType, setActiveContentType] = useState(CONTENT_TYPES.POSTS);
   const [videoViewMode, setVideoViewMode] = useState(() => {
-    // Si es la página principal de videos, usar modo reel por defecto
-    // Si es una subcategoría de videos, usar grid
     return slug === 'videos' && !subSlug ? VIDEO_VIEW_MODE.REEL : VIDEO_VIEW_MODE.GRID;
   });
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
@@ -154,7 +155,6 @@ const CategoryPage = () => {
         setActiveVideoIndex(newIndex);
       }
       
-      // Mostrar botón scroll to top después de 2 videos
       setShowScrollTop(scrollTop > window.innerHeight * 2);
     };
     
@@ -381,7 +381,6 @@ const CategoryPage = () => {
         activeFilters?.wilaya || '', activeFilters?.commune || '',
         null, null, activeFilters?.sortBy || 'recent'));
     } else if (isVideo) {
-      // 🆕 Al cambiar de categoría, resetear a modo grid si hay subcategoría
       if (newFilters.sub) {
         setVideoViewMode(VIDEO_VIEW_MODE.GRID);
       }
@@ -465,12 +464,20 @@ const CategoryPage = () => {
     setShowFilterDrawer(false);
   }, [slug, isBoutique, isVideo, dispatch, updateUrl]);
 
+  // ✅ Función para manejar eliminación de video y recargar lista
+  const handleVideoDeleted = useCallback((deletedVideoId) => {
+    console.log('🗑️ Video eliminado:', deletedVideoId);
+    // Recargar videos después de eliminar
+    dispatch(getVideos(slug, filters.sub, 1, 12,
+      activeFilters?.sortBy || 'recent', activeFilters?.searchTerm || null));
+  }, [dispatch, slug, filters.sub, activeFilters]);
+
   const isLoading = isBoutique ? boutiquesLoading : (isVideo ? videosLoading : postsLoading);
   const items = isBoutique ? boutiques : (isVideo ? videos : posts);
   const hasMore = isBoutique ? hasMoreBoutiques : (isVideo ? hasMoreVideos : hasMorePosts);
   const paginationData = isBoutique ? boutiquePagination : (isVideo ? videoPagination : rawPagination);
 
-  // 🆕 Función para renderizar videos en modo grid (usando VideoCard)
+  // Función para renderizar videos en modo grid
   const renderVideoGrid = () => {
     if (error) {
       return (
@@ -540,12 +547,12 @@ const CategoryPage = () => {
   };
 
   // ============================================
-  // RENDER MODO REEL PARA VIDEOS (TIKTOK STYLE)
+  // RENDER MODO REEL PARA VIDEOS (TIKTOK STYLE) - CORREGIDO
   // ============================================
   if (isVideo && videoViewMode === VIDEO_VIEW_MODE.REEL) {
     return (
       <>
-        {/* 🆕 Botón para cambiar a modo grid */}
+        {/* Botón para cambiar a modo grid */}
         <button
           onClick={() => setVideoViewMode(VIDEO_VIEW_MODE.GRID)}
           style={{
@@ -591,6 +598,7 @@ const CategoryPage = () => {
                   console.log(`🎬 Video ${index} activo: ${video.title}`);
                 }
               }}
+              onVideoDeleted={handleVideoDeleted}
             />
           ))}
         </div>
@@ -657,7 +665,6 @@ const CategoryPage = () => {
   // RENDER NORMAL PARA POSTS, BOUTIQUES Y VIDEOS EN MODO GRID
   // ============================================
   const renderContent = () => {
-    // 🆕 Si es video y está en modo grid, usar renderVideoGrid
     if (isVideo && videoViewMode === VIDEO_VIEW_MODE.GRID) {
       return renderVideoGrid();
     }
@@ -763,7 +770,7 @@ const CategoryPage = () => {
                 </Nav.Item>
               </Nav>
 
-              {/* 🆕 Botón para cambiar modo de vista en videos */}
+              {/* Botón para cambiar modo de vista en videos */}
               {activeContentType === CONTENT_TYPES.VIDEOS && isVideo && (
                 <div className="d-flex gap-2">
                   <Button

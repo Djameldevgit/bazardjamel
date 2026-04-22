@@ -10,28 +10,69 @@ export const NOTIFY_TYPES = {
     DELETE_ALL_NOTIFIES: 'DELETE_ALL_NOTIFIES'
 }
 
+// redux/actions/notifyAction.js - createNotify MEJORADO
 export const createNotify = ({msg, auth, socket}) => async (dispatch) => {
     try {
+        // ✅ Validaciones
+        if (!auth || !auth.token) {
+            console.error('❌ createNotify: Auth no disponible');
+            return null;
+        }
+        
+        if (!socket) {
+            console.error('❌ createNotify: Socket no disponible');
+            return null;
+        }
+        
         // ✅ Asegurar que recipients sea siempre un array
+        let recipients = msg.recipients;
+        if (!Array.isArray(recipients)) {
+            recipients = [recipients];
+        }
+        
         const notifyMsg = {
-            ...msg,
-            recipients: Array.isArray(msg.recipients) ? msg.recipients : [msg.recipients]
+            id: msg.id || auth.user._id,
+            recipients: recipients,
+            url: msg.url,
+            text: msg.text,
+            content: msg.content || '',
+            image: msg.image || '',
+            type: msg.type
         };
         
+        console.log('📤 createNotify - Enviando a API:', {
+            recipients: notifyMsg.recipients,
+            text: notifyMsg.text,
+            type: notifyMsg.type
+        });
+        
+        // ✅ Guardar en base de datos
         const res = await postDataAPI('notify', notifyMsg, auth.token);
-
-        socket.emit('createNotify', {
+        
+        console.log('📤 createNotify - Respuesta API:', res.data);
+        
+        // ✅ Emitir por socket
+        const socketData = {
             ...res.data.notify,
             user: {
+                _id: auth.user._id,
                 username: auth.user.username,
                 avatar: auth.user.avatar
             }
-        });
+        };
+        
+        socket.emit('createNotify', socketData);
+        
+        return res.data;
     } catch (err) {
-        dispatch({type: GLOBALTYPES.ALERT, payload: {error: err.response.data.msg}});
+        console.error('❌ createNotify - Error:', err.response?.data || err.message);
+        dispatch({
+            type: GLOBALTYPES.ALERT, 
+            payload: {error: err.response?.data?.msg || 'Erreur de notification'}
+        });
+        return null;
     }
 };
-
 export const removeNotify = ({msg, auth, socket}) => async (dispatch) => {
     try {
         await deleteDataAPI(`notify/${msg.id}?url=${msg.url}`, auth.token)

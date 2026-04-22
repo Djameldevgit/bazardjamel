@@ -151,11 +151,22 @@ const getVideosByCategory = async (req, res) => {
 // controllers/videoCtrl.js
 
 // ✅ Para PÚBLICO - Solo videos aprobados
+// controllers/videoCtrl.js
+
+// ✅ Para PÚBLICO - Solo videos aprobados (con manejo de errores claro)
+// controllers/videoCtrl.js - getVideoByIdPublic CORREGIDO
+
 const getVideoByIdPublic = async (req, res) => {
   try {
     const { id } = req.params;
+    
+    console.log('🔍 getVideoByIdPublic llamado con ID:', id);
+    
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: 'ID inválido' });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'ID de vidéo invalide' 
+      });
     }
 
     const video = await Video.findById(id)
@@ -165,31 +176,40 @@ const getVideoByIdPublic = async (req, res) => {
       .lean();
 
     if (!video) {
-      return res.status(404).json({ success: false, message: 'Video no encontrado' });
-    }
-
-    // ✅ Solo mostrar si está aprobado
-    if (video.pendiente === true) {
       return res.status(404).json({ 
         success: false, 
-        message: 'Video non disponible ou en cours de vérification' 
+        message: 'Vidéo non trouvée' 
       });
     }
 
-    // ✅ Incrementar views
-    Video.findByIdAndUpdate(id, { $inc: { views: 1 } }).exec();
+    console.log('📹 Video encontrado:', { 
+      id: video._id, 
+      pendiente: video.pendiente, 
+      title: video.title 
+    });
 
-    let liked = false;
-    // Nota: Como es público, no hay usuario autenticado, siempre false
+    // ✅ Si está pendiente - devolver el video con su campo pendiente=true
+    if (video.pendiente === true) {
+      return res.status(200).json({ 
+        success: false,
+        video: video,  // Enviamos el video COMPLETO con su campo pendiente
+        message: '📹 Votre vidéo a été envoyée aux administrateurs pour validation. Vous serez notifié dès qu\'elle sera publiée.'
+      });
+    }
 
-    const videoData = { ...video, liked };
+    // ✅ Solo incrementar views si está aprobado
+    await Video.findByIdAndUpdate(id, { $inc: { views: 1 } }).exec();
+
+    const videoData = { ...video, liked: false };
     res.json({ success: true, video: videoData });
   } catch (error) {
     console.error('Error getVideoByIdPublic:', error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur lors du chargement de la vidéo' 
+    });
   }
 };
-
 // ✅ Para ADMIN/DUEÑO - Puede ver videos pendientes
 const getVideoByIdPrivate = async (req, res) => {
   try {

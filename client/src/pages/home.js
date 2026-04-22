@@ -148,14 +148,7 @@ const Home = () => {
     }
   };
 
-  const scrollVideos = (direction) => {
-    if (videoSliderRef.current) {
-      videoSliderRef.current.scrollBy({
-        left: direction === 'left' ? -300 : 300,
-        behavior: 'smooth'
-      });
-    }
-  };
+  
 
   // Scroll infinito
   const fetchMoreData = useCallback(() => {
@@ -187,18 +180,13 @@ const Home = () => {
     history.push('/boutiques/1');
   };
 
-  const handleViewAllVideos = () => {
-    history.push('/videos');
-  };
+  
 
   const handleBoutiqueClick = (boutiqueId) => {
     history.push(`/boutique/${boutiqueId}`);
   };
 
-  const handleVideoClick = (video) => {
-    history.push(`/video/${video._id}`);
-  };
-
+ 
   // Filtrar posts normales (excluir boutiques)
   const filterNormalPosts = (posts) => {
     if (!posts) return [];
@@ -249,72 +237,7 @@ const Home = () => {
         </section>
 
         <Container className="py-1">
-          {/* ============================================ */}
-          {/* 🎬 SECCIÓN DE VIDEOS (NUEVA) */}
-          {/* ============================================ */}
-          {displayVideos.length > 0 && (
-            <section className="mb-5">
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                  <div className="d-flex align-items-center gap-2">
-                    <PlayCircle size={28} className="text-danger" />
-                    <h5 className="h4 fw-bold mb-0">🎬 Vidéos Tassili</h5>
-                  </div>
-                  <p className="text-muted mb-0 small">
-                    Découvrez nos vidéos populaires et tutoriels
-                  </p>
-                </div>
-                <div className="d-flex gap-2 align-items-center">
-                  <div className="d-flex gap-2">
-                    <Button 
-                      variant="outline-danger" 
-                      className="rounded-circle p-2" 
-                      onClick={() => scrollVideos('left')} 
-                      disabled={!showVideoLeftArrow} 
-                      style={{ width: '40px', height: '40px' }}
-                    >
-                      <ChevronLeft size={20} />
-                    </Button>
-                    <Button 
-                      variant="outline-danger" 
-                      className="rounded-circle p-2" 
-                      onClick={() => scrollVideos('right')} 
-                      disabled={!showVideoRightArrow} 
-                      style={{ width: '40px', height: '40px' }}
-                    >
-                      <ChevronRight size={20} />
-                    </Button>
-                  </div>
-                  <Button 
-                    variant="outline-danger" 
-                    className="rounded-pill px-4" 
-                    onClick={handleViewAllVideos}
-                  >
-                    Toutes les vidéos <ArrowRight className="ms-2" size={16} />
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="video-slider-container position-relative">
-                <div 
-                  className="video-slider d-flex gap-3 pb-3" 
-                  ref={videoSliderRef} 
-                  style={{ overflowX: 'auto', scrollBehavior: 'smooth', scrollbarWidth: 'thin' }}
-                >
-                  {displayVideos.map((video) => (
-                    <div 
-                      key={video._id} 
-                      className="video-slide" 
-                      style={{ minWidth: '300px', maxWidth: '300px', width: '100%' }}
-                    >
-                      <VideoCard video={video} showActions={false} onVideoClick={handleVideoClick} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          )}
-
+       
           {/* Section Boutiques */}
           {homeBoutiques.length > 0 && (
             <section className="mb-5">

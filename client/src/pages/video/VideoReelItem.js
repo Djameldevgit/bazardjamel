@@ -1,9 +1,8 @@
-// components/Video/VideoReelItem.jsx - SOLO ESTILOS AJUSTADOS
-
+// components/Video/VideoReelItem.jsx - CON MENÚ DE TRES PUNTOS Y SIN CAPA OSCURA EXTRA
 import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
-import { Button, Badge } from 'react-bootstrap';
+import { Button, Badge, Dropdown } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faHeart,
@@ -17,20 +16,30 @@ import {
   faMusic,
   faChevronDown,
   faXmark,
-  faArrowLeft
+  faArrowLeft,
+  faEllipsisVertical,
+  faPen,
+  faTrash,
+  faFlag,
+  faBan,
+  faCheckCircle,
+  faUserCheck,
+  faUserSlash,
+  faExclamationTriangle
 } from '@fortawesome/free-solid-svg-icons';
 import {
   faHeart as faHeartRegular,
   faBookmark as faBookmarkRegular,
   faComment as faCommentRegular
 } from '@fortawesome/free-regular-svg-icons';
-import { likeVideo, shareVideo } from '../../redux/actions/videoAction';
+import { likeVideo, shareVideo, deleteVideo } from '../../redux/actions/videoAction';
+import { aprobarVideo, eliminarVideo } from '../../redux/actions/videoApproveAction';
 import { GLOBALTYPES } from '../../redux/actions/globalTypes';
 import VideoComments from './VideoComments';
 import moment from 'moment';
 import 'moment/locale/fr';
 
-const VideoReelItem = ({ video, isActive = false, onVisibilityChange }) => {
+const VideoReelItem = ({ video, isActive = false, onVisibilityChange, onVideoDeleted }) => {
   const dispatch = useDispatch();
   const history = useHistory();
   const { auth, socket } = useSelector(state => state);
@@ -43,11 +52,12 @@ const VideoReelItem = ({ video, isActive = false, onVisibilityChange }) => {
   const [saved, setSaved] = useState(false);
   const [commentsCount, setCommentsCount] = useState(video.comments?.length || 0);
   const [showComments, setShowComments] = useState(false);
-  // 🆕 Audio activo por defecto (false = no mute, true = mute)
-  const [isMuted, setIsMuted] = useState(false); // ← CAMBIADO: false = audio activo
+  const [isMuted, setIsMuted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   
   // Estados para el arrastre interactivo
   const [dragOffset, setDragOffset] = useState(0);
@@ -55,6 +65,7 @@ const VideoReelItem = ({ video, isActive = false, onVisibilityChange }) => {
   const [startY, setStartY] = useState(0);
   
   const isAdmin = auth.user?.role === 'admin' || auth.user?.role === 'moderator';
+  const isOwner = auth.user?._id === video.user?._id;
   const isPending = video?.pendiente === true;
   
   moment.locale('fr');
@@ -191,7 +202,7 @@ const VideoReelItem = ({ video, isActive = false, onVisibilityChange }) => {
       return;
     }
     
-    const result = await dispatch(likeVideo(video._id, auth.token));
+    const result = await dispatch(likeVideo(video._id, auth.token, auth, socket, video));
     if (result?.liked !== undefined) {
       setLiked(result.liked);
       setLikesCount(result.likes);
@@ -259,7 +270,7 @@ const VideoReelItem = ({ video, isActive = false, onVisibilityChange }) => {
       });
     }
     
-    await dispatch(shareVideo(video._id, auth.token));
+    await dispatch(shareVideo(video._id, auth.token, auth, socket, video));
   };
   
   const toggleMute = (e) => {
@@ -308,6 +319,104 @@ const VideoReelItem = ({ video, isActive = false, onVisibilityChange }) => {
     history.goBack();
   };
   
+  // ============================================
+  // ACCIONES DEL MENÚ DE TRES PUNTOS
+  // ============================================
+  
+  // Editar video
+  const handleEdit = () => {
+    setShowMenu(false);
+    history.push(`/edit-video/${video._id}`);
+  };
+  
+  // Eliminar video (para owner o admin)
+  const handleDeleteVideo = async () => {
+    setShowMenu(false);
+    if (!window.confirm('Supprimer cette vidéo ? Cette action est irréversible.')) return;
+    
+    setActionLoading(true);
+    const result = await dispatch(deleteVideo(video._id, auth.token, auth, socket, video));
+    setActionLoading(false);
+    
+    if (result?.success) {
+      dispatch({
+        type: GLOBALTYPES.ALERT,
+        payload: { success: 'Vidéo supprimée avec succès' }
+      });
+      if (onVideoDeleted) onVideoDeleted(video._id);
+    }
+  };
+  
+  // Aprobar video (solo admin)
+  const handleApproveVideo = async () => {
+    setShowMenu(false);
+    if (!window.confirm(`Approuver la vidéo "${video.title}" ?`)) return;
+    
+    setActionLoading(true);
+    const result = await dispatch(aprobarVideo(video._id, auth.token, auth, socket, video));
+    setActionLoading(false);
+    
+    if (result?.success) {
+      dispatch({
+        type: GLOBALTYPES.ALERT,
+        payload: { success: 'Vidéo approuvée !' }
+      });
+      if (onVideoDeleted) onVideoDeleted(video._id);
+    }
+  };
+  
+  // Rechazar/eliminar video (solo admin)
+  const handleRejectVideo = async () => {
+    setShowMenu(false);
+    if (!window.confirm(`Rejeter la vidéo "${video.title}" ?`)) return;
+    
+    setActionLoading(true);
+    const result = await dispatch(eliminarVideo(video._id, auth.token, auth, socket, video));
+    setActionLoading(false);
+    
+    if (result?.success) {
+      dispatch({
+        type: GLOBALTYPES.ALERT,
+        payload: { success: 'Vidéo rejetée' }
+      });
+      if (onVideoDeleted) onVideoDeleted(video._id);
+    }
+  };
+  
+  // Denunciar video (para usuarios normales)
+  const handleReportVideo = () => {
+    setShowMenu(false);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { 
+        info: 'Fonctionnalité de signalement disponible prochainement. Pour signaler cette vidéo, contactez le support.' 
+      }
+    });
+  };
+  
+  // Bloquear usuario
+  const handleBlockUser = () => {
+    setShowMenu(false);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { 
+        info: `L'utilisateur @${video.user?.username} a été bloqué.` 
+      }
+    });
+  };
+  
+  // No me interesa
+  const handleNotInterested = () => {
+    setShowMenu(false);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { 
+        info: 'Nous prendrons en compte votre retour pour améliorer vos recommandations.' 
+      }
+    });
+    if (onVideoDeleted) onVideoDeleted(video._id);
+  };
+  
   const formatNumber = (num) => {
     if (!num) return '0';
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -326,25 +435,160 @@ const VideoReelItem = ({ video, isActive = false, onVisibilityChange }) => {
       backgroundColor: '#000',
       overflow: 'hidden'
     }}>
-      {/* Header con botón de regreso */}
+      {/* Header con botón de regreso y menú de tres puntos - SIN CAPA OSCURA EXTRA */}
       <div className="reel-header" style={{
         position: 'absolute',
-        top: 0,
+        top: '80px',
         left: 0,
         right: 0,
         zIndex: 30,
         padding: '16px',
-        background: 'linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 100%)',
-        pointerEvents: 'none'
+        background: 'transparent',  // ← Eliminado el gradiente oscuro
+        pointerEvents: 'none',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
       }}>
+        {/* Botón de regreso (flecha izquierda) */}
         <Button 
           variant="link" 
           className="text-white p-0"
           onClick={handleGoBack}
-          style={{ textDecoration: 'none', pointerEvents: 'auto' }}
+          style={{ 
+            textDecoration: 'none', 
+            pointerEvents: 'auto',
+            background: 'transparent',  // ← Sin fondo
+            border: 'none'
+          }}
         >
           <FontAwesomeIcon icon={faArrowLeft} size="lg" />
         </Button>
+        
+        {/* ============================================ */}
+        {/* BOTÓN DE TRES PUNTOS (⋮) - SIN CAPA OSCURA */}
+        {/* ============================================ */}
+        {!showComments && (
+          <Dropdown show={showMenu} onToggle={setShowMenu} align="end">
+            <Dropdown.Toggle 
+              variant="link" 
+              className="text-white p-0"
+              style={{ 
+                pointerEvents: 'auto',
+                textDecoration: 'none',
+                background: 'transparent',  // ← Eliminado el fondo oscuro
+                borderRadius: '50%',
+                width: '36px',
+                height: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <FontAwesomeIcon icon={faEllipsisVertical} size="lg" />
+            </Dropdown.Toggle>
+            
+            <Dropdown.Menu 
+              align="end"
+              style={{
+                background: '#1a1a1a',
+                border: '1px solid #333',
+                borderRadius: '12px',
+                minWidth: '200px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+              }}
+            >
+              {/* Opciones para ADMIN */}
+              {isAdmin && isPending && (
+                <>
+                  <Dropdown.Item 
+                    onClick={handleApproveVideo}
+                    style={{ color: '#4caf50', padding: '10px 16px' }}
+                  >
+                    <FontAwesomeIcon icon={faCheckCircle} className="me-2" />
+                    Approuver la vidéo
+                  </Dropdown.Item>
+                  <Dropdown.Item 
+                    onClick={handleRejectVideo}
+                    style={{ color: '#f44336', padding: '10px 16px' }}
+                  >
+                    <FontAwesomeIcon icon={faBan} className="me-2" />
+                    Rejeter la vidéo
+                  </Dropdown.Item>
+                  <Dropdown.Divider style={{ borderColor: '#333' }} />
+                </>
+              )}
+              
+              {/* Opciones para OWNER o ADMIN */}
+              {(isOwner || isAdmin) && !isPending && (
+                <>
+                  <Dropdown.Item 
+                    onClick={handleEdit}
+                    style={{ color: '#fff', padding: '10px 16px' }}
+                  >
+                    <FontAwesomeIcon icon={faPen} className="me-2" />
+                    Modifier
+                  </Dropdown.Item>
+                  <Dropdown.Item 
+                    onClick={handleDeleteVideo}
+                    style={{ color: '#f44336', padding: '10px 16px' }}
+                  >
+                    <FontAwesomeIcon icon={faTrash} className="me-2" />
+                    Supprimer
+                  </Dropdown.Item>
+                  <Dropdown.Divider style={{ borderColor: '#333' }} />
+                </>
+              )}
+              
+              {/* Opciones para ADMIN en videos aprobados */}
+              {isAdmin && !isPending && (
+                <>
+                  <Dropdown.Item 
+                    onClick={handleDeleteVideo}
+                    style={{ color: '#f44336', padding: '10px 16px' }}
+                  >
+                    <FontAwesomeIcon icon={faTrash} className="me-2" />
+                    Supprimer (Admin)
+                  </Dropdown.Item>
+                  <Dropdown.Divider style={{ borderColor: '#333' }} />
+                </>
+              )}
+              
+              {/* Opciones para USUARIOS NORMALES */}
+              {!isOwner && !isAdmin && !isPending && (
+                <>
+                  <Dropdown.Item 
+                    onClick={handleReportVideo}
+                    style={{ color: '#ff9800', padding: '10px 16px' }}
+                  >
+                    <FontAwesomeIcon icon={faFlag} className="me-2" />
+                    Signaler la vidéo
+                  </Dropdown.Item>
+                  <Dropdown.Item 
+                    onClick={handleBlockUser}
+                    style={{ color: '#f44336', padding: '10px 16px' }}
+                  >
+                    <FontAwesomeIcon icon={faUserSlash} className="me-2" />
+                    Bloquer @{video.user?.username}
+                  </Dropdown.Item>
+                </>
+              )}
+              
+              {/* Opción "No me interesa" para todos los usuarios */}
+              {!isPending && (
+                <>
+                  <Dropdown.Divider style={{ borderColor: '#333' }} />
+                  <Dropdown.Item 
+                    onClick={handleNotInterested}
+                    style={{ color: '#888', padding: '10px 16px' }}
+                  >
+                    <FontAwesomeIcon icon={faExclamationTriangle} className="me-2" />
+                    Pas intéressé(e)
+                  </Dropdown.Item>
+                </>
+              )}
+            </Dropdown.Menu>
+          </Dropdown>
+        )}
       </div>
       
       {/* Banner de advertencia para admin */}
@@ -428,17 +672,16 @@ const VideoReelItem = ({ video, isActive = false, onVisibilityChange }) => {
         )}
         
         {/* ============================================ */}
-        {/* SIDEBAR DE ACCIONES - ESTILOS AJUSTADOS */}
-        {/* Más abajo, más cerca uno de otro */}
+        {/* SIDEBAR DE ACCIONES */}
         {/* ============================================ */}
         {!showComments && (
           <div className="actions-sidebar" style={{
             position: 'absolute',
             right: 12,
-            bottom: 120,  // ← Más abajo (antes 100)
+            bottom: 120,
             display: 'flex',
             flexDirection: 'column',
-            gap: 16,      // ← Más cerca (antes 24)
+            gap: 16,
             zIndex: 20
           }}>
             {/* Like */}
@@ -548,7 +791,7 @@ const VideoReelItem = ({ video, isActive = false, onVisibilityChange }) => {
         )}
         
         {/* ============================================ */}
-        {/* CONTROL DE VOLUMEN - MÁS ABAJO DEL TODO */}
+        {/* CONTROL DE VOLUMEN */}
         {/* ============================================ */}
         {!showComments && (
           <button
@@ -556,7 +799,7 @@ const VideoReelItem = ({ video, isActive = false, onVisibilityChange }) => {
             className="volume-control"
             style={{
               position: 'absolute',
-              bottom: 30,        // ← Más abajo (antes 20)
+              bottom: 30,
               right: 16,
               background: 'rgba(0,0,0,0.5)',
               border: 'none',
@@ -581,13 +824,13 @@ const VideoReelItem = ({ video, isActive = false, onVisibilityChange }) => {
         )}
         
         {/* ============================================ */}
-        {/* INFORMACIÓN DEL VIDEO - ESTILOS AJUSTADOS */}
+        {/* INFORMACIÓN DEL VIDEO */}
         {/* ============================================ */}
         {!showComments && (
           <div className="video-info" style={{
             position: 'absolute',
             left: 16,
-            bottom: 100,      // ← Más arriba para no chocar con volumen
+            bottom: 100,
             color: 'white',
             zIndex: 20,
             maxWidth: '60%'
@@ -773,22 +1016,17 @@ const VideoReelItem = ({ video, isActive = false, onVisibilityChange }) => {
           }
         }
         
+        .dropdown-menu {
+          background: #1a1a1a !important;
+        }
+        
+        .dropdown-item:hover {
+          background: #2a2a2a !important;
+        }
+        
         .drawer-handle:active,
         .comments-drawer:active {
           cursor: grabbing;
-        }
-        
-        .comments-drawer div:last-child::-webkit-scrollbar {
-          width: 4px;
-        }
-        
-        .comments-drawer div:last-child::-webkit-scrollbar-track {
-          background: #1a1a1a;
-        }
-        
-        .comments-drawer div:last-child::-webkit-scrollbar-thumb {
-          background: #555;
-          border-radius: 4px;
         }
         
         @media (max-width: 768px) {

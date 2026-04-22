@@ -14,7 +14,7 @@ const initialState = {
   totalPages: 0,
   hasMore: true,
   children: [],
-  // Estado para videos por categoría
+  pendingVideo: null,
   musicLibrary: [],
   musicLoading: false,
   musicError: null,
@@ -249,6 +249,15 @@ const videoReducer = (state = initialState, action) => {
       return { ...state, musicLibrary: action.payload, musicError: null };
     case VIDEO_TYPES.MUSIC_ERROR:
       return { ...state, musicError: action.payload };
+
+      case VIDEO_TYPES.GET_PENDING_VIDEO:
+        return { 
+          ...state, 
+          pendingVideo: action.payload,
+          currentVideo: null,
+          loading: false 
+        };
+
     default:
       return state;
   }

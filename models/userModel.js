@@ -90,7 +90,7 @@ role: {
   
     // Estado de bloqueo
     isBlocked: { type: Boolean, default: false },
-    isPro: { type: Boolean, default: false },
+    isPro: { type: Boolean, default: true },
     proExpiryDate: {
         type: Date,
         default: null
