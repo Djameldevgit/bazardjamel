@@ -1,63 +1,26 @@
-// components/Video/VideoActions.jsx - Estilo TikTok CON NOTIFICACIONES
+// components/Video/VideoActions.jsx - VERSIÓN QUE REDIRIGE AL EDIT VIDEO WIZARD (Formato Android)
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import { Dropdown, Modal, Button, Form } from 'react-bootstrap';
 import { ThreeDotsVertical, Pencil, Trash2, Flag } from 'react-bootstrap-icons';
-import { updateVideo, deleteVideo } from '../../redux/actions/videoAction';
+import { deleteVideo } from '../../redux/actions/videoAction';
+import { GLOBALTYPES } from '../../redux/actions/globalTypes';
 
 const VideoActions = ({ video, onVideoUpdate, onVideoDelete }) => {
   const dispatch = useDispatch();
   const history = useHistory();
-  const { auth, socket } = useSelector(state => state); // ✅ Añadir socket
-  const [showEditModal, setShowEditModal] = useState(false);
+  const { auth, socket } = useSelector(state => state);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  // Estado para edición
-  const [editData, setEditData] = useState({
-    title: video?.title || '',
-    description: video?.description || '',
-    tags: video?.tags?.join(', ') || '',
-    categorySlug: video?.categorySlug || ''
-  });
-  
-  // Categorías
-  const videoCategories = [
-    { name: 'Véhicules', slug: 'videos-vehicules' },
-    { name: 'Immobilier', slug: 'videos-immobilier' },
-    { name: 'Téléphones', slug: 'videos-telephones' },
-    { name: 'Informatique', slug: 'videos-informatique' },
-    { name: 'Électroménager', slug: 'videos-electromenager' },
-    { name: 'Mode & Vêtements', slug: 'videos-mode-vetements' },
-    { name: 'Maison & Jardin', slug: 'videos-maison-jardin' },
-    { name: 'Sport & Loisirs', slug: 'videos-sport-loisirs' },
-    { name: 'Tutoriels', slug: 'videos-tutoriels' },
-    { name: 'Reviews', slug: 'videos-reviews' }
-  ];
-  
-  // ✅ Editar video CON SOCKET
-  const handleEdit = async () => {
-    setLoading(true);
-    const result = await dispatch(updateVideo(
-      video._id, 
-      {
-        title: editData.title,
-        description: editData.description,
-        tags: editData.tags.split(',').map(t => t.trim()).filter(t => t),
-        categorySlug: editData.categorySlug
-      }, 
-      auth.token,
-      auth,
-      socket,
-      video  // ✅ Pasar videoData para la notificación
-    ));
-    
-    if (result.success) {
-      setShowEditModal(false);
-      if (onVideoUpdate) onVideoUpdate(result.video);
-    }
-    setLoading(false);
+  // ✅ EDITAR - Redirige al EditVideoWizard (NO MODAL)
+  const handleEdit = () => {
+    // Guardar información para volver al feed después de editar
+    sessionStorage.setItem('returnToFeed', 'true');
+    sessionStorage.setItem('feedScrollPosition', window.scrollY.toString());
+    // Redirigir al wizard de edición (mismo formato que creación)
+    history.push(`/edit-video/${video._id}`);
   };
   
   // ✅ Eliminar video CON SOCKET
@@ -68,19 +31,27 @@ const VideoActions = ({ video, onVideoUpdate, onVideoDelete }) => {
       auth.token,
       auth,
       socket,
-      video  // ✅ Pasar videoData para la notificación
+      video
     ));
     
-    if (result.success) {
+    if (result?.success) {
       setShowDeleteModal(false);
+      dispatch({
+        type: GLOBALTYPES.ALERT,
+        payload: { success: 'Vidéo supprimée avec succès' }
+      });
       if (onVideoDelete) onVideoDelete(video._id);
+      // Redirigir al feed después de eliminar
       history.push('/videos/1');
     }
     setLoading(false);
   };
   
   const handleReport = () => {
-    alert('Video reportado a los administradores');
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { info: 'Video signalé aux administrateurs' }
+    });
   };
   
   return (
@@ -105,92 +76,38 @@ const VideoActions = ({ video, onVideoUpdate, onVideoDelete }) => {
           <ThreeDotsVertical size={24} />
         </Dropdown.Toggle>
         
-        <Dropdown.Menu>
-          <Dropdown.Item onClick={() => setShowEditModal(true)}>
+        <Dropdown.Menu 
+          align="end"
+          style={{ 
+            background: '#1a1a1a', 
+            border: '1px solid #333',
+            borderRadius: '12px',
+            minWidth: '200px'
+          }}
+        >
+          <Dropdown.Item onClick={handleEdit} style={{ color: '#fff' }}>
             <Pencil size={16} className="me-2" /> Modifier
           </Dropdown.Item>
-          <Dropdown.Item onClick={() => setShowDeleteModal(true)} className="text-danger">
+          <Dropdown.Item onClick={() => setShowDeleteModal(true)} style={{ color: '#f44336' }}>
             <Trash2 size={16} className="me-2" /> Supprimer
           </Dropdown.Item>
-          <Dropdown.Divider />
-          <Dropdown.Item onClick={handleReport}>
+          <Dropdown.Divider style={{ borderColor: '#333' }} />
+          <Dropdown.Item onClick={handleReport} style={{ color: '#ff9800' }}>
             <Flag size={16} className="me-2" /> Signaler
           </Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown>
       
-      {/* Modal de edición */}
-      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>Modifier la vidéo</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Titre</Form.Label>
-              <Form.Control
-                type="text"
-                value={editData.title}
-                onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-                maxLength={200}
-              />
-            </Form.Group>
-            
-            <Form.Group className="mb-3">
-              <Form.Label>Description</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={4}
-                value={editData.description}
-                onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                maxLength={2000}
-              />
-            </Form.Group>
-            
-            <Form.Group className="mb-3">
-              <Form.Label>Catégorie</Form.Label>
-              <Form.Select
-                value={editData.categorySlug}
-                onChange={(e) => setEditData({ ...editData, categorySlug: e.target.value })}
-              >
-                <option value="">Sélectionner une catégorie</option>
-                {videoCategories.map(cat => (
-                  <option key={cat.slug} value={cat.slug}>{cat.name}</option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-            
-            <Form.Group className="mb-3">
-              <Form.Label>Tags (séparés par des virgules)</Form.Label>
-              <Form.Control
-                type="text"
-                value={editData.tags}
-                onChange={(e) => setEditData({ ...editData, tags: e.target.value })}
-                placeholder="voiture, occasion, algerie"
-              />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowEditModal(false)}>
-            Annuler
-          </Button>
-          <Button variant="primary" onClick={handleEdit} disabled={loading}>
-            {loading ? 'Enregistrement...' : 'Enregistrer'}
-          </Button>
-        </Modal.Footer>
-      </Modal>
-      
-      {/* Modal de eliminación */}
+      {/* Modal de eliminación (único modal que queda) */}
       <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
-        <Modal.Header closeButton>
+        <Modal.Header closeButton style={{ background: '#1a1a1a', color: '#fff', borderBottom: '1px solid #333' }}>
           <Modal.Title>Supprimer la vidéo</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body style={{ background: '#1a1a1a', color: '#fff' }}>
           <p>Êtes-vous sûr de vouloir supprimer cette vidéo ?</p>
           <p className="text-muted small">Cette action est irréversible.</p>
         </Modal.Body>
-        <Modal.Footer>
+        <Modal.Footer style={{ background: '#1a1a1a', borderTop: '1px solid #333' }}>
           <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
             Annuler
           </Button>

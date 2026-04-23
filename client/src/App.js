@@ -34,8 +34,9 @@ import PaymentBoutique from './pages/boutique/PayementBoutique';
 import CreateVideoWizard from './pages/video/CreateVideoWizard';
 import DetailVideoPage from './pages/video/DetailVideoPage';
 import NotifyPage from './pages/notiy/NotifyPage';
-import GoogleTranslateManager from './pages/google/GoogleTranslateManager';
-import NativeTranslate from './pages/google/NativeTranslate';
+ 
+import EditVideoWizard from './pages/video/EditVideoWizard';
+//import LanguageInitializer from './pages/google/LanguageInitalizer';
  
 // ✅ Constantes para evitar strings mágicos
 const SOUND_PATH = "/sounds/notify.mp3";
@@ -159,8 +160,8 @@ function App() {
 
   return (
     <Router>
-      {/* ============ RUTAS PÚBLICAS ============<NativeTranslate/> */}
-<GoogleTranslateManager/>
+      {/* ============ RUTAS PÚBLICAS ============<NativeTranslate/>  <LanguageInitializer/> */}
+
       <div className="App">
         <Navbar2 />
 
@@ -194,8 +195,9 @@ function App() {
 
           {/* ============ VIDEOS ============ */}
           <Route exact path="/create-video-page" component={CreateVideoWizard} />
+           <Route path="/edit-video/:id" component={EditVideoWizard} />
           <Route exact path="/video/:id" component={DetailVideoPage} />
-
+         
           {/* ============ POSTS / ANUNCIOS ============ */}
           <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
           <Route exact path="/edit-post/:id" component={CreateAnnoncePage} />

@@ -1,16 +1,24 @@
-// components/Video/StepVideoUpload.jsx
+// components/Video/StepVideoUpload.jsx - VERSIÓN COMPLETA CON SOPORTE PARA EDICIÓN
 import React, { useState, useRef } from 'react';
 import { Button, Alert, Form, Card } from 'react-bootstrap';
 import { Images, Camera, Link, Trash } from 'react-bootstrap-icons';
-import { checkVideo } from '../../utils/imageUpload';
 
-const StepVideoUpload = ({ wizardData, updateData, maxDuration, isProActive }) => {
+const StepVideoUpload = ({ 
+  wizardData, 
+  updateData, 
+  maxDuration, 
+  isProActive,
+  isEditing = false,
+  existingVideo = null,
+  keepExistingVideo = true,
+  onKeepExisting,
+  onChangeVideo
+}) => {
   const [linkError, setLinkError] = useState(null);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
-  // ========== MANEJO DE ARCHIVOS (Galería / Cámara) ==========
   const handleVideoFile = (file) => {
     if (!file) return;
 
@@ -47,60 +55,7 @@ const StepVideoUpload = ({ wizardData, updateData, maxDuration, isProActive }) =
     };
     video.src = previewUrl;
   };
-/**
- * Detecta si un archivo de video tiene una pista de audio significativa.
- * @param {File} videoFile - El archivo de video subido por el usuario.
- * @returns {Promise<boolean>} - Promise que resuelve a `true` si detecta audio, `false` en caso contrario.
- */
- const hasSignificantAudioTrack = (videoFile) => {
-  return new Promise((resolve) => {
-    // 1. Crear un contexto de audio y una fuente desde el archivo
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const fileReader = new FileReader();
 
-    fileReader.onload = async (e) => {
-      const arrayBuffer = e.target.result;
-      try {
-        // Decodificar el buffer del archivo a datos de audio sin procesar
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-        
-        // 2. Obtener los datos de audio del canal izquierdo (por simplicidad)
-        const channelData = audioBuffer.getChannelData(0);
-        
-        // 3. Calcular la amplitud máxima y el RMS (Root Mean Square)
-        let maxAmplitude = 0;
-        let sumSquares = 0;
-        for (let i = 0; i < channelData.length; i++) {
-          const amplitude = Math.abs(channelData[i]);
-          if (amplitude > maxAmplitude) maxAmplitude = amplitude;
-          sumSquares += amplitude * amplitude;
-        }
-        const rms = Math.sqrt(sumSquares / channelData.length);
-        
-        // 4. Definir un umbral. Si supera este valor, consideramos que hay audio.
-        const AMPLITUDE_THRESHOLD = 0.01; // Ajusta este valor según tus pruebas.
-        
-        const hasAudio = maxAmplitude > AMPLITUDE_THRESHOLD && rms > AMPLITUDE_THRESHOLD / 2;
-        console.log(`Análisis de audio: Amplitud Máx: ${maxAmplitude.toFixed(4)}, RMS: ${rms.toFixed(4)}. ¿Tiene audio? ${hasAudio}`);
-        
-        resolve(hasAudio);
-      } catch (error) {
-        console.error("Error al decodificar el audio del video:", error);
-        resolve(false); // Si hay error, asumimos que no tiene audio.
-      } finally {
-        audioContext.close(); // Limpiar el contexto de audio
-      }
-    };
-
-    fileReader.onerror = () => {
-      console.error("Error al leer el archivo de video.");
-      resolve(false);
-    };
-
-    // Leer el archivo como un ArrayBuffer para poder procesarlo
-    fileReader.readAsArrayBuffer(videoFile);
-  });
-};
   const handleFileSelect = (e, source = 'gallery') => {
     const file = e.target.files[0];
     if (file) {
@@ -117,7 +72,6 @@ const StepVideoUpload = ({ wizardData, updateData, maxDuration, isProActive }) =
     }
   };
 
-  // ========== MANEJO DE LINK ==========
   const handleLinkSubmit = () => {
     const url = wizardData.videoUrl;
     if (!url) {
@@ -163,7 +117,6 @@ const StepVideoUpload = ({ wizardData, updateData, maxDuration, isProActive }) =
     });
   };
 
-  // ========== LIMPIAR PREVIEW ==========
   const clearVideo = () => {
     if (wizardData.videoPreview && wizardData.videoPreview.startsWith('blob:')) {
       URL.revokeObjectURL(wizardData.videoPreview);
@@ -185,130 +138,170 @@ const StepVideoUpload = ({ wizardData, updateData, maxDuration, isProActive }) =
     <div className="step-video-upload" style={{ padding: '0 8px' }}>
       <h5 className="mb-4 text-center">Choisissez votre vidéo</h5>
 
-      {/* === FILA DE TRES ICONOS (estilo Android) === */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        gap: '20px',
-        marginBottom: '30px'
-      }}>
-        {/* Icono Galería */}
-        <div style={{ textAlign: 'center' }}>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            style={{
-              background: '#f0f0f0',
-              border: 'none',
-              borderRadius: '60px',
-              width: '70px',
-              height: '70px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: '0.2s'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = '#e0e0e0'}
-            onMouseLeave={(e) => e.currentTarget.style.background = '#f0f0f0'}
-          >
-            <Images size={36} color="#555" />
-          </button>
-          <div style={{ fontSize: '12px', marginTop: '8px', color: '#666' }}>Galerie</div>
-        </div>
-
-        {/* Icono Cámara */}
-        <div style={{ textAlign: 'center' }}>
-          <button
-            type="button"
-            onClick={() => cameraInputRef.current?.click()}
-            style={{
-              background: '#f0f0f0',
-              border: 'none',
-              borderRadius: '60px',
-              width: '70px',
-              height: '70px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: '0.2s'
-            }}
-          >
-            <Camera size={36} color="#555" />
-          </button>
-          <div style={{ fontSize: '12px', marginTop: '8px', color: '#666' }}>Caméra</div>
-        </div>
-
-        {/* Icono Link */}
-        <div style={{ textAlign: 'center' }}>
-          <button
-            type="button"
-            onClick={() => setShowLinkInput(!showLinkInput)}
-            style={{
-              background: '#f0f0f0',
-              border: 'none',
-              borderRadius: '60px',
-              width: '70px',
-              height: '70px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: '0.2s'
-            }}
-          >
-            <Link size={36} color="#555" />
-          </button>
-          <div style={{ fontSize: '12px', marginTop: '8px', color: '#666' }}>Lien</div>
-        </div>
-      </div>
-
-      {/* Inputs ocultos para galería y cámara */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="video/mp4,video/quicktime,video/x-msvideo,video/webm"
-        style={{ display: 'none' }}
-        onChange={(e) => handleFileSelect(e, 'gallery')}
-      />
-      <input
-        type="file"
-        ref={cameraInputRef}
-        accept="video/mp4,video/quicktime,video/x-msvideo,video/webm"
-        capture="environment"
-        style={{ display: 'none' }}
-        onChange={handleCameraCapture}
-      />
-
-      {/* === INPUT DE LINK (solo si se seleccionó) === */}
-      {showLinkInput && (
-        <div className="link-input-area" style={{ marginBottom: '24px' }}>
-          <Form.Group>
-            <Form.Label>Lien YouTube ou Vimeo</Form.Label>
-            <div className="d-flex gap-2">
-              <Form.Control
-                type="url"
-                placeholder="https://www.youtube.com/watch?v=..."
-                value={wizardData.videoUrl}
-                onChange={(e) => updateData({ videoUrl: e.target.value })}
-              />
-              <Button onClick={handleLinkSubmit} variant="primary">
-                Valider
+      {/* ============================================ */}
+      {/* MOSTRAR VIDEO EXISTENTE SI ES EDICIÓN */}
+      {/* ============================================ */}
+      {isEditing && keepExistingVideo && existingVideo && !wizardData.videoFile && (
+        <div className="existing-video-preview mb-4">
+          <Card className="border-0 shadow-sm">
+            <Card.Header className="bg-light d-flex justify-content-between align-items-center">
+              <span><strong>📹 Vidéo actuelle</strong></span>
+              <Button 
+                variant="link" 
+                size="sm" 
+                onClick={onChangeVideo}
+                className="text-danger"
+              >
+                Changer de vidéo
               </Button>
-            </div>
-            {linkError && <Alert variant="danger" className="mt-2">{linkError}</Alert>}
-          </Form.Group>
+            </Card.Header>
+            <Card.Body className="text-center p-3">
+              <video
+                src={existingVideo.videoUrl}
+                controls
+                className="rounded"
+                style={{ maxHeight: '300px', width: '100%' }}
+                poster={existingVideo.thumbnail}
+              />
+              {existingVideo.duration > 0 && (
+                <div className="mt-2 text-muted small">
+                  Durée: {Math.floor(existingVideo.duration / 60)}:
+                  {(existingVideo.duration % 60).toString().padStart(2, '0')}
+                </div>
+              )}
+            </Card.Body>
+          </Card>
         </div>
       )}
 
-      {/* === PREVIEW DEL VIDEO (justo debajo de los iconos) === */}
-      {wizardData.videoPreview && (
+      {/* ============================================ */}
+      {/* SI NO ES EDICIÓN O SE CAMBIÓ VIDEO, MOSTRAR ICONOS */}
+      {/* ============================================ */}
+      {(!isEditing || !keepExistingVideo || !existingVideo) && (
+        <>
+          {/* FILA DE TRES ICONOS */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-around',
+            alignItems: 'center',
+            gap: '20px',
+            marginBottom: '30px'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  background: '#f0f0f0',
+                  border: 'none',
+                  borderRadius: '60px',
+                  width: '70px',
+                  height: '70px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: '0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#e0e0e0'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#f0f0f0'}
+              >
+                <Images size={36} color="#555" />
+              </button>
+              <div style={{ fontSize: '12px', marginTop: '8px', color: '#666' }}>Galerie</div>
+            </div>
+
+            <div style={{ textAlign: 'center' }}>
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                style={{
+                  background: '#f0f0f0',
+                  border: 'none',
+                  borderRadius: '60px',
+                  width: '70px',
+                  height: '70px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: '0.2s'
+                }}
+              >
+                <Camera size={36} color="#555" />
+              </button>
+              <div style={{ fontSize: '12px', marginTop: '8px', color: '#666' }}>Caméra</div>
+            </div>
+
+            <div style={{ textAlign: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setShowLinkInput(!showLinkInput)}
+                style={{
+                  background: '#f0f0f0',
+                  border: 'none',
+                  borderRadius: '60px',
+                  width: '70px',
+                  height: '70px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: '0.2s'
+                }}
+              >
+                <Link size={36} color="#555" />
+              </button>
+              <div style={{ fontSize: '12px', marginTop: '8px', color: '#666' }}>Lien</div>
+            </div>
+          </div>
+
+          {/* Inputs ocultos */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="video/mp4,video/quicktime,video/x-msvideo,video/webm"
+            style={{ display: 'none' }}
+            onChange={(e) => handleFileSelect(e, 'gallery')}
+          />
+          <input
+            type="file"
+            ref={cameraInputRef}
+            accept="video/mp4,video/quicktime,video/x-msvideo,video/webm"
+            capture="environment"
+            style={{ display: 'none' }}
+            onChange={handleCameraCapture}
+          />
+
+          {/* INPUT DE LINK */}
+          {showLinkInput && (
+            <div className="link-input-area" style={{ marginBottom: '24px' }}>
+              <Form.Group>
+                <Form.Label>Lien YouTube ou Vimeo</Form.Label>
+                <div className="d-flex gap-2">
+                  <Form.Control
+                    type="url"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    value={wizardData.videoUrl}
+                    onChange={(e) => updateData({ videoUrl: e.target.value })}
+                  />
+                  <Button onClick={handleLinkSubmit} variant="primary">
+                    Valider
+                  </Button>
+                </div>
+                {linkError && <Alert variant="danger" className="mt-2">{linkError}</Alert>}
+              </Form.Group>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* PREVIEW DEL VIDEO SUBIDO (nuevo) */}
+      {wizardData.videoPreview && !(isEditing && keepExistingVideo && existingVideo) && (
         <div className="video-preview mt-3">
           <Card>
             <Card.Header className="d-flex justify-content-between align-items-center">
-              <span>Aperçu</span>
+              <span>Nouvelle vidéo</span>
               <Button variant="link" size="sm" onClick={clearVideo} className="text-danger">
                 <Trash size={16} /> Supprimer
               </Button>
@@ -341,6 +334,15 @@ const StepVideoUpload = ({ wizardData, updateData, maxDuration, isProActive }) =
       )}
     </div>
   );
+};
+
+// Función checkVideo (asegúrate de tenerla o impórtala)
+const checkVideo = (file, isProActive) => {
+  const maxSize = isProActive ? 100 * 1024 * 1024 : 50 * 1024 * 1024; // 100MB para Pro, 50MB para gratis
+  if (file.size > maxSize) {
+    return `La vidéo ne doit pas dépasser ${maxSize / 1024 / 1024} MB`;
+  }
+  return null;
 };
 
 export default StepVideoUpload;

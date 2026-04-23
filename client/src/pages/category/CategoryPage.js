@@ -1,5 +1,4 @@
-// pages/CategoryPage.jsx - VERSIÓN COMPLETAMENTE ACTUALIZADA
-
+// pages/CategoryPage.jsx - VERSIÓN COMPLETAMENTE ACTUALIZADA CON NAVEGACIÓN REEL
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useHistory, useLocation } from "react-router-dom";
@@ -47,6 +46,7 @@ const CategoryPage = () => {
     return slug === 'videos' && !subSlug ? VIDEO_VIEW_MODE.REEL : VIDEO_VIEW_MODE.GRID;
   });
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
+  const [currentReelIndex, setCurrentReelIndex] = useState(0); // ✅ Para navegación entre reels
   const [showScrollTop, setShowScrollTop] = useState(false);
   const videoReelsRef = useRef(null);
   const isScrollingRef = useRef(false);
@@ -153,6 +153,7 @@ const CategoryPage = () => {
       
       if (newIndex !== activeVideoIndex && newIndex >= 0 && newIndex < videos.length) {
         setActiveVideoIndex(newIndex);
+        setCurrentReelIndex(newIndex); // ✅ Sincronizar currentReelIndex
       }
       
       setShowScrollTop(scrollTop > window.innerHeight * 2);
@@ -165,10 +166,44 @@ const CategoryPage = () => {
     }
   }, [videos.length, activeVideoIndex, isVideo, videoViewMode]);
 
+  // ✅ Sincronizar currentReelIndex con activeVideoIndex
+  useEffect(() => {
+    setCurrentReelIndex(activeVideoIndex);
+  }, [activeVideoIndex]);
+
+  // ✅ Función para ir al siguiente video
+  const handleNextVideo = useCallback(() => {
+    if (currentReelIndex < videos.length - 1) {
+      const newIndex = currentReelIndex + 1;
+      setCurrentReelIndex(newIndex);
+      setActiveVideoIndex(newIndex);
+      // Scroll al siguiente video
+      if (videoReelsRef.current) {
+        const nextVideoTop = newIndex * window.innerHeight;
+        videoReelsRef.current.scrollTo({ top: nextVideoTop, behavior: 'smooth' });
+      }
+    }
+  }, [currentReelIndex, videos.length]);
+
+  // ✅ Función para ir al video anterior
+  const handlePreviousVideo = useCallback(() => {
+    if (currentReelIndex > 0) {
+      const newIndex = currentReelIndex - 1;
+      setCurrentReelIndex(newIndex);
+      setActiveVideoIndex(newIndex);
+      // Scroll al video anterior
+      if (videoReelsRef.current) {
+        const prevVideoTop = newIndex * window.innerHeight;
+        videoReelsRef.current.scrollTo({ top: prevVideoTop, behavior: 'smooth' });
+      }
+    }
+  }, [currentReelIndex]);
+
   const scrollToTop = () => {
     if (videoReelsRef.current) {
       videoReelsRef.current.scrollTo({ top: 0, behavior: 'smooth' });
       setActiveVideoIndex(0);
+      setCurrentReelIndex(0);
     }
   };
 
@@ -592,13 +627,13 @@ const CategoryPage = () => {
             <VideoReelItem
               key={video._id}
               video={video}
-              isActive={index === activeVideoIndex}
-              onVisibilityChange={(isVisible) => {
-                if (isVisible) {
-                  console.log(`🎬 Video ${index} activo: ${video.title}`);
-                }
-              }}
+              isActive={index === currentReelIndex}
               onVideoDeleted={handleVideoDeleted}
+              // ✅ PASAR LAS PROPS DE NAVEGACIÓN
+              onNextVideo={handleNextVideo}
+              onPreviousVideo={handlePreviousVideo}
+              hasNext={index < videos.length - 1}
+              hasPrev={index > 0}
             />
           ))}
         </div>

@@ -1,62 +1,69 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { Link, useHistory } from 'react-router-dom'
-import { login } from '../redux/actions/authAction'
-import { useDispatch, useSelector } from 'react-redux'
-import { useTranslation } from 'react-i18next'
-import { Container, Row, Col, Card, Form, Button, InputGroup } from 'react-bootstrap'
-import Loginfacegoogle from '../auth/Loginfacegoogle'
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useHistory } from 'react-router-dom';
+import { login } from '../redux/actions/authAction';
+import { useDispatch, useSelector } from 'react-redux';
+import { Container, Row, Col, Card, Form, Button, InputGroup } from 'react-bootstrap';
+import Loginfacegoogle from '../auth/Loginfacegoogle';
 
 const Login = () => {
-    const initialState = { email: '', password: '' }
-    const [userData, setUserData] = useState(initialState)
-    const { email, password } = userData
-    const [typePass, setTypePass] = useState(false)
-    const { auth, languageReducer } = useSelector(state => state)
-    const dispatch = useDispatch()
-    const history = useHistory()
-    const { t, i18n } = useTranslation('auth');
-    const lang = languageReducer.language || 'es';
+    const initialState = { email: '', password: '' };
+    const [userData, setUserData] = useState(initialState);
+    const { email, password } = userData;
+    const [typePass, setTypePass] = useState(false);
+    const { auth } = useSelector(state => state);
+    const dispatch = useDispatch();
+    const history = useHistory();
+    
+    // ✅ Obtener idioma actual desde el documento (LanguageManager lo maneja globalmente)
+    const [isRTL, setIsRTL] = useState(document.documentElement.dir === 'rtl');
+    const [currentLang, setCurrentLang] = useState(document.documentElement.lang || 'ar');
     
     // Referencia para el contenedor del formulario
     const formContainerRef = useRef(null);
 
-    if (i18n.language !== lang) i18n.changeLanguage(lang);
-   
+    // ✅ Escuchar cambios de idioma (evento global)
     useEffect(() => {
-        if (auth.token) history.push("/")
-    }, [auth.token, history])
+        const handleLanguageChange = () => {
+            setIsRTL(document.documentElement.dir === 'rtl');
+            setCurrentLang(document.documentElement.lang || 'ar');
+        };
+        
+        window.addEventListener('languageChanged', handleLanguageChange);
+        return () => window.removeEventListener('languageChanged', handleLanguageChange);
+    }, []);
+
+    useEffect(() => {
+        if (auth.token) history.push("/");
+    }, [auth.token, history]);
 
     const handleChangeInput = e => {
-        const { name, value } = e.target
-        setUserData({ ...userData, [name]: value })
-    }
+        const { name, value } = e.target;
+        setUserData({ ...userData, [name]: value });
+    };
 
     const handleSubmit = e => {
-        e.preventDefault()
-        dispatch(login(userData))
-    }
+        e.preventDefault();
+        dispatch(login(userData));
+    };
 
     // Prevenir propagación de eventos en los inputs
     const handleInputFocus = (e) => {
         e.stopPropagation();
-    }
+    };
 
     const handleInputClick = (e) => {
         e.stopPropagation();
-    }
-
-    const isRTL = lang === "ar"
+    };
 
     return (
         <div 
-            className={isRTL ? "rtl" : ""}
             style={{
                 minHeight: '100vh',
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 padding: '1rem 0.5rem',
-                direction: isRTL ? 'rtl' : 'ltr' // ← Añadir dirección aquí
+                direction: isRTL ? 'rtl' : 'ltr'
             }}
         >
             <Container>
@@ -69,12 +76,12 @@ const Login = () => {
                                 borderRadius: '20px',
                                 overflow: 'hidden',
                                 background: 'rgba(255, 255, 255, 0.98)',
-                                direction: isRTL ? 'rtl' : 'ltr' // ← Añadir dirección aquí también
+                                direction: isRTL ? 'rtl' : 'ltr'
                             }}
                         >
                             {/* Header elegante */}
                             <div 
-                                className="text-center py-2"
+                                className="text-center py-4"
                                 style={{
                                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                                     position: 'relative'
@@ -115,14 +122,14 @@ const Login = () => {
                                         fontSize: '1.75rem'
                                     }}
                                 >
-                                    {t('namelogin', { lng: lang })}
+                                    Connexion
                                 </h3>
                             </div>
 
                             <Card.Body className="p-3 p-md-4">
                                 <Form onSubmit={handleSubmit}>
                                     
-                                    {/* Login con Facebook/Google - Añadir contenedor con prevención */}
+                                    {/* Login con Facebook/Google */}
                                     <Form.Group 
                                         className="mb-4"
                                         onClick={(e) => e.stopPropagation()}
@@ -137,17 +144,15 @@ const Login = () => {
                                             borderTop: '1px solid #e2e8f0'
                                         }} />
                                         <span 
-                                            className={`position-absolute top-50 ${isRTL ? 'end-0 translate-middle-x' : 'start-50 translate-middle'} px-3`}
+                                            className={`position-absolute top-50 ${isRTL ? 'end-0 translate-middle-x' : 'start-50 translate-middle'} px-3 bg-white`}
                                             style={{
-                                                background: 'white',
                                                 color: '#a0aec0',
                                                 fontSize: '0.875rem',
                                                 fontWeight: '500'
                                             }}
                                         >
-                                            {t('orContinueWith' ) }
+                                            ou continuer avec
                                         </span>
-                                       
                                     </div>
 
                                     {/* Email */}
@@ -156,7 +161,7 @@ const Login = () => {
                                             className="fw-semibold"
                                             style={{ color: '#4a5568', fontSize: '0.95rem' }}
                                         >
-                                            {t('emailAddress', { lng: lang })}
+                                            Adresse email
                                         </Form.Label>
                                         <InputGroup>
                                             <InputGroup.Text 
@@ -173,13 +178,12 @@ const Login = () => {
                                             </InputGroup.Text>
                                             <Form.Control
                                                 type="email"
-                                                id="exampleInputEmail1"
                                                 name="email"
                                                 onChange={handleChangeInput}
                                                 onFocus={handleInputFocus}
                                                 onClick={handleInputClick}
                                                 value={email}
-                                                placeholder=""
+                                                placeholder="votre@email.com"
                                                 style={{
                                                     borderLeft: isRTL ? '2px solid #e2e8f0' : 'none',
                                                     borderRight: isRTL ? 'none' : '2px solid #e2e8f0',
@@ -187,7 +191,7 @@ const Login = () => {
                                                     padding: '0.75rem 1rem',
                                                     fontSize: '1rem',
                                                     border: '2px solid #e2e8f0',
-                                                    direction: 'ltr' // ← Mantener dirección ltr para emails
+                                                    direction: 'ltr'
                                                 }}
                                             />
                                         </InputGroup>
@@ -199,7 +203,7 @@ const Login = () => {
                                             className="fw-semibold"
                                             style={{ color: '#4a5568', fontSize: '0.95rem' }}
                                         >
-                                            {t('password', { lng: lang })}
+                                            Mot de passe
                                         </Form.Label>
                                         <InputGroup>
                                             {isRTL ? (
@@ -231,7 +235,6 @@ const Login = () => {
                                                     </Button>
                                                     <Form.Control
                                                         type={typePass ? "text" : "password"}
-                                                        id="exampleInputPassword1"
                                                         name="password"
                                                         onChange={handleChangeInput}
                                                         onFocus={handleInputFocus}
@@ -279,7 +282,6 @@ const Login = () => {
                                                     </InputGroup.Text>
                                                     <Form.Control
                                                         type={typePass ? "text" : "password"}
-                                                        id="exampleInputPassword1"
                                                         name="password"
                                                         onChange={handleChangeInput}
                                                         onFocus={handleInputFocus}
@@ -335,15 +337,15 @@ const Login = () => {
                                                 transition: 'all 0.3s ease'
                                             }}
                                             onMouseEnter={(e) => {
-                                                e.target.style.color = '#5a67d8'
-                                                e.target.style.textDecoration = 'underline'
+                                                e.target.style.color = '#5a67d8';
+                                                e.target.style.textDecoration = 'underline';
                                             }}
                                             onMouseLeave={(e) => {
-                                                e.target.style.color = '#667eea'
-                                                e.target.style.textDecoration = 'none'
+                                                e.target.style.color = '#667eea';
+                                                e.target.style.textDecoration = 'none';
                                             }}
                                         >
-                                            {t('forgot_password', { lng: lang })}
+                                            Mot de passe oublié ?
                                         </Link>
                                     </div>
 
@@ -370,24 +372,24 @@ const Login = () => {
                                         }}
                                         onMouseEnter={(e) => {
                                             if (email && password) {
-                                                e.target.style.transform = 'translateY(-2px)'
-                                                e.target.style.boxShadow = '0 15px 35px rgba(102, 126, 234, 0.4)'
+                                                e.target.style.transform = 'translateY(-2px)';
+                                                e.target.style.boxShadow = '0 15px 35px rgba(102, 126, 234, 0.4)';
                                             }
                                         }}
                                         onMouseLeave={(e) => {
                                             if (email && password) {
-                                                e.target.style.transform = 'translateY(0)'
-                                                e.target.style.boxShadow = '0 10px 25px rgba(102, 126, 234, 0.3)'
+                                                e.target.style.transform = 'translateY(0)';
+                                                e.target.style.boxShadow = '0 10px 25px rgba(102, 126, 234, 0.3)';
                                             }
                                         }}
                                     >
-                                        {t('login', { lng: lang })}
+                                        Se connecter
                                     </Button>
 
                                     {/* Register Link */}
                                     <div className="text-center mt-4">
                                         <p className="mb-0" style={{ color: '#718096' }}>
-                                            {t('dontHaveAccount', { lng: lang })}{' '}
+                                            Pas encore de compte ?{' '}
                                             <Link 
                                                 to="/register" 
                                                 style={{
@@ -399,7 +401,7 @@ const Login = () => {
                                                 onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
                                                 onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
                                             >
-                                                {t('registerNow', { lng: lang })}
+                                                S'inscrire
                                             </Link>
                                         </p>
                                     </div>
@@ -415,14 +417,14 @@ const Login = () => {
                                     color: '#a0aec0'
                                 }}
                             >
-                                🔒 {t('derechosdeautor')}
+                                🔒 Tous droits réservés
                             </div>
                         </Card>
                     </Col>
                 </Row>
             </Container>
         </div>
-    )
-}
+    );
+};
 
-export default Login
+export default Login;

@@ -1,4 +1,4 @@
-// components/Video/DetailVideoPage.jsx - VERSIÓN SIMPLIFICADA
+// components/Video/DetailVideoPage.jsx - VERSIÓN MODIFICADA (solo agregar returnToFeed)
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useHistory } from 'react-router-dom';
@@ -44,8 +44,6 @@ const DetailVideoPage = () => {
 
   const isAdmin = auth.user?.role === 'admin' || auth.user?.role === 'moderator';
   const isOwner = video?.user?._id === auth.user?._id;
-  
-  // ✅ USAR DIRECTAMENTE EL CAMPO pendiente DEL VIDEO
   const isPending = video?.pendiente === true;
 
   // ✅ Efecto para obtener el video
@@ -85,6 +83,36 @@ const DetailVideoPage = () => {
     videoElement.addEventListener('timeupdate', handleTimeUpdate);
     return () => videoElement.removeEventListener('timeupdate', handleTimeUpdate);
   }, []);
+
+  // ============================================
+  // ✅ FUNCIÓN PARA VOLVER AL FEED (NUEVA)
+  // ============================================
+  const returnToFeed = () => {
+    const shouldReturnToFeed = sessionStorage.getItem('returnToFeed') === 'true';
+    const feedPosition = sessionStorage.getItem('feedScrollPosition');
+    
+    if (shouldReturnToFeed) {
+      sessionStorage.removeItem('returnToFeed');
+      sessionStorage.removeItem('feedScrollPosition');
+      
+      if (feedPosition) {
+        sessionStorage.setItem('tempScrollPosition', feedPosition);
+      }
+      
+      history.push('/');
+      
+      setTimeout(() => {
+        const savedPosition = sessionStorage.getItem('tempScrollPosition');
+        if (savedPosition) {
+          window.scrollTo(0, parseInt(savedPosition));
+          sessionStorage.removeItem('tempScrollPosition');
+        }
+      }, 100);
+      
+      return true;
+    }
+    return false;
+  };
 
   const handleLike = async () => {
     if (!auth.token) {
@@ -145,7 +173,9 @@ const DetailVideoPage = () => {
     }
   };
 
+  // ✅ MODIFICAR handleGoBack para usar returnToFeed
   const handleGoBack = () => {
+    if (returnToFeed()) return;
     if (isAdmin && isPending) history.push('/admin/posts?tab=videos');
     else history.goBack();
   };
@@ -193,7 +223,7 @@ const DetailVideoPage = () => {
   }
 
   // ============================================
-  // ✅ PANTALLA PARA VIDEO PENDIENTE (usando directamente video.pendiente)
+  // ✅ PANTALLA PARA VIDEO PENDIENTE
   // ============================================
   if (video && video.pendiente === true && !isAdmin) {
     return (
@@ -291,7 +321,7 @@ const DetailVideoPage = () => {
   }
 
   // ============================================
-  // ✅ VIDEO APROBADO (pendiente === false)
+  // ✅ VIDEO APROBADO
   // ============================================
   return (
     <div className="tiktok-container">
@@ -369,7 +399,7 @@ const DetailVideoPage = () => {
             </div>
           )}
 
-          {/* Edit actions */}
+          {/* Edit actions - AHORA USA VideoActions MODIFICADO */}
           {video?.pendiente === false && auth.user && (auth.user._id === video.user?._id || isAdmin) && (
             <div className="tiktok-action-item">
               <VideoActions video={video} />

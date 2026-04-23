@@ -1,33 +1,27 @@
-// components/Video/CreateVideoWizard.jsx - VERSIÓN CON NOTIFICACIONES
-import React, { useState } from 'react';
+// components/Video/EditVideoWizard.jsx - Asegurar que pase existingVideo correctamente
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useParams } from 'react-router-dom';
 import { Button, Alert, Spinner, Card, ProgressBar, Badge } from 'react-bootstrap';
-import { 
-  Image, 
-  Camera, 
-  Link, 
-  ArrowLeft, 
-  ArrowRight,
-  CloudUpload 
-} from 'react-bootstrap-icons';
+import { ArrowLeft, ArrowRight, CloudUpload, PencilFill } from 'react-bootstrap-icons';
 import StepIndicator from './StepIndicator';
 import StepVideoUpload from './StepVideoUpload';
 import StepMusicSelection from './StepMusicSelection';
 import StepVideoInfo from './StepVideoInfo';
-import { createVideo } from '../../redux/actions/videoAction';
+import { getVideoById, updateVideo } from '../../redux/actions/videoAction';
 import { GLOBALTYPES } from '../../redux/actions/globalTypes';
 import { videoUpload } from '../../utils/imageUpload';
 import './css/CreateVideoWizard.css';
 
 // Categorías
 const videoCategories = [
+
   { name: 'Véhicules', slug: 'videos-vehicules', icon: '🚗' },
   { name: 'Immobilier', slug: 'videos-immobilier', icon: '🏠' },
   { name: 'Téléphones', slug: 'videos-telephones', icon: '📱' },
   { name: 'Informatique', slug: 'videos-informatique', icon: '💻' },
-  { name: 'Électroménager', slug: 'videos-electromenager', icon: '🔌' },
-  { name: 'Art', slug: 'videos-art', icon: '🎨' },
+  { name: 'Électroménager', slug: 'videos-electromenager', icon: '🔌' }, 
+   { name: 'Art', slug: 'videos-art', icon: '🎨' },
   { name: 'Mode & Vêtements', slug: 'videos-mode-vetements', icon: '👕' },
   { name: 'Maison & Jardin', slug: 'videos-maison-jardin', icon: '🏡' },
   { name: 'Sport & Loisirs', slug: 'videos-sport-loisirs', icon: '⚽' },
@@ -44,19 +38,22 @@ const getCategoryBySlug = (slug) => {
   return videoCategories.find(cat => cat.slug === slug);
 };
 
-const CreateVideoWizard = ({ onSuccess, onCancel }) => {
+const EditVideoWizard = () => {
+  const { id } = useParams();
   const dispatch = useDispatch();
   const history = useHistory();
-  const { auth, socket } = useSelector(state => state); // ✅ Añadir socket
+  const { auth, socket } = useSelector(state => state);
+  const { currentVideo: video, loading: videoLoading } = useSelector(state => state.video || {});
   const { user } = auth;
   
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [keepExistingVideo, setKeepExistingVideo] = useState(true);
   
   const [wizardData, setWizardData] = useState({
-    videoSource: null,
+    videoSource: 'existing',
     videoFile: null,
     videoUrl: '',
     videoType: 'local',
@@ -75,6 +72,36 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
   const isProActive = user?.isPro && (!user?.proExpiryDate || new Date(user.proExpiryDate) > new Date());
   const maxDuration = isProActive ? 60 : 15;
   
+  // Cargar datos del video existente
+  useEffect(() => {
+    if (id) {
+      dispatch(getVideoById(id));
+    }
+  }, [dispatch, id]);
+  
+  // Poblar wizard con datos existentes
+  useEffect(() => {
+    if (video && !videoLoading) {
+      console.log('📹 Video cargado para edición:', video);
+      setWizardData({
+        videoSource: 'existing',
+        videoFile: null,
+        videoUrl: video.videoUrl || '',
+        videoType: video.videoType || 'local',
+        videoId: video.videoId || null,
+        videoPreview: video.thumbnail || null,
+        videoDuration: video.duration || 0,
+        selectedMusic: video.music || null,
+        musicVolume: video.music?.volume || 70,
+        originalAudio: true,
+        title: video.title || '',
+        description: video.description || '',
+        categorySlug: video.categorySlug || '',
+        tags: video.tags || []
+      });
+    }
+  }, [video, videoLoading]);
+  
   const nextStep = () => {
     if (validateStep(currentStep)) {
       setCurrentStep(prev => Math.min(prev + 1, 3));
@@ -90,25 +117,28 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
   const validateStep = (step) => {
     switch(step) {
       case 1:
-        if (!wizardData.videoSource) {
-          setError('Veuillez sélectionner une source vidéo');
-          return false;
-        }
-        if (wizardData.videoSource === 'gallery' && !wizardData.videoFile) {
-          setError('Veuillez sélectionner une vidéo de votre galerie');
-          return false;
-        }
-        if (wizardData.videoSource === 'camera' && !wizardData.videoFile) {
-          setError('Veuillez enregistrer une vidéo');
-          return false;
-        }
-        if (wizardData.videoSource === 'link' && !wizardData.videoUrl) {
-          setError('Veuillez entrer un lien valide');
-          return false;
-        }
-        if (wizardData.videoDuration > maxDuration && wizardData.videoSource !== 'link') {
-          setError(`La vidéo ne doit pas dépasser ${maxDuration} secondes`);
-          return false;
+        // Si no mantenemos el video existente, validamos que haya nuevo video
+        if (!keepExistingVideo) {
+          if (!wizardData.videoSource) {
+            setError('Veuillez sélectionner une source vidéo');
+            return false;
+          }
+          if (wizardData.videoSource === 'gallery' && !wizardData.videoFile) {
+            setError('Veuillez sélectionner une vidéo de votre galerie');
+            return false;
+          }
+          if (wizardData.videoSource === 'camera' && !wizardData.videoFile) {
+            setError('Veuillez enregistrer une vidéo');
+            return false;
+          }
+          if (wizardData.videoSource === 'link' && !wizardData.videoUrl) {
+            setError('Veuillez entrer un lien valide');
+            return false;
+          }
+          if (wizardData.videoDuration > maxDuration && wizardData.videoSource !== 'link') {
+            setError(`La vidéo ne doit pas dépasser ${maxDuration} secondes`);
+            return false;
+          }
         }
         break;
       case 2:
@@ -132,6 +162,9 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
   
   const updateWizardData = (newData) => {
     setWizardData(prev => ({ ...prev, ...newData }));
+    if (newData.videoSource && newData.videoSource !== 'existing') {
+      setKeepExistingVideo(false);
+    }
   };
   
   const extractVideoId = (url) => {
@@ -146,7 +179,27 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
     return null;
   };
   
-  // ✅ FUNCIÓN PRINCIPAL DE ENVÍO CON SOCKET
+  const handleCancel = () => {
+    const returnToFeed = sessionStorage.getItem('returnToFeed') === 'true';
+    if (returnToFeed) {
+      sessionStorage.removeItem('returnToFeed');
+      const feedPosition = sessionStorage.getItem('feedScrollPosition');
+      if (feedPosition) {
+        sessionStorage.setItem('tempScrollPosition', feedPosition);
+      }
+      history.push('/');
+      setTimeout(() => {
+        const savedPosition = sessionStorage.getItem('tempScrollPosition');
+        if (savedPosition) {
+          window.scrollTo(0, parseInt(savedPosition));
+          sessionStorage.removeItem('tempScrollPosition');
+        }
+      }, 100);
+    } else {
+      history.goBack();
+    }
+  };
+  
   const handleSubmit = async () => {
     if (!validateStep(3)) return;
     
@@ -157,28 +210,26 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
     try {
       let videoUrl, videoId, thumbnail, videoDuration;
       
-      // Subir video a Cloudinary usando videoUpload
-      if (wizardData.videoSource === 'gallery' || wizardData.videoSource === 'camera') {
+      if (keepExistingVideo && wizardData.videoSource === 'existing') {
+        // Mantener el video existente
+        videoUrl = video.videoUrl;
+        videoId = video.videoId;
+        thumbnail = video.thumbnail;
+        videoDuration = video.duration;
+      } 
+      else if (wizardData.videoSource === 'gallery' || wizardData.videoSource === 'camera') {
         if (!wizardData.videoFile) {
           throw new Error('No hay archivo de video');
         }
-        
-        console.log('📹 Subiendo video a Cloudinary usando videoUpload...');
-        console.log('Archivo:', wizardData.videoFile.name, `${(wizardData.videoFile.size / 1024 / 1024).toFixed(2)} MB`);
-        
         const result = await videoUpload(wizardData.videoFile, (progress) => {
-          console.log(`📊 Progreso de subida: ${progress}%`);
           setUploadProgress(progress);
         });
-        
-        console.log('✅ Video subido exitosamente a Cloudinary:', result);
-        
         videoUrl = result.url;
         videoId = result.public_id;
         thumbnail = result.thumbnail;
         videoDuration = wizardData.videoDuration;
-        
-      } else if (wizardData.videoSource === 'link') {
+      } 
+      else if (wizardData.videoSource === 'link') {
         videoUrl = wizardData.videoUrl;
         videoId = extractVideoId(wizardData.videoUrl);
         thumbnail = wizardData.videoType === 'youtube' 
@@ -210,10 +261,7 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
         } : null
       };
       
-      console.log('📤 Enviando a API con socket:', videoData);
-      
-      // ✅ Pasar auth y socket a la acción createVideo
-      const result = await dispatch(createVideo(videoData, auth.token, auth, socket));
+      const result = await dispatch(updateVideo(id, videoData, auth.token, auth, socket));
       
       if (result?.success) {
         if (wizardData.videoPreview && wizardData.videoPreview.startsWith('blob:')) {
@@ -222,27 +270,69 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
         
         dispatch({
           type: GLOBALTYPES.ALERT,
-          payload: { success: '🎬 Vidéo créée avec succès !' }
+          payload: { success: '✏️ Vidéo modifiée avec succès !' }
         });
         
-        if (onSuccess) {
-          onSuccess(result.video);
-        } else {
-          setTimeout(() => {
-            history.push(`/video/${result.video._id}`);
-          }, 2000);
+        // ✅ REDIRIGIR AL FEED (/videos/1) SIEMPRE
+        const returnToFeed = sessionStorage.getItem('returnToFeed') === 'true';
+        const feedPosition = sessionStorage.getItem('feedScrollPosition');
+        
+        if (returnToFeed && feedPosition) {
+          sessionStorage.setItem('tempScrollPosition', feedPosition);
         }
+        
+        sessionStorage.removeItem('returnToFeed');
+        sessionStorage.removeItem('feedScrollPosition');
+        
+        // ✅ Redirigir al feed (ruta correcta)
+        history.push('/videos/1');
+        
+        setTimeout(() => {
+          const savedPosition = sessionStorage.getItem('tempScrollPosition');
+          if (savedPosition) {
+            window.scrollTo(0, parseInt(savedPosition));
+            sessionStorage.removeItem('tempScrollPosition');
+          }
+        }, 100);
+        
       } else {
-        setError(result?.error || 'Erreur lors de la création');
+        setError(result?.error || 'Erreur lors de la modification');
       }
     } catch (err) {
-      console.error('❌ Error en handleSubmit:', err);
-      setError(err.message || 'Erreur lors de l\'upload');
+      console.error('❌ Error:', err);
+      setError(err.message || 'Erreur lors de la modification');
     } finally {
       setLoading(false);
       setUploadProgress(0);
     }
   };
+  
+  if (videoLoading && !video) {
+    return (
+      <div className="create-video-wizard">
+        <Card className="border-0 shadow-lg">
+          <Card.Body className="p-5 text-center">
+            <Spinner animation="border" variant="primary" />
+            <p className="mt-3 mb-0">Chargement de la vidéo...</p>
+          </Card.Body>
+        </Card>
+      </div>
+    );
+  }
+  
+  if (!video && !videoLoading) {
+    return (
+      <div className="create-video-wizard">
+        <Card className="border-0 shadow-lg">
+          <Card.Body className="p-5 text-center">
+            <h4>Vidéo non trouvée</h4>
+            <p className="text-muted">Cette vidéo n'existe pas ou a été supprimée.</p>
+            <Button variant="primary" onClick={handleCancel}>Retour</Button>
+          </Card.Body>
+        </Card>
+      </div>
+    );
+  }
   
   return (
     <div className="create-video-wizard">
@@ -250,7 +340,13 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
         <Card.Body className="p-4">
           <div className="wizard-header mb-4">
             <div className="d-flex justify-content-between align-items-center mb-3">
-              <h3 className="mb-0">🎬 Créer une vidéo</h3>
+              <div>
+                <h3 className="mb-0">
+                  <PencilFill className="me-2" style={{ fontSize: '1.2rem' }} />
+                  Modifier la vidéo
+                </h3>
+                <small className="text-muted">{video?.title}</small>
+              </div>
               {!isProActive && (
                 <Badge bg="warning" text="dark" className="p-2">
                   ⚡ {maxDuration} secondes max
@@ -278,6 +374,14 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
                 updateData={updateWizardData}
                 maxDuration={maxDuration}
                 isProActive={isProActive}
+                isEditing={true}
+                existingVideo={video}  // ← PASAR EL VIDEO EXISTENTE
+                keepExistingVideo={keepExistingVideo}
+                onKeepExisting={() => setKeepExistingVideo(true)}
+                onChangeVideo={() => {
+                  setKeepExistingVideo(false);
+                  updateWizardData({ videoSource: null, videoFile: null });
+                }}
               />
             )}
             
@@ -299,41 +403,26 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
           
           <div className="wizard-footer mt-4 pt-3 border-top">
             <div className="d-flex justify-content-between">
-              <Button
-                variant="outline-secondary"
-                onClick={currentStep === 1 ? onCancel : prevStep}
-                disabled={loading}
-              >
+              <Button variant="outline-secondary" onClick={currentStep === 1 ? handleCancel : prevStep} disabled={loading}>
                 <ArrowLeft className="me-2" />
                 {currentStep === 1 ? 'Annuler' : 'Retour'}
               </Button>
               
               {currentStep < 3 ? (
-                <Button
-                  variant="primary"
-                  onClick={nextStep}
-                  disabled={loading}
-                  className="px-4"
-                >
-                  Suivant
-                  <ArrowRight className="ms-2" />
+                <Button variant="primary" onClick={nextStep} disabled={loading} className="px-4">
+                  Suivant <ArrowRight className="ms-2" />
                 </Button>
               ) : (
-                <Button
-                  variant="success"
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  className="px-4"
-                >
+                <Button variant="success" onClick={handleSubmit} disabled={loading} className="px-4">
                   {loading ? (
                     <>
                       <Spinner size="sm" className="me-2" />
-                      {uploadProgress > 0 ? `Upload ${uploadProgress}%...` : 'Publication...'}
+                      {uploadProgress > 0 ? `Upload ${uploadProgress}%...` : 'Mise à jour...'}
                     </>
                   ) : (
                     <>
                       <CloudUpload className="me-2" />
-                      Publier
+                      Mettre à jour
                     </>
                   )}
                 </Button>
@@ -341,13 +430,7 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
             </div>
             
             {loading && uploadProgress > 0 && (
-              <ProgressBar 
-                now={uploadProgress} 
-                label={`${uploadProgress}%`} 
-                striped 
-                animated 
-                className="mt-3"
-              />
+              <ProgressBar now={uploadProgress} label={`${uploadProgress}%`} striped animated className="mt-3" />
             )}
           </div>
         </Card.Body>
@@ -356,4 +439,4 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
   );
 };
 
-export default CreateVideoWizard;
+export default EditVideoWizard;

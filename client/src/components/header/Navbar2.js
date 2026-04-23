@@ -34,11 +34,13 @@ import DesactivateModal from '../authAndVerify/DesactivateModal';
 import MultiCheckboxModal from './MultiCheckboxModal.';
 import ShareAppModal from '../shareAppModal';
 import Drawer from './Drawer';
-
+import useComponentDirection from '../../pages/google/LanguageManager';
+  
+  
 const Navbar2 = () => {
   const { auth, cart, notify, settings } = useSelector((state) => state);
   const dispatch = useDispatch();
-  const { languageReducer } = useSelector(state => state);
+
   const { t } = useTranslation('navbar2');
   const history = useHistory(); // 🔥 Cambio: useHistory en lugar de useNavigate
 
@@ -54,7 +56,7 @@ const Navbar2 = () => {
   
   const notifyDropdownRef = useRef(null);
   const dropdownRef = useRef(null);
-
+  const { dir, textAlign, isRTL, shouldIgnoreRTL } = useComponentDirection('Navbar2');
   // Funciones para manejar el drawer
   const handleDrawerOpen = () => setShowDrawer(true);
   const handleDrawerClose = () => setShowDrawer(false);
@@ -249,20 +251,21 @@ const handleLogout = () => {
   return (
     <>
       {/* 🔥 NAVBAR FIJO ARRIBA DE TODO */}
-      <Navbar
-        fixed="top"
-        expand="lg"
-        style={{
-          zIndex: 1030,
-          background: settings.style
-            ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
-            : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-          padding: isMobile ? '6px 0' : '8px 0',
-          boxShadow: '0 2px 15px rgba(0,0,0,0.1)',
-          minHeight: isMobile ? '56px' : '64px'
-        }}
-        className={settings.style ? "navbar-dark" : "navbar-light"}
-      >
+      <Navbar 
+      className="navbar2"  // ✅ Añade esta clase
+      style={{ 
+        zIndex: 1030,
+        background: settings.style
+          ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
+          : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+        padding: isMobile ? '6px 0' : '8px 0',
+        boxShadow: '0 2px 15px rgba(0,0,0,0.1)',
+        minHeight: isMobile ? '56px' : '64px'
+      }} 
+      fixed="top"
+      expand="lg"
+     
+    >
         <Container
           fluid
           className="align-items-center justify-content-between"
