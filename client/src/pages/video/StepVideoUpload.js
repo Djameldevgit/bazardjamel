@@ -338,7 +338,7 @@ const StepVideoUpload = ({
 
 // Función checkVideo (asegúrate de tenerla o impórtala)
 const checkVideo = (file, isProActive) => {
-  const maxSize = isProActive ? 100 * 1024 * 1024 : 50 * 1024 * 1024; // 100MB para Pro, 50MB para gratis
+  const maxSize = isProActive ? 20 * 1024 * 1024 : 15 * 1024 * 1024; // 100MB para Pro, 50MB para gratis
   if (file.size > maxSize) {
     return `La vidéo ne doit pas dépasser ${maxSize / 1024 / 1024} MB`;
   }

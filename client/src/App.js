@@ -36,12 +36,7 @@ import DetailVideoPage from './pages/video/DetailVideoPage';
 import NotifyPage from './pages/notiy/NotifyPage';
  
 import EditVideoWizard from './pages/video/EditVideoWizard';
-//import LanguageInitializer from './pages/google/LanguageInitalizer';
  
-// ✅ Constantes para evitar strings mágicos
-const SOUND_PATH = "/sounds/notify.mp3";
-const VIBRATION_PATTERN = [300, 100, 300, 100, 600];
-
 function App() {
   const { auth, notify } = useSelector(state => state)
   const dispatch = useDispatch()
@@ -66,87 +61,54 @@ function App() {
   }
  
   // ✅ Notification permission request (mejorado)
+ 
+
   useEffect(() => {
     if (!("Notification" in window)) {
-      console.warn("Este navegador no soporta notificaciones de escritorio");
-      return;
+      alert("This browser does not support desktop notification");
     }
-    
-    if (Notification.permission === "default") {
-      // Esperar un poco antes de pedir permiso (mejor UX)
-      const timer = setTimeout(() => {
-        Notification.requestPermission();
-      }, 5000);
-      return () => clearTimeout(timer);
+    else if (Notification.permission === "granted") { }
+    else if (Notification.permission !== "denied") {
+      Notification.requestPermission().then(function (permission) {
+        if (permission === "granted") { }
+      });
     }
-  }, []);
+  }, [])
 
-  // ✅ Notificaciones en tiempo real (mejorado)
   const lastNotifyId = useRef(null);
-  const audioRef = useRef(null);
-
-  // Pre-cargar audio para mejor rendimiento
-  useEffect(() => {
-    if (typeof Audio !== 'undefined') {
-      audioRef.current = new Audio(SOUND_PATH);
-      audioRef.current.load();
-    }
-  }, []);
 
   useEffect(() => {
-    if (!notify.data || notify.data.length === 0) return;
-    
-    const latestNotify = notify.data[0];
+    if (notify.data.length > 0) {
+      const ultima = notify.data[0];
 
-    // Evitar notificaciones duplicadas
-    if (latestNotify._id !== lastNotifyId.current) {
-      lastNotifyId.current = latestNotify._id;
+      // Solo ejecutar si es realmente una nueva notificación
+      if (ultima._id !== lastNotifyId.current) {
+        lastNotifyId.current = ultima._id;
 
-      // ✅ Solo reproducir si la página no está visible (opcional)
-      const isPageVisible = document.visibilityState === 'visible';
-      
-      // 🔔 Sonido (solo si el usuario ha interactuado o la página no está visible)
-      try {
-        if (audioRef.current) {
-          // Resetear audio para poder reproducir múltiples veces
-          audioRef.current.currentTime = 0;
-          audioRef.current.play().catch(err => {
-            // Silenciar error de autoplay - es normal
-            console.debug("Audio requiere interacción del usuario");
+        // 🔔 Sonido
+        try {
+          const audio = new Audio("/sounds/notify.mp3");
+          audio.play().catch(err => {
+            console.log("⚠️ El sonido requiere interacción del usuario", err);
           });
+        } catch (error) {
+          console.warn("Sonido no soportado", error);
         }
-      } catch (error) {
-        console.debug("Sonido no disponible:", error);
-      }
 
-      // 📳 Vibración (solo si la página no está visible o está en segundo plano)
-      if ("vibrate" in navigator && !isPageVisible) {
-        navigator.vibrate(VIBRATION_PATTERN);
-      }
-      
-      // ✅ Notificación de escritorio (si la página no está visible)
-      if (!isPageVisible && Notification.permission === "granted") {
-        const { text, user, url } = latestNotify;
-        const notification = new Notification(
-          user?.username || 'MarketPlace',
-          {
-            body: text || 'Tienes una nueva notificación',
-            icon: user?.avatar || '/images/logo.png',
-            tag: latestNotify._id, // Evitar duplicados
-            requireInteraction: false
-          }
-        );
-        
-        notification.onclick = () => {
-          window.focus();
-          if (url) {
-            window.location.href = url;
-          }
-          notification.close();
-        };
+        // 📳 Vibración
+        if ("vibrate" in navigator) {
+          navigator.vibrate([300, 100, 300, 100, 600]);
+        }
       }
     }
   }, [notify.data]);
+ 
+  
+
+ 
+  
+
+   
 
   // ✅ Bloqueo de usuarios
   if (auth.token && auth.user?.isBlocked) {

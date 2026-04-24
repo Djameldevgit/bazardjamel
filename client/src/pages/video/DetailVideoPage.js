@@ -283,7 +283,7 @@ const DetailVideoPage = () => {
           </div>
           
           <div className="pending-buttons">
-            <Button variant="outline-secondary" onClick={() => history.push('/')}>
+            <Button variant="outline-secondary" onClick={() => history.push('/videos/1')}>
               Parcourir les vidéos
             </Button>
             <Button variant="primary" onClick={() => history.push('/create-video')}>

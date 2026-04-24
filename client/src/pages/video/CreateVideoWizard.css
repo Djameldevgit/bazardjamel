@@ -1,0 +1,764 @@
+/* ============================================
+   CreateVideoWizard.css - Estilos dedicados
+   ============================================ */
+
+/* ──────────────────────────────────────────────
+   CONTENEDOR PRINCIPAL
+   ────────────────────────────────────────────── */
+   .create-video-wizard {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 20px;
+    animation: cw-fadeIn 0.3s ease-out;
+  }
+  
+  @keyframes cw-fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* ──────────────────────────────────────────────
+     HEADER
+     ────────────────────────────────────────────── */
+  .cw-header {
+    margin-bottom: 24px;
+  }
+  
+  .cw-header-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 8px;
+  }
+  
+  .cw-header-subtitle {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 0;
+  }
+  
+  /* ──────────────────────────────────────────────
+     STEP INDICATOR
+     ────────────────────────────────────────────── */
+  .cw-step-indicator {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    padding: 0 20px;
+  }
+  
+  .cw-step-item {
+    flex: 1;
+    text-align: center;
+    position: relative;
+  }
+  
+  .cw-step-number {
+    width: 40px;
+    height: 40px;
+    background: #e9ecef;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #6c757d;
+    margin: 0 auto 8px;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 2;
+  }
+  
+  .cw-step-item.active .cw-step-number {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    transform: scale(1.05);
+  }
+  
+  .cw-step-item.completed .cw-step-number {
+    background: #28a745;
+    color: white;
+  }
+  
+  .cw-step-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #6c757d;
+  }
+  
+  .cw-step-item.active .cw-step-label {
+    color: #667eea;
+    font-weight: 600;
+  }
+  
+  .cw-step-item.completed .cw-step-label {
+    color: #28a745;
+  }
+  
+  .cw-step-line {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    right: -50%;
+    height: 2px;
+    background: #e9ecef;
+    z-index: 1;
+  }
+  
+  .cw-step-item:last-child .cw-step-line {
+    display: none;
+  }
+  
+  .cw-step-item.completed + .cw-step-item .cw-step-line {
+    background: #28a745;
+  }
+  
+  /* ──────────────────────────────────────────────
+     STEP CONTENT
+     ────────────────────────────────────────────── */
+  .cw-step-content {
+    min-height: 400px;
+    animation: cw-slideIn 0.3s ease-out;
+  }
+  
+  @keyframes cw-slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  /* ──────────────────────────────────────────────
+     TARJETAS DE OPCIÓN (Video Source)
+     ────────────────────────────────────────────── */
+  .cw-option-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  
+  .cw-option-card {
+    background: #f8f9fa;
+    border: 2px solid transparent;
+    border-radius: 16px;
+    padding: 20px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+  
+  .cw-option-card:hover {
+    background: #e9ecef;
+    transform: translateY(-2px);
+  }
+  
+  .cw-option-card.selected {
+    border-color: #667eea;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  }
+  
+  .cw-option-icon {
+    font-size: 2rem;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .cw-option-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #333;
+  }
+  
+  .cw-option-desc {
+    font-size: 0.7rem;
+    color: #6c757d;
+  }
+  
+  /* ──────────────────────────────────────────────
+     ZONA DE UPLOAD DE VIDEO
+     ────────────────────────────────────────────── */
+  .cw-upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 20px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #f8f9fa;
+  }
+  
+  .cw-upload-area:hover {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
+  }
+  
+  .cw-upload-area.dragging {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+    transform: scale(0.98);
+  }
+  
+  .cw-upload-icon {
+    font-size: 3rem;
+    color: #667eea;
+    margin-bottom: 16px;
+  }
+  
+  .cw-upload-text {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 8px;
+  }
+  
+  .cw-upload-hint {
+    font-size: 0.7rem;
+    color: #adb5bd;
+  }
+  
+  /* ──────────────────────────────────────────────
+     PREVISUALIZACIÓN DE VIDEO
+     ────────────────────────────────────────────── */
+  .cw-video-preview {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000;
+    margin-top: 20px;
+  }
+  
+  .cw-video-preview video {
+    width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+  }
+  
+  .cw-video-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+    padding: 12px;
+    color: white;
+    font-size: 0.8rem;
+  }
+  
+  .cw-video-duration {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    color: white;
+  }
+  
+  .cw-remove-video {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(220, 53, 69, 0.9);
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .cw-remove-video:hover {
+    background: #dc3545;
+    transform: scale(1.05);
+  }
+  
+  /* ──────────────────────────────────────────────
+     INPUT DE LINK
+     ────────────────────────────────────────────── */
+  .cw-link-input {
+    margin-top: 20px;
+  }
+  
+  .cw-link-input .form-control {
+    border-radius: 12px;
+    padding: 12px 16px;
+    border: 1px solid #dee2e6;
+    transition: all 0.2s ease;
+  }
+  
+  .cw-link-input .form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  /* ──────────────────────────────────────────────
+     MUSIC SELECTION
+     ────────────────────────────────────────────── */
+  .cw-music-search {
+    margin-bottom: 20px;
+  }
+  
+  .cw-music-search .input-group {
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  
+  .cw-music-search .form-control {
+    border: 1px solid #dee2e6;
+    padding: 12px 16px;
+  }
+  
+  .cw-music-list {
+    max-height: 320px;
+    overflow-y: auto;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+  }
+  
+  .cw-music-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .cw-music-item:hover {
+    background: #f8f9fa;
+  }
+  
+  .cw-music-item.selected {
+    background: rgba(102, 126, 234, 0.1);
+    border-left: 3px solid #667eea;
+  }
+  
+  .cw-music-icon {
+    width: 48px;
+    height: 48px;
+    background: #e9ecef;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+  
+  .cw-music-info {
+    flex: 1;
+  }
+  
+  .cw-music-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  
+  .cw-music-artist {
+    font-size: 0.75rem;
+    color: #6c757d;
+  }
+  
+  .cw-music-duration {
+    font-size: 0.7rem;
+    color: #adb5bd;
+    margin-left: 12px;
+  }
+  
+  /* ──────────────────────────────────────────────
+     VOLUME CONTROL
+     ────────────────────────────────────────────── */
+  .cw-volume-control {
+    margin-top: 20px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 12px;
+  }
+  
+  .cw-volume-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+  
+  .cw-volume-slider {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    background: #dee2e6;
+    border-radius: 4px;
+    outline: none;
+  }
+  
+  .cw-volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #667eea;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+  }
+  
+  /* ──────────────────────────────────────────────
+     FORMULARIOS (Info Video)
+     ────────────────────────────────────────────── */
+  .cw-form-group {
+    margin-bottom: 20px;
+  }
+  
+  .cw-form-label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .cw-form-control {
+    border-radius: 12px;
+    padding: 12px 16px;
+    border: 1px solid #dee2e6;
+    transition: all 0.2s ease;
+  }
+  
+  .cw-form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    outline: none;
+  }
+  
+  textarea.cw-form-control {
+    resize: vertical;
+    min-height: 100px;
+  }
+  
+  /* ──────────────────────────────────────────────
+     CATEGORY GRID
+     ────────────────────────────────────────────── */
+  .cw-category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+  
+  .cw-category-item {
+    background: #f8f9fa;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 12px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .cw-category-item:hover {
+    background: #e9ecef;
+    transform: translateY(-2px);
+  }
+  
+  .cw-category-item.selected {
+    border-color: #667eea;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  }
+  
+  .cw-category-icon {
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+  }
+  
+  .cw-category-name {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #333;
+  }
+  
+  /* ──────────────────────────────────────────────
+     TAGS INPUT
+     ────────────────────────────────────────────── */
+  .cw-tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+    min-height: 50px;
+  }
+  
+  .cw-tag {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .cw-tag-remove {
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+  }
+  
+  .cw-tag-remove:hover {
+    opacity: 1;
+  }
+  
+  .cw-tag-input {
+    flex: 1;
+    min-width: 120px;
+    border: none;
+    background: transparent;
+    padding: 6px;
+    outline: none;
+  }
+  
+  /* ──────────────────────────────────────────────
+     FOOTER BUTTONS
+     ────────────────────────────────────────────── */
+  .cw-footer {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .cw-btn {
+    padding: 10px 24px;
+    border-radius: 40px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .cw-btn:active {
+    transform: scale(0.96);
+  }
+  
+  .cw-btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  }
+  
+  .cw-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  }
+  
+  .cw-btn-secondary {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #6c757d;
+  }
+  
+  .cw-btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    color: white;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+  }
+  
+  /* ──────────────────────────────────────────────
+     PROGRESS BAR
+     ────────────────────────────────────────────── */
+  .cw-progress {
+    margin-top: 16px;
+    height: 6px;
+    border-radius: 3px;
+  }
+  
+  .cw-progress-bar {
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+  
+  /* ──────────────────────────────────────────────
+     ALERTAS
+     ────────────────────────────────────────────── */
+  .cw-alert {
+    border-radius: 12px;
+    margin-bottom: 20px;
+    animation: cw-slideIn 0.3s ease;
+  }
+  
+  /* ──────────────────────────────────────────────
+     RESPONSIVE PARA ANDROID
+     ────────────────────────────────────────────── */
+  @media (max-width: 480px) {
+    .create-video-wizard {
+      padding: 12px;
+    }
+    
+    .cw-header-title {
+      font-size: 1.35rem;
+    }
+    
+    .cw-step-number {
+      width: 32px;
+      height: 32px;
+      font-size: 0.9rem;
+    }
+    
+    .cw-step-label {
+      font-size: 0.7rem;
+    }
+    
+    .cw-option-cards {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    
+    .cw-option-card {
+      padding: 16px 8px;
+    }
+    
+    .cw-option-icon {
+      font-size: 1.5rem;
+    }
+    
+    .cw-option-title {
+      font-size: 0.85rem;
+    }
+    
+    .cw-category-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    
+    .cw-category-icon {
+      font-size: 1.4rem;
+    }
+    
+    .cw-category-name {
+      font-size: 0.7rem;
+    }
+    
+    .cw-footer {
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .cw-btn {
+      justify-content: center;
+      width: 100%;
+    }
+  }
+  
+  @media (max-width: 360px) {
+    .cw-option-cards {
+      grid-template-columns: 1fr;
+    }
+    
+    .cw-category-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .cw-step-label {
+      font-size: 0.6rem;
+    }
+    
+    .cw-step-number {
+      width: 28px;
+      height: 28px;
+      font-size: 0.8rem;
+    }
+  }
+  
+  /* ──────────────────────────────────────────────
+     ANIMACIONES ADICIONALES
+     ────────────────────────────────────────────── */
+  @keyframes cw-pulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+  }
+  
+  .cw-pulse {
+    animation: cw-pulse 1s ease-in-out infinite;
+  }
+  
+  /* ──────────────────────────────────────────────
+     SCROLLBAR PERSONALIZADA
+     ────────────────────────────────────────────── */
+  .cw-music-list::-webkit-scrollbar,
+  .cw-category-grid::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .cw-music-list::-webkit-scrollbar-track,
+  .cw-category-grid::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+  
+  .cw-music-list::-webkit-scrollbar-thumb,
+  .cw-category-grid::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+  }
+  
+  /* ──────────────────────────────────────────────
+     OPTIMIZACIONES TÁCTILES PARA ANDROID
+     ────────────────────────────────────────────── */
+  .cw-option-card,
+  .cw-upload-area,
+  .cw-music-item,
+  .cw-category-item,
+  .cw-btn,
+  .cw-remove-video {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  
+  /* Mejora feedback táctil */
+  .cw-option-card:active,
+  .cw-category-item:active {
+    transform: scale(0.97);
+  }
+  
+  .cw-btn:active {
+    transform: scale(0.96);
+  }

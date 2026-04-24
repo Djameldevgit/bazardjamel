@@ -34,11 +34,14 @@ const videoSchema = new mongoose.Schema({
     }],
     createdAt: { type: Date, default: Date.now }
   }],
+  
+  // ✅ Campo único para aprobación
   pendiente: {
     type: Boolean,
-    default: true,
+    default: true,  // true = pendiente de aprobación, false = aprobado
     index: true
   },
+  
   isActive: { type: Boolean, default: true },
   isFeatured: { type: Boolean, default: false },
   duration: { type: Number, default: 0 },
@@ -49,15 +52,16 @@ const videoSchema = new mongoose.Schema({
   conversionRate: { type: Number, default: 0 }
 }, { timestamps: true });
 
-// Índices
+// ========== ÍNDICES CORREGIDOS (sin status) ==========
 videoSchema.index({ title: 'text', description: 'text', shortDescription: 'text' });
-videoSchema.index({ categorySlug: 1, status: 1, isActive: 1 });
-videoSchema.index({ user: 1, status: 1 });
-videoSchema.index({ status: 1, createdAt: -1 });
+videoSchema.index({ categorySlug: 1, pendiente: 1, isActive: 1 });        // ✅ status → pendiente
+videoSchema.index({ user: 1, pendiente: 1 });                             // ✅ status → pendiente
+videoSchema.index({ pendiente: 1, createdAt: -1 });                       // ✅ Para admin panel
 videoSchema.index({ views: -1, createdAt: -1 });
 videoSchema.index({ engagementScore: -1 });
+videoSchema.index({ createdAt: -1 });                                     // ✅ Para feeds recientes
 
-// ========== MÉTODOS DE INSTANCIA (con toString) ==========
+// ========== MÉTODOS DE INSTANCIA ==========
 videoSchema.methods.incrementViews = async function(userId = null) {
   this.views = (this.views || 0) + 1;
   if (userId) {
@@ -122,10 +126,62 @@ videoSchema.methods.addComment = async function(userId, text) {
   return comment;
 };
 
-// ========== MÉTODOS ESTÁTICOS (con aggregate) ==========
+videoSchema.methods.toggleCommentLike = async function(commentId, userId) {
+  const comment = this.comments.id(commentId);
+  if (!comment) return null;
+  
+  const userIdStr = userId.toString();
+  const index = comment.likes.findIndex(id => id && id.toString() === userIdStr);
+  
+  if (index === -1) {
+    comment.likes.push(userId);
+  } else {
+    comment.likes.splice(index, 1);
+  }
+  
+  this.updateEngagementScore();
+  await this.save();
+  return { liked: index === -1, likesCount: comment.likes.length };
+};
+
+videoSchema.methods.addCommentReply = async function(commentId, userId, text) {
+  const comment = this.comments.id(commentId);
+  if (!comment) return null;
+  
+  const reply = {
+    _id: new mongoose.Types.ObjectId(),
+    user: userId,
+    text,
+    createdAt: new Date()
+  };
+  
+  comment.replies.push(reply);
+  this.updateEngagementScore();
+  await this.save();
+  return reply;
+};
+
+videoSchema.methods.deleteComment = async function(commentId, userId, userRole) {
+  const comment = this.comments.id(commentId);
+  if (!comment) return false;
+  
+  const isOwner = comment.user.toString() === userId.toString();
+  const isAdmin = userRole === 'admin' || userRole === 'moderator';
+  
+  if (!isOwner && !isAdmin) return false;
+  
+  comment.deleteOne();
+  this.updateEngagementScore();
+  await this.save();
+  return true;
+};
+
+// ========== MÉTODOS ESTÁTICOS CORREGIDOS (usando pendiente) ==========
+
+// ✅ Videos destacados - Solo aprobados
 videoSchema.statics.getFeaturedVideos = async function(limit = 10) {
   return this.aggregate([
-    { $match: { isFeatured: true, status: 'approved', isActive: true } },
+    { $match: { isFeatured: true, pendiente: false, isActive: true } },  // ✅ pendiente: false
     { $sort: { createdAt: -1 } },
     { $limit: limit },
     { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
@@ -134,9 +190,10 @@ videoSchema.statics.getFeaturedVideos = async function(limit = 10) {
   ]);
 };
 
+// ✅ Videos populares - Solo aprobados
 videoSchema.statics.getPopularVideos = async function(limit = 10) {
   return this.aggregate([
-    { $match: { status: 'approved', isActive: true } },
+    { $match: { pendiente: false, isActive: true } },  // ✅ pendiente: false
     { $addFields: { likesCount: { $size: '$likes' } } },
     { $sort: { views: -1, likesCount: -1, createdAt: -1 } },
     { $limit: limit },
@@ -146,6 +203,7 @@ videoSchema.statics.getPopularVideos = async function(limit = 10) {
   ]);
 };
 
+// ✅ Videos en tendencia - Solo aprobados
 videoSchema.statics.getTrendingVideos = async function(limit = 10, timeRange = 'week') {
   let dateFilter = {};
   const now = new Date();
@@ -154,7 +212,7 @@ videoSchema.statics.getTrendingVideos = async function(limit = 10, timeRange = '
   else if (timeRange === 'month') dateFilter = { createdAt: { $gte: new Date(now.setMonth(now.getMonth() - 1)) } };
 
   return this.aggregate([
-    { $match: { status: 'approved', isActive: true, ...dateFilter } },
+    { $match: { pendiente: false, isActive: true, ...dateFilter } },  // ✅ pendiente: false
     { $addFields: {
         likesCount: { $size: '$likes' },
         commentsCount: { $size: '$comments' },
@@ -167,7 +225,17 @@ videoSchema.statics.getTrendingVideos = async function(limit = 10, timeRange = '
           { $multiply: ['$sharesCount', 4] }
         ] }
     } },
-    { $addFields: { engagementScore: { $min: [ { $multiply: [ { $divide: ['$totalEngagement', { $ifNull: ['$views', 1] }] }, 100 ] }, 100 ] } } },
+    { $addFields: { 
+      engagementScore: { 
+        $min: [ 
+          { $multiply: [ 
+            { $divide: ['$totalEngagement', { $ifNull: ['$views', 1] }] }, 
+            100 
+          ] }, 
+          100 
+        ] 
+      } 
+    } },
     { $sort: { engagementScore: -1, views: -1 } },
     { $limit: limit },
     { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
@@ -176,6 +244,53 @@ videoSchema.statics.getTrendingVideos = async function(limit = 10, timeRange = '
   ]);
 };
 
+// ✅ Obtener videos pendientes (para admin)
+videoSchema.statics.getPendingVideos = async function(page = 1, limit = 10) {
+  const skip = (page - 1) * limit;
+  
+  const [videos, total] = await Promise.all([
+    this.aggregate([
+      { $match: { pendiente: true, isActive: true } },
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit },
+      { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
+      { $unwind: '$user' },
+      { $project: { 'user.password': 0, 'user.email': 0 } }
+    ]),
+    this.countDocuments({ pendiente: true, isActive: true })
+  ]);
+  
+  return { videos, total };
+};
+
+// ✅ Obtener videos por usuario (con opción de ver pendientes si es owner)
+videoSchema.statics.getUserVideos = async function(userId, isOwner = false, page = 1, limit = 12) {
+  const skip = (page - 1) * limit;
+  const match = { user: new mongoose.Types.ObjectId(userId) };
+  
+  if (!isOwner) {
+    match.pendiente = false;
+    match.isActive = true;
+  }
+  
+  const [videos, total] = await Promise.all([
+    this.aggregate([
+      { $match: match },
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit },
+      { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
+      { $unwind: '$user' },
+      { $project: { 'user.password': 0, 'user.email': 0 } }
+    ]),
+    this.countDocuments(match)
+  ]);
+  
+  return { videos, total };
+};
+
+// Pre-save hook para actualizar engagement score
 videoSchema.pre('save', function(next) {
   if (this.isModified('views') || this.isModified('likes') || this.isModified('comments') || this.isModified('shares')) {
     this.updateEngagementScore();

@@ -1,12 +1,10 @@
-// components/Video/CreateVideoWizard.jsx - VERSIÓN CON NOTIFICACIONES
+// components/Video/CreateVideoWizard.jsx - CON CSS DEDICADO
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import { Button, Alert, Spinner, Card, ProgressBar, Badge } from 'react-bootstrap';
 import { 
-  Image, 
-  Camera, 
-  Link, 
+  
   ArrowLeft, 
   ArrowRight,
   CloudUpload 
@@ -18,7 +16,9 @@ import StepVideoInfo from './StepVideoInfo';
 import { createVideo } from '../../redux/actions/videoAction';
 import { GLOBALTYPES } from '../../redux/actions/globalTypes';
 import { videoUpload } from '../../utils/imageUpload';
-import './css/CreateVideoWizard.css';
+
+// ✅ IMPORTAR CSS DEDICADO
+import './CreateVideoWizard.css';
 
 // Categorías
 const videoCategories = [
@@ -47,7 +47,7 @@ const getCategoryBySlug = (slug) => {
 const CreateVideoWizard = ({ onSuccess, onCancel }) => {
   const dispatch = useDispatch();
   const history = useHistory();
-  const { auth, socket } = useSelector(state => state); // ✅ Añadir socket
+  const { auth, socket } = useSelector(state => state);
   const { user } = auth;
   
   const [currentStep, setCurrentStep] = useState(1);
@@ -73,7 +73,7 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
   });
   
   const isProActive = user?.isPro && (!user?.proExpiryDate || new Date(user.proExpiryDate) > new Date());
-  const maxDuration = isProActive ? 60 : 15;
+  const maxDuration = isProActive ? 30 : 20;
   
   const nextStep = () => {
     if (validateStep(currentStep)) {
@@ -146,7 +146,6 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
     return null;
   };
   
-  // ✅ FUNCIÓN PRINCIPAL DE ENVÍO CON SOCKET
   const handleSubmit = async () => {
     if (!validateStep(3)) return;
     
@@ -157,21 +156,14 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
     try {
       let videoUrl, videoId, thumbnail, videoDuration;
       
-      // Subir video a Cloudinary usando videoUpload
       if (wizardData.videoSource === 'gallery' || wizardData.videoSource === 'camera') {
         if (!wizardData.videoFile) {
           throw new Error('No hay archivo de video');
         }
         
-        console.log('📹 Subiendo video a Cloudinary usando videoUpload...');
-        console.log('Archivo:', wizardData.videoFile.name, `${(wizardData.videoFile.size / 1024 / 1024).toFixed(2)} MB`);
-        
         const result = await videoUpload(wizardData.videoFile, (progress) => {
-          console.log(`📊 Progreso de subida: ${progress}%`);
           setUploadProgress(progress);
         });
-        
-        console.log('✅ Video subido exitosamente a Cloudinary:', result);
         
         videoUrl = result.url;
         videoId = result.public_id;
@@ -210,9 +202,6 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
         } : null
       };
       
-      console.log('📤 Enviando a API con socket:', videoData);
-      
-      // ✅ Pasar auth y socket a la acción createVideo
       const result = await dispatch(createVideo(videoData, auth.token, auth, socket));
       
       if (result?.success) {
@@ -248,15 +237,14 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
     <div className="create-video-wizard">
       <Card className="border-0 shadow-lg">
         <Card.Body className="p-4">
-          <div className="wizard-header mb-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h3 className="mb-0">🎬 Créer une vidéo</h3>
-              {!isProActive && (
+          <div className="cw-header">
+            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+              <h3 className="cw-header-title">🎬 Créer une vidéo</h3>
+              {!isProActive ? (
                 <Badge bg="warning" text="dark" className="p-2">
                   ⚡ {maxDuration} secondes max
                 </Badge>
-              )}
-              {isProActive && (
+              ) : (
                 <Badge bg="primary" className="p-2">
                   ⭐ Pro: {maxDuration} secondes
                 </Badge>
@@ -266,12 +254,12 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
           </div>
           
           {error && (
-            <Alert variant="danger" className="mb-4" onClose={() => setError(null)} dismissible>
+            <Alert variant="danger" className="cw-alert" onClose={() => setError(null)} dismissible>
               {error}
             </Alert>
           )}
           
-          <div className="wizard-content">
+          <div className="cw-step-content">
             {currentStep === 1 && (
               <StepVideoUpload 
                 wizardData={wizardData}
@@ -297,59 +285,58 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
             )}
           </div>
           
-          <div className="wizard-footer mt-4 pt-3 border-top">
-            <div className="d-flex justify-content-between">
+          <div className="cw-footer">
+            <Button
+              variant="outline-secondary"
+              className="cw-btn cw-btn-secondary"
+              onClick={currentStep === 1 ? onCancel : prevStep}
+              disabled={loading}
+            >
+              <ArrowLeft className="me-2" />
+              {currentStep === 1 ? 'Annuler' : 'Retour'}
+            </Button>
+            
+            {currentStep < 3 ? (
               <Button
-                variant="outline-secondary"
-                onClick={currentStep === 1 ? onCancel : prevStep}
+                variant="primary"
+                className="cw-btn cw-btn-primary"
+                onClick={nextStep}
                 disabled={loading}
               >
-                <ArrowLeft className="me-2" />
-                {currentStep === 1 ? 'Annuler' : 'Retour'}
+                Suivant
+                <ArrowRight className="ms-2" />
               </Button>
-              
-              {currentStep < 3 ? (
-                <Button
-                  variant="primary"
-                  onClick={nextStep}
-                  disabled={loading}
-                  className="px-4"
-                >
-                  Suivant
-                  <ArrowRight className="ms-2" />
-                </Button>
-              ) : (
-                <Button
-                  variant="success"
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  className="px-4"
-                >
-                  {loading ? (
-                    <>
-                      <Spinner size="sm" className="me-2" />
-                      {uploadProgress > 0 ? `Upload ${uploadProgress}%...` : 'Publication...'}
-                    </>
-                  ) : (
-                    <>
-                      <CloudUpload className="me-2" />
-                      Publier
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-            
-            {loading && uploadProgress > 0 && (
-              <ProgressBar 
-                now={uploadProgress} 
-                label={`${uploadProgress}%`} 
-                striped 
-                animated 
-                className="mt-3"
-              />
+            ) : (
+              <Button
+                variant="success"
+                className="cw-btn cw-btn-success"
+                onClick={handleSubmit}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Spinner size="sm" className="me-2" />
+                    {uploadProgress > 0 ? `Upload ${uploadProgress}%...` : 'Publication...'}
+                  </>
+                ) : (
+                  <>
+                    <CloudUpload className="me-2" />
+                    Publier
+                  </>
+                )}
+              </Button>
             )}
           </div>
+          
+          {loading && uploadProgress > 0 && (
+            <ProgressBar 
+              now={uploadProgress} 
+              label={`${uploadProgress}%`} 
+              striped 
+              animated 
+              className="cw-progress mt-3"
+            />
+          )}
         </Card.Body>
       </Card>
     </div>
