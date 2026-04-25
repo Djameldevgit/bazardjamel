@@ -16,26 +16,29 @@ export const VIDEO_TYPES = {
   LIKE_VIDEO: 'LIKE_VIDEO',
   SHARE_VIDEO: 'SHARE_VIDEO',
   
-  // ============================================
-  // 🆕 TIPOS FALTANTES PARA TRACKING
-  // ============================================
+  // Tracking
   UPDATE_VIDEO_STATS: 'UPDATE_VIDEO_STATS',
   UPDATE_VIDEO_ENGAGEMENT: 'UPDATE_VIDEO_ENGAGEMENT',
   INCREMENT_VIEW: 'INCREMENT_VIEW',
   
-  // Tipos para comentarios
+  // Comentarios
   COMMENTS_LOADING: 'COMMENTS_LOADING',
   GET_COMMENTS: 'GET_COMMENTS',
   ADD_COMMENT: 'ADD_COMMENT',
   DELETE_COMMENT: 'DELETE_COMMENT',
   LIKE_COMMENT: 'LIKE_COMMENT',
   ADD_COMMENT_REPLY: 'ADD_COMMENT_REPLY',
+  EDIT_COMMENT: 'EDIT_COMMENT',        // ✅ NUEVO
+  DELETE_REPLY: 'DELETE_REPLY',        // ✅ NUEVO
+  EDIT_REPLY: 'EDIT_REPLY',            // ✅ NUEVO
   CLEAR_COMMENTS: 'CLEAR_COMMENTS',
+  
+  // Música
   MUSIC_LOADING: 'MUSIC_LOADING',
   GET_MUSIC_LIBRARY: 'GET_MUSIC_LIBRARY',
   MUSIC_ERROR: 'MUSIC_ERROR',
   
-  // 🆕 TIPO PARA LOADING POR CATEGORÍA (si no existe)
+  // Categorías
   LOADING_BY_CATEGORY: 'LOADING_BY_CATEGORY',
   GET_VIDEOS_BY_CATEGORY: 'GET_VIDEOS_BY_CATEGORY',
   GET_TRENDING_VIDEOS: 'GET_TRENDING_VIDEOS',
@@ -647,5 +650,63 @@ export const getUserVideoStats = (token) => async (dispatch) => {
   } catch (err) {
     console.error('Error getUserVideoStats:', err);
     return null;
+  }
+};
+
+    
+
+export const editComment = (videoId, commentId, text, token) => async (dispatch) => {
+  try {
+    const res = await patchDataAPI(`videos/${videoId}/comments/${commentId}`, { text }, token);
+    
+    dispatch({
+      type: VIDEO_TYPES.EDIT_COMMENT,
+      payload: {
+        commentId,
+        text: res.data.comment.text,
+        edited: true
+      }
+    });
+    
+    return { success: true, comment: res.data.comment };
+  } catch (err) {
+    console.error('Error editComment:', err);
+    return { success: false };
+  }
+};
+
+export const editReply = (videoId, commentId, replyId, text, token) => async (dispatch) => {
+  try {
+    const res = await patchDataAPI(`videos/${videoId}/comments/${commentId}/replies/${replyId}`, { text }, token);
+    
+    dispatch({
+      type: VIDEO_TYPES.EDIT_REPLY,
+      payload: {
+        commentId,
+        replyId,
+        text: res.data.reply.text
+      }
+    });
+    
+    return { success: true, reply: res.data.reply };
+  } catch (err) {
+    console.error('Error editReply:', err);
+    return { success: false };
+  }
+};
+
+export const deleteReply = (videoId, commentId, replyId, token) => async (dispatch) => {
+  try {
+    await deleteDataAPI(`videos/${videoId}/comments/${commentId}/replies/${replyId}`, token);
+    
+    dispatch({
+      type: VIDEO_TYPES.DELETE_REPLY,
+      payload: { commentId, replyId }
+    });
+    
+    return { success: true };
+  } catch (err) {
+    console.error('Error deleteReply:', err);
+    return { success: false };
   }
 };

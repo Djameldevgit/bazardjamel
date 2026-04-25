@@ -1,4 +1,4 @@
-// components/Video/VideoComments.jsx - Versión con Redux
+// components/Video/VideoComments.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
@@ -7,12 +7,15 @@ import {
   addCommentReply, 
   likeComment, 
   deleteComment,
+  editComment,
+  editReply,
+  deleteReply,
   clearComments
 } from '../../redux/actions/videoAction';
-import { Heart, Reply, Trash2, Send } from 'lucide-react';
-import './css/videoComment.css';
+import { Heart, Reply, Trash2, Send, MoreVertical, Edit2, X, Check } from 'lucide-react';
+import './VideoComment.css';
 
-const VideoComments = ({ videoId }) => {
+const VideoComments = ({ videoId, videoData }) => {
   const dispatch = useDispatch();
   const { auth, socket } = useSelector(state => state);
   const { 
@@ -23,34 +26,30 @@ const VideoComments = ({ videoId }) => {
   } = useSelector(state => state.video);
   
   const [newComment, setNewComment] = useState('');
-  const [replyTo, setReplyTo] = useState(null);
-  const [replyText, setReplyText] = useState('');
+  const [replyText, setReplyText] = useState({});
+  const [activeReplyId, setActiveReplyId] = useState(null);
   const [showMenu, setShowMenu] = useState(null);
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editingReplyId, setEditingReplyId] = useState(null);
+  const [editText, setEditText] = useState('');
+  const [likedComments, setLikedComments] = useState({});
   
   const commentsContainerRef = useRef(null);
   const observerRef = useRef(null);
   const lastCommentRef = useRef(null);
 
-  // Cargar comentarios iniciales
+  // Cargar comentarios
   useEffect(() => {
     dispatch(clearComments());
     dispatch(getComments(videoId, 1));
-    
-    return () => {
-      dispatch(clearComments());
-    };
+    return () => dispatch(clearComments());
   }, [dispatch, videoId]);
 
-  // Configurar observer para scroll infinito
+  // Intersection Observer
   useEffect(() => {
     if (!commentsContainerRef.current || !hasMoreComments || commentsLoading) return;
     
-    const options = {
-      root: commentsContainerRef.current,
-      rootMargin: '0px',
-      threshold: 0.1
-    };
-    
+    const options = { root: commentsContainerRef.current, rootMargin: '0px', threshold: 0.1 };
     observerRef.current = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting && hasMoreComments && !commentsLoading) {
         const nextPage = Math.floor(comments.length / 20) + 1;
@@ -58,59 +57,32 @@ const VideoComments = ({ videoId }) => {
       }
     }, options);
     
-    if (lastCommentRef.current) {
-      observerRef.current.observe(lastCommentRef.current);
-    }
-    
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
-    };
+    if (lastCommentRef.current) observerRef.current.observe(lastCommentRef.current);
+    return () => observerRef.current?.disconnect();
   }, [comments.length, hasMoreComments, commentsLoading, dispatch, videoId]);
 
-  // Socket.IO: Escuchar nuevos comentarios en tiempo real
+  // Socket events
   useEffect(() => {
     if (!socket) return;
     
     socket.emit('join-video-room', videoId);
     
-    socket.on('new-comment', (data) => {
-      if (data.videoId === videoId) {
-        dispatch({ type: 'ADD_COMMENT', payload: data.comment });
-      }
-    });
+    const handlers = {
+      'new-comment': (data) => data.videoId === videoId && data.comment && 
+        dispatch({ type: 'ADD_COMMENT', payload: data.comment }),
+      'comment-liked': (data) => data.videoId === videoId && 
+        dispatch({ type: 'LIKE_COMMENT', payload: { commentId: data.commentId, likes: data.likes, liked: data.liked } }),
+      'new-reply': (data) => data.videoId === videoId && 
+        dispatch({ type: 'ADD_COMMENT_REPLY', payload: { commentId: data.commentId, reply: data.reply } }),
+      'comment-deleted': (data) => data.videoId === videoId && 
+        dispatch({ type: 'DELETE_COMMENT', payload: { commentId: data.commentId } }),
+    };
     
-    socket.on('comment-liked', (data) => {
-      if (data.videoId === videoId) {
-        dispatch({ 
-          type: 'LIKE_COMMENT', 
-          payload: { commentId: data.commentId, likes: data.likes, liked: data.liked } 
-        });
-      }
-    });
-    
-    socket.on('new-reply', (data) => {
-      if (data.videoId === videoId) {
-        dispatch({ 
-          type: 'ADD_COMMENT_REPLY', 
-          payload: { commentId: data.commentId, reply: data.reply } 
-        });
-      }
-    });
-    
-    socket.on('comment-deleted', (data) => {
-      if (data.videoId === videoId) {
-        dispatch({ type: 'DELETE_COMMENT', payload: { commentId: data.commentId } });
-      }
-    });
+    Object.entries(handlers).forEach(([event, handler]) => socket.on(event, handler));
     
     return () => {
       socket.emit('leave-video-room', videoId);
-      socket.off('new-comment');
-      socket.off('comment-liked');
-      socket.off('new-reply');
-      socket.off('comment-deleted');
+      Object.keys(handlers).forEach(event => socket.off(event));
     };
   }, [socket, videoId, dispatch]);
 
@@ -118,147 +90,142 @@ const VideoComments = ({ videoId }) => {
     e.preventDefault();
     if (!newComment.trim() || !auth.token) return;
     
-    const result = await dispatch(addComment(videoId, newComment, auth.token));
+    const result = await dispatch(addComment(videoId, newComment, auth.token, auth, socket, videoData));
     if (result.success) {
       setNewComment('');
-      if (socket) {
-        socket.emit('send-comment', { videoId, comment: result.comment });
-      }
+      if (socket) socket.emit('send-comment', { videoId, comment: result.comment });
     }
   };
-  
+
   const handleAddReply = async (commentId) => {
-    if (!replyText.trim() || !auth.token) return;
+    const text = replyText[commentId];
+    if (!text?.trim() || !auth.token) return;
     
-    const result = await dispatch(addCommentReply(videoId, commentId, replyText, auth.token));
+    const parentComment = comments.find(c => c._id === commentId);
+    const result = await dispatch(addCommentReply(videoId, commentId, text, auth.token, auth, socket, parentComment, videoData));
     if (result.success) {
-      setReplyTo(null);
-      setReplyText('');
-      if (socket) {
-        socket.emit('send-reply', { videoId, commentId, reply: result.reply });
-      }
+      setReplyText(prev => ({ ...prev, [commentId]: '' }));
+      setActiveReplyId(null);
+      if (socket) socket.emit('send-reply', { videoId, commentId, reply: result.reply });
     }
   };
-  
+
   const handleLikeComment = async (commentId) => {
     if (!auth.token) return;
-    
-    const result = await dispatch(likeComment(videoId, commentId, auth.token));
-    if (result.success && socket) {
-      socket.emit('like-comment', {
-        videoId,
-        commentId,
-        userId: auth.user._id,
-        liked: result.liked
-      });
+    setLikedComments(prev => ({ ...prev, [commentId]: !prev[commentId] }));
+    const comment = comments.find(c => c._id === commentId);
+    await dispatch(likeComment(videoId, commentId, auth.token, auth, socket, comment, videoData));
+  };
+
+  const handleEditComment = async (commentId) => {
+    if (!editText.trim()) return;
+    const result = await dispatch(editComment(videoId, commentId, editText, auth.token));
+    if (result.success) {
+      setEditingCommentId(null);
+      setEditText('');
     }
   };
 
   const handleDeleteComment = async (commentId) => {
-    if (!auth.token) return;
-    
+    if (!window.confirm('Supprimer ce commentaire ?')) return;
     const result = await dispatch(deleteComment(videoId, commentId, auth.token));
+    if (result.success && socket) socket.emit('delete-comment', { videoId, commentId });
+    setShowMenu(null);
+  };
+
+  const handleEditReply = async (commentId, replyId) => {
+    if (!editText.trim()) return;
+    const result = await dispatch(editReply(videoId, commentId, replyId, editText, auth.token));
     if (result.success) {
-      setShowMenu(null);
-      if (socket) {
-        socket.emit('delete-comment', { videoId, commentId });
-      }
+      setEditingReplyId(null);
+      setEditText('');
     }
   };
 
-  const canModifyComment = (commentUserId) => {
-    return auth.user && (
-      auth.user._id === commentUserId || 
-      auth.user.role === 'admin' ||
-      auth.user.role === 'moderator'
-    );
+  const handleDeleteReply = async (commentId, replyId) => {
+    if (!window.confirm('Supprimer cette réponse ?')) return;
+    const result = await dispatch(deleteReply(videoId, commentId, replyId, auth.token));
+    if (result.success && socket) socket.emit('delete-reply', { videoId, commentId, replyId });
+  };
+
+  const canModify = (userId) => {
+    return auth.user && (auth.user._id === userId || auth.user.role === 'admin' || auth.user.role === 'moderator');
   };
 
   const formatDate = (date) => {
     const now = new Date();
-    const commentDate = new Date(date);
-    const diff = Math.floor((now - commentDate) / 1000);
-    
-    if (diff < 60) return 'ahora';
-    if (diff < 3600) return `hace ${Math.floor(diff / 60)}m`;
-    if (diff < 86400) return `hace ${Math.floor(diff / 3600)}h`;
-    if (diff < 604800) return `hace ${Math.floor(diff / 86400)}d`;
-    return commentDate.toLocaleDateString();
+    const diff = Math.floor((now - new Date(date)) / 1000);
+    if (diff < 60) return 'maintenant';
+    if (diff < 3600) return `il y a ${Math.floor(diff / 60)}m`;
+    if (diff < 86400) return `il y a ${Math.floor(diff / 3600)}h`;
+    return new Date(date).toLocaleDateString('fr-FR');
   };
 
   return (
     <div className="video-comments-container">
       <div className="comments-header">
-        <h5>{commentsTotal} Comentarios</h5>
+        <h5>{commentsTotal} {commentsTotal === 1 ? 'commentaire' : 'commentaires'}</h5>
       </div>
       
+      {/* Formulario principal */}
       {auth.token && (
-        <div className="comment-form-wrapper">
-          <form onSubmit={handleAddComment} className="comment-form">
-            <img
-              src={auth.user?.avatar || '/default-avatar.png'}
-              alt={auth.user?.username}
-              className="comment-form-avatar"
+        <form onSubmit={handleAddComment} className="comment-form-main">
+          <img src={auth.user?.avatar || '/default-avatar.png'} alt="" className="comment-main-avatar" />
+          <div className="comment-main-input-wrapper">
+            <textarea
+              className="comment-main-input"
+              placeholder="Ajouter un commentaire..."
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              rows="1"
             />
-            <div className="comment-form-input-wrapper">
-              <textarea
-                className="comment-form-input"
-                placeholder="Añadir comentario..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                rows="1"
-              />
-              <button 
-                type="submit" 
-                className="comment-form-send"
-                disabled={!newComment.trim()}
-              >
-                <Send size={18} />
-              </button>
-            </div>
-          </form>
-        </div>
+            <button type="submit" className="comment-main-send" disabled={!newComment.trim()}>
+              <Send size={18} />
+            </button>
+          </div>
+        </form>
       )}
       
+      {/* Lista de comentarios */}
       <div className="comments-list" ref={commentsContainerRef}>
         {comments.length === 0 && !commentsLoading ? (
           <div className="no-comments">
-            <p>No hay comentarios todavía</p>
-            <span>¡Sé el primero en comentar!</span>
+            <div className="no-comments-icon">💬</div>
+            <p>Aucun commentaire pour le moment</p>
+            <span>Soyez le premier à commenter !</span>
           </div>
         ) : (
           comments.map((comment, index) => (
-            <div 
-              key={comment._id} 
-              className="comment-item"
-              ref={index === comments.length - 1 ? lastCommentRef : null}
-            >
-              <img
-                src={comment.user?.avatar || '/default-avatar.png'}
-                alt={comment.user?.username}
-                className="comment-avatar"
-              />
-              <div className="comment-content">
+            <div key={comment._id} className="comment-item" ref={index === comments.length - 1 ? lastCommentRef : null}>
+              {/* Avatar */}
+              <img src={comment.user?.avatar || '/default-avatar.png'} alt="" className="comment-avatar" />
+              
+              <div className="comment-body">
+                {/* Header */}
                 <div className="comment-header">
-                  <div className="comment-user-info">
-                    <strong className="comment-username">@{comment.user?.username}</strong>
+                  <div className="comment-user">
+                    <strong>@{comment.user?.username}</strong>
                     <span className="comment-time">{formatDate(comment.createdAt)}</span>
                     {comment.user?.isPro && <span className="pro-badge">Pro</span>}
+                    {comment.edited && <span className="edited-badge">modifié</span>}
                   </div>
                   
-                  {canModifyComment(comment.user?._id) && (
+                  {canModify(comment.user?._id) && editingCommentId !== comment._id && (
                     <div className="comment-menu">
-                      <button 
-                        className="comment-menu-btn"
-                        onClick={() => setShowMenu(showMenu === comment._id ? null : comment._id)}
-                      >
-                        ⋮
+                      <button onClick={() => setShowMenu(showMenu === comment._id ? null : comment._id)}>
+                        <MoreVertical size={16} />
                       </button>
                       {showMenu === comment._id && (
                         <div className="comment-dropdown">
+                          <button onClick={() => {
+                            setEditingCommentId(comment._id);
+                            setEditText(comment.text);
+                            setShowMenu(null);
+                          }}>
+                            <Edit2 size={14} /> Modifier
+                          </button>
                           <button onClick={() => handleDeleteComment(comment._id)}>
-                            <Trash2 size={14} />
-                            Eliminar
+                            <Trash2 size={14} /> Supprimer
                           </button>
                         </div>
                       )}
@@ -266,65 +233,116 @@ const VideoComments = ({ videoId }) => {
                   )}
                 </div>
                 
-                <p className="comment-text">{comment.text}</p>
+                {/* Texto o edición */}
+                {editingCommentId === comment._id ? (
+                  <div className="edit-area">
+                    <textarea
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      rows="3"
+                      autoFocus
+                    />
+                    <div className="edit-actions">
+                      <button className="save-btn" onClick={() => handleEditComment(comment._id)}>
+                        <Check size={14} /> Enregistrer
+                      </button>
+                      <button className="cancel-btn" onClick={() => setEditingCommentId(null)}>
+                        <X size={14} /> Annuler
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="comment-text">{comment.text}</p>
+                )}
                 
+                {/* Acciones */}
                 <div className="comment-actions">
-                  <button 
-                    className={`comment-like-btn ${comment.liked ? 'liked' : ''}`}
-                    onClick={() => handleLikeComment(comment._id)}
-                  >
+                  <button className={`like-btn ${likedComments[comment._id] || comment.liked ? 'active' : ''}`} onClick={() => handleLikeComment(comment._id)}>
                     <Heart size={16} />
                     <span>{comment.likes?.length || 0}</span>
                   </button>
-                  <button 
-                    className="comment-reply-btn"
-                    onClick={() => setReplyTo(replyTo === comment._id ? null : comment._id)}
-                  >
+                  <button className="reply-btn" onClick={() => setActiveReplyId(activeReplyId === comment._id ? null : comment._id)}>
                     <Reply size={16} />
-                    <span>Responder</span>
+                    <span>Répondre</span>
                   </button>
                 </div>
                 
+                {/* Respuestas existentes */}
                 {comment.replies && comment.replies.length > 0 && (
                   <div className="replies-list">
                     {comment.replies.map(reply => (
                       <div key={reply._id} className="reply-item">
-                        <img
-                          src={reply.user?.avatar || '/default-avatar.png'}
-                          alt={reply.user?.username}
-                          className="reply-avatar"
-                        />
-                        <div className="reply-content">
+                        <img src={reply.user?.avatar || '/default-avatar.png'} alt="" className="reply-avatar" />
+                        <div className="reply-body">
                           <div className="reply-header">
-                            <strong className="reply-username">@{reply.user?.username}</strong>
+                            <strong>@{reply.user?.username}</strong>
                             <span className="reply-time">{formatDate(reply.createdAt)}</span>
+                            {reply.edited && <span className="edited-badge">modifié</span>}
+                            {canModify(reply.user?._id) && editingReplyId !== reply._id && (
+                              <div className="reply-menu">
+                                <button onClick={() => setShowMenu(showMenu === reply._id ? null : reply._id)}>
+                                  <MoreVertical size={12} />
+                                </button>
+                                {showMenu === reply._id && (
+                                  <div className="reply-dropdown">
+                                    <button onClick={() => {
+                                      setEditingReplyId(reply._id);
+                                      setEditText(reply.text);
+                                      setShowMenu(null);
+                                    }}>
+                                      <Edit2 size={12} /> Modifier
+                                    </button>
+                                    <button onClick={() => handleDeleteReply(comment._id, reply._id)}>
+                                      <Trash2 size={12} /> Supprimer
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          <p className="reply-text">{reply.text}</p>
+                          
+                          {editingReplyId === reply._id ? (
+                            <div className="edit-area inline">
+                              <textarea
+                                value={editText}
+                                onChange={(e) => setEditText(e.target.value)}
+                                rows="2"
+                                autoFocus
+                              />
+                              <div className="edit-actions">
+                                <button className="save-btn" onClick={() => handleEditReply(comment._id, reply._id)}>
+                                  <Check size={12} /> OK
+                                </button>
+                                <button className="cancel-btn" onClick={() => setEditingReplyId(null)}>
+                                  <X size={12} />
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="reply-text">{reply.text}</p>
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
                 
-                {replyTo === comment._id && (
-                  <div className="reply-form">
-                    <img
-                      src={auth.user?.avatar || '/default-avatar.png'}
-                      alt={auth.user?.username}
-                      className="reply-form-avatar"
-                    />
-                    <div className="reply-form-input-wrapper">
+                {/* Formulario de respuesta */}
+                {activeReplyId === comment._id && (
+                  <div className="reply-form-container">
+                    <img src={auth.user?.avatar || '/default-avatar.png'} alt="" className="reply-form-avatar" />
+                    <div className="reply-form-wrapper">
                       <textarea
                         className="reply-form-input"
-                        placeholder="Escribe una respuesta..."
-                        value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
+                        placeholder="Écrire une réponse..."
+                        value={replyText[comment._id] || ''}
+                        onChange={(e) => setReplyText(prev => ({ ...prev, [comment._id]: e.target.value }))}
                         rows="1"
                       />
                       <button 
                         className="reply-form-send"
                         onClick={() => handleAddReply(comment._id)}
-                        disabled={!replyText.trim()}
+                        disabled={!replyText[comment._id]?.trim()}
                       >
                         <Send size={14} />
                       </button>
@@ -339,7 +357,7 @@ const VideoComments = ({ videoId }) => {
         {commentsLoading && (
           <div className="loading-more">
             <div className="loading-spinner"></div>
-            <span>Cargando más comentarios...</span>
+            <span>Chargement...</span>
           </div>
         )}
       </div>

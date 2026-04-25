@@ -257,7 +257,56 @@ const videoReducer = (state = initialState, action) => {
           currentVideo: null,
           loading: false 
         };
-
+        case VIDEO_TYPES.EDIT_COMMENT:
+          return {
+            ...state,
+            comments: state.comments.map(comment =>
+              comment._id === action.payload.commentId
+                ? { ...comment, text: action.payload.text, edited: true }
+                : comment
+            ),
+            currentVideo: state.currentVideo
+              ? {
+                  ...state.currentVideo,
+                  comments: (state.currentVideo.comments || []).map(comment =>
+                    comment._id === action.payload.commentId
+                      ? { ...comment, text: action.payload.text, edited: true }
+                      : comment
+                  )
+                }
+              : state.currentVideo
+          };
+        
+        case VIDEO_TYPES.EDIT_REPLY:
+          return {
+            ...state,
+            comments: state.comments.map(comment =>
+              comment._id === action.payload.commentId
+                ? {
+                    ...comment,
+                    replies: (comment.replies || []).map(reply =>
+                      reply._id === action.payload.replyId
+                        ? { ...reply, text: action.payload.text, edited: true }
+                        : reply
+                    )
+                  }
+                : comment
+            )
+          };
+        
+        case VIDEO_TYPES.DELETE_REPLY:
+          return {
+            ...state,
+            comments: state.comments.map(comment =>
+              comment._id === action.payload.commentId
+                ? {
+                    ...comment,
+                    replies: (comment.replies || []).filter(r => r._id !== action.payload.replyId)
+                  }
+                : comment
+            ),
+            commentsTotal: state.commentsTotal - 1
+          };
     default:
       return state;
   }

@@ -707,6 +707,113 @@
   /* ──────────────────────────────────────────────
      ANIMACIONES ADICIONALES
      ────────────────────────────────────────────── */
+
+
+
+/* ============================================
+   VIDEO TYPE SELECTOR
+   ============================================ */
+
+   .video-type-selector {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    padding: 20px 0;
+  }
+  
+  .video-type-card {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border-radius: 24px;
+    padding: 32px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  
+  .video-type-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(102, 126, 234, 0.5);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  }
+  
+  .video-type-card:active {
+    transform: translateY(0);
+  }
+  
+  .video-type-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .video-type-icon.commercial {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+  }
+  
+  .video-type-icon.social {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+  }
+  
+  .video-type-card h4 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: white;
+  }
+  
+  .video-type-card p {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 20px;
+  }
+  
+  .video-type-features {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  
+  .video-type-features span {
+    font-size: 0.7rem;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 4px 12px;
+    border-radius: 20px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .video-type-selector {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    
+    .video-type-card {
+      padding: 24px 20px;
+    }
+    
+    .video-type-icon {
+      width: 60px;
+      height: 60px;
+    }
+    
+    .video-type-card h4 {
+      font-size: 1.1rem;
+    }
+  }
+
+
+
+
+
   @keyframes cw-pulse {
     0%, 100% {
       transform: scale(1);

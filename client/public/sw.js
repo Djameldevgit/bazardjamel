@@ -1,15 +1,13 @@
-// sw.js - Service Worker optimizado y corregido
-// Cambiar el nombre del cache para Vetements
-const CACHE_NAME = 'vetements-boutique-v2.1';
+// sw.js - Service Worker con Push Notifications
+const CACHE_NAME = 'vetements-boutique-v2.2';
 
-// El resto del service worker permanece igual, solo cambia el nombre
-// ... (todo el código del service worker se mantiene igual)
 const urlsToCache = [
   '/',
   '/static/js/bundle.js',
   '/static/css/main.css',
   '/manifest.json',
-  '/icon-web-01.png'
+  '/icon-web-01.png',
+  '/sounds/notify.mp3' // ✅ Añadir sonido al cache
 ];
 
 // Instalación
@@ -19,7 +17,6 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('📦 Cache abierto');
-        // Usamos addAll pero con manejo de errores para cada recurso
         return Promise.all(
           urlsToCache.map((url) => {
             return cache.add(url).catch((error) => {
@@ -49,102 +46,163 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      // Reclamar clientes inmediatamente
       return self.clients.claim();
     })
   );
 });
 
-// Fetch - Estrategia mejorada
+// ============================================
+// ✅ NOTIFICACIONES PUSH PARA PWA INSTALADA
+// ============================================
+
+// ✅ Escuchar mensajes del cliente (para reproducción de sonido)
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'PLAY_SOUND') {
+    const audioUrl = event.data.url || '/sounds/notify.mp3';
+    
+    // Intentar obtener el sonido del cache
+    caches.match(audioUrl).then(response => {
+      if (response) {
+        console.log('🔊 Sonido encontrado en cache');
+      }
+    });
+  }
+});
+
+// ✅ Recibir notificación push
+self.addEventListener('push', (event) => {
+  console.log('📨 Push notification recibida:', event);
+  
+  let notificationData = {
+    title: 'MarketPlace',
+    body: 'Vous avez une nouvelle notification',
+    icon: '/icon-web-01.png',
+    badge: '/icon-web-01.png',
+    vibrate: [200, 100, 200, 100, 400],
+    sound: '/sounds/notify.mp3',
+    tag: Date.now().toString(),
+    renotify: true,
+    requireInteraction: true,
+    data: {
+      url: '/'
+    }
+  };
+  
+  // Extraer datos del push
+  if (event.data) {
+    try {
+      const payload = event.data.json();
+      notificationData = { ...notificationData, ...payload };
+      console.log('📦 Datos de notificación:', notificationData);
+    } catch (e) {
+      notificationData.body = event.data.text();
+    }
+  }
+  
+  // Mostrar notificación
+  event.waitUntil(
+    self.registration.showNotification(notificationData.title, {
+      body: notificationData.body,
+      icon: notificationData.icon,
+      badge: notificationData.badge,
+      vibrate: notificationData.vibrate,
+      sound: notificationData.sound,
+      tag: notificationData.tag,
+      renotify: notificationData.renotify,
+      requireInteraction: notificationData.requireInteraction,
+      actions: [
+        { action: 'open', title: 'Ouvrir' },
+        { action: 'close', title: 'Fermer' }
+      ],
+      data: notificationData.data
+    })
+  );
+});
+
+// ✅ Manejar click en notificación
+self.addEventListener('notificationclick', (event) => {
+  console.log('🔔 Click en notificación:', event);
+  event.notification.close();
+  
+  const urlToOpen = event.notification.data?.url || '/';
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then(windowClients => {
+        // Buscar ventana abierta
+        for (let client of windowClients) {
+          if (client.url === urlToOpen && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // Si no hay ventana, abrir nueva
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
+  );
+});
+
+// ✅ Manejar cierre de notificación
+self.addEventListener('notificationclose', (event) => {
+  console.log('❌ Notificación cerrada');
+});
+
+// ============================================
+// FETCH - Estrategia de cache
+// ============================================
+
 self.addEventListener('fetch', (event) => {
-  // Skip para requests que no son GET
   if (event.request.method !== 'GET') return;
 
-  // Para rutas de la API, usar Network First y no cachear
+  // API - Network First
   if (event.request.url.includes('/api/')) {
     event.respondWith(
       fetch(event.request)
-        .catch(() => {
-          // Solo devolver cache para API si hay un error de red
-          return caches.match(event.request);
-        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }
 
-  // Para navegación (HTML), usar Network First
+  // HTML - Network First
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          // Verificar si la respuesta es válida
           if (response && response.status === 200) {
             const responseClone = response.clone();
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                cache.put(event.request, responseClone);
-              });
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
           }
           return response;
         })
-        .catch(() => {
-          // Si falla la red, devolver la página de inicio del cache
-          return caches.match('/')
-            .then((cachedResponse) => {
-              if (cachedResponse) {
-                return cachedResponse;
-              }
-              // Si no hay nada en cache, devolver una página offline básica
-              return new Response('Offline', {
-                status: 503,
-                statusText: 'Service Unavailable',
-                headers: new Headers({ 'Content-Type': 'text/html' })
-              });
-            });
-        })
+        .catch(() => caches.match('/').then(cached => cached || new Response('Offline', { status: 503 })))
     );
     return;
   }
 
-  // Para recursos estáticos (JS, CSS, imágenes), usar Cache First
+  // Recursos estáticos - Cache First
   event.respondWith(
     caches.match(event.request)
       .then((cachedResponse) => {
-        // Si existe en cache, devolverlo
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-
-        // Si no está en cache, buscar en la red
+        if (cachedResponse) return cachedResponse;
+        
         return fetch(event.request)
           .then((response) => {
-            // Verificar que la respuesta sea válida
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-
-            // Clonar la respuesta para guardarla en cache
+            if (!response || response.status !== 200 || response.type !== 'basic') return response;
+            
             const responseToCache = response.clone();
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
-
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
             return response;
           })
           .catch(() => {
-            // Fallback para diferentes tipos de recursos
             if (event.request.destination === 'image') {
-              // Puedes devolver una imagen placeholder aquí
-              return new Response('', {
-                status: 404,
-                statusText: 'Image Not Found'
-              });
+              return new Response('', { status: 404 });
             }
-            return new Response('Offline', {
-              status: 503,
-              statusText: 'Service Unavailable'
-            });
+            return new Response('Offline', { status: 503 });
           });
       })
   );

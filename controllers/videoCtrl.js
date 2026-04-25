@@ -779,19 +779,87 @@ const addCommentReply = async (req, res) => {
 };
 
 // ✅ Eliminar comentario
-const deleteCommentCtrl = async (req, res) => {
+ 
+// ✅ NUEVO - Eliminar respuesta
+const deleteReplyCtrl = async (req, res) => {
   try {
-    const { id, commentId } = req.params;
+    const { id, commentId, replyId } = req.params;
+    
     const video = await Video.findById(id);
-    if (!video) return res.status(404).json({ success: false, message: 'Video no encontrado' });
-    const deleted = await video.deleteComment(commentId, req.user._id, req.user.role);
-    if (!deleted) return res.status(403).json({ success: false, message: 'No autorizado o comentario no encontrado' });
-    res.json({ success: true, message: 'Comentario eliminado' });
+    if (!video) {
+      return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    }
+    
+    const deleted = await video.deleteReply(commentId, replyId, req.user._id, req.user.role);
+    
+    if (!deleted) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'No autorizado o respuesta no encontrada' 
+      });
+    }
+    
+    res.json({ success: true, message: 'Respuesta eliminada correctamente' });
   } catch (error) {
-    console.error('Error deleteCommentCtrl:', error);
+    console.error('Error deleteReplyCtrl:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
+const editReply = async (req, res) => {
+  try {
+    const { id, commentId, replyId } = req.params;
+    const { text } = req.body;
+    
+    if (!text || !text.trim()) {
+      return res.status(400).json({ success: false, message: 'El texto es requerido' });
+    }
+    
+    const video = await Video.findById(id);
+    if (!video) {
+      return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    }
+    
+    const comment = video.comments.id(commentId);
+    if (!comment) {
+      return res.status(404).json({ success: false, message: 'Comentario no encontrado' });
+    }
+    
+    const reply = comment.replies.id(replyId);
+    if (!reply) {
+      return res.status(404).json({ success: false, message: 'Respuesta no encontrada' });
+    }
+    
+    // Verificar permisos
+    const isOwner = reply.user.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'moderator';
+    
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'No autorizado' });
+    }
+    
+    // Actualizar texto
+    reply.text = text;
+    reply.editedAt = new Date();
+    reply.edited = true;
+    
+    await video.save();
+    
+    res.json({ 
+      success: true, 
+      message: 'Respuesta actualizada',
+      reply: {
+        _id: reply._id,
+        text: reply.text,
+        edited: true
+      }
+    });
+  } catch (error) {
+    console.error('Error editReply:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
 
 // ✅ Obtener comentarios paginados
 const getVideoComments = async (req, res) => {
@@ -951,6 +1019,156 @@ const trackWatchTime = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+
+// ✅ CORREGIDO - deleteCommentCtrl
+const deleteCommentCtrl = async (req, res) => {
+  try {
+    const { id, commentId } = req.params;
+    
+    console.log('🗑️ Intentando eliminar:', { videoId: id, commentId, userId: req.user._id, userRole: req.user.role });
+    
+    const video = await Video.findById(id);
+    if (!video) {
+      return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    }
+    
+    // Buscar si es un comentario principal o una respuesta
+    let isReply = false;
+    let parentCommentId = null;
+    let targetReply = null;
+    
+    for (const comment of video.comments) {
+      const reply = comment.replies.id(commentId);
+      if (reply) {
+        isReply = true;
+        parentCommentId = comment._id;
+        targetReply = reply;
+        break;
+      }
+    }
+    
+    let deleted = false;
+    
+    if (isReply) {
+      // Verificar permisos para reply
+      const isOwner = targetReply.user.toString() === req.user._id.toString();
+      const isAdmin = req.user.role === 'admin' || req.user.role === 'moderator';
+      
+      console.log('📝 Reply - isOwner:', isOwner, 'isAdmin:', isAdmin);
+      
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ success: false, message: 'No autorizado para eliminar esta respuesta' });
+      }
+      
+      deleted = await video.deleteReply(parentCommentId, commentId, req.user._id, req.user.role);
+    } else {
+      // Verificar permisos para comentario principal
+      const comment = video.comments.id(commentId);
+      if (!comment) {
+        return res.status(404).json({ success: false, message: 'Comentario no encontrado' });
+      }
+      
+      const isOwner = comment.user.toString() === req.user._id.toString();
+      const isAdmin = req.user.role === 'admin' || req.user.role === 'moderator';
+      
+      console.log('📝 Comment - isOwner:', isOwner, 'isAdmin:', isAdmin, 'commentUserId:', comment.user.toString(), 'currentUserId:', req.user._id.toString());
+      
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ success: false, message: 'No autorizado para eliminar este comentario' });
+      }
+      
+      deleted = await video.deleteComment(commentId, req.user._id, req.user.role);
+    }
+    
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'No se pudo eliminar el comentario' });
+    }
+    
+    // Emitir evento socket
+    const io = req.app.get('io');
+    if (io) {
+      io.to(id).emit('comment-deleted', { videoId: id, commentId });
+    }
+    
+    res.json({ success: true, message: 'Comentario eliminado correctamente' });
+  } catch (error) {
+    console.error('Error deleteCommentCtrl:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ NUEVO - Editar comentario
+const editComment = async (req, res) => {
+  try {
+    const { id, commentId } = req.params;
+    const { text } = req.body;
+    
+    console.log('✏️ Editando comentario:', { videoId: id, commentId, userId: req.user._id });
+    
+    if (!text || !text.trim()) {
+      return res.status(400).json({ success: false, message: 'El texto es requerido' });
+    }
+    
+    const video = await Video.findById(id);
+    if (!video) {
+      return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    }
+    
+    // Buscar si es comentario o reply
+    let isReply = false;
+    let parentCommentId = null;
+    
+    for (const comment of video.comments) {
+      const reply = comment.replies.id(commentId);
+      if (reply) {
+        isReply = true;
+        parentCommentId = comment._id;
+        break;
+      }
+    }
+    
+    let result;
+    if (isReply) {
+      result = await video.editReply(parentCommentId, commentId, req.user._id, req.user.role, text);
+    } else {
+      result = await video.editComment(commentId, req.user._id, req.user.role, text);
+    }
+    
+    if (!result) {
+      return res.status(403).json({ success: false, message: 'No autorizado o comentario no encontrado' });
+    }
+    
+    // Emitir evento socket
+    const io = req.app.get('io');
+    if (io) {
+      io.to(id).emit('comment-edited', { 
+        videoId: id, 
+        commentId, 
+        text, 
+        isReply, 
+        parentCommentId 
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Comentario actualizado',
+      comment: isReply ? { _id: commentId, text, edited: true } : result
+    });
+  } catch (error) {
+    console.error('Error editComment:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+
+
+
+
+
+
 module.exports = {
   // Públicas
   getVideoById,
@@ -970,8 +1188,11 @@ module.exports = {
   trackWatchTime,
   addComment,
   likeComment,
+  editComment,
   addCommentReply,
   deleteCommentCtrl,
+  editReply,
+  deleteReplyCtrl,
   getVideoComments,
   getUserVideoStats,
   // Música
