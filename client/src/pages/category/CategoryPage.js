@@ -7,7 +7,7 @@ import InfiniteScroll from "react-infinite-scroll-component";
 import { Funnel, CameraVideo, Shop, Grid, ArrowUp, Grid3x3, Film } from 'react-bootstrap-icons';
 import PostCard from "../../components/post-card/PostCard";
 import VideoCard from "../../components/VideoCard";
-import VideoReelItem from "../video/VideoReelItem";
+import VideoReelItem from "../video/Feed";
 import { getCategoryPosts } from "../../redux/actions/categoryAction";
 import { getBoutiquesByCategory } from "../../redux/actions/boutiqueAction";
 import { getVideos } from "../../redux/actions/videoAction";

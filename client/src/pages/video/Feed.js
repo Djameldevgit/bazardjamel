@@ -25,12 +25,12 @@ import moment from 'moment';
 import 'moment/locale/fr';
 
 // ✅ IMPORTAR EL CSS DEDICADO
-import './VideoReelItem.css';
+import './Feed.css';
 
 /* ════════════════════════════════════════════════════════════
    COMPONENTE CON CSS DEDICADO
    ════════════════════════════════════════════════════════════ */
-const VideoReelItem = ({ 
+const Feed = ({ 
   video, 
   isActive = false, 
   onVisibilityChange, 
@@ -219,6 +219,14 @@ const VideoReelItem = ({
     sessionStorage.setItem('returnToFeed', 'true');
     sessionStorage.setItem('feedScrollPosition', window.scrollY.toString());
     history.push(`/video/${video._id}`);
+  };
+
+  // ✅ Navegar al perfil del usuario (usando la nueva ruta userVideo)
+  const handleGoToUserProfile = (e) => {
+    e.stopPropagation();
+    sessionStorage.setItem('returnToFeed', 'true');
+    sessionStorage.setItem('feedScrollPosition', window.scrollY.toString());
+    history.push(`/video/userVideo/${video.user?._id}`);
   };
 
   /* ── Keyboard navigation ───────────────────────────────── */
@@ -429,6 +437,23 @@ const VideoReelItem = ({
         {/* ACTION SIDEBAR + FLECHAS */}
         {!showComments && (
           <div className="vr-actions-sidebar">
+            {/* ✅ AVATAR DEL DUEÑO DEL VIDEO - SOBRE EL ICONO DE LIKE */}
+            <div className="vr-action-group vr-avatar-group">
+              <div className="vr-avatar-wrapper" onClick={handleGoToUserProfile}>
+                <img
+                  src={video.user?.avatar || '/default-avatar.png'}
+                  alt={video.user?.username}
+                  className="vr-sidebar-avatar"
+                />
+                {video.user?.isPro && (
+                  <div className="vr-pro-badge">
+                    <FontAwesomeIcon icon={faCheckCircle} />
+                  </div>
+                )}
+              </div>
+              <span className="vr-action-count">@{video.user?.username?.slice(0, 12)}</span>
+            </div>
+
             <div className="vr-action-group">
               <button className="vr-action-btn" onClick={handleLike}>
                 <FontAwesomeIcon 
@@ -504,10 +529,10 @@ const VideoReelItem = ({
                 src={video.user?.avatar || '/default-avatar.png'}
                 alt={video.user?.username}
                 className="vr-user-avatar"
-                onClick={() => history.push(`/profile/${video.user?._id}`)}
+                onClick={handleGoToUserProfile}
               />
               <div className="vr-user-details">
-                <div className="vr-username" onClick={() => history.push(`/profile/${video.user?._id}`)}>
+                <div className="vr-username" onClick={handleGoToUserProfile}>
                   @{video.user?.username}
                 </div>
                 <div className="vr-stats">
@@ -580,4 +605,4 @@ const VideoReelItem = ({
   );
 };
 
-export default VideoReelItem;
+export default Feed;

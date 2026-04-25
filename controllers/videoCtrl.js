@@ -1163,7 +1163,301 @@ const editComment = async (req, res) => {
 };
 
 
+// controllers/videoCtrl.js - AGREGAR ESTAS FUNCIONES
 
+// ✅ Obtener perfil completo de usuario con estadísticas (estilo TikTok)
+const getUserProfileStats = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user._id;
+    
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: 'ID inválido' });
+    }
+    
+    // Obtener información del usuario
+    const user = await User.findById(userId)
+      .select('username avatar bio fullname isPro role followers following');
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    }
+    
+    // Contar seguidores y siguiendo
+    const followersCount = user.followers.length || 0;
+    const followingCount = user.following.length || 0;
+    
+    // Verificar si el usuario actual sigue a este usuario
+    let isFollowing = false;
+    if (currentUserId && currentUserId.toString() !== userId) {
+      isFollowing = user.followers.some(
+        follower => follower.toString() === currentUserId.toString()
+      ) || false;
+    }
+    
+    // Obtener estadísticas de videos del usuario
+    const videoStats = await Video.aggregate([
+      { 
+        $match: { 
+          user: new mongoose.Types.ObjectId(userId),
+          pendiente: false,
+          isActive: true 
+        } 
+      },
+      {
+        $group: {
+          _id: null,
+          totalVideos: { $sum: 1 },
+          totalLikes: { $sum: { $size: '$likes' } },
+          totalViews: { $sum: '$views' },
+          totalComments: { $sum: { $size: '$comments' } },
+          totalShares: { $sum: { $size: { $ifNull: ['$shares', []] } } }
+        }
+      }
+    ]);
+    
+    // Para videos guardados (favoritos) - necesitas un modelo de favoritos
+    // Por ahora simulamos con la colección de favoritos del usuario
+    let savedVideosCount = 0;
+    if (user.savedVideos) {
+      savedVideosCount = user.savedVideos.length;
+    }
+    
+    res.json({
+      success: true,
+      profile: {
+        _id: user._id,
+        username: user.username,
+        avatar: user.avatar,
+        bio: user.bio || '',
+        fullname: user.fullname || user.username,
+        isPro: user.isPro || false,
+        role: user.role,
+        followersCount,
+        followingCount,
+        isFollowing,
+        videoStats: {
+          totalVideos: videoStats[0].totalVideos || 0,
+          totalLikes: videoStats[0].totalLikes || 0,
+          totalViews: videoStats[0].totalViews || 0,
+          totalComments: videoStats[0].totalComments || 0,
+          totalShares: videoStats[0].totalShares || 0
+        },
+        savedVideosCount
+      }
+    });
+  } catch (error) {
+    console.error('Error getUserProfileStats:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ Obtener videos guardados/favoritos del usuario
+const getUserSavedVideos = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { page = 1, limit = 12 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const currentUserId = req.user._id;
+    
+    // Verificar permisos: solo el dueño puede ver videos guardados
+    if (!currentUserId || currentUserId.toString() !== userId) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Vous ne pouvez pas voir les vidéos sauvegardées d\'un autre utilisateur' 
+      });
+    }
+    
+    const user = await User.findById(userId).select('savedVideos');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    }
+    
+    const savedVideoIds = user.savedVideos || [];
+    const total = savedVideoIds.length;
+    
+    // Obtener videos paginados
+    const paginatedIds = savedVideoIds.slice(skip, skip + parseInt(limit));
+    
+    const videos = await Video.find({ 
+      _id: { $in: paginatedIds },
+      pendiente: false,
+      isActive: true 
+    })
+      .sort({ createdAt: -1 })
+      .populate('user', 'username avatar isPro')
+      .lean();
+    
+    // Reordenar según el orden original
+    const orderedVideos = paginatedIds.map(id => 
+      videos.find(v => v._id.toString() === id.toString())
+    ).filter(v => v);
+    
+    res.json({
+      success: true,
+      videos: orderedVideos,
+      total,
+      page: parseInt(page),
+      totalPages: Math.ceil(total / parseInt(limit)),
+      hasMore: skip + orderedVideos.length < total
+    });
+  } catch (error) {
+    console.error('Error getUserSavedVideos:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ Obtener videos que le han dado like al usuario (videos liked por el usuario)
+const getUserLikedVideos = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { page = 1, limit = 12 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const currentUserId = req.user._id;
+    
+    // Verificar permisos
+    if (!currentUserId || currentUserId.toString() !== userId) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Vous ne pouvez pas voir les vidéos aimées d\'un autre utilisateur' 
+      });
+    }
+    
+    // Buscar videos donde el usuario haya dado like
+    const videos = await Video.find({
+      likes: { $in: [new mongoose.Types.ObjectId(userId)] },
+      pendiente: false,
+      isActive: true
+    })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .populate('user', 'username avatar isPro')
+      .lean();
+    
+    const total = await Video.countDocuments({
+      likes: { $in: [new mongoose.Types.ObjectId(userId)] },
+      pendiente: false,
+      isActive: true
+    });
+    
+    // Marcar que el usuario ya dio like a estos videos
+    const videosWithLiked = videos.map(v => ({
+      ...v,
+      liked: true
+    }));
+    
+    res.json({
+      success: true,
+      videos: videosWithLiked,
+      total,
+      page: parseInt(page),
+      totalPages: Math.ceil(total / parseInt(limit)),
+      hasMore: skip + videos.length < total
+    });
+  } catch (error) {
+    console.error('Error getUserLikedVideos:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ Seguir/Dejar de seguir usuario
+const toggleFollowUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user._id;
+    
+    if (userId === currentUserId.toString()) {
+      return res.status(400).json({ success: false, message: 'No puedes seguirte a ti mismo' });
+    }
+    
+    const userToFollow = await User.findById(userId);
+    if (!userToFollow) {
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    }
+    
+    const currentUser = await User.findById(currentUserId);
+    
+    const isFollowing = userToFollow.followers.includes(currentUserId);
+    
+    if (isFollowing) {
+      // Dejar de seguir
+      await User.findByIdAndUpdate(userId, {
+        $pull: { followers: currentUserId }
+      });
+      await User.findByIdAndUpdate(currentUserId, {
+        $pull: { following: userId }
+      });
+    } else {
+      // Seguir
+      await User.findByIdAndUpdate(userId, {
+        $addToSet: { followers: currentUserId }
+      });
+      await User.findByIdAndUpdate(currentUserId, {
+        $addToSet: { following: userId }
+      });
+      
+      // Crear notificación
+      const msg = {
+        id: currentUserId,
+        text: `@${currentUser.username} a commencé à vous suivre`,
+        recipients: [userId],
+        url: `/video/userVideo/${currentUserId}`,
+        type: 'follow'
+      };
+      
+      const io = req.app.get('io');
+      if (io) {
+        io.to(userId).emit('new-notification', msg);
+      }
+    }
+    
+    const newFollowersCount = await User.findById(userId).select('followers');
+    
+    res.json({
+      success: true,
+      isFollowing: !isFollowing,
+      followersCount: newFollowersCount.followers.length || 0
+    });
+  } catch (error) {
+    console.error('Error toggleFollowUser:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ Guardar/Quitar video de favoritos
+const toggleSaveVideo = async (req, res) => {
+  try {
+    const { videoId } = req.params;
+    const userId = req.user._id;
+    
+    const video = await Video.findById(videoId);
+    if (!video) {
+      return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    }
+    
+    const user = await User.findById(userId);
+    const isSaved = user.savedVideos.includes(videoId);
+    
+    if (isSaved) {
+      await User.findByIdAndUpdate(userId, {
+        $pull: { savedVideos: videoId }
+      });
+    } else {
+      await User.findByIdAndUpdate(userId, {
+        $addToSet: { savedVideos: videoId }
+      });
+    }
+    
+    res.json({
+      success: true,
+      isSaved: !isSaved
+    });
+  } catch (error) {
+    console.error('Error toggleSaveVideo:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 
 
@@ -1202,6 +1496,13 @@ module.exports = {
   aprobarVideoAdmin,
   eliminarVideoAdmin,
   getVideoByIdPrivate ,
-  getVideoByIdPublic
+  getVideoByIdPublic,
+  getUserProfileStats,
+  getUserProfileStats,
+  getUserVideos,
+  getUserSavedVideos,
+  getUserLikedVideos,
+  toggleFollowUser,
+  toggleSaveVideo
 
 };

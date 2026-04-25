@@ -107,7 +107,123 @@
     border-radius: 0 2px 2px 0;
     transition: width 0.1s linear;
   }
+  /* ============================================
+   ESTILOS PARA EL AVATAR EN LA BARRA LATERAL
+   ============================================ */
+
+/* ──────────────────────────────────────────────
+   AVATAR DEL DUEÑO EN LA SIDEBAR
+   ────────────────────────────────────────────── */
+.vr-avatar-group {
+  margin-bottom: 16px !important;
+  position: relative;
+}
+
+.vr-avatar-wrapper {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 4px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.vr-avatar-wrapper:active {
+  transform: scale(0.92);
+}
+
+.vr-sidebar-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.vr-sidebar-avatar:hover {
+  border-color: #ff3b5c;
+  transform: scale(1.02);
+}
+
+/* Badge PRO para el avatar */
+.vr-pro-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -4px;
+  background: #ffd700;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #000;
+}
+
+.vr-pro-badge svg {
+  font-size: 10px;
+  color: #000;
+}
+
+/* Ajuste responsive para el avatar en sidebar */
+@media (max-width: 480px) {
+  .vr-avatar-wrapper {
+    width: 42px;
+    height: 42px;
+  }
   
+  .vr-sidebar-avatar {
+    width: 42px;
+    height: 42px;
+  }
+  
+  .vr-pro-badge {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .vr-pro-badge svg {
+    font-size: 8px;
+  }
+  
+  .vr-avatar-group .vr-action-count {
+    font-size: 9px;
+    max-width: 60px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: 360px) {
+  .vr-avatar-wrapper {
+    width: 38px;
+    height: 38px;
+  }
+  
+  .vr-sidebar-avatar {
+    width: 38px;
+    height: 38px;
+  }
+  
+  .vr-avatar-group .vr-action-count {
+    font-size: 8px;
+    max-width: 50px;
+  }
+}
+
+/* Hover solo para PC */
+@media (hover: hover) {
+  .vr-avatar-wrapper:hover {
+    transform: scale(1.02);
+  }
+  
+  .vr-sidebar-avatar:hover {
+    border-color: #ff3b5c;
+  }
+}
   /* ──────────────────────────────────────────────
      ACTIONS SIDEBAR
      ────────────────────────────────────────────── */

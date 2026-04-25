@@ -121,6 +121,9 @@ role: {
         type: mongoose.Types.ObjectId,
         ref: 'user'
     }],
+
+    savedVideos: [{ type: mongoose.Types.ObjectId, ref: 'video' }],
+    bio: { type: String, default: '' }
     
 }, {
     timestamps: true

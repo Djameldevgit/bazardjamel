@@ -63,4 +63,35 @@ router.get('/admin/videos/pendientes', auth, videoCtrl.getVideosPendientesAdmin)
 router.patch('/admin/videos/:id/approve', auth, videoCtrl.aprobarVideoAdmin);
 router.delete('/admin/videos/:id', auth, videoCtrl.eliminarVideoAdmin);
 
+
+
+// routes/videoRoutes.js - AGREGAR ESTAS RUTAS
+
+// ============================================
+// RUTAS DE PERFIL DE USUARIO (ESTILO TIKTOK)
+// ============================================
+
+// Perfil de usuario con estadísticas
+router.get('/user/:userId/profile', auth, videoCtrl.getUserProfileStats);
+router.get('/user/:userId/profile/public/:userId', videoCtrl.getUserProfileStats); // Ruta pública si es necesario
+
+// Videos del usuario (ya existe, pero verificamos)
+router.get('/users/:userId/videos', auth, videoCtrl.getUserVideos);
+
+// Videos guardados del usuario
+router.get('/user/:userId/saved-videos', auth, videoCtrl.getUserSavedVideos);
+
+// Videos que le gustaron al usuario
+router.get('/user/:userId/liked-videos', auth, videoCtrl.getUserLikedVideos);
+
+// Seguir/Dejar de seguir usuario
+router.post('/user/:userId/follow', auth, videoCtrl.toggleFollowUser);
+
+// Guardar/Quitar video de favoritos
+router.post('/videos/:videoId/save', auth, videoCtrl.toggleSaveVideo);
+
+
+
+
+
 module.exports = router;
