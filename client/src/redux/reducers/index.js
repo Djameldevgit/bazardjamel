@@ -70,7 +70,7 @@ export default combineReducers({
     settings,
     privacy,
     boutique,
-    boutiqueProduct,  // 🔥 UN SOLO reducer para productos de boutique
+    boutiqueProduct,   
     posts,
     category,
     accordionReducer,

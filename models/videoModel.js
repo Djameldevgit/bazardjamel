@@ -114,9 +114,9 @@ videoSchema.methods.updateEngagementScore = function() {
   this.engagementScore = Math.min((totalEngagement / totalViews) * 100, 100);
 };
 
-// ========== MÉTODOS DE COMENTARIOS ==========
+// ========== MÉTODOS DE COMENTARIOS CORREGIDOS (sin VersionError) ==========
 
-// ✅ Agregar comentario
+// ✅ Agregar comentario - CORREGIDO (usa updateOne)
 videoSchema.methods.addComment = async function(userId, text) {
   const comment = {
     _id: new mongoose.Types.ObjectId(),
@@ -127,70 +127,117 @@ videoSchema.methods.addComment = async function(userId, text) {
     edited: false,
     createdAt: new Date()
   };
+  
+  // Usar updateOne para evitar conflictos de versión
+  const result = await this.constructor.updateOne(
+    { _id: this._id },
+    { $push: { comments: { $each: [comment], $position: 0 } } }
+  );
+  
+  if (result.modifiedCount === 0) {
+    throw new Error('No se pudo agregar el comentario');
+  }
+  
+  // Actualizar localmente
   this.comments.unshift(comment);
   this.updateEngagementScore();
-  await this.save();
+  
   return comment;
 };
 
-// ✅ Like a comentario
+// ✅ Like a comentario - CORREGIDO
 videoSchema.methods.toggleCommentLike = async function(commentId, userId) {
-  const comment = this.comments.id(commentId);
-  if (!comment) return null;
+  const commentIndex = this.comments.findIndex(c => c._id.toString() === commentId);
+  if (commentIndex === -1) return null;
   
   const userIdStr = userId.toString();
-  const index = comment.likes.findIndex(id => id && id.toString() === userIdStr);
+  const comment = this.comments[commentIndex];
+  const hasLiked = comment.likes.some(id => id && id.toString() === userIdStr);
   
-  if (index === -1) {
-    comment.likes.push(userId);
+  let updateQuery;
+  if (hasLiked) {
+    updateQuery = { $pull: { [`comments.${commentIndex}.likes`]: userId } };
   } else {
-    comment.likes.splice(index, 1);
+    updateQuery = { $addToSet: { [`comments.${commentIndex}.likes`]: userId } };
+  }
+  
+  const result = await this.constructor.updateOne({ _id: this._id }, updateQuery);
+  
+  if (result.modifiedCount === 0) {
+    return null;
+  }
+  
+  // Actualizar localmente
+  if (hasLiked) {
+    comment.likes = comment.likes.filter(id => id && id.toString() !== userIdStr);
+  } else {
+    comment.likes.push(userId);
   }
   
   this.updateEngagementScore();
-  await this.save();
-  return { liked: index === -1, likesCount: comment.likes.length };
+  
+  return { liked: !hasLiked, likesCount: comment.likes.length };
 };
 
-// ✅ Editar comentario
+// ✅ Editar comentario - CORREGIDO
 videoSchema.methods.editComment = async function(commentId, userId, userRole, newText) {
-  const comment = this.comments.id(commentId);
-  if (!comment) return null;
+  const commentIndex = this.comments.findIndex(c => c._id.toString() === commentId);
+  if (commentIndex === -1) return null;
   
+  const comment = this.comments[commentIndex];
   const isOwner = comment.user.toString() === userId.toString();
   const isAdmin = userRole === 'admin' || userRole === 'moderator';
   
   if (!isOwner && !isAdmin) return null;
   
+  const result = await this.constructor.updateOne(
+    { _id: this._id },
+    { 
+      $set: { 
+        [`comments.${commentIndex}.text`]: newText,
+        [`comments.${commentIndex}.edited`]: true,
+        [`comments.${commentIndex}.editedAt`]: new Date()
+      }
+    }
+  );
+  
+  if (result.modifiedCount === 0) return null;
+  
   comment.text = newText;
   comment.edited = true;
   comment.editedAt = new Date();
   
-  await this.save();
   return comment;
 };
 
-// ✅ Eliminar comentario (CORREGIDO)
+// ✅ Eliminar comentario - CORREGIDO
 videoSchema.methods.deleteComment = async function(commentId, userId, userRole) {
-  const comment = this.comments.id(commentId);
-  if (!comment) return false;
+  const commentIndex = this.comments.findIndex(c => c._id.toString() === commentId);
+  if (commentIndex === -1) return false;
   
+  const comment = this.comments[commentIndex];
   const isOwner = comment.user.toString() === userId.toString();
   const isAdmin = userRole === 'admin' || userRole === 'moderator';
   
   if (!isOwner && !isAdmin) return false;
   
-  // ✅ CORRECCIÓN: Usar pull en lugar de deleteOne()
-  this.comments.pull({ _id: commentId });
+  const result = await this.constructor.updateOne(
+    { _id: this._id },
+    { $pull: { comments: { _id: commentId } } }
+  );
+  
+  if (result.modifiedCount === 0) return false;
+  
+  this.comments.splice(commentIndex, 1);
   this.updateEngagementScore();
-  await this.save();
+  
   return true;
 };
 
-// ✅ Agregar respuesta a comentario
+// ✅ Agregar respuesta a comentario - CORREGIDO
 videoSchema.methods.addCommentReply = async function(commentId, userId, text) {
-  const comment = this.comments.id(commentId);
-  if (!comment) return null;
+  const commentIndex = this.comments.findIndex(c => c._id.toString() === commentId);
+  if (commentIndex === -1) return null;
   
   const reply = {
     _id: new mongoose.Types.ObjectId(),
@@ -200,49 +247,77 @@ videoSchema.methods.addCommentReply = async function(commentId, userId, text) {
     createdAt: new Date()
   };
   
-  comment.replies.push(reply);
+  const result = await this.constructor.updateOne(
+    { _id: this._id },
+    { $push: { [`comments.${commentIndex}.replies`]: reply } }
+  );
+  
+  if (result.modifiedCount === 0) return null;
+  
+  this.comments[commentIndex].replies.push(reply);
   this.updateEngagementScore();
-  await this.save();
+  
   return reply;
 };
 
-// ✅ Editar respuesta
+// ✅ Editar respuesta - CORREGIDO
 videoSchema.methods.editReply = async function(commentId, replyId, userId, userRole, newText) {
-  const comment = this.comments.id(commentId);
-  if (!comment) return null;
+  const commentIndex = this.comments.findIndex(c => c._id.toString() === commentId);
+  if (commentIndex === -1) return null;
   
-  const reply = comment.replies.id(replyId);
-  if (!reply) return null;
+  const replyIndex = this.comments[commentIndex].replies.findIndex(r => r._id.toString() === replyId);
+  if (replyIndex === -1) return null;
   
+  const reply = this.comments[commentIndex].replies[replyIndex];
   const isOwner = reply.user.toString() === userId.toString();
   const isAdmin = userRole === 'admin' || userRole === 'moderator';
   
   if (!isOwner && !isAdmin) return null;
   
+  const result = await this.constructor.updateOne(
+    { _id: this._id },
+    { 
+      $set: { 
+        [`comments.${commentIndex}.replies.${replyIndex}.text`]: newText,
+        [`comments.${commentIndex}.replies.${replyIndex}.edited`]: true,
+        [`comments.${commentIndex}.replies.${replyIndex}.editedAt`]: new Date()
+      }
+    }
+  );
+  
+  if (result.modifiedCount === 0) return null;
+  
   reply.text = newText;
   reply.edited = true;
   reply.editedAt = new Date();
   
-  await this.save();
   return reply;
 };
 
-// ✅ Eliminar respuesta
+// ✅ Eliminar respuesta - CORREGIDO
 videoSchema.methods.deleteReply = async function(commentId, replyId, userId, userRole) {
-  const comment = this.comments.id(commentId);
-  if (!comment) return false;
+  const commentIndex = this.comments.findIndex(c => c._id.toString() === commentId);
+  if (commentIndex === -1) return false;
   
-  const reply = comment.replies.id(replyId);
-  if (!reply) return false;
+  const replyIndex = this.comments[commentIndex].replies.findIndex(r => r._id.toString() === replyId);
+  if (replyIndex === -1) return false;
   
+  const reply = this.comments[commentIndex].replies[replyIndex];
   const isOwner = reply.user.toString() === userId.toString();
   const isAdmin = userRole === 'admin' || userRole === 'moderator';
   
   if (!isOwner && !isAdmin) return false;
   
-  comment.replies.pull({ _id: replyId });
+  const result = await this.constructor.updateOne(
+    { _id: this._id },
+    { $pull: { [`comments.${commentIndex}.replies`]: { _id: replyId } } }
+  );
+  
+  if (result.modifiedCount === 0) return false;
+  
+  this.comments[commentIndex].replies.splice(replyIndex, 1);
   this.updateEngagementScore();
-  await this.save();
+  
   return true;
 };
 
@@ -328,6 +403,38 @@ videoSchema.statics.getPendingVideos = async function(page = 1, limit = 10) {
   ]);
   
   return { videos, total };
+};
+
+videoSchema.statics.getCommentsPaginated = async function(videoId, page = 1, limit = 20) {
+  const skip = (page - 1) * limit;
+  
+  const result = await this.aggregate([
+    { $match: { _id: new mongoose.Types.ObjectId(videoId) } },
+    { $project: {
+        totalComments: { $size: '$comments' },
+        paginatedComments: {
+          $slice: ['$comments', skip, limit]
+        }
+    }},
+    { $unwind: '$paginatedComments' },
+    { $replaceRoot: { newRoot: '$paginatedComments' } },
+    { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
+    { $unwind: '$user' },
+    { $project: { 'user.password': 0, 'user.email': 0 } },
+    { $sort: { createdAt: -1 } }
+  ]);
+  
+  const total = await this.aggregate([
+    { $match: { _id: new mongoose.Types.ObjectId(videoId) } },
+    { $project: { total: { $size: '$comments' } } }
+  ]);
+  
+  return {
+    comments: result,
+    total: total[0].total || 0,
+    page,
+    hasMore: skip + result.length < (total[0].total || 0)
+  };
 };
 
 videoSchema.statics.getUserVideos = async function(userId, isOwner = false, page = 1, limit = 12) {

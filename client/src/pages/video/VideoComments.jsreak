@@ -13,7 +13,7 @@ import {
   clearComments
 } from '../../redux/actions/videoAction';
 import { Heart, Reply, Trash2, Send, MoreVertical, Edit2, X, Check } from 'lucide-react';
-import './VideoCommentsModern.css';
+import './VideoComment.css';
 
 const VideoComments = ({ videoId, videoData }) => {
   const dispatch = useDispatch();
