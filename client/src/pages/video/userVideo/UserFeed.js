@@ -10,6 +10,7 @@ import Feed from '../Feed';
 import { GLOBALTYPES } from '../../../redux/actions/globalTypes';
 
 import './UserFeed.css';
+import HeaderVideo from '../../HeaderVideo';
 
 const LoadingSpinner = () => (
   <div className="user-feed-loading">
@@ -169,9 +170,8 @@ const UserFeed = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentIndex, videos.length, hasMore, loadingMore, page, loadUserVideos]);
   
-  // ✅ FUNCIÓN DE RETROCESO - Vuelve al perfil del usuario
+  // FUNCIÓN DE RETROCESO - Vuelve al perfil del usuario
   const goBackToProfile = () => {
-    // Navegar directamente al perfil del usuario
     history.push(`/video/userVideo/${userId}`);
   };
   
@@ -257,7 +257,7 @@ const UserFeed = () => {
           </div>
         ))}
       </div>
-      
+      <HeaderVideo/> 
       {/* Indicador de carga */}
       {loadingMore && (
         <div className="loading-more-indicator">

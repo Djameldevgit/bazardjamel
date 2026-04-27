@@ -1,8 +1,9 @@
-// redux/actions/userVideoActions.js (CREAR NUEVO ARCHIVO)
-
-import { getDataAPI, postDataAPI } from '../../utils/fetchData';
+// redux/actions/userVideoAction.js
+import { getDataAPI, postDataAPI, patchDataAPI, deleteDataAPI } from '../../utils/fetchData';
 import { GLOBALTYPES } from './globalTypes';
+import { PROFILE_TYPES } from './profileAction'; // ✅ IMPORTAR PROFILE_TYPES
 
+// Definir tipos
 export const USER_VIDEO_TYPES = {
   LOADING: 'USER_VIDEO_LOADING',
   GET_USER_PROFILE: 'GET_USER_PROFILE',
@@ -15,16 +16,34 @@ export const USER_VIDEO_TYPES = {
   CLEAR_USER_VIDEO_STATE: 'CLEAR_USER_VIDEO_STATE'
 };
 
-// Obtener perfil de usuario con estadísticas
+// Obtener perfil de usuario
 export const getUserProfile = (userId, token) => async (dispatch) => {
   try {
     dispatch({ type: USER_VIDEO_TYPES.LOADING, payload: true });
     
     const res = await getDataAPI(`user/${userId}/profile`, token);
     
+    console.log('📊 getUserProfile response:', res.data);
+    
+    // Actualizar userVideo reducer
     dispatch({
       type: USER_VIDEO_TYPES.GET_USER_PROFILE,
       payload: res.data.profile
+    });
+    
+    // ✅ Actualizar también profile reducer
+    dispatch({
+      type: PROFILE_TYPES.GET_USER,
+      payload: {
+        _id: res.data.profile._id,
+        username: res.data.profile.username,
+        avatar: res.data.profile.avatar,
+        fullname: res.data.profile.fullname,
+        bio: res.data.profile.bio,
+        followers: res.data.profile.followersCount || [],
+        following: res.data.profile.followingCount || [],
+        isFollowing: res.data.profile.isFollowing
+      }
     });
     
     return res.data;
@@ -105,26 +124,50 @@ export const getLikedVideos = (userId, page = 1, token) => async (dispatch) => {
   }
 };
 
-// Seguir/Dejar de seguir usuario
-export const toggleFollow = (userId, token) => async (dispatch) => {
+// ✅ Seguir/Dejar de seguir usuario - CORREGIDO
+export const toggleFollow = (userId, token, auth) => async (dispatch) => {
   try {
     const res = await postDataAPI(`user/${userId}/follow`, {}, token);
     
+    console.log('📊 toggleFollow response:', res.data);
+    
+    // ✅ Actualizar userVideoReducer
     dispatch({
       type: USER_VIDEO_TYPES.FOLLOW_USER,
       payload: {
         isFollowing: res.data.isFollowing,
-        followersCount: res.data.followersCount
+        followersCount: res.data.followersCount || 0
       }
     });
     
-    return res.data;
+    // ✅ Actualizar auth SOLO SI existe
+    if (auth && auth.user) {
+      const currentFollowing = auth.user.following || [];
+      const updatedFollowing = res.data.isFollowing
+        ? [...currentFollowing, { _id: userId }]
+        : currentFollowing.filter(f => f && f._id !== userId);
+      
+      dispatch({
+        type: GLOBALTYPES.AUTH,
+        payload: {
+          ...auth,
+          user: {
+            ...auth.user,
+            following: updatedFollowing
+          }
+        }
+      });
+    }
+    
+    return {
+      isFollowing: res.data.isFollowing,
+      followersCount: res.data.followersCount || 0
+    };
   } catch (err) {
     console.error('Error toggleFollow:', err);
     return null;
   }
 };
-
 // Guardar/Quitar video de favoritos
 export const toggleSaveVideo = (videoId, token) => async (dispatch) => {
   try {

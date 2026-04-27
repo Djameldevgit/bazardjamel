@@ -22,7 +22,73 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(26, 26, 46, 0.95);
 }
+/* Añade estas clases a VideoCommentsModern.css */
 
+.load-more-comments,
+.hide-comments {
+    text-align: center;
+    padding: 10px 16px;
+    margin: 8px 0;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 30px;
+    cursor: pointer;
+    color: #667eea;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.load-more-comments:hover,
+.hide-comments:hover {
+    background: rgba(102, 126, 234, 0.2);
+    transform: translateY(-1px);
+}
+
+.comment_card {
+    margin-bottom: 16px;
+}
+
+.comment_card .small-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.pl-4 {
+    padding-left: 48px;
+    margin-top: 12px;
+    border-left: 2px solid rgba(102, 126, 234, 0.3);
+}
+
+.readMore {
+    color: #667eea;
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 4px;
+}
+
+.text-muted {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.font-weight-bold {
+    font-weight: 600;
+}
+
+.mr-3 {
+    margin-right: 12px;
+}
+
+.mx-1 {
+    margin-left: 4px;
+    margin-right: 4px;
+}
+
+.mx-2 {
+    margin-left: 8px;
+    margin-right: 8px;
+}
 .comments-header h5 {
   margin: 0;
   font-size: 16px;

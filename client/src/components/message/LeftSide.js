@@ -196,14 +196,16 @@ const LeftSide = () => {
     }
   };
 
-  const handleAddUser = (user) => {
-    setSearch('');
-    setSearchUsers([]);
-    dispatch({ type: MESS_TYPES.ADD_USER, payload: { ...user, text: '', media: [] } });
-    dispatch({ type: MESS_TYPES.CHECK_ONLINE_OFFLINE, payload: online });
-    return history.push(`/message/${user._id}`);
-  };
+ // components/message/LeftSide.jsx - Asegúrate que la redirección sea a /message/:id
 
+const handleAddUser = (user) => {
+  setSearch('')
+  setSearchUsers([])
+  dispatch({type: MESS_TYPES.ADD_USER, payload: {...user, text: '', media: []}})
+  dispatch({type: MESS_TYPES.CHECK_ONLINE_OFFLINE, payload: online})
+  // ✅ Redirigir a /message/:id (consistente con UserVideoPage)
+  return history.push(`/message/${user._id}`)
+}
   const handleAvatarClick = (e, user) => {
     e.stopPropagation();
     history.push(`/profile/${user._id}`);

@@ -1,181 +1,250 @@
-// components/Video/CommentCard.jsx
-import React, { useState } from 'react';
-import { Heart, Reply, MoreVertical, Edit2, Trash2, X, Check } from 'lucide-react';
-import ReplyItem from './ReplyItem';
-import CommentForm from './CommentForm';
-import './CommentCard.css';
+// components/comments/CommentCard.jsx - VERSIÓN CORREGIDA
+import React, { useState, useEffect } from 'react'
+import Avatar from '../../../components/Avatar'
+ 
+import { Link } from 'react-router-dom'
+import moment from 'moment'
 
-const CommentCard = ({ 
-  comment, 
-  isLast, 
-  lastRef,
-  currentUserId,
-  canModify,
-  onLike,
-  onReply,
-  onEdit,
-  onDelete,
-  onEditReply,
-  onDeleteReply,
-  canModifyReply,
-  replyingTo,
-  setReplyingTo
-}) => {
-  const [showMenu, setShowMenu] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(comment.text);
-  const [isLiked, setIsLiked] = useState(comment.liked || false);
-  const [likesCount, setLikesCount] = useState(comment.likes?.length || 0);
+import LikeButton from '../../../components/LikeButton'
+import { useSelector, useDispatch } from 'react-redux'
+import CommentMenu from './CommentMenu'
+import { 
+     
+    likeComment, 
+    deleteComment, 
+    updateComment
+} from '../../../redux/actions/videoAction'
+ 
+import InputComment from './InputComment'
 
-  const formatDate = (date) => {
-    const now = new Date();
-    const commentDate = new Date(date);
-    const diff = Math.floor((now - commentDate) / 1000);
-    
-    if (diff < 60) return 'maintenant';
-    if (diff < 3600) return `il y a ${Math.floor(diff / 60)}m`;
-    if (diff < 86400) return `il y a ${Math.floor(diff / 3600)}h`;
-    if (diff < 604800) return `il y a ${Math.floor(diff / 86400)}j`;
-    return commentDate.toLocaleDateString('fr-FR');
-  };
+const CommentCard = ({ children, comment, video, commentId }) => {
+    const { auth, theme, socket } = useSelector(state => state)
+    const dispatch = useDispatch()
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
-    onLike();
-  };
+    const [content, setContent] = useState('')
+    const [readMore, setReadMore] = useState(false)
 
-  const handleEdit = () => {
-    setIsEditing(true);
-    setShowMenu(false);
-  };
+    const [onEdit, setOnEdit] = useState(false)
+    const [isLike, setIsLike] = useState(false)
+    const [loadLike, setLoadLike] = useState(false)
+    const [likesCount, setLikesCount] = useState(0)
 
-  const handleSaveEdit = () => {
-    if (editText.trim() && editText !== comment.text) {
-      onEdit(editText);
+    const [onReply, setOnReply] = useState(false)
+
+    // ✅ Validación segura - evitar undefined
+    useEffect(() => {
+        // Asegurar que comment existe
+        if (!comment) return
+        
+        setContent(comment.text || comment.content || '')
+        
+        // ✅ Verificar que likes existe y es un array
+        const likesArray = comment.likes || []
+        setLikesCount(likesArray.length)
+        
+        setIsLike(false)
+        setOnReply(false)
+        
+        // ✅ Verificar si el usuario actual dio like
+        if (auth.user && likesArray.length > 0) {
+            const hasLiked = likesArray.some(like => {
+                if (!like) return false
+                const likeId = like._id || like
+                return likeId === auth.user._id
+            })
+            setIsLike(hasLiked)
+        }
+    }, [comment, auth.user])
+
+    const handleUpdate = async () => {
+        if (!comment) return
+        
+        if ((comment.text || comment.content) !== content) {
+            const result = await dispatch(updateComment(
+                video?._id, 
+                comment._id, 
+                content, 
+                auth.token
+            ))
+            if (result?.success) {
+                setOnEdit(false)
+            }
+        } else {
+            setOnEdit(false)
+        }
     }
-    setIsEditing(false);
-  };
 
-  const handleCancelEdit = () => {
-    setEditText(comment.text);
-    setIsEditing(false);
-  };
+    const handleLike = async () => {
+        if (loadLike || !comment || !auth.token) return
+        
+        setIsLike(true)
+        setLikesCount(prev => prev + 1)
 
-  const handleReplySubmit = async (text) => {
-    const success = await onReply(text);
-    if (success) {
-      setReplyingTo(null);
+        setLoadLike(true)
+        await dispatch(likeComment(
+            video?._id, 
+            comment._id, 
+            auth.token, 
+            auth, 
+            socket, 
+            comment, 
+            video
+        ))
+        setLoadLike(false)
     }
-    return success;
-  };
 
-  const isReplying = replyingTo === comment._id;
+    const handleUnLike = async () => {
+        if (loadLike || !comment || !auth.token) return
+        
+        setIsLike(false)
+        setLikesCount(prev => prev - 1)
 
-  return (
-    <div className={`comment-card ${isLast ? 'last' : ''}`} ref={isLast ? lastRef : null}>
-      <div className="comment-card-avatar">
-        <img src={comment.user?.avatar || '/default-avatar.png'} alt={comment.user?.username} />
-        <div className="avatar-badge">
-          <Reply size={10} />
-        </div>
-      </div>
-      
-      <div className="comment-card-content">
-        <div className="comment-card-header">
-          <div className="comment-card-user">
-            <strong className="username">@{comment.user?.username}</strong>
-            <span className="time">{formatDate(comment.createdAt)}</span>
-            {comment.user?.isPro && <span className="pro-badge">Pro</span>}
-            {comment.edited && <span className="edited-badge">modifié</span>}
-          </div>
-          
-          {canModify && !isEditing && (
-            <div className="comment-card-menu">
-              <button className="menu-trigger" onClick={() => setShowMenu(!showMenu)}>
-                <MoreVertical size={16} />
-              </button>
-              {showMenu && (
-                <div className="menu-dropdown">
-                  <button onClick={handleEdit}>
-                    <Edit2 size={14} /> Modifier
-                  </button>
-                  <button onClick={onDelete} className="danger">
-                    <Trash2 size={14} /> Supprimer
-                  </button>
+        setLoadLike(true)
+        await dispatch(likeComment(
+            video?._id, 
+            comment._id, 
+            auth.token, 
+            auth, 
+            socket, 
+            comment, 
+            video
+        ))
+        setLoadLike(false)
+    }
+
+    const handleReply = () => {
+        if (onReply) return setOnReply(false)
+        setOnReply({ ...comment, commentId })
+    }
+
+    const handleDelete = async () => {
+        if (!comment) return
+        if (window.confirm('Supprimer ce commentaire ?')) {
+            await dispatch(deleteComment(video?._id, comment._id, auth.token))
+        }
+    }
+
+    // ✅ Validaciones de seguridad
+    if (!comment || !comment.user) {
+        return null
+    }
+
+    const isAdmin = auth.user?.role === 'admin' || auth.user?.role === 'moderator'
+    const isOwner = comment.user?._id === auth.user?._id
+    const canModify = isOwner || isAdmin
+
+    const styleCard = {
+        opacity: comment._id ? 1 : 0.5,
+        pointerEvents: comment._id ? 'inherit' : 'none'
+    }
+
+    // ✅ Obtener texto seguro
+    const commentText = comment.text || comment.content || ''
+    const commentUser = comment.user || {}
+    const commentLikes = comment.likes || []
+    const commentCreatedAt = comment.createdAt || new Date().toISOString()
+
+    return (
+        <div className="comment_card mt-2" style={styleCard}>
+            <Link to={`/profile/${commentUser._id}`} className="d-flex text-dark">
+                <Avatar src={commentUser.avatar} size="small-avatar" />
+                <h6 className="mx-1">@{commentUser.username || 'utilisateur'}</h6>
+            </Link>
+
+            <div className="comment_content">
+                <div className="flex-fill"
+                    style={{
+                        filter: theme ? 'invert(1)' : 'invert(0)',
+                        color: theme ? 'white' : '#111',
+                    }}>
+                    {
+                        onEdit
+                            ? <textarea rows="5" value={content}
+                                onChange={e => setContent(e.target.value)} />
+                            : <div>
+                                {
+                                    comment.tag && comment.tag._id !== commentUser._id &&
+                                    <Link to={`/profile/${comment.tag._id}`} className="mr-1">
+                                        @{comment.tag.username}
+                                    </Link>
+                                }
+                                <span>
+                                    {
+                                        commentText.length < 100 ? commentText :
+                                            readMore ? commentText + ' ' : commentText.slice(0, 100) + '....'
+                                    }
+                                </span>
+                                {
+                                    commentText.length > 100 &&
+                                    <span className="readMore" onClick={() => setReadMore(!readMore)}>
+                                        {readMore ? 'Voir moins' : 'Voir plus'}
+                                    </span>
+                                }
+                            </div>
+                    }
+
+                    <div style={{ cursor: 'pointer' }}>
+                        <small className="text-muted mr-3">
+                            {moment(commentCreatedAt).fromNow()}
+                        </small>
+
+                        <small className="font-weight-bold mr-3">
+                            {likesCount} {likesCount === 1 ? 'like' : 'likes'}
+                        </small>
+
+                        {
+                            onEdit
+                                ? <>
+                                    <small className="font-weight-bold mr-3"
+                                        onClick={handleUpdate}>
+                                        Modifier
+                                    </small>
+                                    <small className="font-weight-bold mr-3"
+                                        onClick={() => setOnEdit(false)}>
+                                        Annuler
+                                    </small>
+                                </>
+                                : auth.token && (
+                                    <small className="font-weight-bold mr-3"
+                                        onClick={handleReply}>
+                                        {onReply ? 'Annuler' : 'Répondre'}
+                                    </small>
+                                )
+                        }
+                    </div>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
-        
-        {isEditing ? (
-          <div className="edit-mode">
-            <textarea
-              value={editText}
-              onChange={(e) => setEditText(e.target.value)}
-              rows="3"
-              autoFocus
-            />
-            <div className="edit-actions">
-              <button className="save-btn" onClick={handleSaveEdit}>
-                <Check size={14} /> Enregistrer
-              </button>
-              <button className="cancel-btn" onClick={handleCancelEdit}>
-                <X size={14} /> Annuler
-              </button>
-            </div>
-          </div>
-        ) : (
-          <p className="comment-text">{comment.text}</p>
-        )}
-        
-        <div className="comment-card-actions">
-          <button className={`action-btn like-btn ${isLiked ? 'active' : ''}`} onClick={handleLike}>
-            <Heart size={16} />
-            <span>{likesCount}</span>
-          </button>
-          <button 
-            className="action-btn reply-btn" 
-            onClick={() => setReplyingTo(isReplying ? null : comment._id)}
-          >
-            <Reply size={16} />
-            <span>Répondre</span>
-          </button>
-        </div>
-        
-        {/* Respuestas existentes */}
-        {comment.replies && comment.replies.length > 0 && (
-          <div className="replies-container">
-            {comment.replies.map((reply) => (
-              <ReplyItem
-                key={reply._id}
-                reply={reply}
-                commentId={comment._id}
-                currentUserId={currentUserId}
-                canModify={canModifyReply(reply.user?._id)}
-                onEdit={(text) => onEditReply(reply._id, text)}
-                onDelete={() => onDeleteReply(reply._id)}
-              />
-            ))}
-          </div>
-        )}
-        
-        {/* ✅ FORMULARIO DE RESPUESTA CORREGIDO */}
-        {isReplying && (
-          <div className="reply-form-container">
-            <CommentForm
-              onSubmit={handleReplySubmit}
-              onCancel={() => setReplyingTo(null)}
-              avatar={currentUserId?.avatar}
-              placeholder="Écrire une réponse..."
-              isReply={true}
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
-export default CommentCard;
+                <div className="d-flex align-items-center mx-2" style={{ cursor: 'pointer' }}>
+                    {canModify && (
+                        <CommentMenu 
+                            video={video} 
+                            comment={comment} 
+                            setOnEdit={setOnEdit} 
+                            onDelete={handleDelete}
+                        />
+                    )}
+                    {auth.token && (
+                        <LikeButton 
+                            isLike={isLike} 
+                            handleLike={handleLike} 
+                            handleUnLike={handleUnLike} 
+                        />
+                    )}
+                </div>
+            </div>
+
+            {
+                onReply && auth.token &&
+                <InputComment video={video} onReply={onReply} setOnReply={setOnReply}>
+                    <Link to={`/profile/${onReply.user?._id}`} className="mr-1">
+                        @{onReply.user?.username}:
+                    </Link>
+                </InputComment>
+            }
+
+            {children}
+        </div>
+    )
+}
+
+export default CommentCard

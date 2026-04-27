@@ -105,17 +105,17 @@ role: {
       blockExpiryDate: { type: Date, default: null },
       blockedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'user', default: null }
     },
-    
+    profileViews: [{
+        user: { type: mongoose.Types.ObjectId, ref: 'user' },
+        viewedAt: { type: Date, default: Date.now }
+      }],
+      profileViewsCount: { type: Number, default: 0 },
     // ============ INTERACCIONES ============
-    followers: [{
-        type: mongoose.Types.ObjectId,
-        ref: 'user'
-    }],
+    // models/userModel.js - Verifica que tienes this campo
+savedVideos: [{ type: mongoose.Types.ObjectId, ref: 'Video' }],
     
-    following: [{
-        type: mongoose.Types.ObjectId,
-        ref: 'user'
-    }],
+    followers: [{type: mongoose.Types.ObjectId, ref: 'user'}],
+    following: [{type: mongoose.Types.ObjectId, ref: 'user'}],
     
     saved: [{
         type: mongoose.Types.ObjectId,

@@ -5,8 +5,50 @@
   padding: 0;
   box-sizing: border-box;
 }
+/* Estilos para el botón SAVE en miniaturas de video */
+.uv-mini-save-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0;
+  backdrop-filter: blur(4px);
+  font-size: 14px;
+}
 
- 
+.uv-mini-thumbnail-container:hover .uv-mini-save-btn {
+  opacity: 1;
+}
+
+.uv-mini-save-btn:hover {
+  background: #fe2c55;
+  transform: scale(1.05);
+}
+
+.uv-mini-save-btn.saved {
+  background: #fe2c55;
+  color: white;
+}
+
+.uv-mini-save-btn.saved:hover {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.uv-mini-save-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
  
 @keyframes spin {
   from { transform: rotate(0deg); }
@@ -351,7 +393,33 @@
   color: white;
   cursor: pointer;
 }
+/* UserVideoPage.css - AÑADE ESTOS ESTILOS */
 
+.uv-header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.uv-messages-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  font-size: 18px;
+  transition: all 0.2s;
+}
+
+.uv-messages-btn:hover {
+  background: #fe2c55;
+  transform: scale(1.05);
+}
 /* Responsive */
 @media (max-width: 768px) {
   .uv-stats-row { gap: 35px; }

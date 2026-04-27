@@ -17,6 +17,7 @@ import BoutiqueCard from "../../components/boutique/BoutiquePostCard";
 import PaginationComponent from "../../components/PaginationComponent";
 import CategoryCarousel from "../../components/SlidersCategories/CategoryCarousel";
 import FilterDrawer from "./FilterDrawer";
+import HeaderVideo from '../HeaderVideo';
 
 const POSTS_SCROLL_LIMIT = 50;
 
@@ -636,8 +637,9 @@ const CategoryPage = () => {
               hasPrev={index > 0}
             />
           ))}
+        
         </div>
-
+  <HeaderVideo/>
         {/* Botón scroll to top */}
         {showScrollTop && videos.length > 3 && (
           <button
@@ -930,6 +932,7 @@ const CategoryPage = () => {
           background: transparent;
         }
       `}</style>
+   
     </div>
   );
 };

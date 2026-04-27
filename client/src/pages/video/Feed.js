@@ -1,4 +1,4 @@
-// components/Video/VideoReelItem.jsx
+// components/Video/VideoReelItem.jsx - CORREGIDO (sin HeaderVideo)
 import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
@@ -20,6 +20,8 @@ import {
 import { likeVideo, shareVideo, deleteVideo } from '../../redux/actions/videoAction';
 import { aprobarVideo, eliminarVideo } from '../../redux/actions/videoApproveAction';
 import { GLOBALTYPES } from '../../redux/actions/globalTypes';
+// ✅ IMPORTAR ACCIONES DE SAVE DESDE profileAction
+import { toggleSaveVideo, checkSavedVideo } from '../../redux/actions/profileAction';
 import VideoComments from './VideoComments';
 import moment from 'moment';
 import 'moment/locale/fr';
@@ -27,8 +29,10 @@ import 'moment/locale/fr';
 // ✅ IMPORTAR EL CSS DEDICADO
 import './Feed.css';
 
+// ❌ ELIMINADO: import HeaderVideo from '../HeaderVideo';
+
 /* ════════════════════════════════════════════════════════════
-   COMPONENTE CON CSS DEDICADO
+   COMPONENTE CON CSS DEDICADO - SIN HEADER VIDEO
    ════════════════════════════════════════════════════════════ */
 const Feed = ({ 
   video, 
@@ -43,12 +47,16 @@ const Feed = ({
   const dispatch = useDispatch();
   const history = useHistory();
   const { auth, socket } = useSelector(state => state);
+  // ✅ OBTENER EL ESTADO PROFILE PARA SAVED STATUS
+  const { profile } = useSelector(state => state);
   const videoRef = useRef(null);
   const drawerRef = useRef(null);
 
   const [liked, setLiked] = useState(video.liked || false);
   const [likesCount, setLikesCount] = useState(video.likes?.length || 0);
+  // ✅ ESTADO SAVE AHORA USA PROFILE
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [commentsCount, setCommentsCount] = useState(video.comments?.length || 0);
   const [showComments, setShowComments] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -156,6 +164,48 @@ const Feed = ({
     }
   };
 
+  // ✅ NUEVA FUNCIÓN HANDLE SAVE - Usando profileAction
+  const handleSave = async () => {
+    if (!auth.token) {
+      history.push('/login');
+      return;
+    }
+    if (guardPending()) return;
+    if (saving) return;
+    
+    setSaving(true);
+    const result = await dispatch(toggleSaveVideo(video._id));
+    
+    if (result?.saved !== undefined) {
+      setSaved(result.saved);
+      dispatch({
+        type: GLOBALTYPES.ALERT,
+        payload: { success: result.saved ? 'Ajouté aux favoris' : 'Retiré des favoris' }
+      });
+    }
+    
+    setSaving(false);
+  };
+
+  // ✅ VERIFICAR ESTADO DEL VIDEO GUARDADO DESDE PROFILE
+  useEffect(() => {
+    const checkIfSaved = async () => {
+      if (auth.token && video._id && !isPending) {
+        // Verificar primero en el estado profile.savedStatus
+        const savedStatus = profile?.savedStatus?.[video._id];
+        if (savedStatus !== undefined) {
+          setSaved(savedStatus);
+        } else {
+          // Si no está en el estado, consultar al backend
+          const isSaved = await dispatch(checkSavedVideo(video._id));
+          setSaved(isSaved);
+        }
+      }
+    };
+    
+    checkIfSaved();
+  }, [video._id, auth.token, dispatch, profile?.savedStatus, isPending]);
+
   const createHeartEffect = () => {
     const h = document.createElement('div');
     h.className = 'vr-floating-heart';
@@ -169,13 +219,6 @@ const Feed = ({
     if (!liked && !isPending) handleLike(); 
   };
   
-  const handleSave = () => {
-    if (!auth.token) { history.push('/login'); return; }
-    if (guardPending()) return;
-    setSaved(s => !s);
-    dispatch({ type: GLOBALTYPES.ALERT, payload: { success: saved ? 'Retiré des favoris' : 'Ajouté aux favoris' } });
-  };
-
   const handleShare = async () => {
     const url = `${window.location.origin}/video/${video?._id}`;
     if (navigator.share) {
@@ -221,7 +264,7 @@ const Feed = ({
     history.push(`/video/${video._id}`);
   };
 
-  // ✅ Navegar al perfil del usuario (usando la nueva ruta userVideo)
+  // Navegar al perfil del usuario
   const handleGoToUserProfile = (e) => {
     e.stopPropagation();
     sessionStorage.setItem('returnToFeed', 'true');
@@ -309,7 +352,9 @@ const Feed = ({
      ════════════════════════════════════════════════════════ */
   return (
     <div className="video-reel-container">
-      {/* HEADER */}
+      {/* ❌ ELIMINADO: <HeaderVideo/> - No debe estar aquí */}
+      
+      {/* HEADER DEL VIDEO - Flecha volver y menú */}
       <div className="vr-header">
         <button className="vr-header-btn" onClick={handleGoBack}>
           <FontAwesomeIcon icon={faArrowLeft} />
@@ -437,7 +482,7 @@ const Feed = ({
         {/* ACTION SIDEBAR + FLECHAS */}
         {!showComments && (
           <div className="vr-actions-sidebar">
-            {/* ✅ AVATAR DEL DUEÑO DEL VIDEO - SOBRE EL ICONO DE LIKE */}
+            {/* AVATAR DEL DUEÑO DEL VIDEO */}
             <div className="vr-action-group vr-avatar-group">
               <div className="vr-avatar-wrapper" onClick={handleGoToUserProfile}>
                 <img
@@ -472,13 +517,22 @@ const Feed = ({
               <span className="vr-action-count">{formatNumber(commentsCount)}</span>
             </div>
 
+            {/* BOTÓN SAVE CON LOGICA DE PROFILE */}
             <div className="vr-action-group">
-              <button className="vr-action-btn" onClick={handleSave}>
-                <FontAwesomeIcon 
-                  icon={saved ? faBookmark : faBookmarkRegular} 
-                  className="vr-action-icon"
-                  style={{ color: saved ? '#ffd700' : 'white' }}
-                />
+              <button 
+                className="vr-action-btn" 
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? (
+                  <FontAwesomeIcon icon={faBookmark} spin />
+                ) : (
+                  <FontAwesomeIcon 
+                    icon={saved ? faBookmark : faBookmarkRegular} 
+                    className="vr-action-icon"
+                    style={{ color: saved ? '#ffd700' : 'white' }}
+                  />
+                )}
               </button>
               <span className="vr-action-count">Favoris</span>
             </div>

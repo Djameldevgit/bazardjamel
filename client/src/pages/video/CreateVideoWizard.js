@@ -20,6 +20,7 @@ import { createVideo } from '../../redux/actions/videoAction';
 import { GLOBALTYPES } from '../../redux/actions/globalTypes';
 import { videoUpload } from '../../utils/imageUpload';
 import './CreateVideoWizard.css';
+import HeaderVideo from '../HeaderVideo';
 
 // ============================================
 // CATÉGORIES POUR VIDÉOS COMMERCIALES
@@ -354,7 +355,7 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
   return (
     <div className="create-video-wizard">
       <Card className="border-0 shadow-lg">
-        <Card.Body className="p-4">
+       
           <div className="cw-header">
             <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
               <div>
@@ -473,8 +474,9 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
               className="cw-progress mt-3"
             />
           )}
-        </Card.Body>
+        <HeaderVideo/>
       </Card>
+     
     </div>
   );
 };

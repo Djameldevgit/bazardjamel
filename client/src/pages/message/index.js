@@ -12,9 +12,9 @@ const Message = () => {
                 <div className="d-flex justify-content-center 
                 align-items-center flex-column h-100">
 
-                    <i className="fas fa-palette text-primary"
+                    <i className="fas fa-phone text-primary"
                     style={{fontSize: '5rem'}} />
-                    <h4>   Vetements </h4>
+                    <h5>video Chat</h5>
 
                 </div>
             </div>

@@ -37,7 +37,8 @@ import EditVideoWizard from './pages/video/EditVideoWizard';
 import usePushNotifications from './pages/notiy/UsePushNotifications';
 import UserVideoPage from './pages/video/userVideo/[userId]';
 import UserFeed from './pages/video/userVideo/UserFeed';
- 
+import Message from './pages/message';
+import InfoUserVideo from './pages/video/userVideo/InfoUserVideo';
 // ============================================
 // ✅ SONIDO Y VIBRACIÓN - SIMPLIFICADO
 // ============================================
@@ -215,11 +216,16 @@ function App() {
           <Route exact path="/notify" component={NotifyPage} />
           <Route exact path="/video/userVideo/:userId" component={UserVideoPage} />
           <Route exact path="/video/userFeed/:userId" component={UserFeed} />
+          <Route exact path="/video/userVideo/:userId/info" component={InfoUserVideo} />
           <Route exact path="/admindashboard" component={AdminDashboard} />
           <Route path="/admin/posts" component={Posts} />
           <Route exact path="/boutique/:boutiqueId/products/new" component={CreateBoutiqueProductPage} />
           <Route exact path="/boutique/:boutiqueId/products/edit/:productId" component={CreateBoutiqueProductPage} />
  
+        
+
+          <Route exact path="/message" component={Message} />
+
           <Route exact path="/product/:productId" component={DetailProduct} />
           <Route exact path="/create-boutique" component={CreateBoutiquePage} />
           <Route exact path="/edit-boutique/:id" component={CreateBoutiquePage} />

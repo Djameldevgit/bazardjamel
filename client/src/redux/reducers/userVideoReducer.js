@@ -44,7 +44,15 @@ const userVideoReducer = (state = initialState, action) => {
         userVideosPage: action.payload.page,
         userVideosHasMore: action.payload.hasMore
       };
-      
+      case USER_VIDEO_TYPES.FOLLOW_USER:
+  return {
+    ...state,
+    profile: state.profile ? {
+      ...state.profile,
+      isFollowing: action.payload.isFollowing,
+      followersCount: action.payload.followersCount
+    } : null
+  };
     case USER_VIDEO_TYPES.GET_SAVED_VIDEOS:
       return {
         ...state,

@@ -1362,24 +1362,31 @@ const getUserLikedVideos = async (req, res) => {
 };
 
 // ✅ Seguir/Dejar de seguir usuario
+// controllers/videoCtrl.js - CORREGIR toggleFollowUser
+
+// ✅ Seguir/Dejar de seguir usuario
 const toggleFollowUser = async (req, res) => {
   try {
     const { userId } = req.params;
     const currentUserId = req.user._id;
-    
+
     if (userId === currentUserId.toString()) {
       return res.status(400).json({ success: false, message: 'No puedes seguirte a ti mismo' });
     }
-    
+
     const userToFollow = await User.findById(userId);
     if (!userToFollow) {
       return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
     }
-    
+
     const currentUser = await User.findById(currentUserId);
-    
-    const isFollowing = userToFollow.followers.includes(currentUserId);
-    
+
+    // ✅ CORREGIDO: Asegurar que followers y following existen
+    const followersList = userToFollow.followers || [];
+    const followingList = currentUser.following || [];
+
+    const isFollowing = followersList.some(id => id && id.toString() === currentUserId.toString());
+
     if (isFollowing) {
       // Dejar de seguir
       await User.findByIdAndUpdate(userId, {
@@ -1396,35 +1403,22 @@ const toggleFollowUser = async (req, res) => {
       await User.findByIdAndUpdate(currentUserId, {
         $addToSet: { following: userId }
       });
-      
-      // Crear notificación
-      const msg = {
-        id: currentUserId,
-        text: `@${currentUser.username} a commencé à vous suivre`,
-        recipients: [userId],
-        url: `/video/userVideo/${currentUserId}`,
-        type: 'follow'
-      };
-      
-      const io = req.app.get('io');
-      if (io) {
-        io.to(userId).emit('new-notification', msg);
-      }
     }
-    
-    const newFollowersCount = await User.findById(userId).select('followers');
-    
+
+    // Obtener el nuevo conteo
+    const updatedUser = await User.findById(userId);
+    const followersCount = (updatedUser.followers || []).length;
+
     res.json({
       success: true,
       isFollowing: !isFollowing,
-      followersCount: newFollowersCount.followers.length || 0
+      followersCount
     });
   } catch (error) {
     console.error('Error toggleFollowUser:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 // ✅ Guardar/Quitar video de favoritos
 const toggleSaveVideo = async (req, res) => {
   try {

@@ -37,7 +37,6 @@ router.delete('/user/:id', auth, userCtrl.deleteUser)
 // ============================================
 router.patch('/user/:id/follow', auth, userCtrl.follow)
 router.patch('/user/:id/unfollow', auth, userCtrl.unfollow)
-
 // ============================================
 // 6️⃣ RUTAS DE ACTIVACIÓN/DESACTIVACIÓN (cuenta normal)
 // ============================================
@@ -57,6 +56,17 @@ router.patch('/user/:id/unblock', auth, userCtrl.unblockUser)
 router.patch('/user/:userId/activate-pro', auth, userCtrl.activatePro)
 router.patch('/user/:userId/deactivate-pro', auth, userCtrl.deactivatePro)
 
+router.get('/user/:userId/followers', auth, userCtrl.getFollowers);
+router.get('/user/:userId/following', auth, userCtrl.getFollowing);
+router.get('/user/:userId/profile-views', auth, userCtrl.getProfileViews);
+//router.post('/user/:userId/profile-view', auth, userCtrl.registerProfileView);
+router.get('/user/:userId/profile', auth, userCtrl.getUserProfile);
+router.patch('/user/:userId/profile-view', auth, userCtrl.registerProfileView);
+router.get('/user/:userId/profile-stats', auth, userCtrl.getProfileStats);
+router.get('/user/:userId/profile-views', auth, userCtrl.getProfileViews); // Y
+router.patch('/user/save-video/:videoId', auth, userCtrl.saveVideo);
+router.get('/user/check-saved/:videoId', auth, userCtrl.checkSavedVideo);
+router.get('/user/saved-videos', auth, userCtrl.getSavedVideos);
 module.exports = router
 
  

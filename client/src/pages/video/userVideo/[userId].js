@@ -36,6 +36,7 @@ import LoadMoreBtn from '../../../components/LoadMoreBtn';
 
 // Estilos CSS
 import './UserVideoPage.css';
+import HeaderVideo from '../../HeaderVideo';
 
 // ============================================
 // COMPONENTE DE LOADING INTERNO
@@ -287,16 +288,37 @@ const UserVideoPage = () => {
   return (
     <div className="user-video-page">
       {/* Header */}
-      <div className="uv-header">
-        <button className="uv-back-btn" onClick={() => history.push('/')}>
-          <FontAwesomeIcon icon={faArrowLeft} />
-        </button>
-        <h1 className="uv-header-title">Profil</h1>
-        <button className="uv-share-btn" onClick={handleShareProfile}>
-          <FontAwesomeIcon icon={faShare} />
-        </button>
-      </div>
-      
+    <div className="uv-stats-row">
+  <div 
+    className="uv-stat uv-stat-clickable" 
+    onClick={() => history.push(`/video/userVideo/${userId}/info?tab=followers`)}
+  >
+    <div className="uv-stat-number">
+      {formatNumber(profile.videoStats?.totalVideos || 0)}
+    </div>
+    <div className="uv-stat-label">Vidéos</div>
+  </div>
+  
+  <div 
+    className="uv-stat uv-stat-clickable" 
+    onClick={() => history.push(`/video/userVideo/${userId}/info?tab=followers`)}
+  >
+    <div className="uv-stat-number">
+      {formatNumber(profile.followersCount || 0)}
+    </div>
+    <div className="uv-stat-label">Abonnés</div>
+  </div>
+  
+  <div 
+    className="uv-stat uv-stat-clickable" 
+    onClick={() => history.push(`/video/userVideo/${userId}/info?tab=following`)}
+  >
+    <div className="uv-stat-number">
+      {formatNumber(profile.followingCount || 0)}
+    </div>
+    <div className="uv-stat-label">Abonnements</div>
+  </div>
+</div>
       {/* Avatar con fallback */}
       <div className="uv-avatar-container">
         <AvatarWithFallback
@@ -445,6 +467,10 @@ const UserVideoPage = () => {
           loadMore={loadMoreFunction}
         />
       )}
+<div>
+   <HeaderVideo/>
+</div>
+     
     </div>
   );
 };
