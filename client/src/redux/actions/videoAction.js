@@ -2,47 +2,52 @@
 import { getDataAPI, postDataAPI, patchDataAPI, deleteDataAPI } from '../../utils/fetchData';
 import { GLOBALTYPES } from './globalTypes';
 import { createNotify } from './notifyAction'; // ✅ Importar createNotify
+// redux/actions/videoAction.js
 
+// ✅ CONSTANTES CORREGIDAS (sin duplicados)
 export const VIDEO_TYPES = {
+  // Loading states
+// redux/actions/videoAction.js
+
+// ✅ Asegúrate de exportar las constantes así
+ 
   LOADING: 'VIDEO_LOADING',
+  LOADING_BY_CATEGORY: 'LOADING_BY_CATEGORY',
   GET_VIDEOS: 'GET_VIDEOS',
+  GET_VIDEO: 'GET_VIDEO',
   GET_FEATURED_VIDEOS: 'GET_FEATURED_VIDEOS',
   GET_POPULAR_VIDEOS: 'GET_POPULAR_VIDEOS',
   GET_RELATED_VIDEOS: 'GET_RELATED_VIDEOS',
-  GET_VIDEO: 'GET_VIDEO',
+  GET_VIDEOS_BY_CATEGORY: 'GET_VIDEOS_BY_CATEGORY',
+  GET_TRENDING_VIDEOS: 'GET_TRENDING_VIDEOS',
+  TRENDING_LOADING: 'TRENDING_LOADING',
+  LOAD_MORE_TRENDING: 'LOAD_MORE_TRENDING',
   CREATE_VIDEO: 'CREATE_VIDEO',
   UPDATE_VIDEO: 'UPDATE_VIDEO',
   DELETE_VIDEO: 'DELETE_VIDEO',
   LIKE_VIDEO: 'LIKE_VIDEO',
   SHARE_VIDEO: 'SHARE_VIDEO',
-  
-  // Tracking
   UPDATE_VIDEO_STATS: 'UPDATE_VIDEO_STATS',
   UPDATE_VIDEO_ENGAGEMENT: 'UPDATE_VIDEO_ENGAGEMENT',
   INCREMENT_VIEW: 'INCREMENT_VIEW',
-  
-  // Comentarios
   COMMENTS_LOADING: 'COMMENTS_LOADING',
   GET_COMMENTS: 'GET_COMMENTS',
   ADD_COMMENT: 'ADD_COMMENT',
   DELETE_COMMENT: 'DELETE_COMMENT',
   LIKE_COMMENT: 'LIKE_COMMENT',
   ADD_COMMENT_REPLY: 'ADD_COMMENT_REPLY',
-  EDIT_COMMENT: 'EDIT_COMMENT',        // ✅ NUEVO
-  DELETE_REPLY: 'DELETE_REPLY',        // ✅ NUEVO
-  EDIT_REPLY: 'EDIT_REPLY',            // ✅ NUEVO
+  EDIT_COMMENT: 'EDIT_COMMENT',
+  DELETE_REPLY: 'DELETE_REPLY',
+  EDIT_REPLY: 'EDIT_REPLY',
   CLEAR_COMMENTS: 'CLEAR_COMMENTS',
-  
-  // Música
   MUSIC_LOADING: 'MUSIC_LOADING',
   GET_MUSIC_LIBRARY: 'GET_MUSIC_LIBRARY',
   MUSIC_ERROR: 'MUSIC_ERROR',
-  
-  // Categorías
-  LOADING_BY_CATEGORY: 'LOADING_BY_CATEGORY',
-  GET_VIDEOS_BY_CATEGORY: 'GET_VIDEOS_BY_CATEGORY',
-  GET_TRENDING_VIDEOS: 'GET_TRENDING_VIDEOS',
+  GET_PENDING_VIDEO: 'GET_PENDING_VIDEO'
 };
+
+// ✅ También exporta como default si es necesario
+ 
 
 // ============================================
 // ACCIONES DE VIDEOS CON NOTIFICACIONES
@@ -560,12 +565,49 @@ export const getPopularVideos = (limit = 10) => async (dispatch) => {
   }
 };
 
-export const getTrendingVideos = (limit = 10, timeRange = 'week') => async (dispatch) => {
+// redux/actions/videoAction.js
+
+// ✅ Añadir esta acción (si no existe)
+// pages/video/TrendingVideos.jsx
+// En la función getTrendingVideos, la URL debe ser:
+
+// redux/actions/videoAction.js
+
+export const getTrendingVideos = (timeWindow = 'week', page = 1, limit = 20) => async (dispatch) => {
   try {
-    const res = await getDataAPI(`videos/trending?limit=${limit}&timeRange=${timeRange}`);
-    dispatch({ type: VIDEO_TYPES.GET_TRENDING_VIDEOS, payload: res.data.videos });
+    dispatch({ type: VIDEO_TYPES.TRENDING_LOADING });
+    
+    // ✅ Usar getDataAPI como todas las demás acciones
+    const res = await getDataAPI(`videos/trending?timeRange=${timeWindow}&limit=${limit * page}`);
+    
+    console.log('🎯 Trending videos response:', res.data);
+    
+    dispatch({
+      type: VIDEO_TYPES.GET_TRENDING_VIDEOS,
+      payload: {
+        videos: res.data.videos || [],
+        hasMore: (res.data.videos || []).length === limit,
+        page: page,
+        timeWindow: timeWindow
+      }
+    });
   } catch (err) {
-    console.error('Error getTrendingVideos:', err);
+    console.error('❌ Error loading trending videos:', err);
+    
+    dispatch({
+      type: VIDEO_TYPES.GET_TRENDING_VIDEOS,
+      payload: {
+        videos: [],
+        hasMore: false,
+        page: 1,
+        timeWindow: timeWindow
+      }
+    });
+    
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || 'Error loading trending videos' }
+    });
   }
 };
 

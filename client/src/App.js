@@ -39,6 +39,7 @@ import UserVideoPage from './pages/video/userVideo/[userId]';
 import UserFeed from './pages/video/userVideo/UserFeed';
 import Message from './pages/message';
 import InfoUserVideo from './pages/video/userVideo/InfoUserVideo';
+import TrendingVideos from './pages/video/TrendingVideos';
 // ============================================
 // ✅ SONIDO Y VIBRACIÓN - SIMPLIFICADO
 // ============================================
@@ -217,6 +218,7 @@ function App() {
           <Route exact path="/video/userVideo/:userId" component={UserVideoPage} />
           <Route exact path="/video/userFeed/:userId" component={UserFeed} />
           <Route exact path="/video/userVideo/:userId/info" component={InfoUserVideo} />
+          <Route exact path="/videos/trending" component={TrendingVideos} />
           <Route exact path="/admindashboard" component={AdminDashboard} />
           <Route path="/admin/posts" component={Posts} />
           <Route exact path="/boutique/:boutiqueId/products/new" component={CreateBoutiqueProductPage} />

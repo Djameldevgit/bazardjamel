@@ -730,7 +730,446 @@
       font-size: 10px;
     }
   }
+  /* ============================================
+   ESTILOS TIKTOK PARA ICONOS - VERSIÓN PREMIUM
+   ============================================ */
+
+/* ──────────────────────────────────────────────
+   ANIMACIONES PARA ICONOS
+   ────────────────────────────────────────────── */
+@keyframes vr-icon-pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes vr-icon-heart-beat {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.3);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  75% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes vr-icon-shine {
+  0% {
+    filter: drop-shadow(0 0 0px rgba(255, 59, 92, 0));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(255, 59, 92, 0.8));
+  }
+  100% {
+    filter: drop-shadow(0 0 0px rgba(255, 59, 92, 0));
+  }
+}
+
+@keyframes vr-icon-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes vr-icon-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* ──────────────────────────────────────────────
+   ICONO DE CORAZÓN (LIKE) - ESTILO TIKTOK
+   ────────────────────────────────────────────── */
+.vr-action-btn {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  transition: all 0.2s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+.vr-action-btn .vr-action-icon {
+  transition: all 0.2s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+/* Corazón likeado (rojo TikTok) */
+.vr-action-btn .fa-heart {
+  color: #ff3b5c !important;
+  filter: drop-shadow(0 0 4px rgba(255, 59, 92, 0.5));
+}
+
+/* Animación al dar like */
+.vr-action-btn:active .fa-heart,
+.vr-action-btn:active .fa-heart-regular {
+  animation: vr-icon-pop 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+/* Efecto especial cuando se likea */
+.vr-heart-effect {
+  position: absolute;
+  pointer-events: none;
+  animation: vr-icon-heart-beat 0.4s ease-out;
+}
+
+/* ──────────────────────────────────────────────
+   ICONO DE COMENTARIO
+   ────────────────────────────────────────────── */
+.vr-action-btn .fa-comment,
+.vr-action-btn .fa-comment-regular {
+  transition: all 0.2s ease;
+}
+
+.vr-action-btn:hover .fa-comment {
+  color: #4ecdc4;
+  transform: translateX(-2px);
+}
+
+.vr-action-btn:active .fa-comment {
+  animation: vr-icon-bounce 0.3s ease;
+}
+
+/* ──────────────────────────────────────────────
+   ICONO DE BOOKMARK (GUARDAR) - ESTILO TIKTOK
+   ────────────────────────────────────────────── */
+.vr-action-btn .fa-bookmark {
+  color: #ffd700 !important;
+  filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.5));
+}
+
+.vr-action-btn .fa-bookmark-regular {
+  color: white;
+}
+
+/* Animación al guardar */
+.vr-action-btn:active .fa-bookmark,
+.vr-action-btn:active .fa-bookmark-regular {
+  animation: vr-icon-pop 0.3s ease;
+}
+
+/* Cuando está guardado, efecto especial */
+.vr-action-btn .fa-bookmark[style*="color: #ffd700"] {
+  animation: vr-icon-shine 0.5s ease;
+}
+
+/* ──────────────────────────────────────────────
+   ICONO DE COMPARTIR - ESTILO TIKTOK
+   ────────────────────────────────────────────── */
+.vr-action-btn .fa-share {
+  transition: all 0.2s ease;
+}
+
+.vr-action-btn:hover .fa-share {
+  color: #4ecdc4;
+  transform: translateX(2px);
+}
+
+.vr-action-btn:active .fa-share {
+  animation: vr-icon-pop 0.3s ease;
+}
+
+/* ──────────────────────────────────────────────
+   ICONOS DE VOLUMEN
+   ────────────────────────────────────────────── */
+.vr-volume-btn .fa-volume-high,
+.vr-volume-btn .fa-volume-xmark {
+  transition: all 0.2s ease;
+}
+
+.vr-volume-btn:active .fa-volume-high,
+.vr-volume-btn:active .fa-volume-xmark {
+  animation: vr-icon-pop 0.2s ease;
+}
+
+/* ──────────────────────────────────────────────
+   ICONOS DE NAVEGACIÓN (FLECHAS)
+   ────────────────────────────────────────────── */
+.vr-nav-btn .fa-chevron-up,
+.vr-nav-btn .fa-chevron-down {
+  transition: all 0.2s ease;
+}
+
+.vr-nav-btn:hover .fa-chevron-up {
+  transform: translateY(-2px);
+  color: #ff3b5c;
+}
+
+.vr-nav-btn:hover .fa-chevron-down {
+  transform: translateY(2px);
+  color: #ff3b5c;
+}
+
+.vr-nav-btn:active .fa-chevron-up,
+.vr-nav-btn:active .fa-chevron-down {
+  animation: vr-icon-bounce 0.3s ease;
+}
+
+/* ──────────────────────────────────────────────
+   ICONOS DEL HEADER (FLECHA VOLVER, MENÚ)
+   ────────────────────────────────────────────── */
+.vr-header-btn .fa-arrow-left {
+  transition: all 0.2s ease;
+}
+
+.vr-header-btn:active .fa-arrow-left {
+  transform: translateX(-3px);
+}
+
+.vr-header-btn .fa-ellipsis-vertical {
+  transition: all 0.2s ease;
+}
+
+.vr-header-btn:active .fa-ellipsis-vertical {
+  transform: rotate(90deg);
+}
+
+/* ──────────────────────────────────────────────
+   ICONOS DEL DROPDOWN MENÚ
+   ────────────────────────────────────────────── */
+.vr-dropdown-item svg {
+  width: 16px;
+  transition: all 0.2s ease;
+}
+
+.vr-dropdown-item:hover svg {
+  transform: scale(1.1);
+}
+
+.vr-dropdown-item.approve svg {
+  color: #4caf50;
+}
+
+.vr-dropdown-item.reject svg {
+  color: #f44336;
+}
+
+/* ──────────────────────────────────────────────
+   ICONOS EN LA INFO DEL VIDEO
+   ────────────────────────────────────────────── */
+.vr-stats svg {
+  font-size: 10px;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+}
+
+.vr-stats span:hover svg {
+  opacity: 1;
+  transform: scale(1.1);
+  color: #ff3b5c;
+}
+
+.vr-tags svg {
+  transition: all 0.2s ease;
+}
+
+.vr-tags:hover svg {
+  transform: rotate(5deg);
+  color: #4ecdc4;
+}
+
+/* ──────────────────────────────────────────────
+   BADGE PRO - TIKTOK STYLE
+   ────────────────────────────────────────────── */
+.vr-pro-badge svg {
+  animation: vr-icon-shine 2s infinite;
+}
+
+.vr-pro-badge:hover svg {
+  animation: vr-icon-rotate 0.5s ease;
+}
+
+/* ──────────────────────────────────────────────
+   EFECTO DE ONDA AL HACER CLIC (TikTok Style)
+   ────────────────────────────────────────────── */
+.vr-action-btn {
+  position: relative;
+  overflow: visible;
+}
+
+.vr-action-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s;
+  pointer-events: none;
+}
+
+.vr-action-btn:active::after {
+  width: 80px;
+  height: 80px;
+  opacity: 0;
+  transition: width 0.2s, height 0.2s, opacity 0.2s;
+}
+
+/* ──────────────────────────────────────────────
+   MEJORAS PARA EL AVATAR EN LA SIDEBAR
+   ────────────────────────────────────────────── */
+.vr-avatar-wrapper {
+  position: relative;
+}
+
+.vr-avatar-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff3b5c, #fe2c55, #ff6b6b);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.vr-avatar-wrapper:hover::before {
+  opacity: 0.8;
+  animation: vr-icon-shine 1s infinite;
+}
+
+.vr-sidebar-avatar {
+  transition: all 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+.vr-avatar-wrapper:active .vr-sidebar-avatar {
+  transform: scale(0.92);
+}
+
+/* ──────────────────────────────────────────────
+   EFECTO DE FLOTACIÓN PARA ICONOS ACTIVOS
+   ────────────────────────────────────────────── */
+.vr-action-group.active .vr-action-icon {
+  animation: vr-icon-bounce 0.3s ease;
+}
+
+/* ──────────────────────────────────────────────
+   RESPONSIVE - AJUSTES PARA MÓVIL
+   ────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .vr-action-btn::after:active {
+    width: 60px;
+    height: 60px;
+  }
   
+  .vr-dropdown-item svg {
+    width: 14px;
+  }
+  
+  .vr-stats svg {
+    font-size: 9px;
+  }
+}
+
+/* ──────────────────────────────────────────────
+   TIKTOK STYLE - GRADIENTE PARA BOTÓN FOLLOW
+   ────────────────────────────────────────────── */
+.vr-follow-btn {
+  background: linear-gradient(135deg, #ff3b5c, #fe2c55);
+  position: relative;
+  overflow: hidden;
+}
+
+.vr-follow-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.vr-follow-btn:hover::before {
+  left: 100%;
+}
+
+.vr-follow-btn:active {
+  transform: scale(0.96);
+}
+
+/* ──────────────────────────────────────────────
+   EFECTO DE GLOW PARA ICONOS EN HOVER
+   ────────────────────────────────────────────── */
+@media (hover: hover) {
+  .vr-action-btn:hover .vr-action-icon {
+    filter: drop-shadow(0 0 6px rgba(255, 59, 92, 0.6));
+  }
+  
+  .vr-action-btn:hover .fa-comment {
+    filter: drop-shadow(0 0 6px rgba(78, 205, 196, 0.6));
+  }
+  
+  .vr-action-btn:hover .fa-share {
+    filter: drop-shadow(0 0 6px rgba(78, 205, 196, 0.6));
+  }
+  
+  .vr-action-btn:hover .fa-bookmark {
+    filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.6));
+  }
+}
+
+/* ──────────────────────────────────────────────
+   ANIMACIÓN DE CORAZONES FLOTANTES (TikTok)
+   ────────────────────────────────────────────── */
+@keyframes vr-float-heart {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -80%) scale(1.2);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -150%) scale(1.5);
+    opacity: 0;
+  }
+}
+
+.vr-floating-heart {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  font-size: 48px;
+  animation: vr-float-heart 0.6s ease-out forwards;
+  pointer-events: none;
+  z-index: 10000;
+  filter: drop-shadow(0 0 8px rgba(255, 59, 92, 0.6));
+}
+
+/* Múltiples corazones para efecto más dramático */
+.vr-floating-heart:nth-child(2) {
+  left: 45%;
+  font-size: 36px;
+  animation-delay: 0.05s;
+}
+
+.vr-floating-heart:nth-child(3) {
+  left: 55%;
+  font-size: 42px;
+  animation-delay: 0.1s;
+}
   @media (max-width: 360px) {
     .vr-nav-btn {
       width: 32px;

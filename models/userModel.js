@@ -51,7 +51,7 @@ role: {
     // ============ PERFIL ============
     avatar: {
         type: String,
-        default: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1739586000/avatar/default_user_avatar.jpg'
+        default: 'https://res.cloudinary.com/dfjipgj2o/image/upload/v1777252420/tassili8_cqqk5n.png'
     },
     
     language: {

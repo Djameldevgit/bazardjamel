@@ -204,8 +204,7 @@ const UserFeed = () => {
         
         <div className="user-info-header" onClick={goBackToProfile}>
           <img 
-            src={userInfo?.avatar || `https://ui-avatars.com/api/?background=fe2c55&color=fff&name=${userInfo?.username?.[0] || 'U'}`} 
-            alt={userInfo?.username}
+          src={userInfo?.avatar || '/default-avatar.png'}     alt={userInfo?.username}
             className="user-avatar-header"
           />
           <span className="username-header">@{userInfo?.username}</span>

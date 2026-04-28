@@ -91,30 +91,76 @@ const AvatarWithFallback = ({ src, alt, className, username }) => {
 // ============================================
 // COMPONENTE MINI VIDEO CARD
 // ============================================
-const MiniVideoCard = ({ video, onClick }) => {
+// pages/video/userVideo/UserVideoPage.jsx - Parte mejorada
+// Mantén toda tu lógica igual, solo mejora los componentes visuales
+
+// ============================================
+// COMPONENTE MINI VIDEO CARD MEJORADO
+// ============================================
+const MiniVideoCard = ({ video, onClick, isOwnProfile, onSave }) => {
+  const [isSaved, setIsSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  
   const formatNumber = (num) => {
     if (!num) return '0';
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
     return num.toString();
   };
-
+  
+  const handleSave = async (e) => {
+    e.stopPropagation();
+    if (saving) return;
+    setSaving(true);
+    if (onSave) await onSave(video._id);
+    setIsSaved(!isSaved);
+    setSaving(false);
+  };
+  
   return (
     <div className="uv-mini-video-card" onClick={() => onClick(video._id)}>
       <div className="uv-mini-thumbnail-container">
         <img 
-          src={video.thumbnail || video.videoUrl?.replace(/\.mp4$/, '.jpg') || 'https://via.placeholder.com/200x355?text=No+Image'} 
-          alt={video.title}
+        src={video.thumbnail || video.videoUrl?.replace(/\.mp4$/, '.jpg') || '/default-video.jpg'}  
           className="uv-mini-thumbnail"
           loading="lazy"
         />
+        
+        {/* Overlay con estadísticas mejoradas */}
         <div className="uv-mini-overlay">
           <div className="uv-mini-stats">
-            <span><FontAwesomeIcon icon={faPlay} /> {formatNumber(video.views)}</span>
-            <span><FontAwesomeIcon icon={faHeart} /> {formatNumber(video.likes?.length || 0)}</span>
-            <span><FontAwesomeIcon icon={faComment} /> {formatNumber(video.comments?.length || 0)}</span>
+            <span className="uv-stat-play">
+              <FontAwesomeIcon icon={faPlay} className="uv-stat-icon" />
+              {formatNumber(video.views)}
+            </span>
+            <span className="uv-stat-heart">
+              <FontAwesomeIcon icon={faHeart} className="uv-stat-icon" />
+              {formatNumber(video.likes?.length || 0)}
+            </span>
+            <span className="uv-stat-comment">
+              <FontAwesomeIcon icon={faComment} className="uv-stat-icon" />
+              {formatNumber(video.comments?.length || 0)}
+            </span>
           </div>
         </div>
+        
+        {/* Botón de guardar (solo visible en hover) */}
+        {!isOwnProfile && (
+          <button 
+            className={`uv-mini-save-btn ${isSaved ? 'saved' : ''}`}
+            onClick={handleSave}
+            disabled={saving}
+          >
+            <FontAwesomeIcon icon={isSaved ? faBookmark : faBookmark} spin={saving} />
+          </button>
+        )}
+        
+        {/* Badge de duración */}
+        {video.duration > 0 && (
+          <div className="uv-mini-duration">
+            <span>{Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}</span>
+          </div>
+        )}
       </div>
       <p className="uv-mini-title">{video.title?.substring(0, 40)}</p>
     </div>

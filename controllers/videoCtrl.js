@@ -505,43 +505,76 @@ const getPopularVideos = async (req, res) => {
 };
 
 // ✅ Videos tendencia
+// controllers/videoCtrl.js - getTrendingVideos CORREGIDO (sin isActive)
+
+// En videoCtrl.js - getTrendingVideos
+// controllers/videoCtrl.js - getTrendingVideos (VERSIÓN FUNCIONAL)
+
+// controllers/videoCtrl.js - getTrendingVideos MEJORADO
+
+// controllers/videoCtrl.js - getTrendingVideos (VERSIÓN CORREGIDA Y FUNCIONAL)
+
 const getTrendingVideos = async (req, res) => {
   try {
     const { limit = 10, timeRange = 'week' } = req.query;
-    let dateFilter = {};
-    const now = new Date();
-    if (timeRange === 'day') dateFilter = { createdAt: { $gte: new Date(now.setDate(now.getDate() - 1)) } };
-    else if (timeRange === 'week') dateFilter = { createdAt: { $gte: new Date(now.setDate(now.getDate() - 7)) } };
-    else if (timeRange === 'month') dateFilter = { createdAt: { $gte: new Date(now.setMonth(now.getMonth() - 1)) } };
-
+    
+    // ✅ FILTRO SIMPLE - solo pendiente false
+    const matchCondition = { pendiente: false };
+    
+    // Filtro por tiempo
+    if (timeRange === 'day') {
+      matchCondition.createdAt = { $gte: new Date(Date.now() - 24*60*60*1000) };
+    } else if (timeRange === 'week') {
+      matchCondition.createdAt = { $gte: new Date(Date.now() - 7*24*60*60*1000) };
+    }
+    
+    console.log('🔍 Buscando videos con:', JSON.stringify(matchCondition));
+    
     const videos = await Video.aggregate([
-      { $match: { pendiente: false, isActive: true, ...dateFilter } },
-      { $addFields: {
+      { $match: matchCondition },
+      // ✅ Calcular interacciones en tiempo real (SOLO likes y comments)
+      { 
+        $addFields: {
           likesCount: { $size: '$likes' },
           commentsCount: { $size: '$comments' },
-          sharesCount: { $size: { $ifNull: ['$shares', []] } }
-      } },
-      { $addFields: {
-          totalEngagement: { $add: [
-            { $multiply: ['$likesCount', 2] },
-            { $multiply: ['$commentsCount', 3] },
-            { $multiply: ['$sharesCount', 4] }
-          ] }
-      } },
-      { $addFields: { engagementScore: { $min: [ { $multiply: [ { $divide: ['$totalEngagement', { $ifNull: ['$views', 1] }] }, 100 ] }, 100 ] } } },
-      { $sort: { engagementScore: -1, views: -1 } },
+          // ✅ Calcular engagementScore dinámicamente
+          dynamicScore: {
+            $min: [
+              {
+                $multiply: [
+                  {
+                    $divide: [
+                      { $add: [
+                        { $multiply: ['$likesCount', 2] },
+                        { $multiply: ['$commentsCount', 3] }
+                      ] },
+                      { $ifNull: ['$views', 1] }
+                    ]
+                  },
+                  100
+                ]
+              },
+              100
+            ]
+          }
+        }
+      },
+      // ✅ Ordenar por score dinámico
+      { $sort: { dynamicScore: -1, views: -1, createdAt: -1 } },
       { $limit: parseInt(limit) },
       { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
       { $unwind: '$user' },
       { $project: { 'user.password': 0, 'user.email': 0 } }
     ]);
+    
+    console.log(`✅ Encontrados ${videos.length} videos trending`);
+    
     res.json({ success: true, videos });
   } catch (error) {
-    console.error('Error getTrendingVideos:', error);
+    console.error('❌ Error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 // ✅ Videos relacionados
 const getRelatedVideos = async (req, res) => {
   try {

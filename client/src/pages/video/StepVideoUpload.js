@@ -1,7 +1,7 @@
-// components/Video/StepVideoUpload.jsx - VERSIÓN COMPLETA CON SOPORTE PARA EDICIÓN
+// components/Video/StepVideoUpload.jsx - VERSIÓN MODIFICADA (solo añade tipos de video)
 import React, { useState, useRef } from 'react';
 import { Button, Alert, Form, Card } from 'react-bootstrap';
-import { Images, Camera, Link, Trash } from 'react-bootstrap-icons';
+import { Images, Camera, Link, Trash, MusicNote, Briefcase, CheckCircle } from 'react-bootstrap-icons';
 
 const StepVideoUpload = ({ 
   wizardData, 
@@ -12,7 +12,9 @@ const StepVideoUpload = ({
   existingVideo = null,
   keepExistingVideo = true,
   onKeepExisting,
-  onChangeVideo
+  onChangeVideo,
+  videoType,           // ← NUEVO: recibe el tipo actual
+  onVideoTypeChange    // ← NUEVO: función para cambiar tipo
 }) => {
   const [linkError, setLinkError] = useState(null);
   const [showLinkInput, setShowLinkInput] = useState(false);
@@ -136,11 +138,106 @@ const StepVideoUpload = ({
 
   return (
     <div className="step-video-upload" style={{ padding: '0 8px' }}>
-      <h5 className="mb-4 text-center">Choisissez votre vidéo</h5>
+      
+      {/* ============================================ */}
+      {/* NUEVO: FILA DE TIPO DE VIDEO (Social/Commercial) */}
+      {/* ============================================ */}
+      <div style={{
+        display: 'flex',
+        gap: '16px',
+        marginBottom: '24px',
+        justifyContent: 'center'
+      }}>
+        {/* Opción Social */}
+        <div
+          onClick={() => onVideoTypeChange?.('social')}
+          style={{
+            flex: 1,
+            background: videoType === 'social' 
+              ? 'linear-gradient(135deg, #f093fb, #f5576c)' 
+              : 'linear-gradient(135deg, #1a1a2e, #16213e)',
+            border: videoType === 'social' ? '2px solid #f093fb' : '2px solid rgba(255,255,255,0.1)',
+            borderRadius: '20px',
+            padding: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            position: 'relative'
+          }}
+        >
+          <div style={{
+            width: '48px',
+            height: '48px',
+            background: 'rgba(255,255,255,0.2)',
+            borderRadius: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <MusicNote size={28} color="white" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <h5 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'white' }}>Social</h5>
+            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)' }}>Style TikTok/Reels</span>
+          </div>
+          {videoType === 'social' && (
+            <CheckCircle size={20} color="#28a745" style={{ position: 'absolute', top: '8px', right: '8px' }} />
+          )}
+        </div>
+
+        {/* Opción Commercial */}
+        <div
+          onClick={() => onVideoTypeChange?.('commercial')}
+          style={{
+            flex: 1,
+            background: videoType === 'commercial' 
+              ? 'linear-gradient(135deg, #667eea, #764ba2)' 
+              : 'linear-gradient(135deg, #1a1a2e, #16213e)',
+            border: videoType === 'commercial' ? '2px solid #667eea' : '2px solid rgba(255,255,255,0.1)',
+            borderRadius: '20px',
+            padding: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            position: 'relative'
+          }}
+        >
+          <div style={{
+            width: '48px',
+            height: '48px',
+            background: 'rgba(255,255,255,0.2)',
+            borderRadius: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Briefcase size={28} color="white" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <h5 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'white' }}>Commercial</h5>
+            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)' }}>Marketplace</span>
+          </div>
+          {videoType === 'commercial' && (
+            <CheckCircle size={20} color="#28a745" style={{ position: 'absolute', top: '8px', right: '8px' }} />
+          )}
+        </div>
+      </div>
 
       {/* ============================================ */}
-      {/* MOSTRAR VIDEO EXISTENTE SI ES EDICIÓN */}
+      {/* TÍTULO DINÁMICO */}
       {/* ============================================ */}
+      <h5 className="mb-4 text-center">
+        {videoType === 'commercial' ? '🛍️ Vidéo Commerciale' : '🎵 Vidéo Sociale'}
+      </h5>
+
+      {/* ============================================ */}
+      {/* FILA DE TRES ICONOS (Galerie, Caméra, Lien) */}
+      {/* ============================================ */}
+      {/* MOSTRAR VIDEO EXISTENTE SI ES EDICIÓN */}
       {isEditing && keepExistingVideo && existingVideo && !wizardData.videoFile && (
         <div className="existing-video-preview mb-4">
           <Card className="border-0 shadow-sm">
@@ -174,9 +271,7 @@ const StepVideoUpload = ({
         </div>
       )}
 
-      {/* ============================================ */}
       {/* SI NO ES EDICIÓN O SE CAMBIÓ VIDEO, MOSTRAR ICONOS */}
-      {/* ============================================ */}
       {(!isEditing || !keepExistingVideo || !existingVideo) && (
         <>
           {/* FILA DE TRES ICONOS */}
@@ -296,7 +391,7 @@ const StepVideoUpload = ({
         </>
       )}
 
-      {/* PREVIEW DEL VIDEO SUBIDO (nuevo) */}
+      {/* PREVIEW DEL VIDEO SUBIDO (nuevo) - ESTO SIGUE IGUAL Y FUNCIONA */}
       {wizardData.videoPreview && !(isEditing && keepExistingVideo && existingVideo) && (
         <div className="video-preview mt-3">
           <Card>
@@ -336,9 +431,9 @@ const StepVideoUpload = ({
   );
 };
 
-// Función checkVideo (asegúrate de tenerla o impórtala)
+// Función checkVideo
 const checkVideo = (file, isProActive) => {
-  const maxSize = isProActive ? 20 * 1024 * 1024 : 15 * 1024 * 1024; // 100MB para Pro, 50MB para gratis
+  const maxSize = isProActive ? 100 * 1024 * 1024 : 50 * 1024 * 1024;
   if (file.size > maxSize) {
     return `La vidéo ne doit pas dépasser ${maxSize / 1024 / 1024} MB`;
   }
