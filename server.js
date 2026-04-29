@@ -75,6 +75,7 @@ app.use('/api', require('./routes/notifyRouter'));
 app.use('/api', require('./routes/reportRouter'));
 
 app.use('/api', require('./routes/videoRouter'));
+app.use('/api', require('./routes/imageRouter'));
 // --- Configuración y Settings ---
 app.use('/api', require('./routes/languageRouter'));
 app.use('/api', require('./routes/privacysettingsRouter'));

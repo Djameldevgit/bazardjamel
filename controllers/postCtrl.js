@@ -1168,53 +1168,36 @@ getPostsPendientesCount: async (req, res) => {
 
   // 📂 controllers/postCtrl.js - CORREGIDO
 
-  getPost: async (req, res) => {
-    try {
+ // 📂 backend/controllers/postCtrl.js - getPost
+
+getPost: async (req, res) => {
+  try {
       const post = await Post.findById(req.params.id)
-        .populate("user likes", "avatar username fullname followers")
-        .populate({
-          path: "comments",
-          populate: {
-            path: "user likes",
-            select: "-password"
-          }
-        });
-  
-      if (!post) {
-        return res.status(404).json({ msg: 'This post does not exist.' });
-      }
-  
-      const user = req.user || null;
-      const isAdmin = user && (user.role === 'admin' || user.role === 'moderator');
-      const isOwner = user && post.user && post.user._id.toString() === user._id.toString();
-      
-      // ✅ CORRECCIÓN: Verificar el orden de las condiciones
-      if (post.pendiente) {
-        // ✅ PRIMERO: Verificar si es admin o dueño (TIENEN PERMISO)
-        if (isAdmin || isOwner) {
-          return res.json({ 
-            post,
-            pendiente: true,
-            isAdmin: isAdmin,
-            isOwner: isOwner
+          .populate("user likes", "avatar username fullname followers")
+          .populate({
+              path: "comments",
+              populate: {
+                  path: "user likes",
+                  select: "-password"
+              }
           });
-        }
-        
-        // ✅ DESPUÉS: Si no es admin ni dueño, DENEGAR acceso
-        return res.status(403).json({ 
-          msg: 'Ce post est en attente de validation.',
-          pendiente: true
-        });
+
+      if (!post) {
+          return res.status(404).json({ msg: 'This post does not exist.' });
       }
-  
-      // Post aprobado - todos pueden verlo
-      res.json({ post });
-  
-    } catch (err) {
-      console.error('❌ Error en getPost:', err);
+
+      // ✅ Asegurar que comments sea un array
+      const postData = post.toObject();
+      if (!postData.comments) {
+          postData.comments = [];
+      }
+
+      // ... resto igual
+      res.json({ post: postData });
+  } catch (err) {
       return res.status(500).json({ msg: err.message });
-    }
-  },
+  }
+},
   getPostById: async (req, res) => {
     try {
       // ✅ Buscar SOLO posts aprobados (pendiente: false)
@@ -1399,7 +1382,71 @@ getPostsPendientesCount: async (req, res) => {
       console.error('❌ getFilterOptions error:', error);
       res.status(500).json({ success: false, message: error.message });
     }
+  },
+
+// 📂 backend/controllers/postCtrl.js - CORREGIR getPost
+
+getPost: async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id)
+      .populate("user likes", "avatar username fullname followers")
+      .populate({
+        path: "comments",
+        populate: {
+          path: "user likes",
+          select: "-password"
+        }
+      });
+
+    if (!post) {
+      return res.status(404).json({ msg: 'This post does not exist.' });
+    }
+
+    // ✅ GARANTIZAR que comments sea un array (incluso si es null o undefined)
+    const postData = post.toObject ? post.toObject() : { ...post };
+    
+    // ✅ Asegurar que comments siempre sea un array
+    if (!postData.comments) {
+      postData.comments = [];
+    }
+    
+    // ✅ También asegurar que cada comentario tenga sus campos necesarios
+    postData.comments = postData.comments.map(comment => ({
+      ...comment,
+      likes: comment.likes || [],
+      reply: comment.reply || null
+    }));
+
+    const user = req.user || null;
+    const isAdmin = user && (user.role === 'admin' || user.role === 'moderator');
+    const isOwner = user && postData.user && postData.user._id.toString() === user._id.toString();
+    
+    if (postData.pendiente) {
+      if (isAdmin || isOwner) {
+        return res.json({ 
+          post: postData,
+          pendiente: true,
+          isAdmin: isAdmin,
+          isOwner: isOwner
+        });
+      }
+      
+      return res.status(403).json({ 
+        msg: 'Ce post est en attente de validation.',
+        pendiente: true
+      });
+    }
+
+    res.json({ post: postData });
+
+  } catch (err) {
+    console.error('❌ Error en getPost:', err);
+    return res.status(500).json({ msg: err.message });
   }
+},
+
+
+
 };
 
 module.exports = postCtrl;

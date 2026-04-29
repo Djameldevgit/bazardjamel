@@ -1,6 +1,6 @@
-// 📂 frontend/src/components/PostCard.jsx - VERSIÓN CORREGIDA
+// 📂 frontend/src/components/PostCard.jsx - VERSIÓN CON COMENTARIOS GENÉRICOS
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Card } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
@@ -10,10 +10,12 @@ import DescriptionPost from './DescriptionPost';
 import UserInfo from './UserInfo';
 import CardFooterHome from './card-footer/CardFooterHome';
 import CardFooterCategory from './card-footer/CardFooterCategory';
-
+import Comments from '../Comments';
+ 
 const PostCard = ({ post }) => {
   const location = useLocation();
   const { theme = 'light' } = useSelector(state => state.theme || {});
+  const [showComments, setShowComments] = useState(false); // 👈 Controlar visibilidad de comentarios
 
   if (!post) return null;
 
@@ -44,6 +46,11 @@ const PostCard = ({ post }) => {
     return <CardFooterHome post={post} />;
   };
 
+  // 👈 Función para toggle de comentarios (solo en detalle)
+  const toggleComments = () => {
+    setShowComments(!showComments);
+  };
+
   return (
     <Card
       className={`border-0 shadow-sm overflow-hidden mb-1 ${
@@ -61,8 +68,7 @@ const PostCard = ({ post }) => {
       {/* Título solo en vistas de cuadrícula (Home y Category) */}
       {!isDetailPage && <CardBodyTitle post={post} />}
 
-      {/* 🔥 Carrusel de imágenes SOLO en Home y CategoryPage */}
-      {/* En la página de detalle, DescriptionPost ya tiene su propia galería */}
+      {/* Carrusel de imágenes SOLO en Home y CategoryPage */}
       {!isDetailPage && <CardBodyCarousel post={post} />}
 
       {/* Secciones solo en detalle */}
@@ -70,6 +76,33 @@ const PostCard = ({ post }) => {
         <>
           <DescriptionPost post={post} />
           <UserInfo post={post} />
+          
+          <div className="px-3 py-2 border-top mt-2">
+            <button 
+              onClick={() => setShowComments(!showComments)}
+              className="btn btn-link text-decoration-none p-0"
+              style={{ color: theme === 'dark' ? '#60a5fa' : '#2563eb' }}
+            >
+              <span className="material-icons" style={{ fontSize: '20px', verticalAlign: 'middle' }}>
+                chat_bubble
+              </span>
+              <span className="ml-1">
+                {post.comments?.length || 0} comentarios
+              </span>
+              <span className="material-icons ml-1" style={{ fontSize: '16px' }}>
+                {showComments ? 'expand_less' : 'expand_more'}
+              </span>
+            </button>
+          </div>
+
+          {showComments && (
+            <div className="px-3 pb-3">
+              <Comments 
+                target={post}
+                targetType="post"
+              />
+            </div>
+          )}
         </>
       )}
 

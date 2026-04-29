@@ -1,79 +1,66 @@
-// pages/video/EditVideoWizard.jsx - VERSIÓN SIMPLIFICADA
+// pages/video/EditImageWizard.jsx
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useParams } from 'react-router-dom';
 import { Button, Alert, Spinner, Card, ProgressBar, Badge } from 'react-bootstrap';
-import { ArrowLeft, ArrowRight, CloudUpload, PencilFill, Trash } from 'react-bootstrap-icons';
+import { ArrowLeft, ArrowRight, CloudUpload, PencilFill, Trash, Image } from 'react-bootstrap-icons';
 import StepIndicator from './StepIndicator';
 import StepMusicSelection from './StepMusicSelection';
-import { getVideoById, updateVideo } from '../../redux/actions/videoAction';
+import { getImageById, updateImage } from '../../redux/actions/imageAction';
 import { GLOBALTYPES } from '../../redux/actions/globalTypes';
-import { videoUpload } from '../../utils/imageUpload';
-import './CreateVideoWizard.css';
+import { imageUpload } from '../../utils/imageUpload';
 
-const EditVideoWizard = () => {
+const EditImageWizard = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
   const history = useHistory();
-  const { auth, socket } = useSelector(state => state);
-  const { currentVideo: video, loading: videoLoading } = useSelector(state => state.video || {});
-  const { user } = auth;
+  const { auth } = useSelector(state => state);
+  const { currentImage: image, loading: imageLoading } = useSelector(state => state.image || {});
   
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [keepExistingVideo, setKeepExistingVideo] = useState(true);
+  const [keepExistingImage, setKeepExistingImage] = useState(true);
   
   const [wizardData, setWizardData] = useState({
-    videoSource: 'existing',
-    videoFile: null,
-    videoPreview: null,
-    videoDuration: 0,
+    imageSource: 'existing',
+    imageFile: null,
+    imagePreview: null,
     selectedMusic: null,
     musicVolume: 70,
-    originalAudio: true,
     title: '',
     description: ''
   });
   
-  const isProActive = user?.isPro && (!user?.proExpiryDate || new Date(user.proExpiryDate) > new Date());
-  const maxDuration = isProActive ? 60 : 30;
-  
-  // Charger les données du vidéo existant
+  // Charger les données de l'image existante
   useEffect(() => {
     if (id) {
-      dispatch(getVideoById(id));
+      dispatch(getImageById(id));
     }
   }, [dispatch, id]);
   
   // Remplir le wizard avec les données existantes
   useEffect(() => {
-    if (video && !videoLoading) {
-      console.log('📹 Vidéo chargée pour édition:', video);
+    if (image && !imageLoading) {
+      console.log('🖼️ Image chargée pour édition:', image);
       setWizardData({
-        videoSource: 'existing',
-        videoFile: null,
-        videoPreview: video.videoUrl || null,
-        videoDuration: video.duration || 0,
-        selectedMusic: video.music || null,
-        musicVolume: video.music?.volume || 70,
-        originalAudio: true,
-        title: video.title || '',
-        description: video.description || ''
+        imageSource: 'existing',
+        imageFile: null,
+        imagePreview: image.imageUrl || null,
+        selectedMusic: image.music || null,
+        musicVolume: image.music?.volume || 70,
+        title: image.title || '',
+        description: image.description || ''
       });
     }
-  }, [video, videoLoading]);
+  }, [image, imageLoading]);
   
   const validateStep = (step) => {
     switch(step) {
       case 1:
-        if (!keepExistingVideo && !wizardData.videoFile) {
-          setError('Veuillez sélectionner une nouvelle vidéo');
-          return false;
-        }
-        if (!keepExistingVideo && wizardData.videoDuration > maxDuration) {
-          setError(`La vidéo ne doit pas dépasser ${maxDuration} secondes`);
+        if (!keepExistingImage && !wizardData.imageFile) {
+          setError('Veuillez sélectionner une nouvelle image');
           return false;
         }
         break;
@@ -106,8 +93,8 @@ const EditVideoWizard = () => {
   
   const updateWizardData = (newData) => {
     setWizardData(prev => ({ ...prev, ...newData }));
-    if (newData.videoFile) {
-      setKeepExistingVideo(false);
+    if (newData.imageFile) {
+      setKeepExistingImage(false);
     }
   };
   
@@ -123,37 +110,29 @@ const EditVideoWizard = () => {
     setError(null);
     
     try {
-      let videoUrl, videoId, thumbnail, videoDuration;
+      let imageUrl, imageId;
       
-      if (keepExistingVideo && wizardData.videoSource === 'existing') {
-        // Garder la vidéo existante
-        videoUrl = video.videoUrl;
-        videoId = video.videoId;
-        thumbnail = video.thumbnail;
-        videoDuration = video.duration;
+      if (keepExistingImage && wizardData.imageSource === 'existing') {
+        // Garder l'image existante
+        imageUrl = image.imageUrl;
+        imageId = image.imageId;
       } 
-      else if (wizardData.videoFile) {
-        // Upload nouvelle vidéo
-        const result = await videoUpload(wizardData.videoFile, (progress) => {
+      else if (wizardData.imageFile) {
+        // Upload nouvelle image
+        const result = await imageUpload(wizardData.imageFile, (progress) => {
           setUploadProgress(progress);
         });
-        videoUrl = result.url;
-        videoId = result.public_id;
-        thumbnail = result.thumbnail;
-        videoDuration = wizardData.videoDuration;
+        imageUrl = result.url;
+        imageId = result.public_id;
       } else {
-        throw new Error('Aucune source vidéo valide');
+        throw new Error('Aucune source image valide');
       }
       
-      const videoData = {
+      const imageData = {
         title: wizardData.title,
         description: wizardData.description,
-        shortDescription: wizardData.description?.substring(0, 300),
-        videoUrl,
-        videoType: 'local',
-        videoId,
-        thumbnail,
-        duration: videoDuration,
+        imageUrl,
+        imageId,
         music: wizardData.selectedMusic ? {
           id: wizardData.selectedMusic.id,
           title: wizardData.selectedMusic.title,
@@ -161,16 +140,16 @@ const EditVideoWizard = () => {
         } : null
       };
       
-      const result = await dispatch(updateVideo(id, videoData, auth.token, auth, socket));
+      const result = await dispatch(updateImage(id, imageData, auth.token));
       
       if (result?.success) {
-        if (wizardData.videoPreview?.startsWith('blob:')) {
-          URL.revokeObjectURL(wizardData.videoPreview);
+        if (wizardData.imagePreview?.startsWith('blob:')) {
+          URL.revokeObjectURL(wizardData.imagePreview);
         }
         
         dispatch({
           type: GLOBALTYPES.ALERT,
-          payload: { success: '✏️ Vidéo modifiée avec succès !' }
+          payload: { success: '✏️ Image modifiée avec succès !' }
         });
         
         // Rediriger vers le feed
@@ -187,11 +166,11 @@ const EditVideoWizard = () => {
     }
   };
   
-  // Render Step 1 - Édition vidéo
+  // Render Step 1 - Édition image
   const renderStep1 = () => (
     <div className="step1-container" style={{ padding: '0 8px' }}>
-      {keepExistingVideo && video && (
-        <div className="existing-video mb-4">
+      {keepExistingImage && image && (
+        <div className="existing-image mb-4">
           <div style={{
             background: 'rgba(255,255,255,0.1)',
             borderRadius: '16px',
@@ -199,40 +178,35 @@ const EditVideoWizard = () => {
             marginBottom: '20px'
           }}>
             <div className="d-flex justify-content-between align-items-center mb-3">
-              <h6 style={{ color: 'white', margin: 0 }}>📹 Vidéo actuelle</h6>
+              <h6 style={{ color: 'white', margin: 0 }}>🖼️ Image actuelle</h6>
               <Button 
                 variant="outline-danger" 
                 size="sm"
                 onClick={() => {
-                  setKeepExistingVideo(false);
-                  updateWizardData({ videoSource: null, videoFile: null, videoPreview: null });
+                  setKeepExistingImage(false);
+                  updateWizardData({ imageSource: null, imageFile: null, imagePreview: null });
                 }}
               >
                 <Trash size={14} className="me-1" />
                 Changer
               </Button>
             </div>
-            <video
-              src={video.videoUrl}
-              controls
+            <img
+              src={image.imageUrl}
+              alt={image.title}
               style={{
                 width: '100%',
-                maxHeight: '300px',
-                borderRadius: '12px'
+                maxHeight: '400px',
+                objectFit: 'contain',
+                borderRadius: '12px',
+                background: '#000'
               }}
-              poster={video.thumbnail}
             />
-            {video.duration > 0 && (
-              <div className="mt-2 text-muted small">
-                Durée: {Math.floor(video.duration / 60)}:
-                {(video.duration % 60).toString().padStart(2, '0')}
-              </div>
-            )}
           </div>
         </div>
       )}
       
-      {!keepExistingVideo && (
+      {!keepExistingImage && (
         <>
           <div style={{
             display: 'flex',
@@ -241,39 +215,30 @@ const EditVideoWizard = () => {
             gap: '40px',
             marginBottom: '30px'
           }}>
-            {/* Input pour nouvelle vidéo */}
             <div style={{ textAlign: 'center' }}>
               <input
                 type="file"
-                id="videoInput"
-                accept="video/mp4,video/quicktime,video/webm"
+                id="imageInput"
+                accept="image/jpeg,image/png,image/jpg,image/webp"
                 style={{ display: 'none' }}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
+                    if (file.size > 10 * 1024 * 1024) {
+                      setError("L'image ne doit pas dépasser 10MB");
+                      return;
+                    }
                     const previewUrl = URL.createObjectURL(file);
-                    const video = document.createElement('video');
-                    video.preload = 'metadata';
-                    video.onloadedmetadata = () => {
-                      const duration = video.duration;
-                      if (duration > maxDuration) {
-                        setError(`La vidéo ne doit pas dépasser ${maxDuration} secondes`);
-                        URL.revokeObjectURL(previewUrl);
-                        return;
-                      }
-                      updateWizardData({
-                        videoFile: file,
-                        videoPreview: previewUrl,
-                        videoDuration: duration,
-                        videoSource: 'gallery'
-                      });
-                      setError(null);
-                    };
-                    video.src = URL.createObjectURL(file);
+                    updateWizardData({
+                      imageFile: file,
+                      imagePreview: previewUrl,
+                      imageSource: 'gallery'
+                    });
+                    setError(null);
                   }
                 }}
               />
-              <label htmlFor="videoInput" style={{
+              <label htmlFor="imageInput" style={{
                 background: 'linear-gradient(135deg, #667eea, #764ba2)',
                 border: 'none',
                 borderRadius: '60px',
@@ -287,18 +252,19 @@ const EditVideoWizard = () => {
               }}>
                 <CloudUpload size={36} color="white" />
               </label>
-              <div style={{ fontSize: '12px', marginTop: '8px', color: '#fff' }}>Nouvelle vidéo</div>
+              <div style={{ fontSize: '12px', marginTop: '8px', color: '#fff' }}>Nouvelle image</div>
             </div>
           </div>
           
-          {wizardData.videoPreview && (
+          {wizardData.imagePreview && (
             <div style={{ marginTop: '20px', position: 'relative' }}>
-              <video
-                src={wizardData.videoPreview}
-                controls
+              <img
+                src={wizardData.imagePreview}
+                alt="Preview"
                 style={{
                   width: '100%',
                   maxHeight: '400px',
+                  objectFit: 'contain',
                   borderRadius: '12px',
                   background: '#000'
                 }}
@@ -313,8 +279,8 @@ const EditVideoWizard = () => {
                   borderRadius: '30px'
                 }}
                 onClick={() => {
-                  updateWizardData({ videoFile: null, videoPreview: null, videoDuration: 0 });
-                  setKeepExistingVideo(true);
+                  updateWizardData({ imageFile: null, imagePreview: null });
+                  setKeepExistingImage(true);
                 }}
               >
                 Annuler
@@ -340,7 +306,7 @@ const EditVideoWizard = () => {
         <input
           type="text"
           className="form-control form-control-lg"
-          placeholder="Titre de la vidéo..."
+          placeholder="Titre de l'image..."
           value={wizardData.title}
           onChange={(e) => updateWizardData({ title: e.target.value })}
           maxLength="100"
@@ -363,7 +329,7 @@ const EditVideoWizard = () => {
         <textarea
           className="form-control"
           rows="4"
-          placeholder="Description de la vidéo..."
+          placeholder="Description de l'image..."
           value={wizardData.description}
           onChange={(e) => updateWizardData({ description: e.target.value })}
           maxLength="500"
@@ -379,18 +345,40 @@ const EditVideoWizard = () => {
           {wizardData.description.length}/500 caractères
         </small>
       </div>
+      
+      {/* Aperçu */}
+      {(keepExistingImage && image) || wizardData.imagePreview ? (
+        <div className="mt-4 p-3" style={{
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: '12px'
+        }}>
+          <label className="form-label" style={{ color: 'white', fontWeight: 500 }}>
+            Aperçu
+          </label>
+          <img
+            src={keepExistingImage ? image?.imageUrl : wizardData.imagePreview}
+            alt="Preview"
+            style={{
+              width: '100%',
+              maxHeight: '200px',
+              objectFit: 'contain',
+              borderRadius: '8px'
+            }}
+          />
+        </div>
+      ) : null}
     </div>
   );
   
-  const stepLabels = ['Vidéo', 'Musique', 'Infos'];
+  const stepLabels = ['Image', 'Musique', 'Infos'];
   
-  if (videoLoading && !video) {
+  if (imageLoading && !image) {
     return (
       <div className="create-video-wizard" style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e, #16213e)', padding: '16px' }}>
         <Card className="border-0 shadow-lg" style={{ background: 'rgba(255,255,255,0.05)' }}>
           <Card.Body className="p-5 text-center">
             <Spinner animation="border" variant="light" />
-            <p className="mt-3 text-white">Chargement de la vidéo...</p>
+            <p className="mt-3 text-white">Chargement de l'image...</p>
           </Card.Body>
         </Card>
       </div>
@@ -413,19 +401,13 @@ const EditVideoWizard = () => {
             <div>
               <h3 className="mb-0" style={{ color: 'white', fontWeight: 'bold' }}>
                 <PencilFill className="me-2" style={{ fontSize: '1.2rem' }} />
-                Modifier la vidéo
+                Modifier l'image
               </h3>
-              <small className="text-muted">{video?.title}</small>
+              <small className="text-muted">{image?.title}</small>
             </div>
-            {!isProActive ? (
-              <Badge bg="warning" text="dark" className="p-2">
-                ⚡ {maxDuration}s max
-              </Badge>
-            ) : (
-              <Badge bg="primary" className="p-2">
-                ⭐ Pro: {maxDuration}s
-              </Badge>
-            )}
+            <Badge bg="info" className="p-2">
+              🖼️ Image
+            </Badge>
           </div>
           
           <StepIndicator currentStep={currentStep} totalSteps={3} labels={stepLabels} />
@@ -442,7 +424,7 @@ const EditVideoWizard = () => {
               <StepMusicSelection 
                 wizardData={wizardData}
                 updateData={updateWizardData}
-                videoType="video"
+                videoType="image"
               />
             )}
             {currentStep === 3 && renderStep3()}
@@ -499,4 +481,4 @@ const EditVideoWizard = () => {
   );
 };
 
-export default EditVideoWizard;
+export default EditImageWizard;

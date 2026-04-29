@@ -4,13 +4,8 @@ import { GLOBALTYPES } from './globalTypes';
 import { createNotify } from './notifyAction'; // ✅ Importar createNotify
 // redux/actions/videoAction.js
 
-// ✅ CONSTANTES CORREGIDAS (sin duplicados)
-export const VIDEO_TYPES = {
-  // Loading states
-// redux/actions/videoAction.js
 
-// ✅ Asegúrate de exportar las constantes así
- 
+export const VIDEO_TYPES = {
   LOADING: 'VIDEO_LOADING',
   LOADING_BY_CATEGORY: 'LOADING_BY_CATEGORY',
   GET_VIDEOS: 'GET_VIDEOS',
@@ -30,20 +25,11 @@ export const VIDEO_TYPES = {
   UPDATE_VIDEO_STATS: 'UPDATE_VIDEO_STATS',
   UPDATE_VIDEO_ENGAGEMENT: 'UPDATE_VIDEO_ENGAGEMENT',
   INCREMENT_VIEW: 'INCREMENT_VIEW',
-  COMMENTS_LOADING: 'COMMENTS_LOADING',
-  GET_COMMENTS: 'GET_COMMENTS',
-  ADD_COMMENT: 'ADD_COMMENT',
-  DELETE_COMMENT: 'DELETE_COMMENT',
-  LIKE_COMMENT: 'LIKE_COMMENT',
-  ADD_COMMENT_REPLY: 'ADD_COMMENT_REPLY',
-  EDIT_COMMENT: 'EDIT_COMMENT',
-  DELETE_REPLY: 'DELETE_REPLY',
-  EDIT_REPLY: 'EDIT_REPLY',
-  CLEAR_COMMENTS: 'CLEAR_COMMENTS',
   MUSIC_LOADING: 'MUSIC_LOADING',
   GET_MUSIC_LIBRARY: 'GET_MUSIC_LIBRARY',
   MUSIC_ERROR: 'MUSIC_ERROR',
   GET_PENDING_VIDEO: 'GET_PENDING_VIDEO'
+  // ❌ ELIMINAR TODAS LAS CONSTANTES DE COMENTARIOS
 };
 
 // ✅ También exporta como default si es necesario
@@ -305,98 +291,9 @@ export const shareVideo = (id, token, auth, socket, videoData) => async (dispatc
 };
 
  
-
-// ✅ Dar like a comentario CON NOTIFICACIÓN
-export const likeComment = (videoId, commentId, token, auth, socket, commentData, videoData) => async (dispatch) => {
-  try {
-    const res = await patchDataAPI(`videos/${videoId}/comments/${commentId}/like`, {}, token);
-    
-    dispatch({
-      type: VIDEO_TYPES.LIKE_COMMENT,
-      payload: {
-        commentId,
-        likes: res.data.likes,
-        liked: res.data.liked
-      }
-    });
-    
-    // ✅ Notificar al autor del comentario sobre el like
-    if (res.data.liked && commentData && commentData.user?._id && commentData.user._id !== auth.user._id) {
-      const msg = {
-        id: auth.user._id,
-        text: `❤️ @${auth.user.username} a aimé votre commentaire`,
-        recipients: [commentData.user._id],
-        url: `/video/${videoId}`,
-        content: commentData.text?.substring(0, 50),
-        image: videoData?.thumbnail,
-        type: 'comment'
-      };
-      
-      dispatch(createNotify({ msg, auth, socket }));
-    }
-    
-    return { success: true, likes: res.data.likes, liked: res.data.liked };
-  } catch (err) {
-    console.error('Error likeComment:', err);
-    return { success: false };
-  }
-};
-
-// ✅ Agregar respuesta a comentario CON NOTIFICACIÓN
-export const addCommentReply = (videoId, commentId, text, token, auth, socket, parentCommentData, videoData) => async (dispatch) => {
-  try {
-    const res = await postDataAPI(`videos/${videoId}/comments/${commentId}/reply`, { text }, token);
-    
-    dispatch({
-      type: VIDEO_TYPES.ADD_COMMENT_REPLY,
-      payload: {
-        commentId,
-        reply: res.data.reply
-      }
-    });
-    
-    // ✅ Notificar al autor del comentario padre sobre la respuesta
-    if (parentCommentData && parentCommentData.user?._id && parentCommentData.user._id !== auth.user._id) {
-      const msg = {
-        id: auth.user._id,
-        text: `💬 @${auth.user.username} a répondu à votre commentaire: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`,
-        recipients: [parentCommentData.user._id],
-        url: `/video/${videoId}`,
-        content: videoData?.title,
-        image: videoData?.thumbnail,
-        type: 'comment'
-      };
-      
-      dispatch(createNotify({ msg, auth, socket }));
-    }
-    
-    return { success: true, reply: res.data.reply };
-  } catch (err) {
-    console.error('Error addCommentReply:', err);
-    return { success: false };
-  }
-};
-
-// ✅ Eliminar comentario
-export const deleteComment = (videoId, commentId, token) => async (dispatch) => {
-  try {
-    await deleteDataAPI(`videos/${videoId}/comments/${commentId}`, token);
-    
-    dispatch({
-      type: VIDEO_TYPES.DELETE_COMMENT,
-      payload: { commentId }
-    });
-    
-    return { success: true };
-  } catch (err) {
-    console.error('Error deleteComment:', err);
-    return { success: false };
-  }
-};
-
-// ============================================
-// ACCIONES DE VIDEOS (sin cambios)
-// ============================================
+ 
+ 
+ 
 
 export const getVideos = (categorySlug = null, subCategory = null, page = 1, limit = 12, sortBy = 'recent', searchTerm = null) => async (dispatch) => {
   try {
@@ -620,36 +517,7 @@ export const getRelatedVideos = (videoId, limit = 6) => async (dispatch) => {
   }
 };
 
-export const clearComments = () => ({
-  type: VIDEO_TYPES.CLEAR_COMMENTS
-});
-
-export const getComments = (videoId, page = 1, limit = 20) => async (dispatch) => {
-  try {
-    dispatch({ type: VIDEO_TYPES.COMMENTS_LOADING, payload: true });
-    
-    const res = await getDataAPI(`videos/${videoId}/comments?page=${page}&limit=${limit}`);
-    
-    dispatch({
-      type: VIDEO_TYPES.GET_COMMENTS,
-      payload: {
-        comments: res.data.comments,
-        total: res.data.total,
-        page: parseInt(page),
-        hasMore: res.data.hasMore
-      }
-    });
-    
-    return { success: true, hasMore: res.data.hasMore };
-  } catch (err) {
-    console.error('Error getComments:', err);
-    return { success: false, hasMore: false };
-  } finally {
-    dispatch({ type: VIDEO_TYPES.COMMENTS_LOADING, payload: false });
-  }
-};
-
- 
+  
 
 export const getUserVideoStats = (token) => async (dispatch) => {
   try {
@@ -661,113 +529,7 @@ export const getUserVideoStats = (token) => async (dispatch) => {
   }
 };
 
-     
-export const editReply = (videoId, commentId, replyId, text, token) => async (dispatch) => {
-  try {
-    const res = await patchDataAPI(`videos/${videoId}/comments/${commentId}/replies/${replyId}`, { text }, token);
-    
-    dispatch({
-      type: VIDEO_TYPES.EDIT_REPLY,
-      payload: {
-        commentId,
-        replyId,
-        text: res.data.reply.text
-      }
-    });
-    
-    return { success: true, reply: res.data.reply };
-  } catch (err) {
-    console.error('Error editReply:', err);
-    return { success: false };
-  }
-};
+   
 
-export const deleteReply = (videoId, commentId, replyId, token) => async (dispatch) => {
-  try {
-    await deleteDataAPI(`videos/${videoId}/comments/${commentId}/replies/${replyId}`, token);
-    
-    dispatch({
-      type: VIDEO_TYPES.DELETE_REPLY,
-      payload: { commentId, replyId }
-    });
-    
-    return { success: true };
-  } catch (err) {
-    console.error('Error deleteReply:', err);
-    return { success: false };
-  }
-};
-
-// redux/actions/videoAction.js - Añadir estas funciones
-
-// ✅ Crear comentario con soporte para replies
-export const addComment = (videoId, text, token, auth, socket, videoData, replyId = null, replyUser = null) => async (dispatch) => {
-  try {
-      const commentData = {
-          text,
-          reply: replyId,
-          tag: replyUser
-      }
-      
-      const res = await postDataAPI(`videos/${videoId}/comments`, commentData, token)
-      
-      // Emitir evento socket
-      if (socket) {
-          if (replyId) {
-              socket.emit('new-reply', { videoId, commentId: replyId, reply: res.data.comment })
-          } else {
-              socket.emit('new-comment', { videoId, comment: res.data.comment })
-          }
-      }
-      
-      return { success: true, comment: res.data.comment }
-  } catch (err) {
-      console.error('Error addComment:', err)
-      return { success: false, error: err.response?.data?.message }
-  }
-}
-
-// ✅ Editar comentario
-export const updateComment = (videoId, commentId, text, token) => async (dispatch) => {
-  try {
-      const res = await patchDataAPI(`videos/${videoId}/comments/${commentId}`, { text }, token)
-      
-      dispatch({
-          type: VIDEO_TYPES.EDIT_COMMENT,
-          payload: { commentId, text: res.data.comment.text, edited: true }
-      })
-      
-      return { success: true, comment: res.data.comment }
-  } catch (err) {
-      console.error('Error editComment:', err)
-      return { success: false }
-  }
-}
-
-
-
-
-
-
-
-
-
-
-export const unLikeComment = ({comment, post, auth}) => async (dispatch) => {
-
-  const newComment = {...comment, likes: DeleteData(comment.likes, auth.user._id)}
-
-  const newComments = EditData(post.comments, comment._id, newComment)
-
-  const newPost = {...post, comments: newComments}
   
-  dispatch({ type: POST_TYPES.UPDATE_POST, payload: newPost })
-
-  try {
-      await patchDataAPI(`comment/${comment._id}/unlike`, null, auth.token)
-  } catch (err) {
-      dispatch({ type: GLOBALTYPES.ALERT, payload: {error: err.response.data.msg} })
-  }
-}
-
  

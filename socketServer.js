@@ -1,4 +1,4 @@
-const User = require('./models/userModel'); // 🔹 Agregar import
+const User = require('./models/userModel');
 let users = []
 
 const EditData = (data, id, call) => {
@@ -8,12 +8,19 @@ const EditData = (data, id, call) => {
     return newData;
 }
 
+// ✅ Helper para obtener array de followers de forma segura
+const getSafeFollowers = (user) => {
+    if (!user) return [];
+    const followers = user.followers;
+    if (Array.isArray(followers)) return followers;
+    return [];
+}
+
 const SocketServer = (socket) => {
     // Connect - Disconnect
-    socket.on('joinUser', async (user) => { // 🔹 Hacer async
-        users.push({id: user._id, socketId: socket.id, followers: user.followers})
+    socket.on('joinUser', async (user) => {
+        users.push({id: user._id, socketId: socket.id, followers: user.followers || []})
         
-        // 🔹 ACTUALIZAR BASE DE DATOS - Usuario online
         try {
             await User.findByIdAndUpdate(user._id, {
                 isOnline: true,
@@ -22,7 +29,6 @@ const SocketServer = (socket) => {
                 socketId: socket.id
             });
             
-            // 🔹 NOTIFICAR a todos que este usuario está online
             socket.broadcast.emit('userOnline', { 
                 userId: user._id,
                 lastOnline: new Date()
@@ -36,17 +42,13 @@ const SocketServer = (socket) => {
     socket.on('disconnect', async () => {
         const data = users.find(user => user.socketId === socket.id)
         if(data){
-            // ... código existente ...
-    
-            // 🔹 VERIFICAR: ¿Se está ejecutando esta actualización?
             try {
                 await User.findByIdAndUpdate(data.id, {
                     isOnline: false,
                     lastDisconnectedAt: new Date(),
-                    lastOnline: new Date() // 🔹 Esto es importante
+                    lastOnline: new Date()
                 });
                 
-               
                 socket.broadcast.emit('userOffline', { 
                     userId: data.id,
                     lastOnline: new Date(),
@@ -56,12 +58,9 @@ const SocketServer = (socket) => {
             } catch (err) {
                 console.error('❌ Error en disconnect DB update:', err);
             }
-    
-            // ... resto del código ...
         }
     })
 
-    // 🔹 AGREGAR evento de actividad
     socket.on('userActivity', async (userId) => {
         try {
             await User.findByIdAndUpdate(userId, {
@@ -73,7 +72,7 @@ const SocketServer = (socket) => {
         }
     })
 
-    // TYPING - Funciones existentes
+    // TYPING
     socket.on('typing-start', (data) => {
         const user = users.find(user => user.id === data.recipient)
         user && socket.to(`${user.socketId}`).emit('typing-start-to-client', {
@@ -90,9 +89,13 @@ const SocketServer = (socket) => {
         })
     })
 
-    // Likes - Funciones existentes
+    // ✅ Likes - CORREGIDO
     socket.on('likePost', newPost => {
-        const ids = [...newPost.user.followers, newPost.user._id]
+        // Validar que newPost y newPost.user existan
+        if (!newPost || !newPost.user) return;
+        
+        const followers = getSafeFollowers(newPost.user);
+        const ids = [...followers, newPost.user._id]
         const clients = users.filter(user => ids.includes(user.id))
 
         if(clients.length > 0){
@@ -103,7 +106,10 @@ const SocketServer = (socket) => {
     })
 
     socket.on('unLikePost', newPost => {
-        const ids = [...newPost.user.followers, newPost.user._id]
+        if (!newPost || !newPost.user) return;
+        
+        const followers = getSafeFollowers(newPost.user);
+        const ids = [...followers, newPost.user._id]
         const clients = users.filter(user => ids.includes(user.id))
 
         if(clients.length > 0){
@@ -113,9 +119,12 @@ const SocketServer = (socket) => {
         }
     })
 
-    // Comments - Funciones existentes
+    // ✅ Comments - CORREGIDO (misma protección)
     socket.on('createComment', newPost => {
-        const ids = [...newPost.user.followers, newPost.user._id]
+        if (!newPost || !newPost.user) return;
+        
+        const followers = getSafeFollowers(newPost.user);
+        const ids = [...followers, newPost.user._id]
         const clients = users.filter(user => ids.includes(user.id))
 
         if(clients.length > 0){
@@ -126,7 +135,10 @@ const SocketServer = (socket) => {
     })
 
     socket.on('deleteComment', newPost => {
-        const ids = [...newPost.user.followers, newPost.user._id]
+        if (!newPost || !newPost.user) return;
+        
+        const followers = getSafeFollowers(newPost.user);
+        const ids = [...followers, newPost.user._id]
         const clients = users.filter(user => ids.includes(user.id))
 
         if(clients.length > 0){
@@ -136,7 +148,7 @@ const SocketServer = (socket) => {
         }
     })
 
-    // Follow - Funciones existentes
+    // Follow
     socket.on('follow', newUser => {
         const user = users.find(user => user.id === newUser._id)
         user && socket.to(`${user.socketId}`).emit('followToClient', newUser)
@@ -147,49 +159,44 @@ const SocketServer = (socket) => {
         user && socket.to(`${user.socketId}`).emit('unFollowToClient', newUser)
     })
 
-    // Notification - Funciones existentes
-   // Notification - Funciones existentes
-socket.on('createNotify', msg => {
-    // ✅ Validar que msg.recipients existe y es un array
-    if (!msg || !msg.recipients || !Array.isArray(msg.recipients)) {
-        console.log('❌ createNotify: recipients no válido', msg);
-        return;
-    }
+    // ✅ Notification - CORREGIDO
+    socket.on('createNotify', msg => {
+        if (!msg || !msg.recipients || !Array.isArray(msg.recipients)) {
+            console.log('❌ createNotify: recipients no válido', msg);
+            return;
+        }
 
-    // ✅ Buscar todos los clientes que están en recipients
-    const clients = users.filter(user => msg.recipients.includes(user.id));
-    
-    // ✅ Enviar a cada cliente encontrado
-    if (clients.length > 0) {
-        clients.forEach(client => {
-            socket.to(`${client.socketId}`).emit('createNotifyToClient', msg);
-        });
-    }
-});
+        const clients = users.filter(user => msg.recipients.includes(user.id));
+        
+        if (clients.length > 0) {
+            clients.forEach(client => {
+                socket.to(`${client.socketId}`).emit('createNotifyToClient', msg);
+            });
+        }
+    });
 
-socket.on('removeNotify', msg => {
-    // ✅ Validar que msg.recipients existe y es un array
-    if (!msg || !msg.recipients || !Array.isArray(msg.recipients)) {
-        console.log('❌ removeNotify: recipients no válido', msg);
-        return;
-    }
+    socket.on('removeNotify', msg => {
+        if (!msg || !msg.recipients || !Array.isArray(msg.recipients)) {
+            console.log('❌ removeNotify: recipients no válido', msg);
+            return;
+        }
 
-    const clients = users.filter(user => msg.recipients.includes(user.id));
-    
-    if (clients.length > 0) {
-        clients.forEach(client => {
-            socket.to(`${client.socketId}`).emit('removeNotifyToClient', msg);
-        });
-    }
-});
+        const clients = users.filter(user => msg.recipients.includes(user.id));
+        
+        if (clients.length > 0) {
+            clients.forEach(client => {
+                socket.to(`${client.socketId}`).emit('removeNotifyToClient', msg);
+            });
+        }
+    });
 
-    // Message - Funciones existentes
+    // Message
     socket.on('addMessage', msg => {
         const user = users.find(user => user.id === msg.recipient)
         user && socket.to(`${user.socketId}`).emit('addMessageToClient', msg)
     })
 
-    // Check User Online / Offline - Funciones existentes
+    // Check User Online / Offline
     socket.on('checkUserOnline', data => {
         const following = users.filter(user => 
             data.following.find(item => item._id === user.id)
@@ -207,7 +214,7 @@ socket.on('removeNotify', msg => {
         }
     })
 
-    // Call User - Funciones existentes
+    // Call User
     socket.on('callUser', data => {
         users = EditData(users, data.sender, data.recipient)
         

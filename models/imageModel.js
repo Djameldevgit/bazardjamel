@@ -1,45 +1,32 @@
-// models/videoModel.js - VERSIÓN SIMPLIFICADA (sin campos de categoría obligatorios)
+// models/imageModel.js
 const mongoose = require('mongoose');
 
-const videoSchema = new mongoose.Schema({
+const imageSchema = new mongoose.Schema({
   // ✅ Campos básicos
   title: { type: String, required: true, trim: true, maxlength: 200 },
   description: { type: String, trim: true, maxlength: 2000, default: '' },
   shortDescription: { type: String, trim: true, maxlength: 300, default: '' },
   
-  // ✅ Video URL
-  videoUrl: { type: String, required: true },
-  videoType: { type: String, enum: ['youtube', 'vimeo', 'local'], default: 'local' },
-  videoId: { type: String, default: '' },
-  thumbnail: { type: String, default: '' },
-  duration: { type: Number, default: 0 },
+  // ✅ Imagen URL
+  imageUrl: { type: String, required: true },
+  imageId: { type: String, required: true }, // ID de Cloudinary
+  thumbnail: { type: String, default: '' }, // Miniatura (opcional)
   
   // ✅ Usuario
   user: { type: mongoose.Types.ObjectId, ref: 'user', required: true },
   
-  // ✅ Campos opcionales (boutique, product - se mantienen)
-  boutique: { type: mongoose.Types.ObjectId, ref: 'Boutique', default: null },
-  product: { type: mongoose.Types.ObjectId, ref: 'Post', default: null },
-  
-  // ❌ ELIMINADO: category, categorySlug (ya no son requeridos)
-  // ✅ Se mantienen como opcionales por compatibilidad
-  category: { type: String, default: '' },
-  categorySlug: { type: String, default: '' },
+  // ✅ Música (opcional)
+  music: {
+    id: { type: String, default: null },
+    title: { type: String, default: null },
+    volume: { type: Number, default: 70 }
+  },
   
   // ✅ Estadísticas
   views: { type: Number, default: 0 },
   uniqueViews: [{ type: mongoose.Types.ObjectId, ref: 'user' }],
   likes: [{ type: mongoose.Types.ObjectId, ref: 'user' }],
   shares: [{ type: mongoose.Types.ObjectId, ref: 'user' }],
-  watchTime: { type: Number, default: 0 },
-  averageWatchTime: { type: Number, default: 0 },
-  
-  // ✅ Música
-  music: {
-    id: { type: String, default: null },
-    title: { type: String, default: null },
-    volume: { type: Number, default: 70 }
-  },
   
   // ✅ Comentarios (referencia al modelo comment)
   comments: [{ type: mongoose.Types.ObjectId, ref: 'comment' }],
@@ -52,27 +39,23 @@ const videoSchema = new mongoose.Schema({
   // ✅ Tags (opcional)
   tags: { type: [String], default: [] },
   
-  // ✅ SEO (opcional)
-  seoTitle: { type: String, default: '' },
-  seoDescription: { type: String, default: '' },
-  
   // ✅ Engagement
-  engagementScore: { type: Number, default: 0 },
-  conversionRate: { type: Number, default: 0 }
+  engagementScore: { type: Number, default: 0 }
   
 }, { timestamps: true });
 
 // Índices
-videoSchema.index({ title: 'text', description: 'text' });
-videoSchema.index({ user: 1, pendiente: 1 });
-videoSchema.index({ pendiente: 1, createdAt: -1 });
-videoSchema.index({ views: -1, createdAt: -1 });
-videoSchema.index({ engagementScore: -1 });
-videoSchema.index({ createdAt: -1 });
+imageSchema.index({ title: 'text', description: 'text' });
+imageSchema.index({ user: 1, pendiente: 1 });
+imageSchema.index({ pendiente: 1, createdAt: -1 });
+imageSchema.index({ views: -1, createdAt: -1 });
+imageSchema.index({ engagementScore: -1 });
+imageSchema.index({ createdAt: -1 });
 
 // ========== MÉTODOS DE INSTANCIA ==========
 
-videoSchema.methods.incrementViews = async function(userId = null) {
+// Incrementar vistas
+imageSchema.methods.incrementViews = async function(userId = null) {
   this.views = (this.views || 0) + 1;
   if (userId) {
     const userIdStr = userId.toString();
@@ -83,15 +66,8 @@ videoSchema.methods.incrementViews = async function(userId = null) {
   return this;
 };
 
-videoSchema.methods.updateWatchTime = async function(userId, watchTimeSeconds) {
-  this.watchTime += watchTimeSeconds;
-  this.averageWatchTime = this.watchTime / (this.uniqueViews.length || 1);
-  this.updateEngagementScore();
-  await this.save();
-  return this;
-};
-
-videoSchema.methods.toggleLike = async function(userId) {
+// Toggle like
+imageSchema.methods.toggleLike = async function(userId) {
   const userIdStr = userId.toString();
   const index = this.likes.findIndex(id => id && id.toString() === userIdStr);
   if (index === -1) {
@@ -104,7 +80,8 @@ videoSchema.methods.toggleLike = async function(userId) {
   return { liked: index === -1, likesCount: this.likes.length };
 };
 
-videoSchema.methods.share = async function(userId) {
+// Compartir
+imageSchema.methods.share = async function(userId) {
   const userIdStr = userId.toString();
   const exists = this.shares.some(id => id && id.toString() === userIdStr);
   if (!exists) {
@@ -115,7 +92,8 @@ videoSchema.methods.share = async function(userId) {
   return { shared: true, sharesCount: this.shares.length };
 };
 
-videoSchema.methods.updateEngagementScore = function() {
+// Calcular engagement score
+imageSchema.methods.updateEngagementScore = function() {
   const likesCount = this.likes.length || 0;
   const commentsCount = this.comments.length || 0;
   const sharesCount = this.shares.length || 0;
@@ -126,7 +104,8 @@ videoSchema.methods.updateEngagementScore = function() {
 
 // ========== MÉTODOS ESTÁTICOS ==========
 
-videoSchema.statics.getFeaturedVideos = async function(limit = 10) {
+// Obtener imágenes destacadas
+imageSchema.statics.getFeaturedImages = async function(limit = 10) {
   return this.aggregate([
     { $match: { isFeatured: true, pendiente: false, isActive: true } },
     { $sort: { createdAt: -1 } },
@@ -137,7 +116,8 @@ videoSchema.statics.getFeaturedVideos = async function(limit = 10) {
   ]);
 };
 
-videoSchema.statics.getPopularVideos = async function(limit = 10) {
+// Obtener imágenes populares
+imageSchema.statics.getPopularImages = async function(limit = 10) {
   return this.aggregate([
     { $match: { pendiente: false, isActive: true } },
     { $addFields: { likesCount: { $size: '$likes' } } },
@@ -149,7 +129,8 @@ videoSchema.statics.getPopularVideos = async function(limit = 10) {
   ]);
 };
 
-videoSchema.statics.getTrendingVideos = async function(limit = 10, timeRange = 'week') {
+// Obtener imágenes tendencia
+imageSchema.statics.getTrendingImages = async function(limit = 10, timeRange = 'week') {
   let dateFilter = {};
   const now = new Date();
   if (timeRange === 'day') {
@@ -193,10 +174,11 @@ videoSchema.statics.getTrendingVideos = async function(limit = 10, timeRange = '
   ]);
 };
 
-videoSchema.statics.getPendingVideos = async function(page = 1, limit = 10) {
+// Obtener imágenes pendientes (admin)
+imageSchema.statics.getPendingImages = async function(page = 1, limit = 10) {
   const skip = (page - 1) * limit;
   
-  const [videos, total] = await Promise.all([
+  const [images, total] = await Promise.all([
     this.aggregate([
       { $match: { pendiente: true, isActive: true } },
       { $sort: { createdAt: -1 } },
@@ -209,10 +191,11 @@ videoSchema.statics.getPendingVideos = async function(page = 1, limit = 10) {
     this.countDocuments({ pendiente: true, isActive: true })
   ]);
   
-  return { videos, total };
+  return { images, total };
 };
 
-videoSchema.statics.getUserVideos = async function(userId, isOwner = false, page = 1, limit = 12) {
+// Obtener imágenes de un usuario
+imageSchema.statics.getUserImages = async function(userId, isOwner = false, page = 1, limit = 12) {
   const skip = (page - 1) * limit;
   const match = { user: new mongoose.Types.ObjectId(userId) };
   
@@ -221,7 +204,7 @@ videoSchema.statics.getUserVideos = async function(userId, isOwner = false, page
     match.isActive = true;
   }
   
-  const [videos, total] = await Promise.all([
+  const [images, total] = await Promise.all([
     this.aggregate([
       { $match: match },
       { $sort: { createdAt: -1 } },
@@ -234,15 +217,15 @@ videoSchema.statics.getUserVideos = async function(userId, isOwner = false, page
     this.countDocuments(match)
   ]);
   
-  return { videos, total };
+  return { images, total };
 };
 
 // Pre-save hook
-videoSchema.pre('save', function(next) {
+imageSchema.pre('save', function(next) {
   if (this.isModified('views') || this.isModified('likes') || this.isModified('comments') || this.isModified('shares')) {
     this.updateEngagementScore();
   }
   next();
 });
 
-module.exports = mongoose.model('Video', videoSchema);
+module.exports = mongoose.model('Image', imageSchema);

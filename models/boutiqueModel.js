@@ -154,7 +154,7 @@ const boutiqueSchema = new mongoose.Schema({
     default: false,
     index: true
   },
-
+  comments: [{ type: mongoose.Types.ObjectId, ref: 'comment' }],
   // 🔥 CAMPO PARA APROBACIÓN (mismo que Post)
   pendiente: {
     type: Boolean,

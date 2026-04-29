@@ -2,8 +2,8 @@
 
 import React, { useRef, useEffect } from 'react'
 import { X, ChevronDown } from 'lucide-react'
- import Comments from './comments/Comments'
-import InputComment from './comments/InputComment'
+import Comments from '../../components/Comments'
+import InputComment from '../../components/InputComment'
  
 import { useSelector } from 'react-redux'
 import './VideoCommentsSheet.css'

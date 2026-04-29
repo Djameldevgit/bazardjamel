@@ -1,4 +1,4 @@
-// components/Video/CreateVideoWizard.jsx
+// pages/video/CreateVideoWizard.jsx - VERSIÓN SIMPLIFICADA
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
@@ -7,71 +7,18 @@ import {
   ArrowLeft, 
   ArrowRight,
   CloudUpload,
-  Briefcase,
   MusicNote,
   Image as ImageIcon,
   Camera,
-  Link45deg,
-  X
+  X,
+  CheckCircle
 } from 'react-bootstrap-icons';
 import StepIndicator from './StepIndicator';
 import StepMusicSelection from './StepMusicSelection';
-import StepVideoUpload from './StepVideoUpload';
-import StepVideoInfo from './StepVideoInfo';
 import { createVideo } from '../../redux/actions/videoAction';
 import { GLOBALTYPES } from '../../redux/actions/globalTypes';
 import { videoUpload } from '../../utils/imageUpload';
 import './CreateVideoWizard.css';
-import HeaderVideo from '../HeaderVideo';
-
-
-
- 
-// ============================================
-// CATÉGORIES (commerciales y sociales)
-// ============================================
-const commercialCategories = [
-  { name: 'Véhicules', slug: 'videos-vehicules', icon: '🚗', description: 'Voitures, motos, poids lourds' },
-  { name: 'Immobilier', slug: 'videos-immobilier', icon: '🏠', description: 'Appartements, maisons, terrains' },
-  { name: 'Téléphones', slug: 'videos-telephones', icon: '📱', description: 'Smartphones, accessoires' },
-  { name: 'Informatique', slug: 'videos-informatique', icon: '💻', description: 'PC, laptops, composants' },
-  { name: 'Électroménager', slug: 'videos-electromenager', icon: '🔌', description: 'Réfrigérateurs, lave-linge' },
-  { name: 'Art', slug: 'videos-art', icon: '🎨', description: 'Peintures, sculptures, artisanat' },
-  { name: 'Mode & Vêtements', slug: 'videos-mode-vetements', icon: '👕', description: 'Vêtements, chaussures, accessoires' },
-  { name: 'Maison & Jardin', slug: 'videos-maison-jardin', icon: '🏡', description: 'Décoration, mobilier, outils' },
-  { name: 'Sport & Loisirs', slug: 'videos-sport-loisirs', icon: '⚽', description: 'Équipements sportifs' },
-  { name: 'Alimentaires', slug: 'videos-alimentaires', icon: '🍔', description: 'Produits alimentaires' },
-  { name: 'Meubles', slug: 'videos-meubles', icon: '🛋️', description: 'Canapés, tables, chaises' },
-  { name: 'Pièces Détachées', slug: 'videos-pieces-detachees', icon: '🔧', description: 'Pièces auto, électronique' },
-  { name: 'Santé & Beauté', slug: 'videos-sante-beaute', icon: '💄', description: 'Cosmétiques, bien-être' },
-  { name: 'Services', slug: 'videos-services', icon: '🔨', description: 'Services professionnels' },
-  { name: 'Tutoriels', slug: 'videos-tutoriels', icon: '📚', description: 'DIY, formations' },
-  { name: 'Reviews', slug: 'videos-reviews', icon: '⭐', description: 'Tests et avis produits' }
-];
-
-const socialCategories = [
-  { name: 'Tendance', slug: 'tendance', icon: '🔥', description: 'Les vidéos qui buzz' },
-  { name: 'Humour', slug: 'humour', icon: '😂', description: 'Funny, memes, blagues' },
-  { name: 'Musique', slug: 'musique', icon: '🎵', description: 'Chants, covers, instruments' },
-  { name: 'Danse', slug: 'danse', icon: '💃', description: 'Chorégraphies, challenges' },
-  { name: 'Sport', slug: 'sport', icon: '⚽', description: 'Fitness, exploits' },
-  { name: 'Animaux', slug: 'animaux', icon: '🐕', description: 'Pets, animaux mignons' },
-  { name: 'Voyage', slug: 'voyage', icon: '✈️', description: 'Destinations, aventures' },
-  { name: 'Cuisine', slug: 'cuisine', icon: '🍳', description: 'Recettes, food' },
-  { name: 'Beauté', slug: 'beaute', icon: '💄', description: 'Makeup, soins' },
-  { name: 'Mode', slug: 'mode', icon: '👗', description: 'Style, outfits' },
-  { name: 'Gaming', slug: 'gaming', icon: '🎮', description: 'Jeux vidéo, streams' },
-  { name: 'Éducation', slug: 'education', icon: '📖', description: 'Savoir, astuces' },
-  { name: 'Science', slug: 'science', icon: '🔬', description: 'Découvertes, expériences' },
-  { name: 'Nature', slug: 'nature', icon: '🌿', description: 'Paysages, écologie' },
-  { name: 'Art', slug: 'art', icon: '🎨', description: 'Créations, dessins' },
-  { name: 'LifeStyle', slug: 'lifestyle', icon: '✨', description: 'Quotidien, vlogs' }
-];
-
-const getCategoryBySlug = (slug, videoType) => {
-  const categories = videoType === 'commercial' ? commercialCategories : socialCategories;
-  return categories.find(cat => cat.slug === slug);
-};
 
 const CreateVideoWizard = ({ onSuccess, onCancel }) => {
   const dispatch = useDispatch();
@@ -86,20 +33,15 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
   const isMountedRef = useRef(true);
   
   const [wizardData, setWizardData] = useState({
-    videoType: null,
-    videoSource: null,
+    videoSource: null,      // 'gallery' ou 'camera'
     videoFile: null,
-    videoUrl: '',
     videoPreview: null,
     videoDuration: 0,
-    videoId: null,
     selectedMusic: null,
     musicVolume: 70,
     originalAudio: true,
     title: '',
-    description: '',
-    categorySlug: '',
-    tags: []
+    description: ''
   });
   
   const fileInputRef = useRef(null);
@@ -118,24 +60,18 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
     };
   }, [wizardData.videoPreview]);
   
+  // Validaciones simplificadas
   const isStep1Valid = useMemo(() => {
-    if (!wizardData.videoType) return false;
     if (!wizardData.videoSource) return false;
-    if (wizardData.videoSource === 'link' && !wizardData.videoUrl) return false;
-    if ((wizardData.videoSource === 'gallery' || wizardData.videoSource === 'camera') && !wizardData.videoFile) return false;
-    if (wizardData.videoDuration > maxDuration && wizardData.videoSource !== 'link') return false;
+    if (!wizardData.videoFile && !wizardData.videoPreview) return false;
+    if (wizardData.videoDuration > maxDuration) return false;
     return true;
-  }, [wizardData.videoType, wizardData.videoSource, wizardData.videoUrl, wizardData.videoFile, wizardData.videoDuration, maxDuration]);
+  }, [wizardData.videoSource, wizardData.videoFile, wizardData.videoPreview, wizardData.videoDuration, maxDuration]);
   
   const isStep3Valid = useMemo(() => {
     if (!wizardData.title.trim()) return false;
-    if (!wizardData.categorySlug) return false;
     return true;
-  }, [wizardData.title, wizardData.categorySlug]);
-  
-  const handleSelectVideoType = useCallback((type) => {
-    setWizardData(prev => ({ ...prev, videoType: type }));
-  }, []);
+  }, [wizardData.title]);
   
   const handleGallerySelect = useCallback(() => {
     fileInputRef.current?.click();
@@ -143,47 +79,6 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
   
   const handleCameraSelect = useCallback(() => {
     cameraInputRef.current?.click();
-  }, []);
-  
-  const handleLinkSelect = useCallback(() => {
-    const url = prompt('📎 Entrez le lien de la vidéo (YouTube, Vimeo, etc.) :');
-    if (url && url.trim()) {
-      processVideoFromLink(url.trim());
-    }
-  }, []);
-  
-  const processVideoFromLink = useCallback((url) => {
-    const videoId = extractVideoId(url);
-    if (!videoId) {
-      setError('Lien non reconnu. Utilisez YouTube ou Vimeo');
-      return;
-    }
-    
-    const thumbnail = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-    
-    setWizardData(prev => ({
-      ...prev,
-      videoSource: 'link',
-      videoUrl: url,
-      videoPreview: thumbnail,
-      videoDuration: 0,
-      videoFile: null,
-      videoId: videoId
-    }));
-    
-    setError(null);
-  }, []);
-  
-  const extractVideoId = useCallback((url) => {
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
-      const match = url.match(/[?&]v=([^&]+)/);
-      return match ? match[1] : null;
-    }
-    if (url.includes('vimeo.com')) {
-      const match = url.match(/(?:www\.|player\.)?vimeo.com\/(?:video\/|)(\d+)/);
-      return match ? match[1] : null;
-    }
-    return null;
   }, []);
   
   const handleFileChange = useCallback(async (e, isCamera = false) => {
@@ -195,10 +90,10 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
       return;
     }
     
-    // Crear preview inmediato
+    // Preview immédiate
     const previewUrl = URL.createObjectURL(file);
     
-    // Verificar duración
+    // Vérifier la durée
     const video = document.createElement('video');
     video.preload = 'metadata';
     video.onloadedmetadata = () => {
@@ -216,9 +111,7 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
         videoSource: isCamera ? 'camera' : 'gallery',
         videoFile: file,
         videoPreview: previewUrl,
-        videoDuration: duration,
-        videoUrl: '',
-        videoId: null
+        videoDuration: duration
       }));
       
       setError(null);
@@ -239,15 +132,15 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
       videoSource: null,
       videoFile: null,
       videoPreview: null,
-      videoUrl: '',
-      videoId: null,
       videoDuration: 0
     }));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
   }, [wizardData.videoPreview]);
   
   const nextStep = useCallback(() => {
     if (currentStep === 1 && !isStep1Valid) {
-      setError('Veuillez compléter toutes les informations');
+      setError('Veuillez sélectionner une vidéo');
       return;
     }
     if (currentStep === 2) {
@@ -256,7 +149,7 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
       return;
     }
     if (currentStep === 3 && !isStep3Valid) {
-      setError('Veuillez compléter le titre et la catégorie');
+      setError('Veuillez ajouter un titre');
       return;
     }
     setCurrentStep(prev => Math.min(prev + 1, 3));
@@ -278,7 +171,12 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
   
   const handleSubmit = useCallback(async () => {
     if (!isStep3Valid) {
-      setError('Veuillez compléter le titre et la catégorie');
+      setError('Veuillez ajouter un titre');
+      return;
+    }
+    
+    if (!wizardData.videoFile) {
+      setError('Aucune vidéo sélectionnée');
       return;
     }
     
@@ -289,48 +187,26 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
     try {
       let videoUrl, videoId, thumbnail, videoDuration;
       
-      if (wizardData.videoSource === 'gallery' || wizardData.videoSource === 'camera') {
-        if (!wizardData.videoFile) {
-          throw new Error('Aucun fichier vidéo');
-        }
-        
-        const result = await videoUpload(wizardData.videoFile, (progress) => {
-          if (isMountedRef.current) setUploadProgress(progress);
-        });
-        
-        videoUrl = result.url;
-        videoId = result.public_id;
-        thumbnail = result.thumbnail;
-        videoDuration = wizardData.videoDuration;
-        
-      } else if (wizardData.videoSource === 'link') {
-        videoUrl = wizardData.videoUrl;
-        videoId = wizardData.videoId;
-        thumbnail = wizardData.videoPreview;
-        videoDuration = 0;
-      } else {
-        throw new Error('Source vidéo non valide');
-      }
+      // Upload vers Cloudinary
+      const result = await videoUpload(wizardData.videoFile, (progress) => {
+        if (isMountedRef.current) setUploadProgress(progress);
+      });
       
-      const selectedCategory = getCategoryBySlug(wizardData.categorySlug, wizardData.videoType);
+      videoUrl = result.url;
+      videoId = result.public_id;
+      thumbnail = result.thumbnail;
+      videoDuration = wizardData.videoDuration;
       
-      const categorySlug = wizardData.videoType === 'commercial' 
-        ? `commercial-${wizardData.categorySlug}`
-        : `social-${wizardData.categorySlug}`;
-      
+      // Préparer les données pour Redux
       const videoData = {
         title: wizardData.title,
         description: wizardData.description,
         shortDescription: wizardData.description?.substring(0, 300),
         videoUrl,
-        videoType: wizardData.videoSource === 'link' ? 'youtube' : 'local',
+        videoType: 'local',
         videoId,
         thumbnail,
-        category: selectedCategory?.name,
-        categorySlug: categorySlug,
-        tags: [...wizardData.tags, wizardData.videoType === 'commercial' ? 'commercial' : 'social'],
         duration: videoDuration,
-        isCommercial: wizardData.videoType === 'commercial',
         music: wizardData.selectedMusic ? {
           id: wizardData.selectedMusic.id,
           title: wizardData.selectedMusic.title,
@@ -338,9 +214,10 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
         } : null
       };
       
-      const result = await dispatch(createVideo(videoData, auth.token, auth, socket));
+      const resultAction = await dispatch(createVideo(videoData, auth.token, auth, socket));
       
-      if (result?.success && isMountedRef.current) {
+      if (resultAction?.success && isMountedRef.current) {
+        // Nettoyer le preview
         if (wizardData.videoPreview?.startsWith('blob:')) {
           URL.revokeObjectURL(wizardData.videoPreview);
         }
@@ -351,18 +228,18 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
         });
         
         if (onSuccess) {
-          onSuccess(result.video);
+          onSuccess(resultAction.video);
         } else {
           setTimeout(() => {
-            history.push(`/video/${result.video._id}`);
+            history.push(`/video/${resultAction.video._id}`);
           }, 1500);
         }
       } else {
-        setError(result?.error || 'Erreur lors de la publication');
+        setError(resultAction?.error || 'Erreur lors de la publication');
       }
     } catch (err) {
       console.error('❌ Erreur:', err);
-      setError(err.message || 'Erreur lors de l\'upload');
+      setError(err.message || "Erreur lors de l'upload");
     } finally {
       if (isMountedRef.current) {
         setLoading(false);
@@ -371,149 +248,297 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
     }
   }, [wizardData, isStep3Valid, dispatch, auth, socket, onSuccess, history]);
   
-  // Render del paso 1 con preview funcionando
-  const renderUnifiedStep1 = () => (
-    <div className="unified-step-1">
-      {/* PRIMERA FILA: Tipo de video */}
-      <div className="video-type-row">
-        <div 
-          className={`video-type-option ${wizardData.videoType === 'social' ? 'active' : ''}`}
-          onClick={() => handleSelectVideoType('social')}
-        >
-          <div className="video-type-icon social-icon">
-            <MusicNote size={28} />
+  // RENDER STEP 1 - Deux icônes + preview plein écran
+  const renderStep1 = () => (
+    <div className="step1-container" style={{ 
+      padding: '0 8px',
+      minHeight: '70vh',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      {/* Deux icônes sur la même ligne */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: '40px',
+        marginBottom: '30px',
+        padding: '10px 0'
+      }}>
+        {/* Icône Galerie */}
+        <div style={{ textAlign: 'center' }}>
+          <button
+            type="button"
+            onClick={handleGallerySelect}
+            style={{
+              background: 'linear-gradient(135deg, #667eea, #764ba2)',
+              border: 'none',
+              borderRadius: '60px',
+              width: '70px',
+              height: '70px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.05)';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.3)';
+            }}
+          >
+            <ImageIcon size={36} color="white" />
+          </button>
+          <div style={{ fontSize: '12px', marginTop: '8px', color: '#fff', fontWeight: 500 }}>
+            Galerie
           </div>
-          <div className="video-type-text">
-            <h5>Social</h5>
-            <span>Style TikTok/Reels</span>
-          </div>
-          {wizardData.videoType === 'social' && <div className="active-check">✓</div>}
         </div>
         
-        <div 
-          className={`video-type-option ${wizardData.videoType === 'commercial' ? 'active' : ''}`}
-          onClick={() => handleSelectVideoType('commercial')}
-        >
-          <div className="video-type-icon commercial-icon">
-            <Briefcase size={28} />
+        {/* Icône Caméra */}
+        <div style={{ textAlign: 'center' }}>
+          <button
+            type="button"
+            onClick={handleCameraSelect}
+            style={{
+              background: 'linear-gradient(135deg, #f093fb, #f5576c)',
+              border: 'none',
+              borderRadius: '60px',
+              width: '70px',
+              height: '70px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              boxShadow: '0 4px 15px rgba(240, 147, 251, 0.3)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.05)';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(240, 147, 251, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 4px 15px rgba(240, 147, 251, 0.3)';
+            }}
+          >
+            <Camera size={36} color="white" />
+          </button>
+          <div style={{ fontSize: '12px', marginTop: '8px', color: '#fff', fontWeight: 500 }}>
+            Caméra
           </div>
-          <div className="video-type-text">
-            <h5>Commercial</h5>
-            <span>Marketplace</span>
-          </div>
-          {wizardData.videoType === 'commercial' && <div className="active-check">✓</div>}
         </div>
       </div>
       
-      {/* SEGUNDA FILA: Fuentes de video */}
-      <div className="video-source-row">
-        <div 
-          className={`video-source-option ${wizardData.videoSource === 'gallery' ? 'active' : ''}`}
-          onClick={handleGallerySelect}
-        >
-          <ImageIcon size={24} />
-          <span>Galería</span>
-        </div>
-        
-        <div 
-          className={`video-source-option ${wizardData.videoSource === 'camera' ? 'active' : ''}`}
-          onClick={handleCameraSelect}
-        >
-          <Camera size={24} />
-          <span>Cámara</span>
-        </div>
-        
-        <div 
-          className={`video-source-option ${wizardData.videoSource === 'link' ? 'active' : ''}`}
-          onClick={handleLinkSelect}
-        >
-          <Link45deg size={24} />
-          <span>Link</span>
-        </div>
-      </div>
-      
-      {/* Inputs ocultos */}
+      {/* Inputs cachés */}
       <input
         type="file"
         ref={fileInputRef}
-        accept="video/*"
+        accept="video/mp4,video/quicktime,video/webm"
         style={{ display: 'none' }}
         onChange={(e) => handleFileChange(e, false)}
       />
       <input
         type="file"
         ref={cameraInputRef}
-        accept="video/*"
+        accept="video/mp4,video/quicktime,video/webm"
         capture="environment"
         style={{ display: 'none' }}
         onChange={(e) => handleFileChange(e, true)}
       />
       
-      {/* VISTA PREVIA DEL VIDEO - AHORA FUNCIONAL */}
+      {/* PREVIEW VIDÉO - occupe tout l'espace restant */}
       {wizardData.videoPreview && (
-        <div className="video-preview-container">
-          <div className="video-preview-header">
-            <Badge bg={wizardData.videoSource === 'link' ? 'info' : 'success'}>
-              {wizardData.videoSource === 'gallery' && '📱 Galerie'}
-              {wizardData.videoSource === 'camera' && '📷 Caméra'}
-              {wizardData.videoSource === 'link' && '🔗 Lien externe'}
-            </Badge>
-            {wizardData.videoDuration > 0 && (
-              <Badge bg="secondary">
-                ⏱️ {Math.floor(wizardData.videoDuration)}s
-              </Badge>
-            )}
-          </div>
+        <div className="video-preview-full" style={{ 
+          flex: 1,
+          marginTop: '20px',
+          position: 'relative',
+          borderRadius: '16px',
+          overflow: 'hidden',
+          background: '#000',
+          minHeight: '400px'
+        }}>
+          <video
+            src={wizardData.videoPreview}
+            controls
+            style={{
+              width: '100%',
+              height: 'auto',
+              maxHeight: '60vh',
+              objectFit: 'contain',
+              background: '#000'
+            }}
+            autoPlay={false}
+            controlsList="nodownload"
+          />
           
-          {wizardData.videoSource === 'link' ? (
-            <div className="youtube-preview">
-              <img 
-                src={wizardData.videoPreview} 
-                alt="Video preview"
-                onError={(e) => {
-                  e.target.src = 'https://via.placeholder.com/300x200?text=Preview+non+disponible';
-                }}
-              />
-              <div className="link-info">
-                <small>{wizardData.videoUrl}</small>
-              </div>
-            </div>
-          ) : (
-            <video
-              src={wizardData.videoPreview}
-              controls
-              className="video-preview-element"
-              autoPlay={false}
-              controlsList="nodownload"
-            />
+          {/* Badge durée */}
+          {wizardData.videoDuration > 0 && (
+            <Badge 
+              bg="dark" 
+              style={{
+                position: 'absolute',
+                bottom: '10px',
+                right: '10px',
+                opacity: 0.8,
+                fontSize: '12px',
+                padding: '4px 8px'
+              }}
+            >
+              ⏱️ {Math.floor(wizardData.videoDuration)}s
+            </Badge>
           )}
           
+          {/* Bouton changer */}
           <Button 
-            variant="outline-danger" 
+            variant="danger" 
             size="sm" 
-            className="mt-2"
+            style={{
+              position: 'absolute',
+              top: '10px',
+              right: '10px',
+              borderRadius: '30px',
+              opacity: 0.9
+            }}
             onClick={clearVideo}
           >
-            <X size={16} className="me-1" />
-            Changer de vidéo
+            <X size={14} className="me-1" />
+            Changer
           </Button>
+        </div>
+      )}
+      
+      {/* Message si pas de vidéo */}
+      {!wizardData.videoPreview && (
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: '16px',
+          marginTop: '20px',
+          minHeight: '300px',
+          color: '#fff',
+          textAlign: 'center'
+        }}>
+          <div>
+            <Camera size={48} style={{ opacity: 0.5, marginBottom: '10px' }} />
+            <p>Sélectionnez une vidéo depuis<br />votre galerie ou votre caméra</p>
+            <small style={{ opacity: 0.6 }}>Max {maxDuration} secondes</small>
+          </div>
         </div>
       )}
     </div>
   );
   
-  const categories = wizardData.videoType === 'commercial' ? commercialCategories : socialCategories;
-  const stepLabels = ['Contenu', 'Musique', 'Infos'];
+  // RENDER STEP 3 - Titre et description seulement
+  const renderStep3 = () => (
+    <div className="step3-container" style={{ padding: '20px' }}>
+      <h5 className="mb-4" style={{ color: 'white', fontWeight: 'bold' }}>
+        📝 Détails de la vidéo
+      </h5>
+      
+      <div className="mb-4">
+        <label className="form-label" style={{ color: 'white', fontWeight: 500 }}>
+          Titre *
+        </label>
+        <input
+          type="text"
+          className="form-control form-control-lg"
+          placeholder="Donnez un titre à votre vidéo..."
+          value={wizardData.title}
+          onChange={(e) => updateWizardData({ title: e.target.value })}
+          maxLength="100"
+          style={{ 
+            borderRadius: '12px',
+            border: 'none',
+            background: 'rgba(255,255,255,0.1)',
+            color: 'white'
+          }}
+          autoFocus
+        />
+        <small className="text-muted mt-1 d-block">
+          {wizardData.title.length}/100 caractères
+        </small>
+      </div>
+      
+      <div className="mb-4">
+        <label className="form-label" style={{ color: 'white', fontWeight: 500 }}>
+          Description
+        </label>
+        <textarea
+          className="form-control"
+          rows="4"
+          placeholder="Décrivez votre vidéo..."
+          value={wizardData.description}
+          onChange={(e) => updateWizardData({ description: e.target.value })}
+          maxLength="500"
+          style={{ 
+            borderRadius: '12px',
+            border: 'none',
+            background: 'rgba(255,255,255,0.1)',
+            color: 'white',
+            resize: 'none'
+          }}
+        />
+        <small className="text-muted mt-1 d-block">
+          {wizardData.description.length}/500 caractères
+        </small>
+      </div>
+      
+      {/* Mini aperçu de la vidéo */}
+      {wizardData.videoPreview && (
+        <div className="mt-4 p-3" style={{
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: '12px'
+        }}>
+          <label className="form-label" style={{ color: 'white', fontWeight: 500 }}>
+            Aperçu
+          </label>
+          <video
+            src={wizardData.videoPreview}
+            controls
+            style={{
+              width: '100%',
+              maxHeight: '200px',
+              borderRadius: '8px'
+            }}
+          />
+          {wizardData.videoDuration > 0 && (
+            <div className="mt-2 text-muted small">
+              Durée: {Math.floor(wizardData.videoDuration / 60)}:
+              {Math.floor(wizardData.videoDuration % 60).toString().padStart(2, '0')}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+  
+  const stepLabels = ['Vidéo', 'Musique', 'Infos'];
   
   return (
-    <div className="create-video-wizard">
-      <Card className="border-0 shadow-lg" style={{ background: 'linear-gradient(135deg, #1a1a2e, #16213e)' }}>
+    <div className="create-video-wizard" style={{ 
+      minHeight: '100vh', 
+      background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+      padding: '16px'
+    }}>
+      <Card className="border-0 shadow-lg" style={{ 
+        background: 'rgba(255,255,255,0.05)',
+        backdropFilter: 'blur(10px)',
+        borderRadius: '24px'
+      }}>
         <Card.Body className="p-4">
+          {/* Header avec titre et progression */}
           <div className="cw-header">
             <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-              <h3 className="cw-header-title">
-                {!wizardData.videoType ? '🎬 Nouvelle vidéo' : 
-                  wizardData.videoType === 'commercial' ? '🛍️ Vidéo Commerciale' : '🎵 Vidéo Sociale'}
+              <h3 className="cw-header-title" style={{ color: 'white', fontWeight: 'bold' }}>
+                🎬 Nouvelle vidéo
               </h3>
               {!isProActive ? (
                 <Badge bg="warning" text="dark" className="p-2">
@@ -528,50 +553,46 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
             <StepIndicator currentStep={currentStep} totalSteps={3} labels={stepLabels} />
           </div>
           
+          {/* Messages d'erreur */}
           {error && (
-            <Alert variant="danger" className="cw-alert mt-3" onClose={() => setError(null)} dismissible>
+            <Alert 
+              variant="danger" 
+              className="mt-3" 
+              onClose={() => setError(null)} 
+              dismissible
+              style={{ borderRadius: '12px' }}
+            >
               {error}
             </Alert>
           )}
           
+          {/* Contenu des steps */}
           <div className="cw-step-content mt-4">
-            
-            {/* ✅ CORREGIDO: usa wizardData.videoType y handleSelectVideoType */}
-            {currentStep === 1 && (
-              <StepVideoUpload 
-                wizardData={wizardData}
-                updateData={updateWizardData}
-                maxDuration={maxDuration}
-                isProActive={isProActive}
-                videoType={wizardData.videoType}
-                onVideoTypeChange={handleSelectVideoType}
-              />
-            )}
+            {currentStep === 1 && renderStep1()}
             
             {currentStep === 2 && (
               <StepMusicSelection 
                 wizardData={wizardData}
                 updateData={updateWizardData}
-                videoType={wizardData.videoType}
+                videoType="video"
               />
             )}
             
-            {currentStep === 3 && (
-              <StepVideoInfo 
-                wizardData={wizardData}
-                updateData={updateWizardData}
-                videoCategories={categories}
-                videoType={wizardData.videoType}
-              />
-            )}
+            {currentStep === 3 && renderStep3()}
           </div>
           
+          {/* Boutons de navigation */}
           <div className="cw-footer mt-4 d-flex justify-content-between">
             <Button
               variant="outline-secondary"
               onClick={prevStep}
               disabled={loading || currentStep === 1}
-              style={{ borderRadius: '40px', padding: '10px 24px' }}
+              style={{ 
+                borderRadius: '40px', 
+                padding: '10px 24px',
+                borderColor: 'rgba(255,255,255,0.2)',
+                color: 'white'
+              }}
             >
               <ArrowLeft className="me-2" />
               Retour
@@ -582,7 +603,13 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
                 variant="primary"
                 onClick={nextStep}
                 disabled={loading || (currentStep === 1 && !isStep1Valid)}
-                style={{ borderRadius: '40px', padding: '10px 24px', background: 'linear-gradient(135deg, #667eea, #764ba2)', border: 'none' }}
+                style={{ 
+                  borderRadius: '40px', 
+                  padding: '10px 24px', 
+                  background: 'linear-gradient(135deg, #667eea, #764ba2)', 
+                  border: 'none',
+                  fontWeight: 'bold'
+                }}
               >
                 Suivant
                 <ArrowRight className="ms-2" />
@@ -592,7 +619,13 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
                 variant="success"
                 onClick={handleSubmit}
                 disabled={loading || !isStep3Valid}
-                style={{ borderRadius: '40px', padding: '10px 24px', background: 'linear-gradient(135deg, #28a745, #20c997)', border: 'none' }}
+                style={{ 
+                  borderRadius: '40px', 
+                  padding: '10px 24px', 
+                  background: 'linear-gradient(135deg, #28a745, #20c997)', 
+                  border: 'none',
+                  fontWeight: 'bold'
+                }}
               >
                 {loading ? (
                   <>
@@ -609,21 +642,19 @@ const CreateVideoWizard = ({ onSuccess, onCancel }) => {
             )}
           </div>
           
+          {/* Barre de progression upload */}
           {loading && uploadProgress > 0 && (
             <ProgressBar 
               now={uploadProgress} 
               label={`${uploadProgress}%`} 
               striped 
               animated 
-              className="cw-progress mt-3"
+              className="mt-3"
+              style={{ borderRadius: '20px', height: '8px' }}
             />
           )}
-
-           <HeaderVideo/>
-        </Card.Body> 
-        
+        </Card.Body>
       </Card>
-    
     </div>
   );
 };

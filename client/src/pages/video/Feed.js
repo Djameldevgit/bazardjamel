@@ -74,7 +74,7 @@ const Feed = ({
   const isPending = video?.pendiente === true;
 
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth > 1024);
-
+ const [refreshComments, setRefreshComments] = useState(0);
   useEffect(() => {
     const handleResize = () => setIsLargeScreen(window.innerWidth > 1024);
     window.addEventListener('resize', handleResize);
@@ -186,9 +186,29 @@ const Feed = ({
     
     setSaving(false);
   };
+ 
 
+  // Función para refrescar comentarios después de crear/eliminar
+  const handleRefreshComments = () => {
+      setRefreshComments(prev => prev + 1);
+  };
+  {showComments && (
+    <div className="vr-comments-drawer">
+        {/* ... resto del drawer ... */}
+        <div className="vr-comments-content">
+            <VideoComments
+                key={refreshComments}  // 👈 Forzar re-render
+                videoId={video._id}
+                comments={video.comments || []}
+                totalComments={commentsCount}
+                videoData={video}
+                onRefresh={handleRefreshComments}  // 👈 Pasar función
+            />
+        </div>
+    </div>
+)}
   // ✅ VERIFICAR ESTADO DEL VIDEO GUARDADO DESDE PROFILE
-  useEffect(() => {
+/* useEffect(() => {
     const checkIfSaved = async () => {
       if (auth.token && video._id && !isPending) {
         // Verificar primero en el estado profile.savedStatus
@@ -204,7 +224,7 @@ const Feed = ({
     };
     
     checkIfSaved();
-  }, [video._id, auth.token, dispatch, profile?.savedStatus, isPending]);
+  }, [video._id, auth.token, dispatch, profile?.savedStatus, isPending]);*/
 
   const createHeartEffect = () => {
     const h = document.createElement('div');

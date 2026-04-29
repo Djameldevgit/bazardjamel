@@ -123,7 +123,7 @@ const postSchema = new mongoose.Schema(
       unique: true,
       index: true
     },
-
+    comments: [{ type: mongoose.Types.ObjectId, ref: 'comment' }],
     pendiente: {
       type: Boolean,
       default: true,

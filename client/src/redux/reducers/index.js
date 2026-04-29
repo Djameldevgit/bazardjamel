@@ -38,6 +38,7 @@ import carousel from './carouselReducer'
 import video  from './videoReducer'
 import videoApprove from './videoApproveReducer';
 import userVideo from './userVideoReducer'; // ✅ NUEVO
+import image from './imageReducer'
 
 export default combineReducers({
     auth,
@@ -75,5 +76,5 @@ export default combineReducers({
     category,
     accordionReducer,
     filter,
-    carousel,video ,videoApprove,userVideo 
+    carousel,video ,videoApprove,userVideo ,image
 })

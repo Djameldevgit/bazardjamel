@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react'
 import { useSelector } from 'react-redux'
-import Comments from '../comments/Comments'  // 👈 Importa el nuevo componente
-import InputComment from '../comments/InputComment'
+import Comments from '../../components/Comments'
+import InputComment from '../../components/InputComment'
+ 
 import VideoCommentsSheet from './VideoCommentsSheet'
-
+ 
 const VideoPlayer = ({ video }) => {
     const { auth } = useSelector(state => state)
     const [showComments, setShowComments] = useState(false)

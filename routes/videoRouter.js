@@ -23,8 +23,7 @@ router.get('/videos/private/:id', auth, videoCtrl.getVideoByIdPrivate);
 
 // ✅ RUTAS CON :id (VAN DESPUÉS DE LAS ESPECÍFICAS)
 router.get('/videos/:id/related', videoCtrl.getRelatedVideos);
-router.get('/videos/:id/comments', videoCtrl.getVideoComments);
-
+ 
 // ⚠️ ESTA RUTA CAPTURA CUALQUIER /videos/:id - DEBE IR AL FINAL
 router.get('/videos/:id', videoCtrl.getVideoById);
 
@@ -41,17 +40,7 @@ router.post('/videos/:id/watch-time', auth, videoCtrl.trackWatchTime);
 // ============================================
 // RUTAS DE COMENTARIOS
 // ============================================
-router.post('/videos/:id/comments', auth, videoCtrl.addComment);
-router.patch('/videos/:id/comments/:commentId/like', auth, videoCtrl.likeComment);
-router.post('/videos/:id/comments/:commentId/reply', auth, videoCtrl.addCommentReply);
  
-router.patch('/videos/:id/comments/:commentId/replies/:replyId', auth, videoCtrl.editReply);
-router.delete('/videos/:id/comments/:commentId/replies/:replyId', auth, videoCtrl.deleteReplyCtrl);
-// ============================================
-// RUTAS DE USUARIO
-router.patch('/videos/:id/comments/:commentId', auth, videoCtrl.editComment);      // Editar comentario
-router.delete('/videos/:id/comments/:commentId', auth, videoCtrl.deleteCommentCtrl); // Eliminar co
-
 // ============================================
 router.get('/videos/user/stats', auth, videoCtrl.getUserVideoStats);
 router.get('/users/:userId/videos', auth, videoCtrl.getUserVideos);

@@ -1,4 +1,4 @@
-// redux/reducers/videoReducer.js
+// redux/reducers/videoReducer.js - LIMPIO (sin comentarios)
 
 import { VIDEO_TYPES } from '../actions/videoAction';
 
@@ -18,23 +18,16 @@ const initialState = {
   musicLibrary: [],
   musicLoading: false,
   musicError: null,
-
   videosByCategory: {},
   loadingByCategory: {},
   
-  // Estado para comentarios
-  comments: [],
-  commentsTotal: 0,
-  commentsPage: 1,
-  hasMoreComments: true,
-  commentsLoading: false,
-
-  // Trending videos
+  // ✅ Trending videos
   trendingVideos: [],
   trendingLoading: false,
   trendingHasMore: true,
   trendingPage: 1,
   trendingTimeWindow: 'week'
+  // ❌ ELIMINADO: comments, commentsTotal, etc.
 };
 
 const videoReducer = (state = initialState, action) => {
@@ -43,7 +36,6 @@ const videoReducer = (state = initialState, action) => {
       return { ...state, loading: action.payload };
 
     case VIDEO_TYPES.LOADING_BY_CATEGORY:
-      console.log('📦 LOADING_BY_CATEGORY:', action.payload);
       return {
         ...state,
         loadingByCategory: {
@@ -62,7 +54,6 @@ const videoReducer = (state = initialState, action) => {
       return { ...state, relatedVideos: action.payload };
 
     case VIDEO_TYPES.GET_VIDEOS:
-      console.log('📦 GET_VIDEOS - page:', action.payload.page, 'videos:', action.payload.videos?.length);
       return {
         ...state,
         videos: action.payload.page === 1 ? action.payload.videos : [...state.videos, ...action.payload.videos],
@@ -78,7 +69,6 @@ const videoReducer = (state = initialState, action) => {
       return { ...state, currentVideo: action.payload, loading: false };
 
     case VIDEO_TYPES.GET_VIDEOS_BY_CATEGORY:
-      console.log('📦 GET_VIDEOS_BY_CATEGORY:', action.payload.categorySlug);
       return {
         ...state,
         videosByCategory: {
@@ -123,16 +113,6 @@ const videoReducer = (state = initialState, action) => {
             ? { ...v, likes: action.payload.likes, liked: action.payload.liked }
             : v
         ),
-        featuredVideos: state.featuredVideos.map(v =>
-          v._id === action.payload.id
-            ? { ...v, likes: action.payload.likes, liked: action.payload.liked }
-            : v
-        ),
-        popularVideos: state.popularVideos.map(v =>
-          v._id === action.payload.id
-            ? { ...v, likes: action.payload.likes, liked: action.payload.liked }
-            : v
-        ),
         currentVideo: state.currentVideo?._id === action.payload.id
           ? { ...state.currentVideo, likes: action.payload.likes, liked: action.payload.liked }
           : state.currentVideo
@@ -152,159 +132,7 @@ const videoReducer = (state = initialState, action) => {
       };
 
     // ============================================
-    // ACCIONES DE COMENTARIOS
-    // ============================================
-
-    case VIDEO_TYPES.COMMENTS_LOADING:
-      return { ...state, commentsLoading: action.payload };
-
-    case VIDEO_TYPES.GET_COMMENTS:
-      return {
-        ...state,
-        comments: action.payload.page === 1
-          ? action.payload.comments
-          : [...state.comments, ...action.payload.comments],
-        commentsTotal: action.payload.total,
-        commentsPage: action.payload.page,
-        hasMoreComments: action.payload.hasMore,
-        commentsLoading: false
-      };
-
-    case VIDEO_TYPES.ADD_COMMENT:
-      return {
-        ...state,
-        comments: [action.payload, ...state.comments],
-        commentsTotal: state.commentsTotal + 1,
-        currentVideo: state.currentVideo
-          ? {
-              ...state.currentVideo,
-              comments: [action.payload, ...(state.currentVideo.comments || [])]
-            }
-          : state.currentVideo
-      };
-
-    case VIDEO_TYPES.DELETE_COMMENT:
-      return {
-        ...state,
-        comments: state.comments.filter(c => c._id !== action.payload.commentId),
-        commentsTotal: state.commentsTotal - 1,
-        currentVideo: state.currentVideo
-          ? {
-              ...state.currentVideo,
-              comments: (state.currentVideo.comments || []).filter(c => c._id !== action.payload.commentId)
-            }
-          : state.currentVideo
-      };
-
-    case VIDEO_TYPES.LIKE_COMMENT:
-      return {
-        ...state,
-        comments: state.comments.map(comment =>
-          comment._id === action.payload.commentId
-            ? { ...comment, likes: action.payload.likes, liked: action.payload.liked }
-            : comment
-        ),
-        currentVideo: state.currentVideo
-          ? {
-              ...state.currentVideo,
-              comments: (state.currentVideo.comments || []).map(comment =>
-                comment._id === action.payload.commentId
-                  ? { ...comment, likes: action.payload.likes, liked: action.payload.liked }
-                  : comment
-              )
-            }
-          : state.currentVideo
-      };
-
-    case VIDEO_TYPES.ADD_COMMENT_REPLY:
-      return {
-        ...state,
-        comments: state.comments.map(comment =>
-          comment._id === action.payload.commentId
-            ? {
-                ...comment,
-                replies: [...(comment.replies || []), action.payload.reply]
-              }
-            : comment
-        ),
-        currentVideo: state.currentVideo
-          ? {
-              ...state.currentVideo,
-              comments: (state.currentVideo.comments || []).map(comment =>
-                comment._id === action.payload.commentId
-                  ? {
-                      ...comment,
-                      replies: [...(comment.replies || []), action.payload.reply]
-                    }
-                  : comment
-              )
-            }
-          : state.currentVideo
-      };
-
-    case VIDEO_TYPES.EDIT_COMMENT:
-      return {
-        ...state,
-        comments: state.comments.map(comment =>
-          comment._id === action.payload.commentId
-            ? { ...comment, text: action.payload.text, edited: true, editedAt: new Date() }
-            : comment
-        ),
-        currentVideo: state.currentVideo
-          ? {
-              ...state.currentVideo,
-              comments: (state.currentVideo.comments || []).map(comment =>
-                comment._id === action.payload.commentId
-                  ? { ...comment, text: action.payload.text, edited: true, editedAt: new Date() }
-                  : comment
-              )
-            }
-          : state.currentVideo
-      };
-
-    case VIDEO_TYPES.EDIT_REPLY:
-      return {
-        ...state,
-        comments: state.comments.map(comment =>
-          comment._id === action.payload.commentId
-            ? {
-                ...comment,
-                replies: (comment.replies || []).map(reply =>
-                  reply._id === action.payload.replyId
-                    ? { ...reply, text: action.payload.text, edited: true, editedAt: new Date() }
-                    : reply
-                )
-              }
-            : comment
-        )
-      };
-
-    case VIDEO_TYPES.DELETE_REPLY:
-      return {
-        ...state,
-        comments: state.comments.map(comment =>
-          comment._id === action.payload.commentId
-            ? {
-                ...comment,
-                replies: (comment.replies || []).filter(r => r._id !== action.payload.replyId)
-              }
-            : comment
-        ),
-        commentsTotal: state.commentsTotal - 1
-      };
-
-    case VIDEO_TYPES.CLEAR_COMMENTS:
-      return {
-        ...state,
-        comments: [],
-        commentsTotal: 0,
-        commentsPage: 1,
-        hasMoreComments: true,
-        commentsLoading: false
-      };
-
-    // ============================================
-    // ACCIONES DE MÚSICA
+    // MÚSICA
     // ============================================
     case VIDEO_TYPES.MUSIC_LOADING:
       return { ...state, musicLoading: action.payload };
@@ -327,13 +155,10 @@ const videoReducer = (state = initialState, action) => {
       };
 
     // ============================================
-    // TRENDING VIDEOS (CORREGIDO - sin duplicados)
+    // TRENDING VIDEOS
     // ============================================
     case VIDEO_TYPES.TRENDING_LOADING:
-      return {
-        ...state,
-        trendingLoading: true
-      };
+      return { ...state, trendingLoading: true };
 
     case VIDEO_TYPES.GET_TRENDING_VIDEOS:
       return {
@@ -352,6 +177,8 @@ const videoReducer = (state = initialState, action) => {
         trendingHasMore: action.payload.hasMore,
         trendingPage: action.payload.page
       };
+
+    // ❌ ELIMINAR TODOS LOS CASOS DE COMENTARIOS
 
     default:
       return state;

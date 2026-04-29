@@ -1,7 +1,6 @@
-// utils/imageUpload2.js
-export const imageUpload2 = async (image) => {
+ 
+export const imageUploadRedSocial  = async (image) => {
   console.log('🟡 INICIANDO imageUpload2 - Subiendo una sola imagen...');
-  console.log('📸 Imagen recibida:', image);
 
   if (!image || !image.url) {
     throw new Error('No se proporcionó una imagen válida para subir');
@@ -28,6 +27,7 @@ export const imageUpload2 = async (image) => {
       formData.append('file', file);
       formData.append('upload_preset', 'vetementsdjamel');
       formData.append('cloud_name', 'dfjipgj2o');
+ 
 
       const res = await fetch('https://api.cloudinary.com/v1_1/dfjipgj2o/image/upload', {
         method: 'POST',

@@ -1,4 +1,4 @@
-// pages/video/HeaderVideo.jsx - Versión mejorada estilo TikTok
+// pages/video/HeaderVideo.jsx - Versión con menú Video/Image
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
@@ -8,7 +8,8 @@ import {
   Chat, 
   Person,
   Compass,
-  Heart
+  Camera,
+  Image
 } from 'react-bootstrap-icons';
 import './HeaderVideo.css';
 
@@ -21,16 +22,13 @@ const HeaderVideo = () => {
   
   const currentUserId = auth.user?._id;
   
-  // Simular mensajes no leídos (ajusta según tu lógica)
   useEffect(() => {
-    // Aquí puedes conectar con tu socket o API para obtener mensajes no leídos
     const fetchUnreadCount = async () => {
-      // Ejemplo: setUnreadMessages(count);
+      // Tu lógica de mensajes no leídos
     };
     fetchUnreadCount();
   }, []);
   
-  // Verificar si la ruta está activa
   const isActive = (path) => {
     if (path === '/videos') {
       return location.pathname.startsWith('/videos');
@@ -41,35 +39,34 @@ const HeaderVideo = () => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
   
-  // Navegar a home (feed general)
   const goToHome = () => {
     history.push('/videos/1');
   };
   
-  // Navegar a trending/explore
   const goToExplore = () => {
     history.push('/videos/trending');
   };
   
-  // Navegar a crear video
   const goToCreateVideo = () => {
     setShowCreateMenu(false);
     history.push('/create-video-page');
   };
   
-  // Navegar a mensajes
+  const goToCreateImage = () => {
+    setShowCreateMenu(false);
+    history.push('/create-image-page');
+  };
+  
   const goToMessages = () => {
     history.push('/message');
   };
   
-  // Navegar a perfil del usuario
   const goToProfile = () => {
     if (currentUserId) {
       history.push(`/video/userVideo/${currentUserId}`);
     }
   };
   
-  // Cerrar menú al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = () => setShowCreateMenu(false);
     document.addEventListener('click', handleClickOutside);
@@ -80,7 +77,6 @@ const HeaderVideo = () => {
     <div className="header-video-container">
       <div className="header-video-content">
         
-        {/* Home / Accueil */}
         <button 
           className={`header-video-item ${isActive('/videos') ? 'active' : ''}`}
           onClick={goToHome}
@@ -93,7 +89,6 @@ const HeaderVideo = () => {
           <span className="header-video-label">Accueil</span>
         </button>
         
-        {/* Explore / Découvrir (nuevo) */}
         <button 
           className={`header-video-item ${isActive('/videos/trending') ? 'active' : ''}`}
           onClick={goToExplore}
@@ -105,10 +100,10 @@ const HeaderVideo = () => {
           <span className="header-video-label">Discover</span>
         </button>
         
-        {/* Plus / Créer vidéo con menú */}
+        {/* Menu Plus avec Video et Image */}
         <div className="header-video-create-wrapper">
           <button 
-            className={`header-video-item create-btn ${isActive('/create-video-page') ? 'active' : ''}`}
+            className={`header-video-item create-btn`}
             onClick={(e) => {
               e.stopPropagation();
               setShowCreateMenu(!showCreateMenu);
@@ -121,23 +116,21 @@ const HeaderVideo = () => {
             <span className="header-video-label">Créer</span>
           </button>
           
-          {/* Menú desplegable para crear */}
           {showCreateMenu && (
             <div className="create-menu" onClick={(e) => e.stopPropagation()}>
               <div className="create-menu-item" onClick={goToCreateVideo}>
-                <PlusCircle size={20} />
+                <Camera size={20} />
                 <span>Nouvelle vidéo</span>
               </div>
               <div className="create-menu-divider" />
-              <div className="create-menu-item" onClick={() => history.push('/upload')}>
-                <House size={20} />
-                <span>Upload depuis galerie</span>
+              <div className="create-menu-item" onClick={goToCreateImage}>
+                <Image size={20} />
+                <span>Nouvelle image</span>
               </div>
             </div>
           )}
         </div>
         
-        {/* Messages con badge de notificaciones */}
         <button 
           className={`header-video-item ${isActive('/message') ? 'active' : ''}`}
           onClick={goToMessages}
@@ -152,7 +145,6 @@ const HeaderVideo = () => {
           <span className="header-video-label">Messages</span>
         </button>
         
-        {/* Profile con avatar mejorado */}
         <button 
           className={`header-video-item ${isActive('/profile') ? 'active' : ''}`}
           onClick={goToProfile}
