@@ -7,6 +7,7 @@ const mongoose = require('mongoose')
 const cors = require('cors')
 const cookieParser = require('cookie-parser')
 const morgan = require('morgan');
+const axios = require('axios');
 const path = require('path')
 
 // --- Cloudinary ---
@@ -49,7 +50,70 @@ console.log('☁️ Cloudinary configurado correctamente');
 // ============================================
 // 5️⃣ RUTAS API (organizadas por categoría)
 // ============================================
+// server.js (o app.js)
 
+// Proxy para audio de Jamendo (para que Cloudinary pueda acceder)
+app.get('/api/music/proxy', async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).json({ error: 'Missing audio url' });
+  
+  console.log(`🎵 Proxy solicitando: ${url.substring(0, 150)}...`);
+  
+  try {
+      const response = await axios({
+          method: 'GET',
+          url: url,
+          responseType: 'stream',
+          timeout: 60000, // ✅ 60 segundos timeout
+          headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Accept': 'audio/mpeg,audio/*;q=0.9,*/*;q=0.8',
+              'Accept-Encoding': 'identity', // ✅ Evitar compresión
+              'Connection': 'keep-alive'
+          },
+          maxRedirects: 5,
+          validateStatus: (status) => status === 200
+      });
+      
+      // ✅ Verificar headers
+      const contentType = response.headers['content-type'];
+      console.log(`🎵 Content-Type: ${contentType}`);
+      
+      if (!contentType || !contentType.includes('audio')) {
+          console.warn(`⚠️ Content-Type inesperado: ${contentType}`);
+      }
+      
+      res.setHeader('Content-Type', contentType || 'audio/mpeg');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      
+      // ✅ Manejar errores del stream
+      response.data.on('error', (streamError) => {
+          console.error('❌ Error en stream:', streamError.message);
+          if (!res.headersSent) {
+              res.status(500).json({ error: 'Stream error' });
+          }
+      });
+      
+      response.data.pipe(res);
+      
+  } catch (err) {
+      console.error('❌ Error proxy audio:', err.message);
+      
+      // ✅ Manejo específico de errores
+      if (err.code === 'ETIMEDOUT') {
+          res.status(504).json({ error: 'Timeout al obtener audio (30s)' });
+      } else if (err.code === 'ECONNRESET') {
+          res.status(500).json({ error: 'Conexión reiniciada' });
+      } else if (err.response) {
+          res.status(err.response.status).json({ error: `Error ${err.response.status}` });
+      } else {
+          res.status(500).json({ error: err.message });
+      }
+  }
+});
+  
+  // ...
 // --- Autenticación y Usuarios ---
 app.use('/api', require('./routes/authRouter'));
 app.use('/api', require('./routes/userRouter'));

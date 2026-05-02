@@ -66,61 +66,27 @@ export const incrementView = (videoId, token) => async (dispatch) => {
 // redux/actions/videoAction.js - createVideo CORREGIDO
 
 
-export const createVideo = (videoData, token, auth, socket) => async (dispatch) => {
+// client/src/redux/actions/videoAction.js
+
+export const createVideo = (videoData, token) => async (dispatch) => {
   try {
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
-    
+    // 👇 La clave está en esperar la respuesta y guardarla
     const res = await postDataAPI('videos', videoData, token);
-    
-    dispatch({
-      type: VIDEO_TYPES.CREATE_VIDEO,
-      payload: res.data.video
-    });
-    
-    const video = res.data.video;
-    
-    // ✅ 1. NOTIFICACIÓN AL USUARIO (que creó el video)
-    const userMsg = {
-      id: auth.user._id,
-      text: `🎬 Votre vidéo "${video.title}" a été créée avec succès et est en attente de validation.`,
-      recipients: [auth.user._id], // Enviar al propio usuario
-      url: `/video/${video._id}`,
-      content: video.title,
-      image: video.thumbnail,
-      type: 'video_pending'
-    };
-    
-    await dispatch(createNotify({ msg: userMsg, auth, socket }));
-    
-    // ✅ 2. NOTIFICACIÓN A LOS ADMINISTRADORES
-    // Usar "admin" como string para que el backend busque todos los admins
-    const adminMsg = {
-      id: auth.user._id,
-      text: `🎬 Nouvelle vidéo en attente d'approbation: "${video.title}" par ${auth.user.username}`,
-      recipients: ["admin"], // ✅ String "admin" para que el backend busque todos los admins
-      url: `/admin/posts?tab=videos`,
-      content: video.title,
-      image: video.thumbnail,
-      type: 'video_pending_admin'
-    };
-    
-    await dispatch(createNotify({ msg: adminMsg, auth, socket }));
-    
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { 
-        success: '🎬 Vidéo créée avec succès! Vous serez notifié lorsqu\'elle sera validée.' 
-      }
-    });
-    
-    return { success: true, video: res.data.video };
+
+    // (Opcional) Aquí puedes despachar otras acciones si las tienes
+    // dispatch({ type: VIDEO_TYPES.CREATE_VIDEO, payload: res.data.video });
+
+    // ✅ Devolvemos el objeto con los datos de la respuesta y éxito
+    return { success: true, data: res.data };
   } catch (err) {
     console.error('Error createVideo:', err);
     dispatch({
       type: GLOBALTYPES.ALERT,
       payload: { error: err.response?.data?.message || 'Erreur lors de la création' }
     });
-    return { success: false, error: err.message };
+    // ✅ Devolvemos que hubo un error
+    return { success: false, error: err.response?.data?.message };
   } finally {
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
   }
@@ -132,38 +98,42 @@ export const updateVideo = (id, videoData, token, auth, socket, oldVideoData) =>
     
     const res = await patchDataAPI(`videos/${id}`, videoData, token);
     
-    dispatch({
-      type: VIDEO_TYPES.UPDATE_VIDEO,
-      payload: res.data.video
-    });
-    
-    // ✅ Notificar al dueño del video sobre la actualización
-    const video = res.data.video;
-    if (video && video.user?._id && video.user._id !== auth.user._id) {
-      const msg = {
-        id: auth.user._id,
-        text: '✏️ Votre vidéo a été mise à jour',
-        recipients: [video.user._id],
-        url: `/video/${video._id}`,
-        content: video.title,
-        image: video.thumbnail,
-        type: 'video'
-      };
+    if (res.data.success) {
+      dispatch({
+        type: VIDEO_TYPES.UPDATE_VIDEO,
+        payload: res.data.video
+      });
       
-      dispatch(createNotify({ msg, auth, socket }));
+      // ✅ Notificar al dueño del video si no es el mismo usuario
+      const video = res.data.video;
+      if (video && video.user?._id && video.user._id !== auth.user._id) {
+        const msg = {
+          id: auth.user._id,
+          text: '✏️ Tu video ha sido actualizado',
+          recipients: [video.user._id],
+          url: `/video/${video._id}`,
+          content: video.title,
+          image: video.thumbnail,
+          type: 'video'
+        };
+        
+        dispatch(createNotify({ msg, auth, socket }));
+      }
+      
+      dispatch({
+        type: GLOBALTYPES.ALERT,
+        payload: { success: '✓ Vidéo mise à jour avec succès' }
+      });
+      
+      return { success: true, video: res.data.video };
+    } else {
+      throw new Error(res.data.message || 'Error al actualizar');
     }
-    
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { success: 'Vidéo mise à jour avec succès' }
-    });
-    
-    return { success: true, video: res.data.video };
   } catch (err) {
     console.error('Error updateVideo:', err);
     dispatch({
       type: GLOBALTYPES.ALERT,
-      payload: { error: err.response?.data?.message || 'Erreur lors de la mise à jour' }
+      payload: { error: err.response?.data?.message || err.message || 'Erreur lors de la mise à jour' }
     });
     return { success: false, error: err.message };
   } finally {
@@ -171,61 +141,104 @@ export const updateVideo = (id, videoData, token, auth, socket, oldVideoData) =>
   }
 };
 
-// ✅ Eliminar video CON NOTIFICACIÓN
- 
-  // redux/actions/videoAction.js - AÑADIR/ CORREGIR deleteVideo para OWNER
-
-// ✅ Eliminar video para OWNER (ruta diferente a la de admin)
-export const deleteVideo = (id, token, auth, socket, videoData) => async (dispatch) => {
+// ============================================
+// 🗑️ ELIMINAR VIDEO
+// ============================================
+export const deleteVideo = (id, token, auth, socket, video) => async (dispatch) => {
   try {
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
     
-    // ✅ Usar la ruta de usuario normal, NO la de admin
     const res = await deleteDataAPI(`videos/${id}`, token);
     
-    dispatch({
-      type: VIDEO_TYPES.DELETE_VIDEO,
-      payload: id
-    });
-    
-    const video = res.data?.video || videoData;
-    
-    // ✅ Notificar al dueño (opcional, si no es el mismo)
-    if (video && video.user && video.user._id && video.user._id !== auth.user._id) {
-      const msg = {
-        id: auth.user._id,
-        text: `🗑️ Votre vidéo "${video.title || 'sans titre'}" a été supprimée`,
-        recipients: [video.user._id],
-        url: `/`,
-        content: video.title || 'Vidéo',
-        image: video.thumbnail || null,
-        type: 'video_deleted'
-      };
+    if (res.data.success) {
+      dispatch({ type: VIDEO_TYPES.DELETE_VIDEO, payload: id });
       
-      if (socket) {
-        socket.emit('createNotify', msg);
+      // ✅ Notificar al dueño si alguien más eliminó su video
+      if (video && video.user?._id && video.user._id !== auth.user._id) {
+        const msg = {
+          id: auth.user._id,
+          text: '🗑️ Tu video ha sido eliminado por un administrador',
+          recipients: [video.user._id],
+          url: '/',
+          content: video.title,
+          image: video.thumbnail,
+          type: 'video'
+        };
+        dispatch(createNotify({ msg, auth, socket }));
       }
       
-      dispatch(createNotify({ msg, auth, socket }));
+      dispatch({
+        type: GLOBALTYPES.ALERT,
+        payload: { success: '✓ Vidéo supprimée avec succès' }
+      });
+      
+      return { success: true };
+    } else {
+      throw new Error(res.data.message || 'Error al eliminar');
     }
-    
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { success: 'Vidéo supprimée avec succès' }
-    });
-    
-    return { success: true, data: res.data };
   } catch (err) {
     console.error('Error deleteVideo:', err);
     dispatch({
       type: GLOBALTYPES.ALERT,
-      payload: { error: err.response?.data?.message || 'Erreur lors de la suppression' }
+      payload: { error: err.response?.data?.message || err.message || 'Erreur lors de la suppression' }
     });
     return { success: false, error: err.message };
   } finally {
     dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
   }
 };
+
+// ============================================
+// 📹 OBTENER VIDEO POR ID
+// ============================================
+export const getVideoById = (id) => async (dispatch) => {
+  try {
+    dispatch({ type: VIDEO_TYPES.LOADING, payload: true });
+    
+    console.log('📹 Llamando a API - ID:', id);
+    
+    const res = await getDataAPI(`videos/${id}`);
+    
+    console.log('📹 Respuesta completa:', res.data);
+    
+    if (res.data.success === true && res.data.video) {
+      console.log('✅ Video cargado correctamente');
+      dispatch({
+        type: VIDEO_TYPES.GET_VIDEO,
+        payload: res.data.video
+      });
+      
+      // Mostrar mensaje si está pendiente
+      if (res.data.video.pendiente === true) {
+        dispatch({
+          type: GLOBALTYPES.ALERT,
+          payload: { 
+            info: '📹 Este video está en espera de aprobación'
+          }
+        });
+      }
+      
+      dispatch({ type: VIDEO_TYPES.LOADING, payload: false });
+      return { success: true, video: res.data.video };
+    }
+    
+    console.log('⚠️ Error en la respuesta:', res.data);
+    dispatch({ type: VIDEO_TYPES.LOADING, payload: false });
+    return { success: false, error: res.data.message || 'Error desconocido' };
+    
+  } catch (err) {
+    console.error('❌ Error getVideoById:', err);
+    
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || 'No se pudo cargar el video' }
+    });
+    
+    dispatch({ type: VIDEO_TYPES.LOADING, payload: false });
+    return { success: false, error: err.message };
+  }
+};
+
 // ✅ Dar like a video CON NOTIFICACIÓN
 export const likeVideo = (id, token, auth, socket, videoData) => async (dispatch) => {
   try {
@@ -359,67 +372,7 @@ export const getFeaturedVideos = (limit = 10) => async (dispatch) => {
 // ✅ Obtener video por ID (maneja videos pendientes)
 // redux/actions/videoAction.js - getVideoById CORREGIDO
 
-export const getVideoById = (id) => async (dispatch) => {
-  try {
-    dispatch({ type: VIDEO_TYPES.LOADING, payload: true });
-    
-    console.log('📹 Llamando a API - ID:', id);
-    
-    const res = await getDataAPI(`videos/public/${id}`);
-    
-    console.log('📹 Respuesta completa:', res.data);
-    
-    // ✅ Verificar si el video existe y tiene el campo pendiente = true
-    if (res.data.video && res.data.video.pendiente === true) {
-      console.log('✅ Video pendiente detectado! pendiente:', res.data.video.pendiente);
-      
-      // Guardar el video directamente en el estado (con su campo pendiente)
-      dispatch({
-        type: VIDEO_TYPES.GET_VIDEO,
-        payload: res.data.video
-      });
-      
-      // Mostrar notificación
-      dispatch({
-        type: GLOBALTYPES.ALERT,
-        payload: { 
-          info: res.data.message || '📹 Votre vidéo a été envoyée pour validation.'
-        }
-      });
-      
-      dispatch({ type: VIDEO_TYPES.LOADING, payload: false });
-      return { success: false, video: res.data.video };
-    }
-    
-    // ✅ Video aprobado normal
-    if (res.data.success === true && res.data.video) {
-      console.log('✅ Video aprobado!');
-      dispatch({
-        type: VIDEO_TYPES.GET_VIDEO,
-        payload: res.data.video
-      });
-      
-      dispatch({ type: VIDEO_TYPES.LOADING, payload: false });
-      return { success: true, video: res.data.video };
-    }
-    
-    // ✅ Error
-    console.log('⚠️ Error en la respuesta:', res.data);
-    dispatch({ type: VIDEO_TYPES.LOADING, payload: false });
-    return { success: false, error: res.data.message || 'Erreur inconnue' };
-    
-  } catch (err) {
-    console.error('❌ Error getVideoById:', err);
-    
-    dispatch({
-      type: GLOBALTYPES.ALERT,
-      payload: { error: err.response?.data?.message || 'Impossible de charger la vidéo' }
-    });
-    
-    dispatch({ type: VIDEO_TYPES.LOADING, payload: false });
-    return { success: false, error: err.message };
-  }
-};
+ 
 // ✅ Para ver videos en el panel de admin (privado)
 // ✅ Esto ya está en videoAction.js
 export const getVideoByIdPrivate = (id, token) => async (dispatch) => {

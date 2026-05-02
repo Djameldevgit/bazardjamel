@@ -14,9 +14,8 @@ import {
 import {
   faHeart as faHeartRegular,
   faBookmark as faBookmarkRegular,
+  faComment as faCommentRegular
 } from '@fortawesome/free-regular-svg-icons';
-import Hls from 'hls.js';
-
 import { likeVideo, shareVideo, deleteVideo } from '../../redux/actions/videoAction';
 import { aprobarVideo, eliminarVideo } from '../../redux/actions/videoApproveAction';
 import { GLOBALTYPES } from '../../redux/actions/globalTypes';
@@ -24,26 +23,9 @@ import { toggleSaveVideo } from '../../redux/actions/profileAction';
 import VideoComments from './VideoComments';
 import moment from 'moment';
 import 'moment/locale/fr';
-import './Feed.css';
+ 
 
-// ✅ Función de fallback para mezclar audio en cliente (videos antiguos)
-const getVideoWithExternalAudio = (videoUrl, audioUrl) => {
-  if (!audioUrl || !videoUrl) return videoUrl;
-  const uploadIndex = videoUrl.indexOf('/upload/');
-  if (uploadIndex === -1) return videoUrl;
-  const base = videoUrl.substring(0, uploadIndex + 8);
-  const rest = videoUrl.substring(uploadIndex + 8);
-  let audioPath = audioUrl;
-  const audioUploadIndex = audioUrl.indexOf('/upload/');
-  if (audioUploadIndex !== -1) {
-    audioPath = audioUrl.substring(audioUploadIndex + 8);
-  }
-  const encodedAudio = encodeURIComponent(audioPath);
-  const transformation = `l_audio:${encodedAudio},fl_layer_apply,co_replace_audio`;
-  return `${base}${transformation}/${rest}`;
-};
-
-const Feed = ({
+const Feedhjh = ({
   video,
   isActive = false,
   onVisibilityChange,
@@ -57,8 +39,8 @@ const Feed = ({
   const history = useHistory();
   const { auth, socket } = useSelector(state => state);
   const videoRef = useRef(null);
+  const audioRef = useRef(null);
   const drawerRef = useRef(null);
-  let hlsRef = useRef(null); // para guardar la instancia de Hls
 
   const [liked, setLiked] = useState(video.liked || false);
   const [likesCount, setLikesCount] = useState(video.likes?.length || 0);
@@ -66,7 +48,7 @@ const Feed = ({
   const [saving, setSaving] = useState(false);
   const [commentsCount, setCommentsCount] = useState(video.comments?.length || 0);
   const [showComments, setShowComments] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);       // 🔇 Inicia silenciado (autoplay)
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -76,117 +58,65 @@ const Feed = ({
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth > 1024);
+  const [refreshComments, setRefreshComments] = useState(0);
 
   const isAdmin = auth.user?.role === 'admin' || auth.user?.role === 'moderator';
   const isOwner = auth.user?._id === video.user?._id;
   const isPending = video?.pendiente === true;
 
-  // 🔁 Determinar la URL final del video (nuevos vs antiguos)
-  const getFinalVideoSrc = () => {
-    // Si el video ya tiene una URL transformada por el backend (contiene 'l_audio' o es .m3u8), la usamos directamente
-    if (video.videoUrl && (video.videoUrl.includes('l_audio') || video.videoUrl.includes('.m3u8'))) {
-      return video.videoUrl;
-    }
-    // Si no, y tiene música, usamos el fallback
-    if (video.music?.audioUrl) {
-      return getVideoWithExternalAudio(video.videoUrl, video.music.audioUrl);
-    }
-    // Sin música, la URL original
-    return video.videoUrl;
-  };
-
-  const finalVideoSrc = getFinalVideoSrc();
-
-  // ─────────────────────────────────────────────────────────────────
-  // 1. Manejo de HLS (si la URL termina en .m3u8)
-  // ─────────────────────────────────────────────────────────────────
+  // ========== REPRODUCCIÓN (VIDEO + AUDIO) ==========
   useEffect(() => {
-    const videoEl = videoRef.current;
-    if (!videoEl) return;
+    if (!videoRef.current) return;
 
-    const src = finalVideoSrc;
-    if (!src) return;
+    const playMedia = async () => {
+      try {
+        if (isActive && !showComments) {
+          // Video: siempre forzar mute antes de play
+          videoRef.current.muted = true;
+          await videoRef.current.play();
+          setIsPlaying(true);
+          onVisibilityChange?.(true);
 
-    // Destruir cualquier instancia anterior de HLS
-    if (hlsRef.current) {
-      hlsRef.current.destroy();
-      hlsRef.current = null;
-    }
-
-    // Si es HLS
-    if (src.endsWith('.m3u8')) {
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: true,
-          maxBufferLength: 30
-        });
-        hls.loadSource(src);
-        hls.attachMedia(videoEl);
-        hlsRef.current = hls;
-      } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-        // Safari nativo
-        videoEl.src = src;
-      } else {
-        console.warn('HLS no soportado en este navegador');
-      }
-    } else {
-      // Vídeo normal (mp4, etc.)
-      videoEl.src = src;
-    }
-
-    // Limpieza al desmontar o cambiar de URL
-    return () => {
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
+          // Audio (si existe)
+          if (audioRef.current && video.music?.audioUrl) {
+            audioRef.current.muted = true;
+            await audioRef.current.play();
+          }
+        } else {
+          videoRef.current.pause();
+          if (audioRef.current) audioRef.current.pause();
+          setIsPlaying(false);
+          onVisibilityChange?.(false);
+        }
+      } catch (err) {
+        console.log('Playback error:', err);
       }
     };
-  }, [finalVideoSrc]);
 
-  // ─────────────────────────────────────────────────────────────────
-  // 2. Reproducción automática cuando está activo
-  // ─────────────────────────────────────────────────────────────────
+    playMedia();
+  }, [isActive, showComments, video.music?.audioUrl, onVisibilityChange]);
+
+  // Sincronizar mute (cuando el usuario pulsa el botón)
   useEffect(() => {
-    const videoEl = videoRef.current;
-    if (!videoEl) return;
+    if (videoRef.current) videoRef.current.muted = isMuted;
+    if (audioRef.current) audioRef.current.muted = isMuted;
+  }, [isMuted]);
 
-    if (isActive && !showComments) {
-      videoEl.play().catch(e => console.log("Play error:", e));
-      setIsPlaying(true);
-      onVisibilityChange?.(true);
-    } else if (!isActive && !showComments) {
-      videoEl.pause();
-      setIsPlaying(false);
-      onVisibilityChange?.(false);
-    }
-  }, [isActive, showComments, onVisibilityChange]);
-
-  // ─────────────────────────────────────────────────────────────────
-  // 3. Barra de progreso
-  // ─────────────────────────────────────────────────────────────────
+  // Barra de progreso
   useEffect(() => {
-    const videoEl = videoRef.current;
-    if (!videoEl) return;
-    const onTimeUpdate = () => {
-      if (videoEl.duration) setProgress((videoEl.currentTime / videoEl.duration) * 100);
-    };
-    videoEl.addEventListener('timeupdate', onTimeUpdate);
-    return () => videoEl.removeEventListener('timeupdate', onTimeUpdate);
+    const el = videoRef.current;
+    if (!el) return;
+    const onTime = () => el.duration && setProgress((el.currentTime / el.duration) * 100);
+    el.addEventListener('timeupdate', onTime);
+    return () => el.removeEventListener('timeupdate', onTime);
   }, []);
 
-  // ─────────────────────────────────────────────────────────────────
-  // 4. Socket para comentarios
-  // ─────────────────────────────────────────────────────────────────
+  // Socket, drag, etc. (no tocar)
   useEffect(() => {
     if (!socket || !video || isPending) return;
     socket.emit('join-video-room', video._id);
-    socket.on('new-comment', d => {
-      if (d.videoId === video._id) setCommentsCount(p => p + 1);
-    });
-    socket.on('comment-deleted', d => {
-      if (d.videoId === video._id) setCommentsCount(p => Math.max(0, p - 1));
-    });
+    socket.on('new-comment', d => d.videoId === video._id && setCommentsCount(p => p + 1));
+    socket.on('comment-deleted', d => d.videoId === video._id && setCommentsCount(p => Math.max(0, p - 1)));
     return () => {
       socket.emit('leave-video-room', video._id);
       socket.off('new-comment');
@@ -194,38 +124,13 @@ const Feed = ({
     };
   }, [socket, video, isPending]);
 
-  // ─────────────────────────────────────────────────────────────────
-  // 5. Drag para comments (móvil)
-  // ─────────────────────────────────────────────────────────────────
-  const handleDragStart = e => {
-    e.stopPropagation();
-    setStartY(e.touches ? e.touches[0].clientY : e.clientY);
-    setIsDragging(true);
-    setDragOffset(0);
-  };
+  useEffect(() => {
+    const handleResize = () => setIsLargeScreen(window.innerWidth > 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  const handleDragMove = e => {
-    if (!isDragging) return;
-    e.preventDefault();
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    const delta = Math.min(Math.max(clientY - startY, 0), window.innerHeight * 0.6);
-    setDragOffset(delta);
-    if (drawerRef.current) drawerRef.current.style.transform = `translateY(${delta}px)`;
-  };
-
-  const handleDragEnd = () => {
-    setIsDragging(false);
-    if (dragOffset > window.innerHeight * 0.25) {
-      handleCloseComments();
-    } else {
-      if (drawerRef.current) drawerRef.current.style.transform = '';
-      setDragOffset(0);
-    }
-  };
-
-  // ─────────────────────────────────────────────────────────────────
-  // 6. Acciones del usuario
-  // ─────────────────────────────────────────────────────────────────
+  // Handlers
   const guardPending = () => {
     if (!isPending) return false;
     dispatch({ type: GLOBALTYPES.ALERT, payload: { error: "Cette vidéo est en attente d'approbation" } });
@@ -233,7 +138,7 @@ const Feed = ({
   };
 
   const handleLike = async () => {
-    if (!auth.token) return history.push('/login');
+    if (!auth.token) { history.push('/login'); return; }
     if (guardPending()) return;
     const res = await dispatch(likeVideo(video._id, auth.token, auth, socket, video));
     if (res?.liked !== undefined) {
@@ -244,9 +149,8 @@ const Feed = ({
   };
 
   const handleSave = async () => {
-    if (!auth.token) return history.push('/login');
-    if (guardPending()) return;
-    if (saving) return;
+    if (!auth.token) { history.push('/login'); return; }
+    if (guardPending() || saving) return;
     setSaving(true);
     const result = await dispatch(toggleSaveVideo(video._id));
     if (result?.saved !== undefined) {
@@ -258,6 +162,8 @@ const Feed = ({
     }
     setSaving(false);
   };
+
+  const handleRefreshComments = () => setRefreshComments(p => p + 1);
 
   const createHeartEffect = () => {
     const h = document.createElement('div');
@@ -283,36 +189,30 @@ const Feed = ({
     await dispatch(shareVideo(video._id, auth.token, auth, socket, video));
   };
 
-  const toggleMute = e => {
+  const toggleMute = (e) => {
     e.stopPropagation();
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(m => !m);
-    }
+    setIsMuted(prev => !prev);
   };
 
-  const togglePlay = e => {
+  const togglePlay = (e) => {
     e.stopPropagation();
-    if (videoRef.current) {
-      isPlaying ? videoRef.current.pause() : videoRef.current.play();
-      setIsPlaying(p => !p);
-    }
+    if (!videoRef.current) return;
+    if (isPlaying) videoRef.current.pause();
+    else videoRef.current.play().catch(console.log);
+    setIsPlaying(p => !p);
   };
 
   const handleProgressClick = e => {
     e.stopPropagation();
     if (videoRef.current?.duration) {
       const rect = e.currentTarget.getBoundingClientRect();
-      videoRef.current.currentTime = ((e.clientX - rect.left) / rect.width) * videoRef.current.duration;
+      const percent = (e.clientX - rect.left) / rect.width;
+      videoRef.current.currentTime = percent * videoRef.current.duration;
     }
   };
 
   const handleOpenComments = () => { setShowComments(true); setDragOffset(0); };
-  const handleCloseComments = () => {
-    setShowComments(false);
-    setDragOffset(0);
-    if (drawerRef.current) drawerRef.current.style.transform = '';
-  };
+  const handleCloseComments = () => { setShowComments(false); setDragOffset(0); if (drawerRef.current) drawerRef.current.style.transform = ''; };
   const handleGoBack = () => history.goBack();
 
   const handleViewDetails = () => {
@@ -325,12 +225,34 @@ const Feed = ({
     e.stopPropagation();
     sessionStorage.setItem('returnToFeed', 'true');
     sessionStorage.setItem('feedScrollPosition', window.scrollY.toString());
-    history.push(`/video/userVideo/${video.user._id}`);
+    history.push(`/video/userVideo/${video.user?._id}`);
   };
 
-  // ─────────────────────────────────────────────────────────────────
-  // 7. Navegación por teclado
-  // ─────────────────────────────────────────────────────────────────
+  // Drag comments
+  const handleDragStart = e => {
+    e.stopPropagation();
+    setStartY(e.touches ? e.touches[0].clientY : e.clientY);
+    setIsDragging(true);
+    setDragOffset(0);
+  };
+  const handleDragMove = e => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const delta = Math.min(Math.max(clientY - startY, 0), window.innerHeight * 0.6);
+    setDragOffset(delta);
+    if (drawerRef.current) drawerRef.current.style.transform = `translateY(${delta}px)`;
+  };
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    if (dragOffset > window.innerHeight * 0.25) handleCloseComments();
+    else {
+      if (drawerRef.current) drawerRef.current.style.transform = '';
+      setDragOffset(0);
+    }
+  };
+
+  // Keyboard nav
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'ArrowUp' && hasPrev && onPreviousVideo) {
@@ -345,9 +267,7 @@ const Feed = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [hasPrev, hasNext, onPreviousVideo, onNextVideo]);
 
-  // ─────────────────────────────────────────────────────────────────
-  // 8. Menú desplegable
-  // ─────────────────────────────────────────────────────────────────
+  // Menu actions
   const menuAction = fn => () => { setShowMenu(false); fn(); };
   const handleEdit = menuAction(() => {
     sessionStorage.setItem('returnToFeed', 'true');
@@ -401,9 +321,6 @@ const Feed = ({
   const videoScale = !showComments ? 1 : 0.7 + 0.3 * Math.min(dragOffset / (window.innerHeight * 0.6), 1);
   const videoTranslateY = !showComments ? 0 : -15 * (1 - Math.min(dragOffset / (window.innerHeight * 0.6), 1));
 
-  // ─────────────────────────────────────────────────────────────────
-  // RENDER
-  // ─────────────────────────────────────────────────────────────────
   return (
     <div className="video-reel-container">
       {/* Header */}
@@ -431,7 +348,7 @@ const Feed = ({
                     <Dropdown.Item onClick={handleRejectVideo} className="vr-dropdown-item reject">
                       <FontAwesomeIcon icon={faBan} /> Rejeter la vidéo
                     </Dropdown.Item>
-                    <Dropdown.Divider />
+                    <Dropdown.Divider className="vr-dropdown-divider" />
                   </>
                 )}
                 {(isOwner || isAdmin) && !isPending && (
@@ -442,7 +359,7 @@ const Feed = ({
                     <Dropdown.Item onClick={handleDeleteVideo} className="vr-dropdown-item reject">
                       <FontAwesomeIcon icon={faTrash} /> Supprimer
                     </Dropdown.Item>
-                    <Dropdown.Divider />
+                    <Dropdown.Divider className="vr-dropdown-divider" />
                   </>
                 )}
                 {isAdmin && !isPending && (
@@ -450,7 +367,7 @@ const Feed = ({
                     <Dropdown.Item onClick={handleDeleteVideo} className="vr-dropdown-item reject">
                       <FontAwesomeIcon icon={faTrash} /> Supprimer (Admin)
                     </Dropdown.Item>
-                    <Dropdown.Divider />
+                    <Dropdown.Divider className="vr-dropdown-divider" />
                   </>
                 )}
                 {!isOwner && !isAdmin && !isPending && (
@@ -465,7 +382,7 @@ const Feed = ({
                 )}
                 {!isPending && (
                   <>
-                    <Dropdown.Divider />
+                    <Dropdown.Divider className="vr-dropdown-divider" />
                     <Dropdown.Item onClick={handleNotInterested} className="vr-dropdown-item">
                       <FontAwesomeIcon icon={faExclamationTriangle} /> Pas intéressé(e)
                     </Dropdown.Item>
@@ -498,6 +415,7 @@ const Feed = ({
       >
         <video
           ref={videoRef}
+          src={video.videoUrl}
           loop
           muted={isMuted}
           playsInline
@@ -505,6 +423,18 @@ const Feed = ({
           poster={video.thumbnail}
           className="vr-video"
         />
+
+        {/* Audio paralelo */}
+        {video.music?.audioUrl && (
+          <audio
+            ref={audioRef}
+            src={video.music.audioUrl}
+            loop
+            preload="auto"
+            muted={isMuted}
+            volume={video.music.volume ? video.music.volume / 100 : 0.7}
+          />
+        )}
 
         {!showComments && <div className="vr-gradient-overlay" />}
 
@@ -515,7 +445,7 @@ const Feed = ({
           </div>
         )}
 
-        {/* Sidebar actions */}
+        {/* Action sidebar */}
         {!showComments && (
           <div className="vr-actions-sidebar">
             <div className="vr-action-group vr-avatar-group">
@@ -539,7 +469,7 @@ const Feed = ({
 
             <div className="vr-action-group">
               <button className="vr-action-btn" onClick={handleOpenComments}>
-                <FontAwesomeIcon icon={faComment} className="vr-action-icon" />
+                <FontAwesomeIcon icon={faCommentRegular} className="vr-action-icon" />
               </button>
               <span className="vr-action-count">{formatNumber(commentsCount)}</span>
             </div>
@@ -565,7 +495,7 @@ const Feed = ({
             {isLargeScreen && (hasPrev || hasNext) && <div className="vr-nav-divider" />}
             {isLargeScreen && hasPrev && onPreviousVideo && (
               <div className="vr-nav-group">
-                <button className="vr-nav-btn" onClick={onPreviousVideo} title="Précédent">
+                <button className="vr-nav-btn" onClick={onPreviousVideo} title="Vidéo précédente">
                   <FontAwesomeIcon icon={faChevronUp} />
                 </button>
                 <span className="vr-nav-label">Précédent</span>
@@ -573,7 +503,7 @@ const Feed = ({
             )}
             {isLargeScreen && hasNext && onNextVideo && (
               <div className="vr-nav-group">
-                <button className="vr-nav-btn" onClick={onNextVideo} title="Suivant">
+                <button className="vr-nav-btn" onClick={onNextVideo} title="Vidéo suivante">
                   <FontAwesomeIcon icon={faChevronDown} />
                 </button>
                 <span className="vr-nav-label">Suivant</span>
@@ -582,14 +512,14 @@ const Feed = ({
           </div>
         )}
 
-        {/* Volume button */}
+        {/* Botón volumen */}
         {!showComments && (
           <button className="vr-volume-btn" onClick={toggleMute}>
             <FontAwesomeIcon icon={isMuted ? faVolumeXmark : faVolumeHigh} />
           </button>
         )}
 
-        {/* Video info */}
+        {/* Info video */}
         {!showComments && (
           <div className="vr-video-info">
             {isPending && isAdmin && <span className="vr-pending-badge">⏳ En attente</span>}
@@ -639,15 +569,17 @@ const Feed = ({
               <div className="vr-comments-drag-bar" />
             </div>
             <div className="vr-comments-header">
-              <h5 className="vr-comments-title">
-                {commentsCount} commentaire{commentsCount !== 1 ? 's' : ''}
-              </h5>
+              <h5 className="vr-comments-title">{commentsCount} commentaire{commentsCount !== 1 ? 's' : ''}</h5>
               <button className="vr-comments-close" onClick={handleCloseComments}>
                 <FontAwesomeIcon icon={faXmark} />
               </button>
             </div>
             <div className="vr-comments-content">
-              <VideoComments videoId={video._id} comments={video.comments || []} totalComments={commentsCount} />
+              <VideoComments
+                videoId={video._id}
+                comments={video.comments || []}
+                totalComments={commentsCount}
+              />
             </div>
           </div>
         </div>
@@ -656,4 +588,4 @@ const Feed = ({
   );
 };
 
-export default Feed;
+export default Feedkjk;

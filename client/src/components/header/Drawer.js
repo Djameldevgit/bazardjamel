@@ -921,7 +921,7 @@ const Drawer = ({
         <div style={{ margin: '30px 0 15px 16px', fontSize: '0.9rem', fontWeight: '600', color: '#555' }}>
           🔗 Liens utiles
         </div>
-        
+        <LinkItem emoji="❓" name="vidéos tutorielles sur YouTube" path="/https://www.youtube.com/channel/UC-dI7yrqBOSfL_g5-l01c4g" color="#6b7280" />
         <LinkItem emoji="❓" name="Comment annoncer ?" path="/bloginfo" color="#6b7280" />
         <LinkItem emoji="✉️" name="Contactez-nous" path="/users/contactt" color="#6b7280" />
         <LinkItem emoji="🛡️" name="Politique de confidentialité" path="/bloginfo" color="#6b7280" />

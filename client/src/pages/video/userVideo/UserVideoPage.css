@@ -1,1375 +1,819 @@
-/* pages/video/userVideo/UserVideoPage.css - VERSIÓN LIMPIA */
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-/* Estilos para el botón SAVE en miniaturas de video */
-.uv-mini-save-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 10;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
-  border: none;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  opacity: 0;
-  backdrop-filter: blur(4px);
-  font-size: 14px;
-}
-
-.uv-mini-thumbnail-container:hover .uv-mini-save-btn {
-  opacity: 1;
-}
-
-.uv-mini-save-btn:hover {
-  background: #fe2c55;
-  transform: scale(1.05);
-}
-
-.uv-mini-save-btn.saved {
-  background: #fe2c55;
-  color: white;
-}
-
-.uv-mini-save-btn.saved:hover {
-  background: rgba(0, 0, 0, 0.6);
-}
-
-.uv-mini-save-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
- /* ============================================
-   ESTILOS TIKTOK PARA PÁGINA DE PERFIL
-   ============================================ */
-
-/* ──────────────────────────────────────────────
-   ANIMACIONES PARA ÍCONOS
-   ────────────────────────────────────────────── */
-@keyframes uv-icon-pop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); }
-}
-
-@keyframes uv-icon-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-@keyframes uv-avatar-glow {
-  0% {
-    box-shadow: 0 0 0 0 rgba(254, 44, 85, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(254, 44, 85, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(254, 44, 85, 0);
-  }
-}
-
-@keyframes uv-slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ──────────────────────────────────────────────
-   AVATAR CON EFECTO TIKTOK
-   ────────────────────────────────────────────── */
-.uv-avatar {
-  width: 110px;
-  height: 110px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid #fe2c55;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
-}
-
-.uv-avatar:hover {
-  transform: scale(1.02);
-  animation: uv-avatar-glow 1.5s infinite;
-}
-
-.uv-edit-avatar-btn {
-  position: absolute;
-  bottom: 5px;
-  right: calc(50% - 55px);
-  background: linear-gradient(135deg, #fe2c55, #ff6b6b);
-  border: none;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: white;
-  transition: all 0.2s ease;
-}
-
-.uv-edit-avatar-btn:active {
-  transform: scale(0.9);
-}
-
-.uv-edit-avatar-btn svg {
-  transition: all 0.2s ease;
-}
-
-.uv-edit-avatar-btn:active svg {
-  transform: rotate(15deg);
-}
-
-/* ──────────────────────────────────────────────
-   ESTADÍSTICAS CLICKEABLES
-   ────────────────────────────────────────────── */
-.uv-stat-clickable {
-  cursor: pointer;
-  padding: 8px 16px;
-  border-radius: 40px;
-  transition: all 0.2s ease;
-}
-
-.uv-stat-clickable:active {
-  transform: scale(0.95);
-  background: rgba(254, 44, 85, 0.1);
-}
-
-.uv-stat-number {
-  font-size: 22px;
-  font-weight: 800;
-  margin-bottom: 6px;
-  color: white;
-  transition: all 0.2s ease;
-}
-
-.uv-stat-clickable:hover .uv-stat-number {
-  color: #fe2c55;
-}
-
-/* ──────────────────────────────────────────────
-   BOTONES DE ACCIÓN - ESTILO TIKTOK
-   ────────────────────────────────────────────── */
-.uv-follow-btn, .uv-message-btn, .uv-more-btn {
-  transition: all 0.2s cubic-bezier(0.34, 1.2, 0.64, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.uv-follow-btn:active, .uv-message-btn:active, .uv-more-btn:active {
-  transform: scale(0.96);
-}
-
-/* Efecto de onda al hacer click */
-.uv-follow-btn::after, .uv-message-btn::after, .uv-more-btn::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-  transform: translate(-50%, -50%);
-  transition: width 0.3s, height 0.3s;
-  pointer-events: none;
-}
-
-.uv-follow-btn:active::after,
-.uv-message-btn:active::after,
-.uv-more-btn:active::after {
-  width: 100px;
-  height: 100px;
-  opacity: 0;
-}
-
-/* Botón Follow con gradiente TikTok */
-.uv-follow-btn {
-  background: linear-gradient(135deg, #fe2c55, #ff6b6b);
-  position: relative;
-}
-
-.uv-follow-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.5s ease;
-}
-
-.uv-follow-btn:hover::before {
-  left: 100%;
-}
-
-.uv-follow-btn.following {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-}
-
-.uv-follow-btn.following:active {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-/* Botón Mensaje */
-.uv-message-btn {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.uv-message-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: #fe2c55;
-}
-
-.uv-message-btn svg {
-  transition: all 0.2s ease;
-}
-
-.uv-message-btn:active svg {
-  transform: translateX(2px);
-}
-
-/* Botón Más */
-.uv-more-btn svg {
-  transition: all 0.2s ease;
-}
-
-.uv-more-btn:active svg {
-  transform: rotate(90deg);
-}
-
-/* ──────────────────────────────────────────────
-   TABS ESTILO TIKTOK
-   ────────────────────────────────────────────── */
-.uv-tab {
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.uv-tab:active {
-  transform: scale(0.95);
-}
-
-.uv-tab svg {
-  transition: all 0.2s ease;
-}
-
-.uv-tab:active svg {
-  transform: scale(0.9);
-}
-
-.uv-tab.active svg {
-  color: #fe2c55;
-  transform: translateY(-2px);
-}
-
-.uv-tab-count {
-  transition: all 0.2s ease;
-}
-
-.uv-tab.active .uv-tab-count {
-  background: #fe2c55;
-  color: white;
-}
-
-/* ──────────────────────────────────────────────
-   TARJETAS DE VIDEO MEJORADAS
-   ────────────────────────────────────────────── */
-.uv-mini-video-card {
-  position: relative;
-  cursor: pointer;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 12px;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
-  animation: uv-slide-up 0.3s ease;
-}
-
-.uv-mini-video-card:active {
-  transform: scale(0.97);
-}
-
-.uv-mini-thumbnail-container {
-  position: relative;
-  aspect-ratio: 9 / 16;
-  overflow: hidden;
-  background: #1a1a2e;
-}
-
-.uv-mini-thumbnail {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.uv-mini-video-card:hover .uv-mini-thumbnail {
-  transform: scale(1.05);
-}
-
-/* Overlay de estadísticas */
-.uv-mini-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
-  padding: 12px 8px;
-  transform: translateY(0);
-  transition: transform 0.2s ease;
-}
-
-.uv-mini-stats {
-  display: flex;
-  justify-content: space-around;
-  font-size: 11px;
-  color: white;
-}
-
-.uv-mini-stats span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: all 0.2s ease;
-}
-
-.uv-mini-stats span:active {
-  transform: scale(1.1);
-}
-
-.uv-stat-icon {
-  font-size: 10px;
-  opacity: 0.8;
-  transition: all 0.2s ease;
-}
-
-.uv-stat-play:hover .uv-stat-icon {
-  color: #4ecdc4;
-}
-
-.uv-stat-heart:hover .uv-stat-icon {
-  color: #fe2c55;
-  animation: uv-icon-pop 0.3s ease;
-}
-
-.uv-stat-comment:hover .uv-stat-icon {
-  color: #4ecdc4;
-}
-
-/* Duración badge */
-.uv-mini-duration {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 10px;
-  color: white;
-  font-weight: 500;
-}
-
-/* Botón Save en miniaturas */
-.uv-mini-save-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 10;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  border: none;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.34, 1.2, 0.64, 1);
-  opacity: 0;
-}
-
-.uv-mini-thumbnail-container:hover .uv-mini-save-btn {
-  opacity: 1;
-}
-
-.uv-mini-save-btn:hover {
-  background: #fe2c55;
-  transform: scale(1.1);
-}
-
-.uv-mini-save-btn:active {
-  transform: scale(0.9);
-}
-
-.uv-mini-save-btn.saved {
-  background: #fe2c55;
-  color: white;
-  opacity: 1;
-}
-
-.uv-mini-save-btn.saved:hover {
-  background: rgba(0, 0, 0, 0.6);
-}
-
-/* Título del video */
-.uv-mini-title {
-  font-size: 11px;
-  margin: 10px 8px 8px;
-  color: rgba(255, 255, 255, 0.9);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-}
-
-.uv-mini-video-card:hover .uv-mini-title {
-  color: #fe2c55;
-}
-
-/* ──────────────────────────────────────────────
-   EMPTY STATE MEJORADO
-   ────────────────────────────────────────────── */
-.uv-empty-state {
-  text-align: center;
-  padding: 80px 20px;
-  animation: uv-slide-up 0.3s ease;
-}
-
-.uv-empty-icon-container {
-  width: 90px;
-  height: 90px;
-  margin: 0 auto 25px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.uv-empty-icon-container:active {
-  transform: scale(0.95);
-}
-
-.uv-empty-icon {
-  font-size: 45px;
-  color: #fe2c55;
-  transition: all 0.2s ease;
-}
-
-.uv-empty-icon-container:active .uv-empty-icon {
-  transform: scale(0.9);
-}
-
-/* Botón de subir video */
-.uv-upload-btn {
-  background: linear-gradient(135deg, #fe2c55, #ff6b6b);
-  border: none;
-  border-radius: 35px;
-  padding: 12px 30px;
-  color: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.uv-upload-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.5s ease;
-}
-
-.uv-upload-btn:hover::before {
-  left: 100%;
-}
-
-.uv-upload-btn:active {
-  transform: scale(0.96);
-}
-
-.uv-upload-btn svg {
-  margin-right: 8px;
-  transition: all 0.2s ease;
-}
-
-.uv-upload-btn:active svg {
-  transform: translateY(2px);
-}
-
-/* ──────────────────────────────────────────────
-   RESPONSIVE MEJORADO
-   ────────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .uv-stats-row { gap: 25px; }
-  .uv-stat-number { font-size: 18px; }
-  
-  /* Tabs solo iconos */
-  .uv-tab span { display: none; }
-  .uv-tab svg { font-size: 24px; }
-  .uv-tab { padding: 12px 20px; }
-  
-  /* Botones solo iconos */
-  .uv-follow-btn span, .uv-message-btn span { display: none; }
-  .uv-follow-btn, .uv-message-btn { 
-    padding: 12px 16px;
-    justify-content: center;
-  }
-  .uv-follow-btn svg, .uv-message-btn svg { 
-    margin: 0;
-    font-size: 18px;
-  }
-  
-  .uv-avatar { width: 90px; height: 90px; }
-  
-  /* Grid 3 columnas en móvil */
-  .uv-videos-grid { gap: 2px; }
-  
-  /* Ocultar algunos stats en móvil */
-  .uv-mini-stats .uv-stat-comment,
-  .uv-mini-stats .uv-stat-heart {
-    display: none;
-  }
-  .uv-mini-stats .uv-stat-play {
-    justify-content: center;
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .uv-stats-row { gap: 15px; }
-  .uv-stat-number { font-size: 16px; }
-  .uv-stat-label { font-size: 10px; }
-  
-  .uv-username { font-size: 18px; }
-  .uv-bio { font-size: 12px; }
-  
-  .uv-mini-save-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
-  }
-}
-
-/* ──────────────────────────────────────────────
-   OPTIMIZACIONES TÁCTILES PARA ANDROID
-   ────────────────────────────────────────────── */
-@media (hover: none) and (pointer: coarse) {
-  .uv-mini-save-btn {
-    opacity: 0.8;
-  }
-  
-  .uv-follow-btn:active,
-  .uv-message-btn:active,
-  .uv-more-btn:active,
-  .uv-mini-video-card:active {
-    transform: scale(0.97);
-  }
-  
-  .uv-tab:active {
-    transform: scale(0.95);
-  }
-}
-
-/* Scrollbar personalizado */
-.uv-videos-grid::-webkit-scrollbar {
-  width: 3px;
-}
-
-.uv-videos-grid::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.uv-videos-grid::-webkit-scrollbar-thumb {
-  background: rgba(254, 44, 85, 0.5);
-  border-radius: 3px;
-}
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* Error */
-.user-video-error {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-  color: white;
-  gap: 20px;
-}
-
-.user-video-error button {
-  padding: 12px 28px;
-  background: #fe2c55;
-  border: none;
-  border-radius: 30px;
-  color: white;
-  cursor: pointer;
-}
-
-/* Main Container */
-.user-video-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-  color: white;
-  padding-bottom: 60px;
-}
-
-/* Header */
-.uv-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(12px);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.uv-back-btn, .uv-share-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: white;
-  font-size: 18px;
-}
-
-.uv-header-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0;
-}
-
-/* Avatar */
-.uv-avatar-container {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  margin-top: 30px;
-  margin-bottom: 20px;
-}
-
-.uv-avatar {
-  width: 110px;
-  height: 110px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid #fe2c55;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-}
-
-.uv-edit-avatar-btn {
-  position: absolute;
-  bottom: 5px;
-  right: calc(50% - 55px);
-  background: #fe2c55;
-  border: none;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: white;
-}
-
-/* Username */
-.uv-username {
-  text-align: center;
-  font-size: 22px;
-  font-weight: 700;
-  margin: 0 0 10px 0;
-}
-
-/* Bio */
-.uv-bio {
-  text-align: center;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.75);
-  margin: 0 20px 20px 20px;
-}
-
-/* Stats */
-.uv-stats-row {
-  display: flex;
-  justify-content: center;
-  gap: 50px;
-  margin: 20px 0 28px 0;
-}
-
-.uv-stat {
-  text-align: center;
-}
-
-.uv-stat-number {
-  font-size: 22px;
-  font-weight: 800;
-  margin-bottom: 6px;
-  color: white;
-}
-
-.uv-stat-label {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-  text-transform: uppercase;
-}
-
-/* Action Buttons */
-.uv-action-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 14px;
-  margin: 0 20px 30px 20px;
-}
-
-.uv-follow-btn, .uv-message-btn, .uv-more-btn {
-  padding: 12px 24px;
-  border-radius: 35px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.uv-follow-btn {
-  background: #fe2c55;
-  border: none;
-  color: white;
-  flex: 1;
-  justify-content: center;
-}
-
-.uv-follow-btn.following {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-}
-
-.uv-message-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: white;
-  flex: 1;
-  justify-content: center;
-}
-
-.uv-more-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: white;
-  width: 50px;
-  justify-content: center;
-}
-
-/* Separator */
-.uv-separator {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.1);
-  margin: 0 20px 25px 20px;
-}
-
-/* Tabs */
-.uv-tabs {
-  display: flex;
-  justify-content: space-around;
-  margin-bottom: 25px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.uv-tab {
-  background: none;
-  border: none;
-  padding: 14px 20px;
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  position: relative;
-}
-
-.uv-tab.active {
-  color: #fe2c55;
-}
-
-.uv-tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 20%;
-  right: 20%;
-  height: 3px;
-  background: #fe2c55;
-}
-
-.uv-tab-count {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
-  padding: 2px 8px;
-  font-size: 11px;
-}
-
-/* Video Grid */
-.uv-videos-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 3px;
-  padding: 0 3px;
-}
-
-.uv-mini-video-card {
-  position: relative;
-  cursor: pointer;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.uv-mini-thumbnail-container {
-  position: relative;
-  aspect-ratio: 9 / 16;
-  overflow: hidden;
-  background: #1a1a2e;
-}
-
-.uv-mini-thumbnail {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.uv-mini-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
-  padding: 10px 8px;
-}
-
-.uv-mini-stats {
-  display: flex;
-  justify-content: space-around;
-  font-size: 11px;
-  color: white;
-}
-
-.uv-mini-stats span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.uv-mini-title {
-  font-size: 11px;
-  margin: 8px 6px 6px;
-  color: rgba(255, 255, 255, 0.85);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Empty State */
-.uv-empty-state {
-  text-align: center;
-  padding: 80px 20px;
-}
-
-.uv-empty-icon-container {
-  width: 90px;
-  height: 90px;
-  margin: 0 auto 25px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.uv-empty-icon {
-  font-size: 45px;
-  color: #fe2c55;
-}
-
-.uv-empty-title {
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0 0 12px;
-  color: white;
-}
-
-.uv-empty-description {
-  font-size: 14px;
-  margin: 0 0 30px;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.uv-upload-btn {
-  padding: 12px 30px;
-  background: #fe2c55;
-  border: none;
-  border-radius: 35px;
-  color: white;
-  cursor: pointer;
-}
-/* UserVideoPage.css - AÑADE ESTOS ESTILOS */
-
-.uv-header-actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.uv-messages-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: white;
-  font-size: 18px;
-  transition: all 0.2s;
-}
-
-.uv-messages-btn:hover {
-  background: #fe2c55;
-  transform: scale(1.05);
-}
-/* Responsive */
-@media (max-width: 768px) {
-  .uv-stats-row { gap: 35px; }
-  .uv-stat-number { font-size: 18px; }
-  .uv-tab span { display: none; }
-  .uv-tab svg { font-size: 22px; }
-  .uv-follow-btn span, .uv-message-btn span { display: none; }
-  .uv-follow-btn, .uv-message-btn { padding: 12px; }
-  .uv-avatar { width: 90px; height: 90px; }
-  .uv-mini-stats span:nth-child(2),
-  .uv-mini-stats span:nth-child(3) { display: none; }
-}
-
-/* pages/video/userVideo/UserVideoPage.css - AÑADE ESTOS ESTILOS */
-
 /* ============================================
-   LOADING SPINNER - ESTILOS COMPLETOS
+   UserVideoPage.css — Estilo TikTok profesional
    ============================================ */
 
+   * { margin: 0; padding: 0; box-sizing: border-box; }
+
+   /* ─────────────────────────────────────────────
+      PAGE WRAPPER
+      ───────────────────────────────────────────── */
+   .user-video-page {
+     min-height: 100vh;
+     background: #0a0a0a;
+     color: #fff;
+     padding-bottom: 80px;
+     position: relative;
+     overflow-x: hidden;
+   }
+   
+   /* ─────────────────────────────────────────────
+      LOADING
+      ───────────────────────────────────────────── */
    .user-video-loading {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-    z-index: 9999;
-  }
-  
-  .user-video-loading .loading-spinner {
-    width: 70px;
-    height: 70px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 50%;
-    backdrop-filter: blur(10px);
-    margin-bottom: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-  
-  .user-video-loading .loading-spinner svg {
-    font-size: 36px;
-    color: #fe2c55;
-    animation: userVideoSpin 1s linear infinite;
-  }
-  
-  .user-video-loading p {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 15px;
-    font-weight: 500;
-    letter-spacing: 0.5px;
-    margin-top: 10px;
-  }
-  
-  @keyframes userVideoSpin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  
-  /* ============================================
-     MEJORAS PARA EL CONTENEDOR PRINCIPAL
-     ============================================ */
-  
-  .user-video-page {
-    min-height: 100vh;
-    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-    color: white;
-    padding-bottom: 80px;
-    position: relative;
-  }
-  
-  /* ============================================
-     HEADER CON FLECHA DE RETROCESO (si no existe)
-     ============================================ */
-  
-  .user-video-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(12px);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-  
-  .user-video-back-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: white;
-    transition: all 0.2s ease;
-  }
-  
-  .user-video-back-btn:active {
-    transform: scale(0.9);
-    background: #fe2c55;
-  }
-  
-  .user-video-back-btn svg {
-    font-size: 20px;
-  }
-  
-  /* ============================================
-     AVATAR CON EFECTO (mejora)
-     ============================================ */
-  
-  .uv-avatar {
-    width: 110px;
-    height: 110px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid #fe2c55;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
-  }
-  
-  .uv-avatar:active {
-    transform: scale(0.95);
-  }
-  
-  /* ============================================
-     TABS MEJORADOS
-     ============================================ */
-  
-  .uv-tab {
-    background: none;
-    border: none;
-    padding: 14px 20px;
-    color: rgba(255, 255, 255, 0.55);
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    position: relative;
-    transition: all 0.2s ease;
-  }
-  
-  .uv-tab:active {
-    transform: scale(0.95);
-  }
-  
-  .uv-tab.active {
-    color: #fe2c55;
-  }
-  
-  .uv-tab.active::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 20%;
-    right: 20%;
-    height: 3px;
-    background: #fe2c55;
-    border-radius: 3px;
-  }
-  
-  .uv-tab-count {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 20px;
-    padding: 2px 8px;
-    font-size: 11px;
-    font-weight: 600;
-  }
-  
-  .uv-tab.active .uv-tab-count {
-    background: #fe2c55;
-    color: white;
-  }
-  
-  /* ============================================
-     GRID DE VIDEOS MEJORADO
-     ============================================ */
-  
-  .uv-videos-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 3px;
-    padding: 0 3px;
-  }
-  
-  .uv-mini-video-card {
-    position: relative;
-    cursor: pointer;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 12px;
-    overflow: hidden;
-    transition: all 0.2s cubic-bezier(0.34, 1.2, 0.64, 1);
-  }
-  
-  .uv-mini-video-card:active {
-    transform: scale(0.97);
-  }
-  
-  .uv-mini-thumbnail-container {
-    position: relative;
-    aspect-ratio: 9 / 16;
-    overflow: hidden;
-    background: #1a1a2e;
-  }
-  
-  .uv-mini-thumbnail {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-  }
-  
-  .uv-mini-video-card:active .uv-mini-thumbnail {
-    transform: scale(1.02);
-  }
-  
-  .uv-mini-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
-    padding: 10px 8px;
-  }
-  
-  .uv-mini-stats {
-    display: flex;
-    justify-content: space-around;
-    font-size: 11px;
-    color: white;
-  }
-  
-  .uv-mini-stats span {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-  
-  .uv-mini-title {
-    font-size: 11px;
-    margin: 8px 6px 6px;
-    color: rgba(255, 255, 255, 0.85);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  
-  /* ============================================
-     BOTÓN VOLVER (BACK TO PROFILE)
-     ============================================ */
-  
-  .back-to-profile-btn {
-    background: linear-gradient(135deg, #fe2c55, #ff6b6b);
-    border: none;
-    padding: 12px 30px;
-    border-radius: 40px;
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  
-  .back-to-profile-btn:active {
-    transform: scale(0.95);
-  }
-  
-  /* ============================================
-     ERROR STATE
-     ============================================ */
-  
-  .user-video-error {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-    color: white;
-    gap: 20px;
-  }
-  
-  .user-video-error button {
-    background: linear-gradient(135deg, #fe2c55, #ff6b6b);
-    border: none;
-    padding: 12px 28px;
-    border-radius: 40px;
-    color: white;
-    cursor: pointer;
-    font-weight: 600;
-  }
-  
-  /* ============================================
-     RESPONSIVE
-     ============================================ */
-  
-  @media (max-width: 768px) {
-    .uv-tab span {
-      display: none;
-    }
-    
-    .uv-tab svg {
-      font-size: 22px;
-    }
-    
-    .uv-tab {
-      padding: 12px 16px;
-    }
-    
-    .uv-follow-btn span,
-    .uv-message-btn span {
-      display: none;
-    }
-    
-    .uv-follow-btn,
-    .uv-message-btn {
-      padding: 12px;
-      justify-content: center;
-    }
-    
-    .uv-follow-btn svg,
-    .uv-message-btn svg {
-      margin: 0;
-      font-size: 18px;
-    }
-    
-    .uv-avatar {
-      width: 90px;
-      height: 90px;
-    }
-    
-    .uv-videos-grid {
-      gap: 2px;
-    }
-    
-    .uv-mini-stats .uv-stat-comment,
-    .uv-mini-stats .uv-stat-heart {
-      display: none;
-    }
-    
-    .uv-mini-stats .uv-stat-play {
-      justify-content: center;
-      width: 100%;
-    }
-    
-    .user-video-loading .loading-spinner {
-      width: 55px;
-      height: 55px;
-    }
-    
-    .user-video-loading .loading-spinner svg {
-      font-size: 28px;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .uv-stats-row {
-      gap: 15px;
-    }
-    
-    .uv-stat-number {
-      font-size: 16px;
-    }
-    
-    .uv-stat-label {
-      font-size: 10px;
-    }
-    
-    .uv-username {
-      font-size: 18px;
-    }
-    
-    .uv-bio {
-      font-size: 12px;
-    }
-  }
+     position: fixed;
+     inset: 0;
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     justify-content: center;
+     background: #0a0a0a;
+     z-index: 9999;
+     gap: 16px;
+   }
+   
+   .user-video-loading .loading-spinner {
+     width: 64px;
+     height: 64px;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     border-radius: 50%;
+     background: rgba(254, 44, 85, 0.1);
+     border: 1.5px solid rgba(254, 44, 85, 0.3);
+   }
+   
+   .user-video-loading .loading-spinner svg {
+     font-size: 28px;
+     color: #fe2c55;
+     animation: uvSpin 0.9s linear infinite;
+   }
+   
+   @keyframes uvSpin {
+     to { transform: rotate(360deg); }
+   }
+   
+   .user-video-loading p {
+     font-size: 14px;
+     color: rgba(255, 255, 255, 0.5);
+     letter-spacing: 0.5px;
+   }
+   
+   /* ─────────────────────────────────────────────
+      ERROR
+      ───────────────────────────────────────────── */
+   .user-video-error {
+     min-height: 100vh;
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     justify-content: center;
+     background: #0a0a0a;
+     color: #fff;
+     gap: 20px;
+     text-align: center;
+     padding: 20px;
+   }
+   
+   .user-video-error h2 {
+     font-size: 20px;
+     font-weight: 600;
+   }
+   
+   .user-video-error button {
+     padding: 12px 32px;
+     background: #fe2c55;
+     border: none;
+     border-radius: 40px;
+     color: #fff;
+     font-size: 14px;
+     font-weight: 600;
+     cursor: pointer;
+     transition: opacity 0.2s;
+   }
+   
+   .user-video-error button:active { opacity: 0.8; }
+   
+   /* ─────────────────────────────────────────────
+      COVER / HERO BACKGROUND
+      ───────────────────────────────────────────── */
+   .uv-cover {
+     position: relative;
+     height: 200px;
+     background: linear-gradient(135deg, #1a0010 0%, #2d0a1e 40%, #0d0a2e 100%);
+     overflow: hidden;
+   }
+   
+   .uv-cover::after {
+     content: '';
+     position: absolute;
+     inset: 0;
+     background: linear-gradient(to bottom, transparent 40%, #0a0a0a 100%);
+   }
+   
+   /* ─────────────────────────────────────────────
+      HEADER (sticky)
+      ───────────────────────────────────────────── */
+   .uv-header {
+     display: flex;
+     align-items: center;
+     justify-content: space-between;
+     padding: 12px 16px;
+     position: sticky;
+     top: 0;
+     z-index: 100;
+     background: rgba(10, 10, 10, 0.85);
+     backdrop-filter: blur(14px);
+     -webkit-backdrop-filter: blur(14px);
+     border-bottom: 0.5px solid rgba(255, 255, 255, 0.07);
+   }
+   
+   .uv-back-btn,
+   .uv-share-btn,
+   .uv-messages-btn {
+     background: rgba(255, 255, 255, 0.08);
+     border: 0.5px solid rgba(255, 255, 255, 0.12);
+     width: 38px;
+     height: 38px;
+     border-radius: 50%;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     cursor: pointer;
+     color: #fff;
+     font-size: 16px;
+     transition: background 0.15s ease, transform 0.15s ease;
+     -webkit-tap-highlight-color: transparent;
+   }
+   
+   .uv-back-btn:active,
+   .uv-share-btn:active,
+   .uv-messages-btn:active {
+     transform: scale(0.9);
+     background: rgba(254, 44, 85, 0.25);
+   }
+   
+   .uv-header-title {
+     font-size: 16px;
+     font-weight: 700;
+     letter-spacing: 0.2px;
+   }
+   
+   .uv-header-actions {
+     display: flex;
+     gap: 10px;
+     align-items: center;
+   }
+   
+   /* ─────────────────────────────────────────────
+      AVATAR
+      ───────────────────────────────────────────── */
+   .uv-avatar-container {
+     position: relative;
+     display: flex;
+     justify-content: center;
+     margin-top: 28px;
+     margin-bottom: 14px;
+   }
+   
+   .uv-avatar {
+     width: 100px;
+     height: 100px;
+     border-radius: 50%;
+     object-fit: cover;
+     border: 3px solid #fe2c55;
+     box-shadow: 0 0 0 4px rgba(254, 44, 85, 0.15), 0 8px 28px rgba(0, 0, 0, 0.5);
+     display: block;
+     transition: transform 0.2s ease;
+   }
+   
+   .uv-avatar:active { transform: scale(0.96); }
+   
+   .uv-edit-avatar-btn {
+     position: absolute;
+     bottom: 2px;
+     right: calc(50% - 58px);
+     background: #fe2c55;
+     border: 2px solid #0a0a0a;
+     width: 32px;
+     height: 32px;
+     border-radius: 50%;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     cursor: pointer;
+     color: #fff;
+     font-size: 13px;
+     transition: transform 0.15s ease, background 0.15s ease;
+     -webkit-tap-highlight-color: transparent;
+   }
+   
+   .uv-edit-avatar-btn:active {
+     transform: scale(0.9);
+     background: #c4213e;
+   }
+   
+   /* ─────────────────────────────────────────────
+      USERNAME & BIO
+      ───────────────────────────────────────────── */
+   .uv-username {
+     text-align: center;
+     font-size: 20px;
+     font-weight: 800;
+     margin: 0 20px 6px;
+     letter-spacing: -0.3px;
+   }
+   
+   .uv-bio {
+     text-align: center;
+     font-size: 13px;
+     color: rgba(255, 255, 255, 0.6);
+     margin: 0 30px 20px;
+     line-height: 1.5;
+   }
+   
+   /* ─────────────────────────────────────────────
+      STATS ROW
+      ───────────────────────────────────────────── */
+   .uv-stats-row {
+     display: flex;
+     justify-content: center;
+     gap: 0;
+     margin: 0 20px 24px;
+     background: rgba(255, 255, 255, 0.04);
+     border: 0.5px solid rgba(255, 255, 255, 0.08);
+     border-radius: 16px;
+     overflow: hidden;
+   }
+   
+   .uv-stat {
+     flex: 1;
+     text-align: center;
+     padding: 14px 8px;
+     position: relative;
+   }
+   
+   /* divisor entre stats */
+   .uv-stat + .uv-stat::before {
+     content: '';
+     position: absolute;
+     left: 0;
+     top: 20%;
+     height: 60%;
+     width: 0.5px;
+     background: rgba(255, 255, 255, 0.1);
+   }
+   
+   .uv-stat-clickable {
+     cursor: pointer;
+     transition: background 0.15s ease;
+     -webkit-tap-highlight-color: transparent;
+   }
+   
+   .uv-stat-clickable:active {
+     background: rgba(254, 44, 85, 0.1);
+   }
+   
+   .uv-stat-number {
+     font-size: 20px;
+     font-weight: 800;
+     color: #fff;
+     line-height: 1;
+     margin-bottom: 5px;
+     letter-spacing: -0.5px;
+   }
+   
+   .uv-stat-label {
+     font-size: 11px;
+     color: rgba(255, 255, 255, 0.45);
+     text-transform: uppercase;
+     letter-spacing: 0.5px;
+     font-weight: 500;
+   }
+   
+   /* ─────────────────────────────────────────────
+      ACTION BUTTONS (Suivre / Message / More)
+      ───────────────────────────────────────────── */
+   .uv-action-buttons {
+     display: flex;
+     justify-content: center;
+     gap: 10px;
+     margin: 0 20px 24px;
+   }
+   
+   .uv-follow-btn,
+   .uv-message-btn,
+   .uv-more-btn {
+     border-radius: 10px;
+     font-size: 14px;
+     font-weight: 700;
+     cursor: pointer;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     gap: 8px;
+     padding: 11px 20px;
+     transition: transform 0.15s ease, opacity 0.15s ease;
+     -webkit-tap-highlight-color: transparent;
+     touch-action: manipulation;
+   }
+   
+   .uv-follow-btn {
+     background: #fe2c55;
+     border: none;
+     color: #fff;
+     flex: 1;
+     min-height: 44px;
+   }
+   
+   .uv-follow-btn:active { transform: scale(0.96); opacity: 0.88; }
+   
+   .uv-follow-btn.following {
+     background: rgba(255, 255, 255, 0.08);
+     border: 1px solid rgba(255, 255, 255, 0.2);
+     color: rgba(255, 255, 255, 0.85);
+   }
+   
+   .uv-message-btn {
+     background: rgba(255, 255, 255, 0.08);
+     border: 1px solid rgba(255, 255, 255, 0.15);
+     color: #fff;
+     flex: 1;
+     min-height: 44px;
+   }
+   
+   .uv-message-btn:active { transform: scale(0.96); background: rgba(255, 255, 255, 0.14); }
+   
+   .uv-more-btn {
+     background: rgba(255, 255, 255, 0.08);
+     border: 1px solid rgba(255, 255, 255, 0.15);
+     color: #fff;
+     width: 44px;
+     min-width: 44px;
+     min-height: 44px;
+     padding: 0;
+     border-radius: 10px;
+   }
+   
+   .uv-more-btn:active { transform: scale(0.9); }
+   
+   /* ─────────────────────────────────────────────
+      SEPARATOR
+      ───────────────────────────────────────────── */
+   .uv-separator {
+     height: 0.5px;
+     background: rgba(255, 255, 255, 0.08);
+     margin: 0 0 0 0;
+   }
+   
+   /* ─────────────────────────────────────────────
+      TABS — estilo TikTok
+      ───────────────────────────────────────────── */
+   .uv-tabs {
+     display: flex;
+     justify-content: stretch;
+     border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+     background: #0a0a0a;
+     position: sticky;
+     top: 62px;
+     z-index: 90;
+   }
+   
+   .uv-tab {
+     flex: 1;
+     background: none;
+     border: none;
+     padding: 14px 8px;
+     color: rgba(255, 255, 255, 0.4);
+     font-size: 13px;
+     font-weight: 600;
+     cursor: pointer;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     gap: 6px;
+     position: relative;
+     transition: color 0.2s ease;
+     -webkit-tap-highlight-color: transparent;
+     touch-action: manipulation;
+   }
+   
+   .uv-tab svg {
+     font-size: 16px;
+     transition: transform 0.2s ease;
+   }
+   
+   .uv-tab.active {
+     color: #fff;
+   }
+   
+   .uv-tab.active svg {
+     color: #fe2c55;
+     transform: scale(1.1);
+   }
+   
+   /* línea indicadora */
+   .uv-tab.active::after {
+     content: '';
+     position: absolute;
+     bottom: -0.5px;
+     left: 15%;
+     right: 15%;
+     height: 2.5px;
+     background: #fe2c55;
+     border-radius: 2px;
+   }
+   
+   .uv-tab:active { transform: scale(0.95); }
+   
+   .uv-tab-count {
+     background: rgba(255, 255, 255, 0.1);
+     border-radius: 20px;
+     padding: 1px 7px;
+     font-size: 10px;
+     font-weight: 700;
+     min-width: 22px;
+     text-align: center;
+   }
+   
+   .uv-tab.active .uv-tab-count {
+     background: #fe2c55;
+     color: #fff;
+   }
+   
+   /* ─────────────────────────────────────────────
+      VIDEO GRID
+      ───────────────────────────────────────────── */
+   .uv-videos-grid {
+     display: grid;
+     grid-template-columns: repeat(3, 1fr);
+     gap: 2px;
+     padding: 2px;
+     margin-top: 2px;
+   }
+   
+   /* ─────────────────────────────────────────────
+      MINI VIDEO CARD
+      ───────────────────────────────────────────── */
+   .uv-mini-video-card {
+     position: relative;
+     cursor: pointer;
+     background: #161616;
+     border-radius: 4px;
+     overflow: hidden;
+     transition: transform 0.15s ease;
+     -webkit-tap-highlight-color: transparent;
+   }
+   
+   .uv-mini-video-card:active { transform: scale(0.97); }
+   
+   .uv-mini-thumbnail-container {
+     position: relative;
+     aspect-ratio: 9 / 16;
+     overflow: hidden;
+     background: #111;
+   }
+   
+   .uv-mini-thumbnail {
+     width: 100%;
+     height: 100%;
+     object-fit: cover;
+     display: block;
+     transition: transform 0.3s ease;
+   }
+   
+   .uv-mini-video-card:active .uv-mini-thumbnail {
+     transform: scale(1.03);
+   }
+   
+   /* overlay gradiente */
+   .uv-mini-overlay {
+     position: absolute;
+     bottom: 0;
+     left: 0;
+     right: 0;
+     background: linear-gradient(to top, rgba(0, 0, 0, 0.88) 0%, transparent 100%);
+     padding: 20px 6px 6px;
+   }
+   
+   /* stats en la miniatura */
+   .uv-mini-stats {
+     display: flex;
+     justify-content: space-around;
+     align-items: center;
+     font-size: 10px;
+     color: rgba(255, 255, 255, 0.9);
+     font-weight: 600;
+   }
+   
+   .uv-mini-stats span {
+     display: flex;
+     align-items: center;
+     gap: 3px;
+   }
+   
+   .uv-stat-icon {
+     font-size: 9px;
+     opacity: 0.85;
+   }
+   
+   .uv-stat-heart .uv-stat-icon { color: #fe2c55; }
+   .uv-stat-play .uv-stat-icon  { color: #4ecdc4; }
+   .uv-stat-comment .uv-stat-icon { color: rgba(255,255,255,0.7); }
+   
+   /* duración badge */
+   .uv-mini-duration {
+     position: absolute;
+     bottom: 30px;
+     right: 5px;
+     background: rgba(0, 0, 0, 0.65);
+     backdrop-filter: blur(4px);
+     padding: 2px 5px;
+     border-radius: 4px;
+     font-size: 9px;
+     color: #fff;
+     font-weight: 600;
+     letter-spacing: 0.3px;
+   }
+   
+   /* botón guardar (visible en hover / táctil) */
+   .uv-mini-save-btn {
+     position: absolute;
+     top: 6px;
+     right: 6px;
+     z-index: 10;
+     width: 30px;
+     height: 30px;
+     border-radius: 50%;
+     background: rgba(0, 0, 0, 0.55);
+     backdrop-filter: blur(4px);
+     border: none;
+     color: #fff;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     cursor: pointer;
+     font-size: 13px;
+     opacity: 0;
+     transition: opacity 0.2s ease, background 0.15s ease, transform 0.15s ease;
+     -webkit-tap-highlight-color: transparent;
+   }
+   
+   .uv-mini-thumbnail-container:hover .uv-mini-save-btn,
+   .uv-mini-save-btn.saved {
+     opacity: 1;
+   }
+   
+   .uv-mini-save-btn.saved {
+     background: #fe2c55;
+   }
+   
+   .uv-mini-save-btn:active { transform: scale(0.88); }
+   .uv-mini-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+   
+   /* título debajo del thumbnail */
+   .uv-mini-title {
+     font-size: 11px;
+     margin: 6px 6px 5px;
+     color: rgba(255, 255, 255, 0.8);
+     overflow: hidden;
+     text-overflow: ellipsis;
+     white-space: nowrap;
+     line-height: 1.3;
+   }
+   
+   /* ─────────────────────────────────────────────
+      EMPTY STATE
+      ───────────────────────────────────────────── */
+   .uv-empty-state {
+     text-align: center;
+     padding: 60px 28px 80px;
+   }
+   
+   .uv-empty-icon-container {
+     width: 80px;
+     height: 80px;
+     margin: 0 auto 20px;
+     background: rgba(254, 44, 85, 0.08);
+     border: 1px solid rgba(254, 44, 85, 0.2);
+     border-radius: 50%;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+   }
+   
+   .uv-empty-icon {
+     font-size: 34px;
+     color: #fe2c55;
+     opacity: 0.7;
+   }
+   
+   .uv-empty-title {
+     font-size: 18px;
+     font-weight: 700;
+     margin: 0 0 10px;
+     color: #fff;
+   }
+   
+   .uv-empty-description {
+     font-size: 13px;
+     margin: 0 0 28px;
+     color: rgba(255, 255, 255, 0.45);
+     line-height: 1.6;
+   }
+   
+   .uv-upload-btn {
+     display: inline-flex;
+     align-items: center;
+     gap: 8px;
+     padding: 13px 32px;
+     background: #fe2c55;
+     border: none;
+     border-radius: 40px;
+     color: #fff;
+     font-size: 14px;
+     font-weight: 700;
+     cursor: pointer;
+     transition: opacity 0.15s ease, transform 0.15s ease;
+     -webkit-tap-highlight-color: transparent;
+   }
+   
+   .uv-upload-btn:active { transform: scale(0.96); opacity: 0.88; }
+   
+   /* ─────────────────────────────────────────────
+      ANIMACIONES
+      ───────────────────────────────────────────── */
+   @keyframes uvSlideUp {
+     from { opacity: 0; transform: translateY(16px); }
+     to   { opacity: 1; transform: translateY(0); }
+   }
+   
+   .uv-mini-video-card {
+     animation: uvSlideUp 0.25s ease both;
+   }
+   
+   /* ─────────────────────────────────────────────
+      HOVER (solo dispositivos con puntero)
+      ───────────────────────────────────────────── */
+   @media (hover: hover) {
+   
+     .uv-back-btn:hover,
+     .uv-share-btn:hover,
+     .uv-messages-btn:hover {
+       background: rgba(254, 44, 85, 0.18);
+       border-color: rgba(254, 44, 85, 0.35);
+     }
+   
+     .uv-follow-btn:hover {
+       opacity: 0.9;
+     }
+   
+     .uv-message-btn:hover {
+       background: rgba(255, 255, 255, 0.14);
+       border-color: rgba(255, 255, 255, 0.25);
+     }
+   
+     .uv-stat-clickable:hover .uv-stat-number {
+       color: #fe2c55;
+     }
+   
+     .uv-mini-video-card:hover .uv-mini-thumbnail {
+       transform: scale(1.04);
+     }
+   
+     .uv-mini-video-card:hover .uv-mini-title {
+       color: #fe2c55;
+     }
+   
+     .uv-mini-save-btn:hover {
+       background: #fe2c55;
+       transform: scale(1.08);
+     }
+   
+     .uv-tab:hover {
+       color: rgba(255, 255, 255, 0.7);
+     }
+   }
+   
+   /* ─────────────────────────────────────────────
+      TÁCTIL (Android/iOS sin hover)
+      ───────────────────────────────────────────── */
+   @media (hover: none) and (pointer: coarse) {
+     .uv-mini-save-btn { opacity: 0.75; }
+     .uv-mini-save-btn.saved { opacity: 1; }
+   }
+   
+   /* ─────────────────────────────────────────────
+      RESPONSIVE — tablet/PC
+      ───────────────────────────────────────────── */
+   @media (min-width: 640px) {
+     .uv-videos-grid {
+       grid-template-columns: repeat(4, 1fr);
+       gap: 3px;
+       padding: 3px;
+     }
+   }
+   
+   @media (min-width: 1024px) {
+     .user-video-page {
+       max-width: 480px;
+       margin: 0 auto;
+       border-left: 0.5px solid rgba(255,255,255,0.07);
+       border-right: 0.5px solid rgba(255,255,255,0.07);
+     }
+   
+     .uv-videos-grid {
+       grid-template-columns: repeat(3, 1fr);
+     }
+   }
+   
+   /* ─────────────────────────────────────────────
+      RESPONSIVE — teléfono pequeño
+      ───────────────────────────────────────────── */
+   @media (max-width: 480px) {
+   
+     .uv-stats-row { margin: 0 12px 20px; }
+     .uv-stat-number { font-size: 17px; }
+     .uv-stat-label  { font-size: 10px; }
+   
+     .uv-username { font-size: 18px; }
+     .uv-bio { font-size: 12px; margin: 0 20px 16px; }
+   
+     .uv-action-buttons { margin: 0 12px 20px; gap: 8px; }
+   
+     .uv-follow-btn,
+     .uv-message-btn { font-size: 13px; padding: 10px 14px; }
+   
+     /* tabs: ocultar texto, solo iconos */
+     .uv-tab span { display: none; }
+     .uv-tab svg  { font-size: 20px; }
+     .uv-tab      { padding: 13px 8px; }
+   
+     /* botones: ocultar texto */
+     .uv-follow-btn span,
+     .uv-message-btn span { display: none; }
+   
+     .uv-follow-btn,
+     .uv-message-btn {
+       padding: 0;
+       min-height: 44px;
+       min-width: 44px;
+       width: 44px;
+       flex: 0 0 44px;
+       border-radius: 50%;
+       font-size: 17px;
+     }
+   
+     .uv-follow-btn svg,
+     .uv-message-btn svg { margin: 0; }
+   
+     .uv-avatar { width: 84px; height: 84px; }
+   
+     .uv-videos-grid { gap: 1.5px; padding: 1.5px; }
+   
+     .uv-mini-stats .uv-stat-heart,
+     .uv-mini-stats .uv-stat-comment { display: none; }
+   
+     .uv-mini-stats .uv-stat-play {
+       justify-content: center;
+       width: 100%;
+     }
+   
+     .uv-empty-state { padding: 50px 20px 60px; }
+     .uv-empty-title { font-size: 16px; }
+     .uv-empty-description { font-size: 12px; }
+   }
+   
+   @media (max-width: 360px) {
+     .uv-stat-number { font-size: 15px; }
+     .uv-avatar { width: 76px; height: 76px; }
+     .uv-username { font-size: 16px; }
+   }
+   
+   /* ─────────────────────────────────────────────
+      TAP HIGHLIGHT GLOBAL
+      ───────────────────────────────────────────── */
+   .uv-follow-btn,
+   .uv-message-btn,
+   .uv-more-btn,
+   .uv-back-btn,
+   .uv-share-btn,
+   .uv-messages-btn,
+   .uv-mini-video-card,
+   .uv-tab,
+   .uv-stat-clickable,
+   .uv-upload-btn,
+   .uv-mini-save-btn {
+     -webkit-tap-highlight-color: transparent;
+     touch-action: manipulation;
+   }
+   
+   /* ─────────────────────────────────────────────
+      SCROLLBAR discreta
+      ───────────────────────────────────────────── */
+   ::-webkit-scrollbar { width: 3px; }
+   ::-webkit-scrollbar-track { background: transparent; }
+   ::-webkit-scrollbar-thumb {
+     background: rgba(254, 44, 85, 0.35);
+     border-radius: 3px;
+   }
+   

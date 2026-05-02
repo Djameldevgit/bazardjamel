@@ -1,93 +1,369 @@
-// controllers/videoCtrl.js
 const Video = require('../models/videoModel');
 const User = require('../models/userModel');
-const mongoose = require('mongoose');
 const cloudinary = require('cloudinary').v2;
+const axios = require('axios');
+const mongoose = require('mongoose');
+
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-const axios = require('axios');
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
-ffmpeg.setFfmpegPath(ffmpegInstaller.path);
-
-// Configuración de Pixabay
-const PIXABAY_API_KEY = process.env.PIXABAY_API_KEY;
-const PIXABAY_VIDEO_API_URL = 'https://pixabay.com/api/videos/';
-
-// Música de respaldo (fallback)
-const MOCK_MUSIC = [
-  { id: 1, title: 'Électro Algérien', user: 'DJ Mesta', duration: 210, audio: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', tags: 'electro', genre: 'Électro' },
-  { id: 2, title: 'Chaabi Moderne', user: 'Cheb Momo', duration: 252, audio: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', tags: 'chaabi', genre: 'Chaabi' },
-  { id: 3, title: 'Rap Oranais', user: 'MC Blida', duration: 210, audio: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', tags: 'rap', genre: 'Rap' },
-  { id: 4, title: 'Ambiance Café', user: 'Groupe Tizi', duration: 300, audio: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', tags: 'acoustique', genre: 'Acoustique' },
-  { id: 5, title: 'Sahara Sunset', user: 'Karim DZ', duration: 285, audio: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3', tags: 'ambient', genre: 'Ambient' },
-  { id: 6, title: 'Raï Moderne', user: 'Cheb Bilal', duration: 235, audio: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3', tags: 'raï', genre: 'Raï' },
-];
+// ============================================
+// 🎵 MÚSICA CON JAMENDO API
+// ============================================
+const JAMENDO_CLIENT_ID = process.env.JAMENDO_CLIENT_ID || '9dee24cd';
+const JAMENDO_API_URL = 'https://api.jamendo.com/v3.0/tracks/';
 
 const getMusicLibrary = async (req, res) => {
-  const q = req.query.q || 'background';
+  const query = req.query.q || 'background';
   const limit = parseInt(req.query.limit) || 20;
   const perPage = Math.min(limit, 50);
 
   try {
-    if (!PIXABAY_API_KEY) {
-      console.warn('⚠️ Sin API key, usando música mock');
-      const filtered = MOCK_MUSIC.filter(track => 
-        track.title.toLowerCase().includes(q.toLowerCase()) || 
-        track.tags.toLowerCase().includes(q.toLowerCase())
-      ).slice(0, perPage);
-      return res.json({ success: true, hits: filtered });
-    }
-
-    const response = await axios.get(PIXABAY_VIDEO_API_URL, {
+    const response = await axios.get(JAMENDO_API_URL, {
       params: {
-        key: PIXABAY_API_KEY,
-        q: q,
-        per_page: perPage,
-        editors_choice: true,
-        video_type: 'music',
+        client_id: JAMENDO_CLIENT_ID,
+        format: 'json',
+        limit: perPage,
+        search: query,
+        include: 'musicinfo'
       },
+      timeout: 10000
     });
 
-    const hits = response.data.hits.map(video => ({
-      id: video.id,
-      title: video.tags ? video.tags.split(',')[0] : 'Son títre',
-      tags: video.tags || '',
-      user: video.user || 'Artiste Inconue',
-      duration: video.duration || 0,
-      audio: video.videos.tiny.url || video.videos.small.url || '',
-      thumbnail: video.previewURL || '',
-      genre: 'Pop',
-    })).filter(item => item.audio);
+    if (!response.data || !response.data.results || response.data.results.length === 0) {
+      return res.json({ success: true, hits: [], message: 'Aucun résultat' });
+    }
+
+    const hits = response.data.results.map(track => ({
+      id: track.id,
+      title: track.name,
+      user: track.artist_name,
+      duration: track.duration,
+      audio: track.audio,
+      thumbnail: track.album_image || '',
+      genre: track.genre || '',
+      tags: track.tags || ''
+    }));
 
     res.json({ success: true, hits });
   } catch (error) {
-    console.error('Error en API música Pixabay:', error.message);
-    const filtered = MOCK_MUSIC.filter(track =>
-      track.title.toLowerCase().includes(q.toLowerCase())
-    ).slice(0, perPage);
-    res.json({ success: true, hits: filtered, warning: 'Usando música de respaldo' });
+    console.error('❌ Error al buscar en Jamendo:', error.message);
+    res.status(200).json({ success: true, hits: [], message: 'Servicio de música no disponible momentáneamente' });
   }
 };
 
-// ========== FUNCIONES PÚBLICAS ==========
-
-// ✅ Obtener videos por categoría (HOME - slider)
+// Proxy para audio de Jamendo (evitar CORS)
+const proxyMusic = async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).json({ error: 'URL requerida' });
   
+  try {
+    const response = await axios({
+      method: 'get',
+      url: url,
+      responseType: 'stream',
+      timeout: 30000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'audio/mpeg,audio/*;q=0.9,*/*;q=0.8'
+      }
+    });
+    
+    res.setHeader('Content-Type', 'audio/mpeg');
+    response.data.pipe(res);
+  } catch (err) {
+    console.error('Error proxy audio:', err.message);
+    res.status(500).json({ error: 'Error fetching audio' });
+  }
+};
 
-// ✅ Para PÚBLICO - Solo videos aprobados
-// controllers/videoCtrl.js
+// ============================================
+// 🎬 CREAR VIDEO (TAL CUAL FUNCIONABA)
+// ============================================
+const createVideo = async (req, res) => {
+  try {
+    console.log("🔴 BODY RECIBIDO:", JSON.stringify(req.body, null, 2));
+    
+    const {
+      title,
+      description,
+      videoUrl,
+      videoPublicId,
+      thumbnail,
+      duration,
+      music
+    } = req.body;
 
-// ✅ Para PÚBLICO - Solo videos aprobados
-// controllers/videoCtrl.js
+    const userId = req.user._id;
+    const user = await User.findById(userId);
+    const isAdmin = user.role === 'admin';
+    const isProValid = user.isPro && (!user.proExpiryDate || new Date(user.proExpiryDate) > new Date());
 
-// ✅ Para PÚBLICO - Solo videos aprobados (con manejo de errores claro)
-// controllers/videoCtrl.js - getVideoByIdPublic CORREGIDO
+    // Validaciones de duración
+    const MAX_DURATION_FREE = 30;
+    const MAX_DURATION_PRO = 60;
+    const maxAllowed = (isProValid || isAdmin) ? MAX_DURATION_PRO : MAX_DURATION_FREE;
+    
+    if (duration && duration > maxAllowed) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `La durée maximale est de ${maxAllowed} secondes` 
+      });
+    }
 
+    let finalVideoUrl = videoUrl;
+    let finalThumbnail = thumbnail;
+    let musicData = null;
+
+    // ✅ MEZCLA DE AUDIO
+    if (music && music.audioPublicId && videoPublicId) {
+      console.log("🎵 PROCESANDO MEZCLA DE AUDIO...");
+      console.log(`📁 Video Public ID: ${videoPublicId}`);
+      console.log(`🎵 Audio Public ID: ${music.audioPublicId}`);
+      
+      try {
+        const formattedAudioId = music.audioPublicId.replace(/\//g, ':');
+        const uploadIndex = videoUrl.indexOf('/upload/');
+        if (uploadIndex === -1) {
+          throw new Error('URL inválida: no contiene /upload/');
+        }
+        
+        const base = videoUrl.substring(0, uploadIndex + 8);
+        const pathAndFile = videoUrl.substring(uploadIndex + 8);
+        const transformation = `l_audio:${formattedAudioId},fl_layer_apply`;
+        finalVideoUrl = `${base}${transformation}/${pathAndFile}`;
+        finalThumbnail = finalVideoUrl.replace(/\.mp4$/, '.jpg');
+        
+        console.log(`✅ URL mezclada generada: ${finalVideoUrl}`);
+        
+        musicData = {
+          id: music.id,
+          title: music.title,
+          artist: music.artist,
+          audioUrl: music.audioUrl,
+          audioPublicId: music.audioPublicId,
+          volume: music.volume || 70,
+          processed: true
+        };
+        
+      } catch (err) {
+        console.error('❌ Error en mezcla de audio:', err);
+        musicData = { ...music, processed: false, error: err.message };
+      }
+    } else if (music && music.audioUrl) {
+      console.log("⚠️ Música sin public_id, guardando sin mezcla");
+      musicData = { ...music, processed: false };
+    } else {
+      console.log("📹 Video sin música");
+    }
+
+    const newVideo = new Video({
+      title: title.trim(),
+      description: description || '',
+      shortDescription: description ? description.substring(0, 300) : '',
+      videoUrl: finalVideoUrl,
+      videoPublicId: videoPublicId,
+      thumbnail: finalThumbnail,
+      duration: duration || 0,
+      user: userId,
+      music: musicData,
+      pendiente: isAdmin ? false : true
+    });
+
+    await newVideo.save();
+    
+    const populatedVideo = await Video.findById(newVideo._id)
+      .populate('user', 'username avatar isPro role');
+    
+    console.log(`✅ Video creado exitosamente: ${populatedVideo._id}`);
+    
+    res.status(201).json({
+      success: true,
+      message: isAdmin ? 'Vidéo créée avec succès' : 'Vidéo en attente d\'approbation',
+      video: populatedVideo
+    });
+    
+  } catch (error) {
+    console.error('❌ Error en createVideo:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message || 'Error al crear el video'
+    });
+  }
+};
+
+// ============================================
+// ✏️ ACTUALIZAR VIDEO (SOLO ARREGLAMOS ESTO)
+// ============================================
+// ============================================
+// ✏️ ACTUALIZAR VIDEO (CORREGIDO DEFINITIVO)
+// ============================================
+// ============================================
+// ✏️ ACTUALIZAR VIDEO (CON EXTRACCIÓN DE PUBLIC_ID)
+// ============================================
+// ============================================
+// ✏️ ACTUALIZAR VIDEO (LIMPIEZA CORRECTA)
+// ============================================
+// ============================================
+// ✏️ ACTUALIZAR VIDEO (CON VALIDACIONES)
+// ============================================
+const updateVideo = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, music, videoUrl, videoPublicId, thumbnail, duration } = req.body;
+    
+    console.log("🔴 ========== UPDATE VIDEO ==========");
+    console.log("🔴 ID:", id);
+    console.log("🔴 Música recibida:", music.title || "ninguna");
+    console.log("🔴 music.audioPublicId:", music.audioPublicId);
+    
+    const video = await Video.findById(id);
+    if (!video) {
+      return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    }
+    
+    const isOwner = video.user.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'moderator';
+    
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'No autorizado' });
+    }
+    
+    // ✅ FUNCIÓN PARA LIMPIAR URL DE TRANSFORMACIONES
+    const cleanUrlFromTransformations = (url) => {
+      if (!url) return url;
+      let cleanUrl = url;
+      cleanUrl = cleanUrl.replace(/\/l_audio:[^/]+,fl_layer_apply\//g, '/');
+      cleanUrl = cleanUrl.replace(/\/upload\/l_audio:[^,]+,fl_layer_apply\//, '/upload/');
+      while (cleanUrl.includes('/l_audio:')) {
+        cleanUrl = cleanUrl.replace(/\/l_audio:[^/]+,fl_layer_apply\//g, '/');
+      }
+      return cleanUrl;
+    };
+    
+    // ✅ FUNCIÓN PARA EXTRAER PUBLIC_ID
+    const extractPublicIdFromUrl = (url) => {
+      if (!url) return null;
+      const cleanUrl = cleanUrlFromTransformations(url);
+      const match = cleanUrl.match(/\/upload\/(?:v\d+\/)?(.+?)\.(mp4|mov|webm)/);
+      if (match) {
+        return match[1];
+      }
+      return null;
+    };
+    
+    // ✅ Si no tenemos videoPublicId, extraerlo de la URL actual
+    let finalVideoPublicId = videoPublicId || video.videoPublicId;
+    if (!finalVideoPublicId && video.videoUrl) {
+      finalVideoPublicId = extractPublicIdFromUrl(video.videoUrl);
+      if (finalVideoPublicId) {
+        video.videoPublicId = finalVideoPublicId;
+        console.log(`📁 Public_id extraído de URL: ${finalVideoPublicId}`);
+      }
+    }
+    
+    console.log("🔴 videoPublicId FINAL a usar:", finalVideoPublicId);
+    
+    // ✅ Actualizar campos básicos
+    if (title) video.title = title;
+    if (description !== undefined) video.description = description;
+    if (thumbnail) video.thumbnail = thumbnail;
+    if (duration) video.duration = duration;
+    if (videoUrl) video.videoUrl = videoUrl;
+    
+    // ✅ MANEJAR MÚSICA
+    let finalVideoUrl = video.videoUrl;
+    
+    // ✅ Verificar si music existe y no es null
+    if (music !== undefined && music !== null) {
+      if (music === null) {
+        // Eliminar música
+        video.music = null;
+        console.log("🎵 Música eliminada");
+      } 
+      else if (music.audioPublicId) {
+        console.log("🎵 Regenerando mezcla de audio...");
+        console.log(`🎵 Audio Public ID: ${music.audioPublicId}`);
+        
+        let baseVideoUrl = videoUrl || video.videoUrl;
+        baseVideoUrl = cleanUrlFromTransformations(baseVideoUrl);
+        
+        console.log(`📁 URL base limpia: ${baseVideoUrl}`);
+        
+        try {
+          const formattedAudioId = music.audioPublicId.replace(/\//g, ':');
+          const uploadIndex = baseVideoUrl.indexOf('/upload/');
+          
+          if (uploadIndex !== -1) {
+            const base = baseVideoUrl.substring(0, uploadIndex + 8);
+            const pathAndFile = baseVideoUrl.substring(uploadIndex + 8);
+            const transformation = `l_audio:${formattedAudioId},fl_layer_apply`;
+            finalVideoUrl = `${base}${transformation}/${pathAndFile}`;
+            
+            const newThumbnail = finalVideoUrl.replace(/\.(mp4|mov|webm)$/, '.jpg');
+            if (newThumbnail !== video.thumbnail && !thumbnail) {
+              video.thumbnail = newThumbnail;
+            }
+            
+            console.log(`✅ Nueva URL mezclada: ${finalVideoUrl}`);
+            
+            video.music = {
+              id: music.id || null,
+              title: music.title || null,
+              artist: music.artist || null,
+              audioUrl: music.audioUrl,
+              audioPublicId: music.audioPublicId,
+              duration: music.duration || null,
+              volume: music.volume !== undefined ? music.volume : 70,
+              processed: true
+            };
+          } else {
+            throw new Error('No se encontró /upload/ en la URL');
+          }
+        } catch (err) {
+          console.error('❌ Error:', err);
+          video.music = { ...music, processed: false, error: err.message };
+          finalVideoUrl = baseVideoUrl;
+        }
+      } 
+      else if (music.audioUrl) {
+        console.log("⚠️ Música sin audioPublicId, guardando solo metadata");
+        video.music = { ...music, processed: false };
+      }
+    }
+    // Si music es undefined o null, no hacemos nada con la música
+    
+    // ✅ Actualizar URL si cambió
+    if (finalVideoUrl !== video.videoUrl) {
+      video.videoUrl = finalVideoUrl;
+    }
+    
+    // ✅ Admin aprueba automáticamente
+    if (isAdmin && video.pendiente === true) {
+      video.pendiente = false;
+    }
+    
+    await video.save();
+    
+    const updatedVideo = await Video.findById(video._id)
+      .populate('user', 'username avatar isPro role');
+    
+    console.log(`✅ Video actualizado: ${updatedVideo.title}`);
+    
+    res.json({ 
+      success: true, 
+      message: 'Video actualizado correctamente', 
+      video: updatedVideo 
+    });
+    
+  } catch (error) {
+    console.error('❌ Error updateVideo:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 const getVideoByIdPublic = async (req, res) => {
   try {
     const { id } = req.params;
@@ -201,60 +477,40 @@ const getVideoByIdPrivate = async (req, res) => {
 };
 // ✅ Obtener video por ID
 // ✅ Versión corregida de getVideoById
+// ============================================
+// 👁️ OBTENER VIDEO POR ID (SIN DEPENDER DE req.user)
+// ============================================
 const getVideoById = async (req, res) => {
   try {
     const { id } = req.params;
+    
+    console.log(`📹 Buscando video con ID: ${id}`);
+    
+    // Validar ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: 'ID inválido' });
+      return res.status(400).json({ success: false, message: 'ID de video inválido' });
     }
-
+    
     const video = await Video.findById(id)
-      .populate('user', 'username avatar isPro role')
-      .populate('comments.user', 'username avatar isPro')
-      .populate('comments.replies.user', 'username avatar isPro')
-      .lean();
-
+      .populate('user', 'username avatar isPro role bio')
+      .populate('comments.user', 'username avatar');
+    
     if (!video) {
       return res.status(404).json({ success: false, message: 'Video no encontrado' });
     }
-
-    // ✅ Verificar si es admin correctamente
-    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'moderator');
     
-    // ✅ LOG para depuración
-    console.log('🔍 getVideoById - Video:', { 
-      id: video._id, 
-      pendiente: video.pendiente,
-      userRole: req.user.role,
-      isAdmin: isAdmin
-    });
+    // ✅ NO verificar role - permitir ver cualquier video (aprobado o pendiente)
+    // Si el video está pendiente, igual se muestra (para administración)
     
-    // ✅ Permitir a admin ver videos pendientes
-    if (video.pendiente === true && !isAdmin) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Video en attente d\'approbation. Veuillez patienter.' 
-      });
-    }
-
-    // ✅ Incrementar views solo si no es admin o el video está aprobado
-    if (!video.pendiente || isAdmin) {
-      Video.findByIdAndUpdate(id, { $inc: { views: 1 } }).exec();
-      if (req.user && req.user._id) {
-        Video.findByIdAndUpdate(id, { $addToSet: { uniqueViews: req.user._id } }).exec();
-      }
-    }
-
-    let liked = false;
-    if (req.user && req.user._id && video.likes) {
-      const userIdStr = req.user._id.toString();
-      liked = video.likes.some(likeId => likeId && likeId.toString() === userIdStr);
-    }
-
-    const videoData = { ...video, liked };
-    res.json({ success: true, video: videoData });
+    // Incrementar vista
+    video.views = (video.views || 0) + 1;
+    await video.save();
+    
+    console.log(`✅ Video enviado: ${video.title}`);
+    
+    res.json({ success: true, video });
   } catch (error) {
-    console.error('Error getVideoById:', error);
+    console.error('❌ Error en getVideoById:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -858,135 +1114,68 @@ const toggleSaveVideo = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const createVideo = async (req, res) => {
-  try {
-    const { 
-      title, 
-      description, 
-      shortDescription, 
-      videoUrl, 
-      videoType, 
-      videoId, 
-      thumbnail, 
-      duration,
-      music
-    } = req.body;
-    
-    const userId = req.user._id;
-
-    const user = await User.findById(userId);
-    const isProValid = user.isPro && (!user.proExpiryDate || new Date(user.proExpiryDate) > new Date());
-    const isAdmin = user.role === 'admin';
-    
-    if (!isProValid && !isAdmin) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Se requiere cuenta Pro activa para crear videos' 
-      });
-    }
-
-    const MAX_DURATION_FREE = 30;
-    const MAX_DURATION_PRO = 60;
-    const maxAllowed = (isProValid || isAdmin) ? MAX_DURATION_PRO : MAX_DURATION_FREE;
-    
-    if (videoType === 'local' && duration && duration > maxAllowed) {
-      return res.status(400).json({ 
-        success: false, 
-        message: `La duración máxima permitida es ${maxAllowed} segundos` 
-      });
-    }
-
-    // ✅ Crear video sin categorías obligatorias
-    const video = new Video({
-      title,
-      description: description || '',
-      shortDescription: shortDescription || (description ? description.substring(0, 300) : ''),
-      videoUrl,
-      videoType: videoType || 'local',
-      videoId: videoId || '',
-      thumbnail: thumbnail || '',
-      duration: duration || 0,
-      user: userId,
-      music: music || null,
-      // ✅ Campos opcionales por compatibilidad
-      category: '',
-      categorySlug: '',
-      tags: [],
-      pendiente: isAdmin ? false : true
-    });
-
-    await video.save();
-    
-    // Poblar el usuario para la respuesta
-    const populatedVideo = await Video.findById(video._id)
-      .populate('user', 'username avatar isPro role');
-    
-    res.status(201).json({ 
-      success: true, 
-      message: isAdmin ? 'Video creado correctamente' : 'Video creado y pendiente de aprobación', 
-      video: populatedVideo 
-    });
-  } catch (error) {
-    console.error('Error createVideo:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// ✅ Actualizar video - SIN categorías obligatorias
-const updateVideo = async (req, res) => {
+// ============================================
+// ✏️ ACTUALIZAR VIDEO (SOLO DUEÑO O ADMIN)
+// ============================================
+// ============================================
+// ✏️ ACTUALIZAR VIDEO (CON MEZCLA DE AUDIO)
+// ============================================
+// ============================================
+// ✏️ ACTUALIZAR VIDEO (CON REGENERACIÓN DE AUDIO)
+// ============================================
+// ============================================
+// ✏️ ACTUALIZAR VIDEO (CON REGENERACIÓN DE AUDIO)
+// ============================================
+ 
+const getVideo = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, shortDescription, thumbnail, music } = req.body;
     
-    const video = await Video.findById(id);
+    console.log(`📹 Buscando video con ID: ${id}`);
+    console.log(`📹 Usuario autenticado:`, req.user ? req.user.username : 'No autenticado');
+    
+    // Validar ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: 'ID de video inválido' });
+    }
+    
+    const video = await Video.findById(id)
+      .populate('user', 'username avatar isPro role bio')
+      .populate('comments.user', 'username avatar');
+    
     if (!video) {
       return res.status(404).json({ success: false, message: 'Video no encontrado' });
     }
     
-    const isOwner = video.user.toString() === req.user._id.toString();
-    const isAdmin = req.user.role === 'admin' || req.user.role === 'moderator';
+    // ✅ MANEJO SEGURO - Verificar si req.user existe
+    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'moderator');
+    const isOwner = req.user && video.user._id.toString() === req.user._id.toString();
     
-    if (!isOwner && !isAdmin) {
-      return res.status(403).json({ success: false, message: 'No autorizado' });
+    console.log(`📹 Video: ${video.title}`);
+    console.log(`📹 Pendiente: ${video.pendiente}`);
+    console.log(`📹 isAdmin: ${isAdmin}`);
+    console.log(`📹 isOwner: ${isOwner}`);
+    
+    // Si el video está pendiente y no es admin ni dueño
+    if (video.pendiente === true && !isAdmin && !isOwner) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Este video está pendiente de aprobación' 
+      });
     }
-
-    // ✅ Actualizar solo campos permitidos
-    if (title) video.title = title;
-    if (description !== undefined) video.description = description;
-    if (shortDescription) video.shortDescription = shortDescription;
-    if (thumbnail) video.thumbnail = thumbnail;
-    if (music !== undefined) video.music = music;
     
-    await video.save();
+    // Incrementar vista solo si hay usuario autenticado y no es el dueño
+    if (req.user && !isOwner) {
+      video.views = (video.views || 0) + 1;
+      await video.save();
+    }
     
-    const updatedVideo = await Video.findById(video._id)
-      .populate('user', 'username avatar isPro role');
-    
-    res.json({ success: true, message: 'Video actualizado', video: updatedVideo });
+    res.json({ success: true, video });
   } catch (error) {
-    console.error('Error updateVideo:', error);
+    console.error('❌ Error en getVideo:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 // ✅ Filtrar videos - SIN categorías obligatorias
 const filterVideos = async (req, res) => {
   try {

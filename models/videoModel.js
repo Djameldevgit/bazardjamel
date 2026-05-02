@@ -38,6 +38,8 @@ const videoSchema = new mongoose.Schema({
   music: {
     id: { type: String, default: null },
     title: { type: String, default: null },
+    artist: { type: String, default: null },   // ← añadir
+    audioUrl: { type: String, default: null }, // ← añadir
     volume: { type: Number, default: 70 }
   },
   

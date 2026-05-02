@@ -1,28 +1,28 @@
 /* ============================================
-   VideoReelItem.css - Estilos dedicados para el componente
+   Feed.css — VideoReelItem styles (fixed & polished)
    ============================================ */
 
-/* ──────────────────────────────────────────────
+/* ─────────────────────────────────────────────
    CONTENEDOR PRINCIPAL
-   ────────────────────────────────────────────── */
+   ───────────────────────────────────────────── */
    .video-reel-container {
     height: 100vh;
     scroll-snap-align: start;
     position: relative;
-    background-color: #000;
+    background-color: rgb(8, 3, 24);
     overflow: hidden;
   }
   
-  /* ──────────────────────────────────────────────
+  /* ─────────────────────────────────────────────
      HEADER
-     ────────────────────────────────────────────── */
+     ───────────────────────────────────────────── */
   .vr-header {
     position: absolute;
-    top: 44px;
+    top: env(safe-area-inset-top, 44px);
     left: 0;
     right: 0;
     z-index: 30;
-    padding: 0 14px;
+    padding: 10px 14px 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -36,28 +36,34 @@
   }
   
   .vr-header-btn {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(8px);
-    border: 0.5px solid rgba(255, 255, 255, 0.18);
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 0.5px solid rgba(255, 255, 255, 0.15);
     border-radius: 50%;
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: white;
-    transition: all 0.15s ease;
+    color: #fff;
+    font-size: 15px;
+    pointer-events: auto;
+    transition: background 0.15s ease, transform 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   
   .vr-header-btn:active {
-    transform: scale(0.94);
-    background: rgba(255, 255, 255, 0.2);
+    transform: scale(0.92);
+    background: rgba(0, 0, 0, 0.65);
   }
   
-  /* ──────────────────────────────────────────────
+  /* ─────────────────────────────────────────────
      VIDEO WRAPPER
-     ────────────────────────────────────────────── */
+     ───────────────────────────────────────────── */
   .vr-video-wrapper {
     position: relative;
     width: 100%;
@@ -70,33 +76,35 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
+    display: block;
   }
   
-  /* ──────────────────────────────────────────────
+  /* ─────────────────────────────────────────────
      GRADIENT OVERLAY
-     ────────────────────────────────────────────── */
+     ───────────────────────────────────────────── */
   .vr-gradient-overlay {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: linear-gradient(180deg, 
-      rgba(0, 0, 0, 0.45) 0%, 
-      transparent 25%, 
-      transparent 55%, 
-      rgba(0, 0, 0, 0.8) 100%
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.5) 0%,
+      transparent 22%,
+      transparent 52%,
+      rgba(0, 0, 0, 0.75) 100%
     );
   }
   
-  /* ──────────────────────────────────────────────
+  /* ─────────────────────────────────────────────
      PROGRESS BAR
-     ────────────────────────────────────────────── */
+     ───────────────────────────────────────────── */
   .vr-progress-bar {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
     height: 3px;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.18);
     cursor: pointer;
     z-index: 20;
   }
@@ -107,185 +115,157 @@
     border-radius: 0 2px 2px 0;
     transition: width 0.1s linear;
   }
-  /* ============================================
-   ESTILOS PARA EL AVATAR EN LA BARRA LATERAL
-   ============================================ */
-
-/* ──────────────────────────────────────────────
-   AVATAR DEL DUEÑO EN LA SIDEBAR
-   ────────────────────────────────────────────── */
-.vr-avatar-group {
-  margin-bottom: 16px !important;
-  position: relative;
-}
-
-.vr-avatar-wrapper {
-  position: relative;
-  width: 48px;
-  height: 48px;
-  margin: 0 auto 4px;
-  cursor: pointer;
-  transition: transform 0.15s ease;
-}
-
-.vr-avatar-wrapper:active {
-  transform: scale(0.92);
-}
-
-.vr-sidebar-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  transition: all 0.2s ease;
-}
-
-.vr-sidebar-avatar:hover {
-  border-color: #ff3b5c;
-  transform: scale(1.02);
-}
-
-/* Badge PRO para el avatar */
-.vr-pro-badge {
-  position: absolute;
-  bottom: -2px;
-  right: -4px;
-  background: #ffd700;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #000;
-}
-
-.vr-pro-badge svg {
-  font-size: 10px;
-  color: #000;
-}
-
-/* Ajuste responsive para el avatar en sidebar */
-@media (max-width: 480px) {
-  .vr-avatar-wrapper {
-    width: 42px;
-    height: 42px;
-  }
   
-  .vr-sidebar-avatar {
-    width: 42px;
-    height: 42px;
-  }
-  
-  .vr-pro-badge {
-    width: 14px;
-    height: 14px;
-  }
-  
-  .vr-pro-badge svg {
-    font-size: 8px;
-  }
-  
-  .vr-avatar-group .vr-action-count {
-    font-size: 9px;
-    max-width: 60px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-}
-
-@media (max-width: 360px) {
-  .vr-avatar-wrapper {
-    width: 38px;
-    height: 38px;
-  }
-  
-  .vr-sidebar-avatar {
-    width: 38px;
-    height: 38px;
-  }
-  
-  .vr-avatar-group .vr-action-count {
-    font-size: 8px;
-    max-width: 50px;
-  }
-}
-
-/* Hover solo para PC */
-@media (hover: hover) {
-  .vr-avatar-wrapper:hover {
-    transform: scale(1.02);
-  }
-  
-  .vr-sidebar-avatar:hover {
-    border-color: #ff3b5c;
-  }
-}
-  /* ──────────────────────────────────────────────
-     ACTIONS SIDEBAR
-     ────────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────
+     ACTIONS SIDEBAR  ← FIXED LAYOUT
+     ───────────────────────────────────────────── */
   .vr-actions-sidebar {
     position: absolute;
-    right: 12px;
-    bottom: 100px;
+    right: 10px;
+    bottom: 90px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    gap: 0;
     z-index: 20;
   }
   
   .vr-action-group {
-    text-align: center;
-    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 14px;
   }
   
+  /* Botón de acción — círculo oscuro semitransparente */
   .vr-action-btn {
-    background: none;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     border: none;
-    cursor: pointer;
-    padding: 0;
-    width: 48px;
-    height: 48px;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    min-width: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    transition: all 0.15s ease;
-    color: white;
+    cursor: pointer;
+    color: #fff;
     margin-bottom: 4px;
+    transition: transform 0.15s cubic-bezier(0.34, 1.4, 0.64, 1),
+                background 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    position: relative;
+    overflow: visible;
   }
   
   .vr-action-btn:active {
-    transform: scale(0.88);
-    background: rgba(255, 255, 255, 0.1);
+    transform: scale(0.86);
   }
   
+  /* Icono dentro del botón */
   .vr-action-icon {
-    font-size: 24px;
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+    font-size: 22px;
+    display: block;
+    line-height: 1;
+    filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.5));
   }
   
+  /* Contador debajo del botón */
   .vr-action-count {
     font-size: 11px;
-    margin: 2px 0 0;
-    color: rgba(255, 255, 255, 0.55);
-    font-weight: 500;
+    color: rgba(255, 255, 255, 0.75);
+    font-weight: 600;
+    text-align: center;
+    line-height: 1;
+    letter-spacing: 0.2px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   }
   
-  /* ──────────────────────────────────────────────
-     BOTONES DE NAVEGACIÓN (FLECHAS)
-     ────────────────────────────────────────────── */
+  /* ─── CORAZÓN activo ───────────────────────── */
+  .vr-action-btn .fa-heart {
+    color: #ff3b5c !important;
+    filter: drop-shadow(0 0 5px rgba(255, 59, 92, 0.6));
+  }
+  
+  /* ─── BOOKMARK activo ──────────────────────── */
+  .vr-action-btn .fa-bookmark {
+    color: #ffd700 !important;
+    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
+  }
+  
+  /* ─────────────────────────────────────────────
+     AVATAR EN SIDEBAR
+     ───────────────────────────────────────────── */
+  .vr-avatar-group {
+    margin-bottom: 18px;
+  }
+  
+  .vr-avatar-wrapper {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    margin: 0 auto 4px;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+  
+  .vr-avatar-wrapper:active {
+    transform: scale(0.9);
+  }
+  
+  .vr-sidebar-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+    display: block;
+  }
+  
+  .vr-pro-badge {
+    position: absolute;
+    bottom: -3px;
+    right: -4px;
+    background: #ffd700;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #000;
+  }
+  
+  .vr-pro-badge svg {
+    font-size: 9px;
+    color: rgb(9, 7, 17);
+    display: block;
+  }
+  
+  /* ─────────────────────────────────────────────
+     BOTONES NAVEGACIÓN (FLECHAS)
+     ───────────────────────────────────────────── */
+  .vr-nav-divider {
+    width: 36px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.15);
+    margin: 6px auto 10px;
+  }
+  
   .vr-nav-group {
-    text-align: center;
-    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 10px;
   }
   
   .vr-nav-btn {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 0.5px solid rgba(255, 255, 255, 0.18);
     border-radius: 50%;
     width: 44px;
@@ -294,64 +274,64 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: white;
-    transition: all 0.2s ease;
-    margin: 0 auto;
+    color: #fff;
+    font-size: 14px;
+    margin-bottom: 4px;
+    transition: background 0.15s ease, transform 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   
   .vr-nav-btn:active {
-    transform: scale(0.92);
-    background: rgba(255, 255, 255, 0.2);
+    transform: scale(0.9);
+    background: rgba(255, 59, 92, 0.3);
   }
   
   .vr-nav-label {
     font-size: 10px;
-    margin: 4px 0 0;
     color: rgba(255, 255, 255, 0.55);
     font-weight: 500;
+    text-align: center;
   }
   
-  .vr-nav-divider {
-    width: 40px;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.15);
-    margin: 12px auto;
-  }
-  
-  /* ──────────────────────────────────────────────
-     VOLUME BUTTON
-     ────────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────
+     BOTÓN VOLUMEN
+     ───────────────────────────────────────────── */
   .vr-volume-btn {
     position: absolute;
-    bottom: 60px;
-    right: 14px;
+    bottom: 88px;
+    left: 14px;
     z-index: 20;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(8px);
-    border: 0.5px solid rgba(255, 255, 255, 0.18);
+    -webkit-backdrop-filter: blur(8px);
+    border: 0.5px solid rgba(255, 255, 255, 0.15);
     border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: white;
+    color: #fff;
+    font-size: 14px;
     transition: all 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   
   .vr-volume-btn:active {
-    transform: scale(0.92);
-    background: rgba(255, 255, 255, 0.2);
+    transform: scale(0.9);
+    background: rgba(0, 0, 0, 0.65);
   }
   
-  /* ──────────────────────────────────────────────
-     VIDEO INFO
-     ────────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────
+     INFO DEL VIDEO (parte inferior izquierda)
+     ───────────────────────────────────────────── */
   .vr-video-info {
     position: absolute;
     left: 14px;
-    right: 68px;
+    right: 76px;
     bottom: 20px;
     z-index: 20;
   }
@@ -359,8 +339,8 @@
   .vr-pending-badge {
     display: inline-block;
     margin-bottom: 8px;
-    background: rgba(255, 152, 0, 0.14);
-    border: 0.5px solid rgba(255, 152, 0, 0.4);
+    background: rgba(255, 152, 0, 0.2);
+    border: 0.5px solid rgba(255, 152, 0, 0.5);
     color: #ff9800;
     font-size: 10px;
     font-weight: 700;
@@ -377,14 +357,15 @@
   }
   
   .vr-user-avatar {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     border: 2px solid rgba(255, 255, 255, 0.9);
     cursor: pointer;
     object-fit: cover;
     flex-shrink: 0;
     transition: transform 0.15s ease;
+    display: block;
   }
   
   .vr-user-avatar:active {
@@ -398,19 +379,20 @@
   
   .vr-username {
     font-size: 14px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.95);
+    font-weight: 700;
+    color: #fff;
     cursor: pointer;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
   }
   
   .vr-stats {
     display: flex;
     gap: 10px;
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.55);
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.65);
     margin-top: 2px;
   }
   
@@ -420,48 +402,51 @@
     gap: 4px;
   }
   
-  /* ──────────────────────────────────────────────
-     FOLLOW BUTTON
-     ────────────────────────────────────────────── */
-  .vr-follow-btn {
-    background: #ff3b5c;
-    border: none;
-    color: white;
-    padding: 6px 16px;
-    border-radius: 24px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: all 0.15s ease;
-  }
-  
-  .vr-follow-btn:active {
-    transform: scale(0.96);
+  .vr-stats svg {
+    font-size: 9px;
     opacity: 0.8;
   }
   
-  .vr-follow-btn.following {
-    background: rgba(255, 255, 255, 0.12);
-    border: 0.5px solid rgba(255, 255, 255, 0.3);
+  .vr-follow-btn {
+    background: linear-gradient(135deg, #ff3b5c, #fe2c55);
+    border: none;
+    color: #fff;
+    padding: 6px 16px;
+    border-radius: 24px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    letter-spacing: 0.2px;
   }
   
-  /* ──────────────────────────────────────────────
-     TEXTO DEL VIDEO
-     ────────────────────────────────────────────── */
+  .vr-follow-btn:active {
+    transform: scale(0.95);
+    opacity: 0.85;
+  }
+  
+  .vr-follow-btn.following {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+  }
+  
   .vr-title {
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     margin: 0 0 4px;
-    color: rgba(255, 255, 255, 0.95);
+    color: #fff;
     line-height: 1.4;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
   }
   
   .vr-description {
     font-size: 12px;
     margin: 0 0 6px;
-    color: rgba(255, 255, 255, 0.65);
-    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.75);
+    line-height: 1.45;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -473,20 +458,24 @@
     align-items: center;
     gap: 6px;
     font-size: 11px;
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.55);
   }
   
-  /* ──────────────────────────────────────────────
+  .vr-tags svg {
+    font-size: 10px;
+  }
+  
+  /* ─────────────────────────────────────────────
      ADMIN BANNER
-     ────────────────────────────────────────────── */
+     ───────────────────────────────────────────── */
   .vr-admin-banner {
     position: absolute;
     top: 90px;
     left: 14px;
     right: 14px;
     z-index: 30;
-    background: rgba(255, 152, 0, 0.14);
-    border: 0.5px solid rgba(255, 152, 0, 0.4);
+    background: rgba(255, 152, 0, 0.16);
+    border: 0.5px solid rgba(255, 152, 0, 0.45);
     border-radius: 8px;
     padding: 8px 12px;
     display: flex;
@@ -505,7 +494,7 @@
   
   @keyframes vr-pulse {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+    50% { opacity: 0.4; }
   }
   
   .vr-admin-text {
@@ -515,30 +504,40 @@
     letter-spacing: 0.3px;
   }
   
-  /* ──────────────────────────────────────────────
+  /* ─────────────────────────────────────────────
      DROPDOWN MENU
-     ────────────────────────────────────────────── */
+     ───────────────────────────────────────────── */
   .vr-dropdown-menu {
-    background: #161616;
-    border: 0.5px solid rgba(255, 255, 255, 0.1);
-    border-radius: 14px;
+    background: #1c1c1e !important;
+    border: 0.5px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 14px !important;
     min-width: 210px;
     padding: 6px 0;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7) !important;
   }
   
   .vr-dropdown-item {
-    padding: 10px 16px;
+    padding: 11px 16px;
     font-size: 13px;
+    color: rgba(255, 255, 255, 0.88);
     display: flex;
     align-items: center;
     gap: 10px;
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: background 0.12s ease;
+    background: transparent;
   }
   
-  .vr-dropdown-item:active {
-    background: rgba(255, 255, 255, 0.07);
+  .vr-dropdown-item:hover,
+  .vr-dropdown-item:focus {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #fff;
+  }
+  
+  .vr-dropdown-item svg {
+    width: 15px;
+    font-size: 14px;
+    flex-shrink: 0;
   }
   
   .vr-dropdown-item.approve {
@@ -550,18 +549,19 @@
   }
   
   .vr-dropdown-divider {
-    height: 1px;
-    background: rgba(255, 255, 255, 0.08);
-    margin: 4px 0;
-  }
-  
-  .vr-menu-toggle {
+    height: 1px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    margin: 4px 0 !important;
     border: none !important;
   }
   
-  /* ──────────────────────────────────────────────
-     COMMENTS DRAWER
-     ────────────────────────────────────────────── */
+  .vr-menu-toggle::after {
+    display: none !important;
+  }
+  
+  /* ─────────────────────────────────────────────
+     COMMENTS DRAWER  ← PRINCIPAL FIX
+     ───────────────────────────────────────────── */
   .vr-comments-drawer {
     position: fixed;
     inset: 0;
@@ -571,52 +571,63 @@
     justify-content: flex-end;
   }
   
+  /* Fondo translúcido — no tapa el video del todo */
   .vr-comments-backdrop {
     position: absolute;
     inset: 0;
-    background: transparent;
+    background: rgba(0, 0, 0, 0.25);
   }
   
+  /* Panel principal — fondo oscuro pero legible */
   .vr-comments-panel {
     position: relative;
     z-index: 1001;
-    background: #111111;
+    /* ✅ FIX: fondo oscuro pero no negro puro — permite leer texto */
+    background: #1a1a1a;
     border-radius: 20px 20px 0 0;
-    height: calc(56vh + 40px);
+    height: 62vh;
+    max-height: 72vh;
     display: flex;
     flex-direction: column;
-    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
     transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.4, 1.1);
     cursor: grab;
+    overflow: hidden;
   }
   
   .vr-comments-panel:active {
     cursor: grabbing;
   }
   
+  /* Handle de arrastre */
   .vr-comments-drag-handle {
     display: flex;
     justify-content: center;
-    padding: 12px 0 6px;
+    padding: 10px 0 6px;
+    flex-shrink: 0;
   }
   
   .vr-comments-drag-bar {
-    width: 36px;
+    width: 40px;
     height: 4px;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.25);
     border-radius: 4px;
   }
   
+  /* Header de comentarios */
   .vr-comments-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 16px 12px;
-    border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+    /* ✅ FIX: separador visible */
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
   }
   
   .vr-comments-title {
-    color: rgba(255, 255, 255, 0.95);
+    /* ✅ FIX: texto bien visible */
+    color: #ffffff;
     margin: 0;
     font-size: 15px;
     font-weight: 600;
@@ -624,7 +635,6 @@
   
   .vr-comments-close {
     background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(8px);
     border: none;
     border-radius: 50%;
     width: 30px;
@@ -633,663 +643,35 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: white;
+    /* ✅ FIX: icono visible */
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
     transition: all 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
   }
   
   .vr-comments-close:active {
-    transform: scale(0.92);
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 0.2);
   }
   
+  /* Contenido de comentarios — scroll suave */
   .vr-comments-content {
     flex: 1;
     overflow-y: auto;
-    padding: 12px 16px;
+    overflow-x: hidden;
+    padding: 12px 14px 16px;
     -webkit-overflow-scrolling: touch;
+    /* ✅ FIX: fondo del scroll area legible */
+    
   }
   
-  /* ──────────────────────────────────────────────
-     RESPONSIVE PARA ANDROID
-     ────────────────────────────────────────────── */
-  @media (max-width: 480px) {
-    .vr-nav-btn {
-      width: 36px;
-      height: 36px;
-    }
-    
-    .vr-nav-btn svg {
-      font-size: 14px;
-    }
-    
-    .vr-nav-label {
-      font-size: 9px;
-    }
-    
-    .vr-nav-divider {
-      width: 30px;
-      margin: 8px auto;
-    }
-    
-    .vr-action-btn {
-      width: 42px;
-      height: 42px;
-    }
-    
-    .vr-action-icon {
-      font-size: 20px;
-    }
-    
-    .vr-action-count {
-      font-size: 10px;
-    }
-    
-    .vr-user-avatar {
-      width: 36px;
-      height: 36px;
-    }
-    
-    .vr-username {
-      font-size: 13px;
-    }
-    
-    .vr-stats {
-      font-size: 9px;
-      gap: 8px;
-    }
-    
-    .vr-follow-btn {
-      padding: 4px 12px;
-      font-size: 11px;
-    }
-    
-    .vr-title {
-      font-size: 12px;
-    }
-    
-    .vr-description {
-      font-size: 11px;
-    }
-    
-    .vr-volume-btn {
-      width: 32px;
-      height: 32px;
-      bottom: 50px;
-    }
-    
-    .vr-header-btn {
-      width: 34px;
-      height: 34px;
-    }
-    
-    .vr-admin-banner {
-      top: 80px;
-      padding: 6px 10px;
-    }
-    
-    .vr-admin-text {
-      font-size: 10px;
-    }
-  }
-  /* ============================================
-   ESTILOS TIKTOK PARA ICONOS - VERSIÓN PREMIUM
-   ============================================ */
-
-/* ──────────────────────────────────────────────
-   ANIMACIONES PARA ICONOS
-   ────────────────────────────────────────────── */
-@keyframes vr-icon-pop {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.2);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-@keyframes vr-icon-heart-beat {
-  0% {
-    transform: scale(1);
-  }
-  25% {
-    transform: scale(1.3);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-  75% {
-    transform: scale(1.25);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-@keyframes vr-icon-shine {
-  0% {
-    filter: drop-shadow(0 0 0px rgba(255, 59, 92, 0));
-  }
-  50% {
-    filter: drop-shadow(0 0 8px rgba(255, 59, 92, 0.8));
-  }
-  100% {
-    filter: drop-shadow(0 0 0px rgba(255, 59, 92, 0));
-  }
-}
-
-@keyframes vr-icon-rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes vr-icon-bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-4px);
-  }
-}
-
-/* ──────────────────────────────────────────────
-   ICONO DE CORAZÓN (LIKE) - ESTILO TIKTOK
-   ────────────────────────────────────────────── */
-.vr-action-btn {
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-  transition: all 0.2s cubic-bezier(0.34, 1.2, 0.64, 1);
-}
-
-.vr-action-btn .vr-action-icon {
-  transition: all 0.2s cubic-bezier(0.34, 1.2, 0.64, 1);
-}
-
-/* Corazón likeado (rojo TikTok) */
-.vr-action-btn .fa-heart {
-  color: #ff3b5c !important;
-  filter: drop-shadow(0 0 4px rgba(255, 59, 92, 0.5));
-}
-
-/* Animación al dar like */
-.vr-action-btn:active .fa-heart,
-.vr-action-btn:active .fa-heart-regular {
-  animation: vr-icon-pop 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
-}
-
-/* Efecto especial cuando se likea */
-.vr-heart-effect {
-  position: absolute;
-  pointer-events: none;
-  animation: vr-icon-heart-beat 0.4s ease-out;
-}
-
-/* ──────────────────────────────────────────────
-   ICONO DE COMENTARIO
-   ────────────────────────────────────────────── */
-.vr-action-btn .fa-comment,
-.vr-action-btn .fa-comment-regular {
-  transition: all 0.2s ease;
-}
-
-.vr-action-btn:hover .fa-comment {
-  color: #4ecdc4;
-  transform: translateX(-2px);
-}
-
-.vr-action-btn:active .fa-comment {
-  animation: vr-icon-bounce 0.3s ease;
-}
-
-/* ──────────────────────────────────────────────
-   ICONO DE BOOKMARK (GUARDAR) - ESTILO TIKTOK
-   ────────────────────────────────────────────── */
-.vr-action-btn .fa-bookmark {
-  color: #ffd700 !important;
-  filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.5));
-}
-
-.vr-action-btn .fa-bookmark-regular {
-  color: white;
-}
-
-/* Animación al guardar */
-.vr-action-btn:active .fa-bookmark,
-.vr-action-btn:active .fa-bookmark-regular {
-  animation: vr-icon-pop 0.3s ease;
-}
-
-/* Cuando está guardado, efecto especial */
-.vr-action-btn .fa-bookmark[style*="color: #ffd700"] {
-  animation: vr-icon-shine 0.5s ease;
-}
-
-/* ──────────────────────────────────────────────
-   ICONO DE COMPARTIR - ESTILO TIKTOK
-   ────────────────────────────────────────────── */
-.vr-action-btn .fa-share {
-  transition: all 0.2s ease;
-}
-
-.vr-action-btn:hover .fa-share {
-  color: #4ecdc4;
-  transform: translateX(2px);
-}
-
-.vr-action-btn:active .fa-share {
-  animation: vr-icon-pop 0.3s ease;
-}
-
-/* ──────────────────────────────────────────────
-   ICONOS DE VOLUMEN
-   ────────────────────────────────────────────── */
-.vr-volume-btn .fa-volume-high,
-.vr-volume-btn .fa-volume-xmark {
-  transition: all 0.2s ease;
-}
-
-.vr-volume-btn:active .fa-volume-high,
-.vr-volume-btn:active .fa-volume-xmark {
-  animation: vr-icon-pop 0.2s ease;
-}
-
-/* ──────────────────────────────────────────────
-   ICONOS DE NAVEGACIÓN (FLECHAS)
-   ────────────────────────────────────────────── */
-.vr-nav-btn .fa-chevron-up,
-.vr-nav-btn .fa-chevron-down {
-  transition: all 0.2s ease;
-}
-
-.vr-nav-btn:hover .fa-chevron-up {
-  transform: translateY(-2px);
-  color: #ff3b5c;
-}
-
-.vr-nav-btn:hover .fa-chevron-down {
-  transform: translateY(2px);
-  color: #ff3b5c;
-}
-
-.vr-nav-btn:active .fa-chevron-up,
-.vr-nav-btn:active .fa-chevron-down {
-  animation: vr-icon-bounce 0.3s ease;
-}
-
-/* ──────────────────────────────────────────────
-   ICONOS DEL HEADER (FLECHA VOLVER, MENÚ)
-   ────────────────────────────────────────────── */
-.vr-header-btn .fa-arrow-left {
-  transition: all 0.2s ease;
-}
-
-.vr-header-btn:active .fa-arrow-left {
-  transform: translateX(-3px);
-}
-
-.vr-header-btn .fa-ellipsis-vertical {
-  transition: all 0.2s ease;
-}
-
-.vr-header-btn:active .fa-ellipsis-vertical {
-  transform: rotate(90deg);
-}
-
-/* ──────────────────────────────────────────────
-   ICONOS DEL DROPDOWN MENÚ
-   ────────────────────────────────────────────── */
-.vr-dropdown-item svg {
-  width: 16px;
-  transition: all 0.2s ease;
-}
-
-.vr-dropdown-item:hover svg {
-  transform: scale(1.1);
-}
-
-.vr-dropdown-item.approve svg {
-  color: #4caf50;
-}
-
-.vr-dropdown-item.reject svg {
-  color: #f44336;
-}
-
-/* ──────────────────────────────────────────────
-   ICONOS EN LA INFO DEL VIDEO
-   ────────────────────────────────────────────── */
-.vr-stats svg {
-  font-size: 10px;
-  opacity: 0.7;
-  transition: all 0.2s ease;
-}
-
-.vr-stats span:hover svg {
-  opacity: 1;
-  transform: scale(1.1);
-  color: #ff3b5c;
-}
-
-.vr-tags svg {
-  transition: all 0.2s ease;
-}
-
-.vr-tags:hover svg {
-  transform: rotate(5deg);
-  color: #4ecdc4;
-}
-
-/* ──────────────────────────────────────────────
-   BADGE PRO - TIKTOK STYLE
-   ────────────────────────────────────────────── */
-.vr-pro-badge svg {
-  animation: vr-icon-shine 2s infinite;
-}
-
-.vr-pro-badge:hover svg {
-  animation: vr-icon-rotate 0.5s ease;
-}
-
-/* ──────────────────────────────────────────────
-   EFECTO DE ONDA AL HACER CLIC (TikTok Style)
-   ────────────────────────────────────────────── */
-.vr-action-btn {
-  position: relative;
-  overflow: visible;
-}
-
-.vr-action-btn::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-  transform: translate(-50%, -50%);
-  transition: width 0.3s, height 0.3s;
-  pointer-events: none;
-}
-
-.vr-action-btn:active::after {
-  width: 80px;
-  height: 80px;
-  opacity: 0;
-  transition: width 0.2s, height 0.2s, opacity 0.2s;
-}
-
-/* ──────────────────────────────────────────────
-   MEJORAS PARA EL AVATAR EN LA SIDEBAR
-   ────────────────────────────────────────────── */
-.vr-avatar-wrapper {
-  position: relative;
-}
-
-.vr-avatar-wrapper::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ff3b5c, #fe2c55, #ff6b6b);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: -1;
-}
-
-.vr-avatar-wrapper:hover::before {
-  opacity: 0.8;
-  animation: vr-icon-shine 1s infinite;
-}
-
-.vr-sidebar-avatar {
-  transition: all 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
-}
-
-.vr-avatar-wrapper:active .vr-sidebar-avatar {
-  transform: scale(0.92);
-}
-
-/* ──────────────────────────────────────────────
-   EFECTO DE FLOTACIÓN PARA ICONOS ACTIVOS
-   ────────────────────────────────────────────── */
-.vr-action-group.active .vr-action-icon {
-  animation: vr-icon-bounce 0.3s ease;
-}
-
-/* ──────────────────────────────────────────────
-   RESPONSIVE - AJUSTES PARA MÓVIL
-   ────────────────────────────────────────────── */
-@media (max-width: 480px) {
-  .vr-action-btn::after:active {
-    width: 60px;
-    height: 60px;
+  /* ✅ FIX: texto dentro del área de comentarios */
+  .vr-comments-content * {
+    color: inherit;
   }
   
-  .vr-dropdown-item svg {
-    width: 14px;
-  }
-  
-  .vr-stats svg {
-    font-size: 9px;
-  }
-}
-
-/* ──────────────────────────────────────────────
-   TIKTOK STYLE - GRADIENTE PARA BOTÓN FOLLOW
-   ────────────────────────────────────────────── */
-.vr-follow-btn {
-  background: linear-gradient(135deg, #ff3b5c, #fe2c55);
-  position: relative;
-  overflow: hidden;
-}
-
-.vr-follow-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.5s ease;
-}
-
-.vr-follow-btn:hover::before {
-  left: 100%;
-}
-
-.vr-follow-btn:active {
-  transform: scale(0.96);
-}
-
-/* ──────────────────────────────────────────────
-   EFECTO DE GLOW PARA ICONOS EN HOVER
-   ────────────────────────────────────────────── */
-@media (hover: hover) {
-  .vr-action-btn:hover .vr-action-icon {
-    filter: drop-shadow(0 0 6px rgba(255, 59, 92, 0.6));
-  }
-  
-  .vr-action-btn:hover .fa-comment {
-    filter: drop-shadow(0 0 6px rgba(78, 205, 196, 0.6));
-  }
-  
-  .vr-action-btn:hover .fa-share {
-    filter: drop-shadow(0 0 6px rgba(78, 205, 196, 0.6));
-  }
-  
-  .vr-action-btn:hover .fa-bookmark {
-    filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.6));
-  }
-}
-
-/* ──────────────────────────────────────────────
-   ANIMACIÓN DE CORAZONES FLOTANTES (TikTok)
-   ────────────────────────────────────────────── */
-@keyframes vr-float-heart {
-  0% {
-    transform: translate(-50%, -50%) scale(0.5);
-    opacity: 1;
-  }
-  50% {
-    transform: translate(-50%, -80%) scale(1.2);
-    opacity: 0.8;
-  }
-  100% {
-    transform: translate(-50%, -150%) scale(1.5);
-    opacity: 0;
-  }
-}
-
-.vr-floating-heart {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  font-size: 48px;
-  animation: vr-float-heart 0.6s ease-out forwards;
-  pointer-events: none;
-  z-index: 10000;
-  filter: drop-shadow(0 0 8px rgba(255, 59, 92, 0.6));
-}
-
-/* Múltiples corazones para efecto más dramático */
-.vr-floating-heart:nth-child(2) {
-  left: 45%;
-  font-size: 36px;
-  animation-delay: 0.05s;
-}
-
-.vr-floating-heart:nth-child(3) {
-  left: 55%;
-  font-size: 42px;
-  animation-delay: 0.1s;
-}
-  @media (max-width: 360px) {
-    .vr-nav-btn {
-      width: 32px;
-      height: 32px;
-    }
-    
-    .vr-nav-btn svg {
-      font-size: 12px;
-    }
-    
-    .vr-action-btn {
-      width: 38px;
-      height: 38px;
-    }
-    
-    .vr-action-icon {
-      font-size: 18px;
-    }
-    
-    .vr-user-avatar {
-      width: 32px;
-      height: 32px;
-    }
-    
-    .vr-username {
-      font-size: 12px;
-    }
-    
-    .vr-follow-btn {
-      padding: 3px 10px;
-      font-size: 10px;
-    }
-    
-    .vr-title {
-      font-size: 11px;
-    }
-    
-    .vr-description {
-      font-size: 10px;
-    }
-  }
-  
-  /* ──────────────────────────────────────────────
-     OPTIMIZACIONES TÁCTILES PARA ANDROID
-     ────────────────────────────────────────────── */
-  .vr-action-btn,
-  .vr-nav-btn,
-  .vr-header-btn,
-  .vr-volume-btn,
-  .vr-follow-btn,
-  .vr-comments-close,
-  .dropdown-item {
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-  }
-  
-  video {
-    touch-action: manipulation;
-  }
-  
-  /* ──────────────────────────────────────────────
-     ANIMACIONES
-     ────────────────────────────────────────────── */
-  @keyframes vr-float-up {
-    0% {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(0.4);
-    }
-    100% {
-      opacity: 0;
-      transform: translate(-50%, -160%) scale(1.6);
-    }
-  }
-  
-  .vr-floating-heart {
-    position: fixed;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 72px;
-    animation: vr-float-up 0.7s ease-out forwards;
-    pointer-events: none;
-    z-index: 9999;
-  }
-  
-  /* Hover solo para dispositivos que soporten hover (PC) */
-  @media (hover: hover) {
-    .vr-header-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
-      transform: scale(1.02);
-    }
-    
-    .vr-action-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-    
-    .vr-nav-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
-      transform: scale(1.02);
-    }
-    
-    .vr-volume-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-    
-    .vr-follow-btn:hover {
-      opacity: 0.9;
-    }
-    
-    .vr-dropdown-item:hover {
-      background: rgba(255, 255, 255, 0.07);
-    }
-  }
-  
-  /* Mejoras de scroll para Android */
-  .vr-comments-content {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
-  }
-  
+  /* Scrollbar estilizada */
   .vr-comments-content::-webkit-scrollbar {
     width: 3px;
   }
@@ -1299,6 +681,249 @@
   }
   
   .vr-comments-content::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
+    
     border-radius: 3px;
+  }
+  
+  /* ─────────────────────────────────────────────
+     ANIMACIONES
+     ───────────────────────────────────────────── */
+  @keyframes vr-icon-pop {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.25); }
+    100% { transform: scale(1); }
+  }
+  
+  @keyframes vr-float-up {
+    0% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(0.5);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -180%) scale(1.5);
+    }
+  }
+  
+  .vr-floating-heart {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    font-size: 64px;
+    animation: vr-float-up 0.65s ease-out forwards;
+    pointer-events: none;
+    z-index: 9999;
+    filter: drop-shadow(0 0 10px rgba(255, 59, 92, 0.7));
+  }
+  
+  .vr-action-btn:active .vr-action-icon {
+    animation: vr-icon-pop 0.25s cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+  
+  /* ─────────────────────────────────────────────
+     RESPONSIVE — Android compacto
+     ───────────────────────────────────────────── */
+  @media (max-width: 480px) {
+  
+    .vr-actions-sidebar {
+      right: 8px;
+      bottom: 80px;
+    }
+  
+    .vr-action-btn {
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+    }
+  
+    .vr-action-icon {
+      font-size: 20px;
+    }
+  
+    .vr-action-count {
+      font-size: 10px;
+    }
+  
+    .vr-action-group {
+      margin-bottom: 12px;
+    }
+  
+    .vr-avatar-wrapper,
+    .vr-sidebar-avatar {
+      width: 44px;
+      height: 44px;
+    }
+  
+    .vr-nav-btn {
+      width: 38px;
+      height: 38px;
+      font-size: 13px;
+    }
+  
+    .vr-volume-btn {
+      width: 34px;
+      height: 34px;
+      font-size: 13px;
+      bottom: 80px;
+    }
+  
+    .vr-header-btn {
+      width: 36px;
+      height: 36px;
+      font-size: 14px;
+    }
+  
+    .vr-user-avatar {
+      width: 36px;
+      height: 36px;
+    }
+  
+    .vr-video-info {
+      left: 12px;
+      right: 70px;
+      bottom: 16px;
+    }
+  
+    .vr-username { font-size: 13px; }
+    .vr-title    { font-size: 12px; }
+    .vr-description { font-size: 11px; }
+  
+    .vr-follow-btn {
+      padding: 5px 12px;
+      font-size: 11px;
+    }
+  
+    .vr-comments-panel {
+      height: 65vh;
+      max-height: 75vh;
+    }
+  
+    .vr-admin-banner {
+      top: 78px;
+      padding: 6px 10px;
+    }
+  
+    .vr-admin-text { font-size: 10px; }
+  }
+  
+  /* ─────────────────────────────────────────────
+     RESPONSIVE — Pantalla muy pequeña (360px)
+     ───────────────────────────────────────────── */
+  @media (max-width: 360px) {
+  
+    .vr-action-btn {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+    }
+  
+    .vr-action-icon { font-size: 18px; }
+  
+    .vr-avatar-wrapper,
+    .vr-sidebar-avatar {
+      width: 38px;
+      height: 38px;
+    }
+  
+    .vr-user-avatar {
+      width: 32px;
+      height: 32px;
+    }
+  
+    .vr-username    { font-size: 12px; }
+    .vr-title       { font-size: 11px; }
+    .vr-description { font-size: 10px; }
+  
+    .vr-follow-btn {
+      padding: 4px 10px;
+      font-size: 10px;
+    }
+  
+    .vr-nav-btn {
+      width: 34px;
+      height: 34px;
+      font-size: 12px;
+    }
+  }
+  
+  /* ─────────────────────────────────────────────
+     PC / TABLET (hover habilitado)
+     ───────────────────────────────────────────── */
+  @media (hover: hover) {
+  
+    .vr-header-btn:hover {
+      background: rgba(0, 0, 0, 0.65);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+  
+    .vr-action-btn:hover {
+      background: rgba(0, 0, 0, 0.55);
+      transform: scale(1.06);
+    }
+  
+    .vr-action-btn:hover .vr-action-icon {
+      filter: drop-shadow(0 0 6px rgba(255, 59, 92, 0.55));
+    }
+  
+    .vr-action-btn:hover .fa-comment,
+    .vr-action-btn:hover .fa-comment-regular {
+      filter: drop-shadow(0 0 6px rgba(78, 205, 196, 0.55));
+    }
+  
+    .vr-action-btn:hover .fa-share {
+      filter: drop-shadow(0 0 6px rgba(78, 205, 196, 0.55));
+    }
+  
+    .vr-action-btn:hover .fa-bookmark,
+    .vr-action-btn:hover .fa-bookmark-regular {
+      filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.55));
+    }
+  
+    .vr-nav-btn:hover {
+      background: rgba(255, 59, 92, 0.25);
+      border-color: rgba(255, 59, 92, 0.4);
+    }
+  
+    .vr-nav-btn:hover .fa-chevron-up {
+      transform: translateY(-2px);
+    }
+  
+    .vr-nav-btn:hover .fa-chevron-down {
+      transform: translateY(2px);
+    }
+  
+    .vr-volume-btn:hover {
+      background: rgba(0, 0, 0, 0.65);
+    }
+  
+    .vr-follow-btn:hover {
+      opacity: 0.9;
+    }
+  
+    .vr-dropdown-item:hover {
+      background: rgba(255, 255, 255, 0.07) !important;
+    }
+  
+    .vr-avatar-wrapper:hover .vr-sidebar-avatar {
+      border-color: #ff3b5c;
+      transform: scale(1.04);
+    }
+  }
+  
+  /* ─────────────────────────────────────────────
+     OPTIMIZACIONES TÁCTILES GLOBALES
+     ───────────────────────────────────────────── */
+  .vr-action-btn,
+  .vr-nav-btn,
+  .vr-header-btn,
+  .vr-volume-btn,
+  .vr-follow-btn,
+  .vr-comments-close,
+  .vr-dropdown-item {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  
+  video {
+    touch-action: manipulation;
   }

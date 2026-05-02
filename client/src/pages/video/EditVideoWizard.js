@@ -1,14 +1,14 @@
-// pages/video/EditVideoWizard.jsx - VERSIÓN SIMPLIFICADA
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useParams } from 'react-router-dom';
 import { Button, Alert, Spinner, Card, ProgressBar, Badge } from 'react-bootstrap';
-import { ArrowLeft, ArrowRight, CloudUpload, PencilFill, Trash } from 'react-bootstrap-icons';
+import { ArrowLeft, ArrowRight, CloudUpload, PencilFill, Trash, MusicNote } from 'react-bootstrap-icons';
 import StepIndicator from './StepIndicator';
 import StepMusicSelection from './StepMusicSelection';
 import { getVideoById, updateVideo } from '../../redux/actions/videoAction';
 import { GLOBALTYPES } from '../../redux/actions/globalTypes';
 import { videoUpload } from '../../utils/imageUpload';
+import { patchDataAPI } from '../../utils/fetchData';
 import './CreateVideoWizard.css';
 
 const EditVideoWizard = () => {
@@ -30,9 +30,11 @@ const EditVideoWizard = () => {
     videoFile: null,
     videoPreview: null,
     videoDuration: 0,
+    videoUrl: '',
+    videoPublicId: '',
+    thumbnail: '',
     selectedMusic: null,
     musicVolume: 70,
-    originalAudio: true,
     title: '',
     description: ''
   });
@@ -51,14 +53,32 @@ const EditVideoWizard = () => {
   useEffect(() => {
     if (video && !videoLoading) {
       console.log('📹 Vidéo chargée pour édition:', video);
+      
+      // Extraer la música existente correctamente
+      let existingMusic = null;
+      if (video.music) {
+        existingMusic = {
+          id: video.music.id,
+          title: video.music.title,
+          artist: video.music.artist || "Artiste inconnu",
+          audioUrl: video.music.audioUrl,
+          audioPublicId: video.music.audioPublicId,
+          duration: video.music.duration,
+          volume: video.music.volume || 70
+        };
+        console.log("🎵 Música existente cargada:", existingMusic);
+      }
+      
       setWizardData({
         videoSource: 'existing',
         videoFile: null,
         videoPreview: video.videoUrl || null,
         videoDuration: video.duration || 0,
-        selectedMusic: video.music || null,
-        musicVolume: video.music?.volume || 70,
-        originalAudio: true,
+        videoUrl: video.videoUrl || '',
+        videoPublicId: video.videoPublicId || '',
+        thumbnail: video.thumbnail || '',
+        selectedMusic: existingMusic,
+        musicVolume: existingMusic?.volume || 70,
         title: video.title || '',
         description: video.description || ''
       });
@@ -112,80 +132,96 @@ const EditVideoWizard = () => {
   };
   
   const handleCancel = () => {
-    history.push('/videos/1');
+    history.push('/');
   };
   
-  const handleSubmit = async () => {
-    if (!validateStep(3)) return;
+  // ✅ HANDLE SUBMIT CORREGIDO CON patchDataAPI
+// ✅ HANDLE SUBMIT CORREGIDO
+// ✅ HANDLE SUBMIT CORREGIDO con videoPublicId
+const handleSubmit = async () => {
+  if (!validateStep(3)) return;
+  
+  setLoading(true);
+  setUploadProgress(0);
+  setError(null);
+  
+  try {
+    let videoUrl, videoPublicId, thumbnail, videoDuration;
     
-    setLoading(true);
-    setUploadProgress(0);
-    setError(null);
+    // ✅ Si se subió NUEVA video
+    if (!keepExistingVideo && wizardData.videoFile) {
+      console.log("📤 Subiendo NUEVO video...");
+      const result = await videoUpload(wizardData.videoFile, (progress) => {
+        setUploadProgress(progress);
+      });
+      videoUrl = result.url;
+      videoPublicId = result.public_id;  // ✅ IMPORTANTE
+      thumbnail = result.thumbnail;
+      videoDuration = wizardData.videoDuration;
+      console.log("✅ Nuevo video subido:", { videoUrl, videoPublicId });
+    } 
+    else {
+      // ✅ Usar video existente
+      console.log("📤 Manteniendo video existente...");
+      videoUrl = video.videoUrl;
+      videoPublicId = video.videoPublicId;  // ✅ IMPORTANTE
+      thumbnail = wizardData.thumbnail || video.thumbnail;
+      videoDuration = wizardData.videoDuration || video.duration;
+      console.log("✅ Video existente:", { videoUrl, videoPublicId });
+    }
     
-    try {
-      let videoUrl, videoId, thumbnail, videoDuration;
+    // ✅ CONSTRUIR MÚSICA
+    let musicData = null;
+    if (wizardData.selectedMusic) {
+      console.log("🎵 Música seleccionada:", wizardData.selectedMusic);
       
-      if (keepExistingVideo && wizardData.videoSource === 'existing') {
-        // Garder la vidéo existante
-        videoUrl = video.videoUrl;
-        videoId = video.videoId;
-        thumbnail = video.thumbnail;
-        videoDuration = video.duration;
-      } 
-      else if (wizardData.videoFile) {
-        // Upload nouvelle vidéo
-        const result = await videoUpload(wizardData.videoFile, (progress) => {
-          setUploadProgress(progress);
-        });
-        videoUrl = result.url;
-        videoId = result.public_id;
-        thumbnail = result.thumbnail;
-        videoDuration = wizardData.videoDuration;
-      } else {
-        throw new Error('Aucune source vidéo valide');
-      }
-      
-      const videoData = {
-        title: wizardData.title,
-        description: wizardData.description,
-        shortDescription: wizardData.description?.substring(0, 300),
-        videoUrl,
-        videoType: 'local',
-        videoId,
-        thumbnail,
-        duration: videoDuration,
-        music: wizardData.selectedMusic ? {
-          id: wizardData.selectedMusic.id,
-          title: wizardData.selectedMusic.title,
-          volume: wizardData.musicVolume
-        } : null
+      musicData = {
+        id: wizardData.selectedMusic.id,
+        title: wizardData.selectedMusic.title,
+        artist: wizardData.selectedMusic.artist,
+        audioUrl: wizardData.selectedMusic.audioUrl,
+        audioPublicId: wizardData.selectedMusic.audioPublicId, // ✅ CLAVE
+        duration: wizardData.selectedMusic.duration,
+        volume: wizardData.musicVolume
       };
       
-      const result = await dispatch(updateVideo(id, videoData, auth.token, auth, socket));
-      
-      if (result?.success) {
-        if (wizardData.videoPreview?.startsWith('blob:')) {
-          URL.revokeObjectURL(wizardData.videoPreview);
-        }
-        
-        dispatch({
-          type: GLOBALTYPES.ALERT,
-          payload: { success: '✏️ Vidéo modifiée avec succès !' }
-        });
-        
-        // Rediriger vers le feed
-        history.push('/videos/1');
-      } else {
-        setError(result?.error || 'Erreur lors de la modification');
-      }
-    } catch (err) {
-      console.error('❌ Erreur:', err);
-      setError(err.message || 'Erreur lors de la modification');
-    } finally {
-      setLoading(false);
-      setUploadProgress(0);
+      console.log("🎵 Música a enviar:", {
+        title: musicData.title,
+        hasAudioPublicId: !!musicData.audioPublicId,
+        audioPublicId: musicData.audioPublicId
+      });
     }
-  };
+    
+    const videoData = {
+      title: wizardData.title,
+      description: wizardData.description,
+      videoUrl,
+      videoPublicId,  // ✅ ENVIAR ESTO
+      thumbnail,
+      duration: videoDuration,
+      music: musicData
+    };
+    
+    console.log("📤 ENVIANDO AL BACKEND:", JSON.stringify(videoData, null, 2));
+    
+    const res = await patchDataAPI(`videos/${id}`, videoData, auth.token);
+    
+    if (res.data.success) {
+      dispatch({
+        type: GLOBALTYPES.ALERT,
+        payload: { success: '✏️ Vidéo modifiée avec succès !' }
+      });
+      history.push('/');
+    } else {
+      setError(res.data.message || 'Erreur lors de la modification');
+    }
+  } catch (err) {
+    console.error('❌ Error:', err);
+    setError(err.response?.data?.message || err.message || 'Erreur lors de la modification');
+  } finally {
+    setLoading(false);
+  }
+};
   
   // Render Step 1 - Édition vidéo
   const renderStep1 = () => (
@@ -222,12 +258,10 @@ const EditVideoWizard = () => {
               }}
               poster={video.thumbnail}
             />
-            {video.duration > 0 && (
-              <div className="mt-2 text-muted small">
-                Durée: {Math.floor(video.duration / 60)}:
-                {(video.duration % 60).toString().padStart(2, '0')}
-              </div>
-            )}
+            <div className="mt-2 text-muted small" style={{ color: '#aaa' }}>
+              Durée: {Math.floor(video.duration / 60)}:
+              {(video.duration % 60).toString().padStart(2, '0')}
+            </div>
           </div>
         </div>
       )}
@@ -241,7 +275,6 @@ const EditVideoWizard = () => {
             gap: '40px',
             marginBottom: '30px'
           }}>
-            {/* Input pour nouvelle vidéo */}
             <div style={{ textAlign: 'center' }}>
               <input
                 type="file"
@@ -252,10 +285,10 @@ const EditVideoWizard = () => {
                   const file = e.target.files?.[0];
                   if (file) {
                     const previewUrl = URL.createObjectURL(file);
-                    const video = document.createElement('video');
-                    video.preload = 'metadata';
-                    video.onloadedmetadata = () => {
-                      const duration = video.duration;
+                    const videoEl = document.createElement('video');
+                    videoEl.preload = 'metadata';
+                    videoEl.onloadedmetadata = () => {
+                      const duration = videoEl.duration;
                       if (duration > maxDuration) {
                         setError(`La vidéo ne doit pas dépasser ${maxDuration} secondes`);
                         URL.revokeObjectURL(previewUrl);
@@ -269,7 +302,7 @@ const EditVideoWizard = () => {
                       });
                       setError(null);
                     };
-                    video.src = URL.createObjectURL(file);
+                    videoEl.src = URL.createObjectURL(file);
                   }
                 }}
               />
@@ -379,6 +412,30 @@ const EditVideoWizard = () => {
           {wizardData.description.length}/500 caractères
         </small>
       </div>
+      
+      {/* Mostrar música actual si existe */}
+      {wizardData.selectedMusic && (
+        <div className="mt-4 p-3" style={{ 
+          background: 'rgba(102, 126, 234, 0.2)', 
+          borderRadius: '12px',
+          border: '1px solid rgba(102, 126, 234, 0.3)'
+        }}>
+          <div className="d-flex align-items-center gap-2">
+            <MusicNote style={{ color: '#667eea' }} />
+            <div>
+              <div style={{ color: '#fff', fontWeight: 'bold' }}>
+                {wizardData.selectedMusic.title}
+              </div>
+              <small style={{ color: '#aaa' }}>
+                {wizardData.selectedMusic.artist} • Volume: {wizardData.musicVolume}%
+              </small>
+              {wizardData.selectedMusic.audioPublicId && (
+                <Badge bg="success" className="ms-2" style={{ fontSize: '10px' }}>✓ Audio listo</Badge>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
   
@@ -391,6 +448,19 @@ const EditVideoWizard = () => {
           <Card.Body className="p-5 text-center">
             <Spinner animation="border" variant="light" />
             <p className="mt-3 text-white">Chargement de la vidéo...</p>
+          </Card.Body>
+        </Card>
+      </div>
+    );
+  }
+  
+  if (!video && !videoLoading) {
+    return (
+      <div className="create-video-wizard" style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e, #16213e)', padding: '16px' }}>
+        <Card className="border-0 shadow-lg" style={{ background: 'rgba(255,255,255,0.05)' }}>
+          <Card.Body className="p-5 text-center">
+            <p className="text-white">Vidéo non trouvée</p>
+            <Button onClick={() => history.push('/')}>Retour</Button>
           </Card.Body>
         </Card>
       </div>
@@ -442,7 +512,6 @@ const EditVideoWizard = () => {
               <StepMusicSelection 
                 wizardData={wizardData}
                 updateData={updateWizardData}
-                videoType="video"
               />
             )}
             {currentStep === 3 && renderStep3()}

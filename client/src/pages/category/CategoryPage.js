@@ -7,7 +7,8 @@ import InfiniteScroll from "react-infinite-scroll-component";
 import { Funnel, CameraVideo, Shop, Grid, ArrowUp, Grid3x3, Film } from 'react-bootstrap-icons';
 import PostCard from "../../components/post-card/PostCard";
 import VideoCard from "../../components/VideoCard";
-import VideoReelItem from "../video/Feed";
+const VideoReelItem = require('../video/Feed').default;
+//import VideoReelItem from "../video/Feed.js";
 import { getCategoryPosts } from "../../redux/actions/categoryAction";
 import { getBoutiquesByCategory } from "../../redux/actions/boutiqueAction";
 import { getVideos } from "../../redux/actions/videoAction";
@@ -19,6 +20,9 @@ import CategoryCarousel from "../../components/SlidersCategories/CategoryCarouse
 import FilterDrawer from "./FilterDrawer";
 import HeaderVideo from '../HeaderVideo';
 
+
+
+ 
 const POSTS_SCROLL_LIMIT = 50;
 
 const CONTENT_TYPES = {

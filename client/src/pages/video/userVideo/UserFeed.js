@@ -6,11 +6,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faSpinner } from '@fortawesome/free-solid-svg-icons';
 
 import { getDataAPI } from '../../../utils/fetchData';
-import Feed from '../Feed';
+ 
 import { GLOBALTYPES } from '../../../redux/actions/globalTypes';
-
+ 
 import './UserFeed.css';
 import HeaderVideo from '../../HeaderVideo';
+import Feed from '../Feed';
 
 const LoadingSpinner = () => (
   <div className="user-feed-loading">
