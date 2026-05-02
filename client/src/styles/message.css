@@ -1,10 +1,10 @@
 .message{
     width: 100%;
-    height: calc(100vh - 130px);
+    height: calc(100vh - 100px);
     border: 1px solid #ddd;
     margin-top: 15px;
     border-radius: 3px;
-  
+    background: #fbfbfb;
 }
 
 .message_header{
@@ -70,19 +70,17 @@
     height: 49px;
     border: none;
     outline: none;
-    background-color: #badcdf;
 }
 .chat_input button{
     border: none;
     outline: none;
-    color: rgb(201, 0, 0);
+    background: white;
 }
 
 .chat_input .file_upload{
     position: relative;
     overflow: hidden;
-    margin: 0 15px;
-    font-size: 25px;
+    margin: 0 10px;
 }
 .chat_input .file_upload #file{
     position: absolute;

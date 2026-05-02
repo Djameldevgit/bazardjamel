@@ -1,4 +1,4 @@
-// pages/video/HeaderVideo.jsx - Versión con menú Video/Image
+// pages/video/HeaderVideo.jsx - Versión con menú Video/Image y contador de mensajes
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
@@ -11,30 +11,47 @@ import {
   Camera,
   Image
 } from 'react-bootstrap-icons';
+import { getConversations } from '../redux/actions/messageAction';
 import './HeaderVideo.css';
 
+
+ 
 const HeaderVideo = () => {
   const history = useHistory();
   const location = useLocation();
-  const { auth } = useSelector(state => state);
+  const dispatch = useDispatch();
+  const { auth, message } = useSelector(state => state);
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   
   const currentUserId = auth.user?._id;
   
+  // ✅ Calcular mensajes no leídos (conversaciones)
   useEffect(() => {
-    const fetchUnreadCount = async () => {
-      // Tu lógica de mensajes no leídos
-    };
-    fetchUnreadCount();
-  }, []);
+    if (message?.users && message.users.length > 0) {
+      const totalUnread = message.users.reduce((total, user) => {
+        return total + (user.unread || 0);
+      }, 0);
+      setUnreadMessages(totalUnread);
+    }
+  }, [message.users]);
+  
+  // ✅ Cargar conversaciones al montar
+  useEffect(() => {
+    if (auth.token) {
+      dispatch(getConversations({ auth }));
+    }
+  }, [dispatch, auth]);
   
   const isActive = (path) => {
     if (path === '/videos') {
-      return location.pathname.startsWith('/videos');
+      return location.pathname.startsWith('/videos') || location.pathname === '/';
     }
     if (path === '/profile') {
-      return location.pathname.includes('/userVideo/') || location.pathname === `/video/userVideo/${currentUserId}`;
+      return location.pathname.includes('/video/userVideo/') || location.pathname === `/video/userVideo/${currentUserId}`;
+    }
+    if (path === '/message') {
+      return location.pathname.startsWith('/message');
     }
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
@@ -67,6 +84,7 @@ const HeaderVideo = () => {
     }
   };
   
+  // Cerrar menú al hacer click fuera
   useEffect(() => {
     const handleClickOutside = () => setShowCreateMenu(false);
     document.addEventListener('click', handleClickOutside);
@@ -77,6 +95,7 @@ const HeaderVideo = () => {
     <div className="header-video-container">
       <div className="header-video-content">
         
+        {/* === ICONO ACCUEIL === */}
         <button 
           className={`header-video-item ${isActive('/videos') ? 'active' : ''}`}
           onClick={goToHome}
@@ -89,6 +108,7 @@ const HeaderVideo = () => {
           <span className="header-video-label">Accueil</span>
         </button>
         
+        {/* === ICONO DÉCOUVRIR === */}
         <button 
           className={`header-video-item ${isActive('/videos/trending') ? 'active' : ''}`}
           onClick={goToExplore}
@@ -100,7 +120,7 @@ const HeaderVideo = () => {
           <span className="header-video-label">Discover</span>
         </button>
         
-        {/* Menu Plus avec Video et Image */}
+        {/* === BOTÓN CRÉER (avec menu) === */}
         <div className="header-video-create-wrapper">
           <button 
             className={`header-video-item create-btn`}
@@ -131,6 +151,7 @@ const HeaderVideo = () => {
           )}
         </div>
         
+        {/* === ICONO MESSAGES (CON CONTADOR) === */}
         <button 
           className={`header-video-item ${isActive('/message') ? 'active' : ''}`}
           onClick={goToMessages}
@@ -139,12 +160,15 @@ const HeaderVideo = () => {
           <div className="header-video-icon-wrapper">
             <Chat size={24} />
             {unreadMessages > 0 && (
-              <span className="notification-badge">{unreadMessages > 99 ? '99+' : unreadMessages}</span>
+              <span className="notification-badge">
+                {unreadMessages > 99 ? '99+' : unreadMessages}
+              </span>
             )}
           </div>
           <span className="header-video-label">Messages</span>
         </button>
         
+        {/* === ICONO PROFIL === */}
         <button 
           className={`header-video-item ${isActive('/profile') ? 'active' : ''}`}
           onClick={goToProfile}

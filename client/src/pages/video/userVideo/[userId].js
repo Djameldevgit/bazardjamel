@@ -6,8 +6,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faFilm, faBookmark, faHeart, faArrowLeft,
   faUserPlus, faCheck, faEnvelope, faShare,
-  faEllipsisH, faCamera, faSpinner, faUserCircle,
-  faPlay, faComment
+  faEllipsisH, faSpinner, faUserCircle,
+  faPlay, faUserCog, faCommentDots  // ✅ AÑADIDO: faCommentDots
 } from '@fortawesome/free-solid-svg-icons';
 
 import {
@@ -68,7 +68,7 @@ const AvatarWithFallback = ({ src, alt, className, username }) => {
 };
 
 /* ────────────────────────────────────────────
-   MINI VIDEO CARD
+   MINI VIDEO CARD - SOLO ICONO PLAY CON VISTAS
    ──────────────────────────────────────────── */
 const MiniVideoCard = ({ video, onClick, isOwnProfile, onSave }) => {
   const [isSaved, setIsSaved] = useState(false);
@@ -100,23 +100,17 @@ const MiniVideoCard = ({ video, onClick, isOwnProfile, onSave }) => {
           loading="lazy"
         />
 
+        {/* OVERLAY SOLO CON PLAY Y VISTAS */}
         <div className="uv-mini-overlay">
           <div className="uv-mini-stats">
             <span className="uv-stat-play">
               <FontAwesomeIcon icon={faPlay} className="uv-stat-icon" />
               {fmt(video.views)}
             </span>
-            <span className="uv-stat-heart">
-              <FontAwesomeIcon icon={faHeart} className="uv-stat-icon" />
-              {fmt(video.likes?.length || 0)}
-            </span>
-            <span className="uv-stat-comment">
-              <FontAwesomeIcon icon={faComment} className="uv-stat-icon" />
-              {fmt(video.comments?.length || 0)}
-            </span>
           </div>
         </div>
 
+        {/* BOTÓN GUARDAR SOLO SI NO ES PERFIL PROPIO */}
         {!isOwnProfile && (
           <button
             className={`uv-mini-save-btn ${isSaved ? 'saved' : ''}`}
@@ -127,6 +121,7 @@ const MiniVideoCard = ({ video, onClick, isOwnProfile, onSave }) => {
           </button>
         )}
 
+        {/* DURACIÓN DEL VIDEO */}
         {video.duration > 0 && (
           <div className="uv-mini-duration">
             {Math.floor(video.duration / 60)}:{String(video.duration % 60).padStart(2, '0')}
@@ -134,6 +129,7 @@ const MiniVideoCard = ({ video, onClick, isOwnProfile, onSave }) => {
         )}
       </div>
 
+      {/* TÍTULO DEL VIDEO */}
       <p className="uv-mini-title">{video.title?.substring(0, 40)}</p>
     </div>
   );
@@ -149,10 +145,11 @@ const UserVideoPage = () => {
   const { auth, userVideo } = useSelector(state => state);
   const { profile, videos, savedVideos, likedVideos, activeTab, loading } = userVideo;
 
-  const [userVideosPage,  setUserVideosPage]  = useState(1);
+  const [userVideosPage, setUserVideosPage] = useState(1);
   const [savedVideosPage, setSavedVideosPage] = useState(1);
   const [likedVideosPage, setLikedVideosPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const isOwnProfile = auth.user?._id === userId;
 
@@ -215,10 +212,22 @@ const UserVideoPage = () => {
     await dispatch(toggleFollow(userId, auth.token));
   }, [userId, auth.token, history, dispatch]);
 
-  const handleMessage = useCallback(() => {
-    history.push(`/message/${userId}`);
-  }, [userId, history]);
+ // En UserVideoPage.jsx - El icono de conversaciones (solo dueño del perfil)
+const handleViewConversations = useCallback(() => {
+  history.push('/message');  // ✅ Va a la lista de conversaciones, NO al chat directo
+}, [history]);
 
+// El botón de mensaje (visitantes) sí va a /message/:userId
+const handleMessage = useCallback(() => {
+  if (!auth.token) {
+    history.push('/login');
+    return;
+  }
+  history.push(`/message/${userId}`); // ✅ Chat directo con este usuario
+}, [userId, auth.token, history]);
+
+  // ✅ NUEVA FUNCIÓN: Ver todas las conversaciones (solo para dueño del perfil)
+ 
   const handleShareProfile = useCallback(() => {
     const url = `${window.location.origin}/video/userVideo/${userId}`;
     if (navigator.share) {
@@ -234,11 +243,22 @@ const UserVideoPage = () => {
     history.push(`/video/userFeed/${userId}?startVideo=${videoId}`);
   };
 
+  /* Manejar el menú de perfil (para el dueño) */
+  const handleEditProfile = () => {
+    setShowProfileMenu(false);
+    history.push('/settings/profile');
+  };
+
+  const handleViewRealProfile = () => {
+    setShowProfileMenu(false);
+    history.push(`/profile/${userId}`);
+  };
+
   /* helpers tabs */
-  const getCurrentVideos  = () => activeTab === 'saved' ? savedVideos : activeTab === 'liked' ? likedVideos : videos;
+  const getCurrentVideos = () => activeTab === 'saved' ? savedVideos : activeTab === 'liked' ? likedVideos : videos;
   const getCurrentHasMore = () => activeTab === 'saved' ? userVideo.savedVideosHasMore : activeTab === 'liked' ? userVideo.likedVideosHasMore : userVideo.userVideosHasMore;
-  const getCurrentTotal   = () => activeTab === 'saved' ? userVideo.savedVideosTotal  : activeTab === 'liked' ? userVideo.likedVideosTotal  : userVideo.userVideosTotal;
-  const loadMoreFn        = () => activeTab === 'saved' ? loadMoreSaved() : activeTab === 'liked' ? loadMoreLiked() : loadMoreVideos();
+  const getCurrentTotal = () => activeTab === 'saved' ? userVideo.savedVideosTotal : activeTab === 'liked' ? userVideo.likedVideosTotal : userVideo.userVideosTotal;
+  const loadMoreFn = () => activeTab === 'saved' ? loadMoreSaved() : activeTab === 'liked' ? loadMoreLiked() : loadMoreVideos();
 
   /* ── RENDER ── */
   if (loading && !profile) return <LoadingSpinner />;
@@ -262,13 +282,20 @@ const UserVideoPage = () => {
         <h2 className="uv-header-title">@{profile.username}</h2>
 
         <div className="uv-header-actions">
+          {/* ✅ NUEVO: Icono de Conversaciones - SOLO para el dueño del perfil */}
+          {isOwnProfile && (
+            <button className="uv-conversations-btn" onClick={handleViewConversations}>
+              <FontAwesomeIcon icon={faCommentDots} />
+            </button>
+          )}
+          
           <button className="uv-share-btn" onClick={handleShareProfile}>
             <FontAwesomeIcon icon={faShare} />
           </button>
         </div>
       </div>
 
-      {/* ── AVATAR ── */}
+      {/* ── AVATAR (SIN ICONO DE CÁMARA) ── */}
       <div className="uv-avatar-container">
         <AvatarWithFallback
           src={profile.avatar}
@@ -276,12 +303,32 @@ const UserVideoPage = () => {
           username={profile.username}
           className="uv-avatar"
         />
-        {isOwnProfile && (
-          <button className="uv-edit-avatar-btn">
-            <FontAwesomeIcon icon={faCamera} />
-          </button>
-        )}
       </div>
+
+      {/* ── BOTÓN DE 3 PUNTOS PARA EL DUEÑO DEL PERFIL ── */}
+      {isOwnProfile && (
+        <div className="uv-three-dots-wrapper">
+          <button 
+            className="uv-three-dots-btn"
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+          >
+            <FontAwesomeIcon icon={faEllipsisH} />
+          </button>
+          
+          {showProfileMenu && (
+            <div className="uv-profile-menu">
+              <button onClick={handleEditProfile}>
+                <FontAwesomeIcon icon={faUserCog} />
+                <span>Editar perfil</span>
+              </button>
+              <button onClick={handleViewRealProfile}>
+                <FontAwesomeIcon icon={faUserCircle} />
+                <span>Ver perfil real</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── USERNAME ── */}
       <h2 className="uv-username">@{profile.username}</h2>
@@ -316,7 +363,7 @@ const UserVideoPage = () => {
         </div>
       </div>
 
-      {/* ── BOTONES ACCIÓN ── */}
+      {/* ── BOTONES ACCIÓN (SOLO SI NO ES PERFIL PROPIO) ── */}
       {!isOwnProfile && (
         <div className="uv-action-buttons">
           <button
@@ -376,7 +423,7 @@ const UserVideoPage = () => {
         </button>
       </div>
 
-      {/* ── GRID DE VIDEOS ── */}
+      {/* ── GRID DE VIDEOS (CON MENOS ALTURA) ── */}
       <div className="uv-videos-grid">
         {getCurrentVideos().map(video => (
           <MiniVideoCard
@@ -411,7 +458,7 @@ const UserVideoPage = () => {
           </p>
           {activeTab === 'videos' && isOwnProfile && (
             <button className="uv-upload-btn" onClick={() => history.push('/upload-video')}>
-              <FontAwesomeIcon icon={faCamera} />
+              <FontAwesomeIcon icon={faFilm} />
               Publier une vidéo
             </button>
           )}

@@ -497,7 +497,21 @@
     opacity: 0;
     transition: width 0.2s, height 0.2s, opacity 0.2s;
   }
-  
+  .notification-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: linear-gradient(135deg, #fe2c55, #ff6b6b);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 20px;
+    min-width: 18px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(254, 44, 85, 0.4);
+    animation: badgeBounce 0.3s ease;
+  }
   /* ============================================
      DARK MODE SUPPORT
      ============================================ */

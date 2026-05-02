@@ -621,37 +621,38 @@ const Feed = ({
       </div>
 
       {/* Comments drawer */}
-      {showComments && (
-        <div className="vr-comments-drawer">
-          <div className="vr-comments-backdrop" onClick={handleCloseComments} />
-          <div
-            ref={drawerRef}
-            className="vr-comments-panel"
-            onTouchStart={handleDragStart}
-            onTouchMove={handleDragMove}
-            onTouchEnd={handleDragEnd}
-            onMouseDown={handleDragStart}
-            onMouseMove={handleDragMove}
-            onMouseUp={handleDragEnd}
-            onMouseLeave={handleDragEnd}
-          >
-            <div className="vr-comments-drag-handle">
-              <div className="vr-comments-drag-bar" />
-            </div>
-            <div className="vr-comments-header">
-              <h5 className="vr-comments-title">
-                {commentsCount} commentaire{commentsCount !== 1 ? 's' : ''}
-              </h5>
-              <button className="vr-comments-close" onClick={handleCloseComments}>
-                <FontAwesomeIcon icon={faXmark} />
-              </button>
-            </div>
-            <div className="vr-comments-content">
-              <VideoComments videoId={video._id} comments={video.comments || []} totalComments={commentsCount} />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Comments drawer */}
+{showComments && (
+  <div className="vr-comments-drawer">
+    <div className="vr-comments-backdrop" onClick={handleCloseComments} />
+    <div
+      ref={drawerRef}
+      className="vr-comments-panel"
+      onTouchStart={handleDragStart}
+      onTouchMove={handleDragMove}
+      onTouchEnd={handleDragEnd}
+      onMouseDown={handleDragStart}
+      onMouseMove={handleDragMove}
+      onMouseUp={handleDragEnd}
+      onMouseLeave={handleDragEnd}
+    >
+      <div className="vr-comments-drag-handle">
+        <div className="vr-comments-drag-bar" />
+      </div>
+      <div className="vr-comments-header">
+        <h5 className="vr-comments-title">
+          {commentsCount} commentaire{commentsCount !== 1 ? 's' : ''}
+        </h5>
+        <button className="vr-comments-close" onClick={handleCloseComments}>
+          <FontAwesomeIcon icon={faXmark} />
+        </button>
+      </div>
+      <div className="vr-comments-content">
+        <VideoComments videoId={video._id} comments={video.comments || []} totalComments={commentsCount} />
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };

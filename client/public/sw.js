@@ -1,5 +1,5 @@
-// sw.js - Service Worker con Push Notifications
-const CACHE_NAME = 'vetements-boutique-v2.2';
+// sw.js - Service Worker con Push Notifications y Sonido
+const CACHE_NAME = 'vetements-boutique-v2.3';
 
 const urlsToCache = [
   '/',
@@ -7,7 +7,7 @@ const urlsToCache = [
   '/static/css/main.css',
   '/manifest.json',
   '/icon-web-01.png',
-  '/sounds/notify.mp3' // ✅ Añadir sonido al cache
+  '/sounds/notify.mp3'
 ];
 
 // Instalación
@@ -55,12 +55,13 @@ self.addEventListener('activate', (event) => {
 // ✅ NOTIFICACIONES PUSH PARA PWA INSTALADA
 // ============================================
 
-// ✅ Escuchar mensajes del cliente (para reproducción de sonido)
+// ✅ Escuchar mensajes del cliente
 self.addEventListener('message', (event) => {
+  console.log('📨 Mensaje recibido en SW:', event.data);
+  
   if (event.data?.type === 'PLAY_SOUND') {
     const audioUrl = event.data.url || '/sounds/notify.mp3';
     
-    // Intentar obtener el sonido del cache
     caches.match(audioUrl).then(response => {
       if (response) {
         console.log('🔊 Sonido encontrado en cache');
@@ -79,7 +80,6 @@ self.addEventListener('push', (event) => {
     icon: '/icon-web-01.png',
     badge: '/icon-web-01.png',
     vibrate: [200, 100, 200, 100, 400],
-    sound: '/sounds/notify.mp3',
     tag: Date.now().toString(),
     renotify: true,
     requireInteraction: true,
@@ -99,23 +99,28 @@ self.addEventListener('push', (event) => {
     }
   }
   
-  // Mostrar notificación
+  const options = {
+    body: notificationData.body,
+    icon: notificationData.icon,
+    badge: notificationData.badge,
+    vibrate: notificationData.vibrate,
+    tag: notificationData.tag,
+    renotify: notificationData.renotify,
+    requireInteraction: notificationData.requireInteraction,
+    actions: [
+      { action: 'open', title: 'Ouvrir' },
+      { action: 'close', title: 'Fermer' }
+    ],
+    data: notificationData.data
+  };
+  
+  // Intentar usar el sonido personalizado (si el navegador lo soporta)
+  if ('sound' in options) {
+    options.sound = '/sounds/notify.mp3';
+  }
+  
   event.waitUntil(
-    self.registration.showNotification(notificationData.title, {
-      body: notificationData.body,
-      icon: notificationData.icon,
-      badge: notificationData.badge,
-      vibrate: notificationData.vibrate,
-      sound: notificationData.sound,
-      tag: notificationData.tag,
-      renotify: notificationData.renotify,
-      requireInteraction: notificationData.requireInteraction,
-      actions: [
-        { action: 'open', title: 'Ouvrir' },
-        { action: 'close', title: 'Fermer' }
-      ],
-      data: notificationData.data
-    })
+    self.registration.showNotification(notificationData.title, options)
   );
 });
 
@@ -124,18 +129,21 @@ self.addEventListener('notificationclick', (event) => {
   console.log('🔔 Click en notificación:', event);
   event.notification.close();
   
+  const action = event.action;
   const urlToOpen = event.notification.data?.url || '/';
+  
+  if (action === 'close') {
+    return;
+  }
   
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then(windowClients => {
-        // Buscar ventana abierta
         for (let client of windowClients) {
           if (client.url === urlToOpen && 'focus' in client) {
             return client.focus();
           }
         }
-        // Si no hay ventana, abrir nueva
         if (clients.openWindow) {
           return clients.openWindow(urlToOpen);
         }
@@ -178,6 +186,15 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => caches.match('/').then(cached => cached || new Response('Offline', { status: 503 })))
+    );
+    return;
+  }
+
+  // Sonidos - Network First con fallback a cache
+  if (event.request.url.includes('/sounds/')) {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => caches.match(event.request))
     );
     return;
   }

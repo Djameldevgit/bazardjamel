@@ -35,20 +35,22 @@ import DetailVideoPage from './pages/video/DetailVideoPage';
 import NotifyPage from './pages/notiy/NotifyPage';
 import EditVideoWizard from './pages/video/EditVideoWizard';
 import usePushNotifications from './pages/notiy/UsePushNotifications';
-import UserVideoPage from './pages/video/userVideo/[userId]';
+ import UserVideoPage from './pages/video/userVideo/[userId]';
 import UserFeed from './pages/video/userVideo/UserFeed';
-import Message from './pages/message';
 import InfoUserVideo from './pages/video/userVideo/InfoUserVideo';
 import TrendingVideos from './pages/video/TrendingVideos';
 import CreateImageWizard from './pages/video/CreateImageWizard';
 import EditImageWizard from './pages/video/EditImageWizar';
+import Conversation from './pages/message/[id]';
+import Message from './pages/message/index';
+
+
 // ============================================
-// ✅ SONIDO Y VIBRACIÓN - SIMPLIFICADO
+// ✅ SONIDO Y VIBRACIÓN - AUTOMÁTICO (sin esperar click)
 // ============================================
 
 let audioElement = null;
 let audioUnlocked = false;
-let userInteracted = false;
 
 // Inicializar audio
 const initAudio = () => {
@@ -60,8 +62,8 @@ const initAudio = () => {
   }
 };
 
-// Desbloquear audio (se llama con interacción del usuario)
-const unlockAudio = () => {
+// ✅ FORZAR DESBLOQUEO DE AUDIO (se intenta al recibir notificación)
+const forceUnlockAudio = () => {
   if (audioUnlocked || !audioElement) return;
   
   try {
@@ -74,8 +76,8 @@ const unlockAudio = () => {
         audioElement.volume = 0.8;
         audioUnlocked = true;
         console.log('✅ Audio desbloqueado correctamente');
-      }).catch(() => {
-        console.log('⚠️ No se pudo desbloquear audio aún');
+      }).catch((err) => {
+        console.log('⚠️ No se pudo desbloquear audio:', err);
       });
     }
   } catch (error) {
@@ -83,17 +85,27 @@ const unlockAudio = () => {
   }
 };
 
-// Reproducir sonido
+// ✅ Reproducir sonido (ahora se intenta siempre)
 const playSound = () => {
-  if (!audioElement || !audioUnlocked) return;
+  if (!audioElement) return;
+  
+  // Intentar desbloquear si es necesario
+  if (!audioUnlocked) {
+    forceUnlockAudio();
+  }
   
   try {
     audioElement.currentTime = 0;
     audioElement.volume = 0.8;
     audioElement.play().catch(err => {
       console.log('⚠️ Error reproduciendo:', err);
+      // Si falla por política del navegador, intentar nuevamente con volumen 0
       if (err.name === 'NotAllowedError') {
-        audioUnlocked = false;
+        audioElement.volume = 0;
+        audioElement.play().then(() => {
+          audioElement.pause();
+          audioElement.volume = 0.8;
+        }).catch(() => {});
       }
     });
   } catch (error) {
@@ -115,19 +127,18 @@ function App() {
   const [isReady, setIsReady] = useState(false);
   const lastNotifyId = useRef(null);
   const { sendLocalNotification, isPWAInstalled } = usePushNotifications();
+  
   // ✅ Inicializar audio al montar
   useEffect(() => {
     initAudio();
     setIsReady(true);
   }, []);
- 
   
-  // ✅ Detectar interacción del usuario para desbloquear audio
+  // ✅ Detectar interacción del usuario para desbloquear audio (solo primera vez)
   useEffect(() => {
     const handleInteraction = () => {
-      if (!userInteracted) {
-        userInteracted = true;
-        unlockAudio();
+      if (!audioUnlocked) {
+        forceUnlockAudio();
       }
     };
     
@@ -167,7 +178,8 @@ function App() {
     return () => socket.close();
   }, [dispatch]);
 
-  // ✅ NOTIFICACIONES: Sonido + Vibración
+  // ✅ NOTIFICACIONES: Sonido + Vibración AUTOMÁTICA (sin esperar click)
+  // ✅ NOTIFICACIONES: Versión más simple y segura
   useEffect(() => {
     if (!notify.data || notify.data.length === 0 || !isReady) return;
     
@@ -186,13 +198,45 @@ function App() {
         sendLocalNotification(title, body, url, icon);
       }
       
-      // ✅ Sonido y vibración (cuando la app está abierta)
-      if (userInteracted) {
-        playSound();
-        vibratePhone([200, 100, 200]);
+      // ✅ SONIDO Y VIBRACIÓN - AHORA SE EJECUTAN SIEMPRE (sin esperar click)
+      console.log('🔔 Notificación recibida, reproduciendo sonido...');
+      playSound();
+      vibratePhone([200, 100, 200]);
+      
+      // ✅ Notificación del sistema (si está permitido) - CORREGIDA
+      if (Notification.permission === 'granted' && !isPWAInstalled) {
+        try {
+          // ✅ Usar opciones sin conflicto entre silent y vibrate
+          const notificationOptions = {
+            body: body,
+            icon: icon,
+            badge: icon,
+            requireInteraction: true,
+            tag: `notify-${latest._id}`,
+            silent: false  // ❌ NO puede ser true si usas vibrate
+          };
+          
+          // ✅ Solo añadir vibrate si NO es silent
+          // NOTA: En la mayoría de navegadores, vibrate solo funciona en contexto seguro (HTTPS)
+          // y no siempre está disponible. Mejor omitirlo para evitar errores.
+          
+          const notification = new Notification(title, notificationOptions);
+          
+          notification.onclick = () => {
+            window.focus();
+            if (url) window.location.href = url;
+          };
+          
+          notification.onerror = (err) => {
+            console.log('❌ Error en notificación:', err);
+          };
+          
+        } catch (notifError) {
+          console.log('⚠️ Error creando notificación:', notifError.message);
+        }
       }
     }
-  }, [notify.data, isReady, userInteracted, isPWAInstalled, sendLocalNotification]);
+  }, [notify.data, isReady, isPWAInstalled, sendLocalNotification]);
   
   // ✅ Bloqueo de usuarios
   if (auth.token && auth.user?.isBlocked) {
@@ -222,17 +266,13 @@ function App() {
           <Route exact path="/video/userVideo/:userId/info" component={InfoUserVideo} />
           <Route exact path="/videos/trending" component={TrendingVideos} />
           <Route path="/create-image-page" component={CreateImageWizard} />
-        <Route path="/edit-image/:id" component={EditImageWizard} />
-
+          <Route path="/edit-image/:id" component={EditImageWizard} />
           <Route exact path="/admindashboard" component={AdminDashboard} />
           <Route path="/admin/posts" component={Posts} />
           <Route exact path="/boutique/:boutiqueId/products/new" component={CreateBoutiqueProductPage} />
           <Route exact path="/boutique/:boutiqueId/products/edit/:productId" component={CreateBoutiqueProductPage} />
- 
-        
-
           <Route exact path="/message" component={Message} />
-
+          <Route exact path="/message/:id" component={Conversation} />
           <Route exact path="/product/:productId" component={DetailProduct} />
           <Route exact path="/create-boutique" component={CreateBoutiquePage} />
           <Route exact path="/edit-boutique/:id" component={CreateBoutiquePage} />

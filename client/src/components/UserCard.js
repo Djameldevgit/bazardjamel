@@ -1,8 +1,6 @@
- 
-                    import React from 'react';
+import React from 'react';
 import Avatar from './Avatar';
 import { Link } from 'react-router-dom';
- 
 import { Badge } from 'react-bootstrap';
 
 const UserCard = ({children, user, border, handleClose, setShowFollowers, setShowFollowing }) => {
@@ -13,8 +11,6 @@ const UserCard = ({children, user, border, handleClose, setShowFollowers, setSho
         if(setShowFollowing) setShowFollowing(false);
     };
 
-   
-  
     return (
         <div className={`d-flex p-2 align-items-center justify-content-between w-100 ${border}`}
         style={{
@@ -29,8 +25,9 @@ const UserCard = ({children, user, border, handleClose, setShowFollowers, setSho
         }}
         >
             <div className="flex-grow-1">
+                {/* ✅ RUTA CAMBIADA: de /profile/:id a /video/userVideo/:id */}
                 <Link 
-                    to={`/profile/${user._id}`} 
+                    to={`/video/userVideo/${user._id}`} 
                     onClick={handleCloseAll}
                     className="d-flex align-items-center text-decoration-none"
                     style={{ gap: '12px' }}

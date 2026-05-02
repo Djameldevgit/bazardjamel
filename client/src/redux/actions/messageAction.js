@@ -2,7 +2,6 @@ import { GLOBALTYPES, DeleteData } from '../actions/globalTypes'
 import { postDataAPI, getDataAPI, deleteDataAPI } from '../../utils/fetchData'
 import { createNotify } from './notifyAction'
 
-
 export const MESS_TYPES = {
     ADD_USER: 'ADD_USER',
     ADD_MESSAGE: 'ADD_MESSAGE',
@@ -15,17 +14,15 @@ export const MESS_TYPES = {
     TYPING_START: 'TYPING_START',
     TYPING_STOP: 'TYPING_STOP',
     SET_TYPING: 'SET_TYPING',
-    UPDATE_USER_STATUS: 'UPDATE_USER_STATUS' // 🔹 AGREGADO DENTRO del objeto
+    UPDATE_USER_STATUS: 'UPDATE_USER_STATUS'
 }
 
-// 🔹 LUEGO las acciones que usan MESS_TYPES
 export const updateUserStatus = (data) => (dispatch) => {
     dispatch({
         type: MESS_TYPES.UPDATE_USER_STATUS,
         payload: data
     });
 };
-
 
 export const stopTyping = ({ sender, recipient, chatId }) => ({
     type: MESS_TYPES.TYPING_STOP,
@@ -37,37 +34,35 @@ export const setTyping = (typingData) => ({
     payload: typingData
 });
 
-
+// ✅ ADD MESSAGE - CON NOTIFICACIÓN EN FRANCÉS
 export const addMessage = ({ msg, auth, socket }) => async (dispatch) => {
-    
-
     dispatch({ type: MESS_TYPES.ADD_MESSAGE, payload: msg })
 
-    const { _id, avatar,   username } = auth.user;
-    socket.emit('addMessage', { ...msg, user: { _id, avatar,   username } })
+    const { _id, avatar, username } = auth.user;
+    socket.emit('addMessage', { ...msg, user: { _id, avatar, username } })
 
     try {
         const response = await postDataAPI('message', msg, auth.token);
 
-        // Notificación solo si la API fue exitosa
+        // ✅ Notificación en francés solo si la API fue exitosa
         if (response && response.data) {
             const notifyMsg = {
                 id: _id,
-                text: 'sentyouamessage',
+                text: `📨 ${username} vous a envoyé un message`,
                 textNs: 'notify',
                 recipients: [msg.recipient],
                 url: `/message/${_id}`,
-                content: msg.text.substring(0, 50), // Primeros 50 caracteres
-                image: avatar
+                content: msg.text ? msg.text.substring(0, 50) : '📎 Fichier multimédia',
+                image: avatar,
+                type: 'new_message'
             }
-            dispatch(createNotify({ msg: notifyMsg, auth, socket }))
+            await dispatch(createNotify({ msg: notifyMsg, auth, socket }))
         }
 
     } catch (err) {
-        // Manejo seguro del error
         const errorMessage = err.response?.data?.msg ||
             err.message ||
-            'Error sending message';
+            'Erreur lors de l\'envoi du message';
 
         dispatch({
             type: GLOBALTYPES.ALERT,
@@ -75,6 +70,8 @@ export const addMessage = ({ msg, auth, socket }) => async (dispatch) => {
         })
     }
 }
+
+// ✅ GET CONVERSATIONS
 export const getConversations = ({ auth, page = 1 }) => async (dispatch) => {
     try {
         const res = await getDataAPI(`conversations?limit=${page * 9}`, auth.token)
@@ -98,6 +95,7 @@ export const getConversations = ({ auth, page = 1 }) => async (dispatch) => {
     }
 }
 
+// ✅ GET MESSAGES
 export const getMessages = ({ auth, id, page = 1 }) => async (dispatch) => {
     try {
         const res = await getDataAPI(`message/${id}?limit=${page * 9}`, auth.token)
@@ -109,6 +107,7 @@ export const getMessages = ({ auth, id, page = 1 }) => async (dispatch) => {
     }
 }
 
+// ✅ LOAD MORE MESSAGES
 export const loadMoreMessages = ({ auth, id, page = 1 }) => async (dispatch) => {
     try {
         const res = await getDataAPI(`message/${id}?limit=${page * 9}`, auth.token)
@@ -120,20 +119,29 @@ export const loadMoreMessages = ({ auth, id, page = 1 }) => async (dispatch) => 
     }
 }
 
+// ✅ DELETE MESSAGES - CON NOTIFICACIÓN EN FRANCÉS (opcional)
 export const deleteMessages = ({ msg, data, auth }) => async (dispatch) => {
     const newData = DeleteData(data, msg._id)
     dispatch({ type: MESS_TYPES.DELETE_MESSAGES, payload: { newData, _id: msg.recipient } })
     try {
         await deleteDataAPI(`message/${msg._id}`, auth.token)
+        
+        // ✅ Notificación opcional para el usuario que se eliminó el mensaje
+        // (normalmente no se notifica al eliminar mensajes)
+        
     } catch (err) {
         dispatch({ type: GLOBALTYPES.ALERT, payload: { error: err.response.data.msg } })
     }
 }
 
+// ✅ DELETE CONVERSATION - CON NOTIFICACIÓN EN FRANCÉS (opcional)
 export const deleteConversation = ({ auth, id }) => async (dispatch) => {
     dispatch({ type: MESS_TYPES.DELETE_CONVERSATION, payload: id })
     try {
         await deleteDataAPI(`conversation/${id}`, auth.token)
+        
+        // ✅ Notificación opcional (normalmente no se notifica al eliminar conversación)
+        
     } catch (err) {
         dispatch({ type: GLOBALTYPES.ALERT, payload: { error: err.response.data.msg } })
     }
