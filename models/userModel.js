@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema({
 
 role: {
     type: String,
-    enum: ['user', 'moderator', 'admin', 'Super-utilisateur'], // 🔥 Añadir "Super-utilisateur"
+    enum: ['user', 'moderator', 'admin', 'userpro'],  
     default: 'user'
 },
     // ✅ SIMPLIFICADO: Categorías asignadas como array de strings (slugs)

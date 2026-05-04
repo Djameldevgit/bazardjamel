@@ -1,32 +1,168 @@
-// models/videoModel.js - VERSIÓN SIMPLIFICADA (sin campos de categoría obligatorios)
+// models/videoModel.js - VERSIÓN CON CAMPOS COMERCIALES (+ música, geolocalización, ventas)
+
 const mongoose = require('mongoose');
 
 const videoSchema = new mongoose.Schema({
-  // ✅ Campos básicos
+  // ==================== CAMPOS BÁSICOS EXISTENTES ====================
   title: { type: String, required: true, trim: true, maxlength: 200 },
   description: { type: String, trim: true, maxlength: 2000, default: '' },
   shortDescription: { type: String, trim: true, maxlength: 300, default: '' },
   
-  // ✅ Video URL
+  // Video URL
   videoUrl: { type: String, required: true },
   videoType: { type: String, enum: ['youtube', 'vimeo', 'local'], default: 'local' },
   videoId: { type: String, default: '' },
   thumbnail: { type: String, default: '' },
   duration: { type: Number, default: 0 },
   
-  // ✅ Usuario
+  // Usuario
   user: { type: mongoose.Types.ObjectId, ref: 'user', required: true },
   
-  // ✅ Campos opcionales (boutique, product - se mantienen)
+  // Boutique y producto (opcional)
   boutique: { type: mongoose.Types.ObjectId, ref: 'Boutique', default: null },
   product: { type: mongoose.Types.ObjectId, ref: 'Post', default: null },
   
-  // ❌ ELIMINADO: category, categorySlug (ya no son requeridos)
-  // ✅ Se mantienen como opcionales por compatibilidad
-  category: { type: String, default: '' },
+  // Categoría (se mantiene pero ahora es más específico)
+  category: { type: String, default: '', index: true },
   categorySlug: { type: String, default: '' },
   
-  // ✅ Estadísticas
+  // ==================== NUEVOS CAMPOS COMERCIALES ====================
+  // Precio y ventas
+  price: { 
+    type: Number, 
+    default: 0,
+    min: 0,
+    validate: {
+      validator: function(v) {
+        return v >= 0;
+      },
+      message: 'El precio no puede ser negativo'
+    }
+  },
+  
+  wholesale: { 
+    type: Boolean, 
+    default: false,
+    index: true,
+    description: 'Venta al mayor (true = sí, false = no)'
+  },
+  
+  minQuantity: { 
+    type: Number, 
+    default: 1,
+    min: 1,
+    validate: {
+      validator: function(v) {
+        if (this.wholesale && v < 1) return false;
+        return true;
+      },
+      message: 'Si es venta al mayor, la cantidad mínima debe ser al menos 1'
+    }
+  },
+  
+  // Información de contacto
+  phone: { 
+    type: String,
+    trim: true,
+    validate: {
+      validator: function(v) {
+        return /^(\+?\d{1,4}[\s-]?)?\(?\d{1,4}\)?[\s-]?\d{1,4}[\s-]?\d{1,9}$/.test(v);
+      },
+      message: 'Formato de teléfono inválido'
+    }
+  },
+  
+  phoneHidden: { 
+    type: Boolean, 
+    default: false,
+    description: 'Ocultar teléfono hasta que el usuario interactúe'
+  },
+  
+  email: { 
+    type: String, 
+    trim: true,
+    lowercase: true,
+    match: [/^\S+@\S+\.\S+$/, 'Email inválido']
+  },
+  
+  website: { type: String, trim: true, default: '' },
+  
+  // Geolocalización
+  wilaya: { 
+    type: String, 
+    required: function() {
+      return this.isCommercialVideo(); // Solo requerido si es comercial
+    },
+    trim: true,
+    index: true
+  },
+  
+  commune: { 
+    type: String, 
+    required: function() {
+      return this.isCommercialVideo();
+    },
+    trim: true,
+    index: true
+  },
+  
+  location: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      default: [0, 0],
+      validate: {
+        validator: function(v) {
+          return v.length === 2 && 
+                 v[0] >= -180 && v[0] <= 180 && 
+                 v[1] >= -90 && v[1] <= 90;
+        },
+        message: 'Coordenadas inválidas'
+      }
+    },
+    address: { type: String, default: '' },
+    googleMapsUrl: { type: String, default: '' }
+  },
+  
+  // Métodos de envío
+  delivery: {
+    available: { type: Boolean, default: false },
+    cost: { type: Number, default: 0 },
+    estimatedDays: { type: Number, default: 0 },
+    zones: [{ type: String }] // Zonas de envío (ej: ['Alger', 'Oran'])
+  },
+  
+  pickupOnly: { 
+    type: Boolean, 
+    default: false,
+    description: 'Solo recogida en tienda'
+  },
+  
+  // Horario de atención
+  businessHours: {
+    monday: { open: String, close: String },
+    tuesday: { open: String, close: String },
+    wednesday: { open: String, close: String },
+    thursday: { open: String, close: String },
+    friday: { open: String, close: String },
+    saturday: { open: String, close: String },
+    sunday: { open: String, close: String }
+  },
+  
+  // ==================== CAMPOS DE MÚSICA (YA EXISTENTES) ====================
+  music: {
+    id: { type: String, default: null },
+    title: { type: String, default: null },
+    artist: { type: String, default: null },
+    audioUrl: { type: String, default: null },
+    volume: { type: Number, default: 70 }
+  },
+  
+  // ==================== ESTADÍSTICAS Y ENGAGEMENT ====================
   views: { type: Number, default: 0 },
   uniqueViews: [{ type: mongoose.Types.ObjectId, ref: 'user' }],
   likes: [{ type: mongoose.Types.ObjectId, ref: 'user' }],
@@ -34,46 +170,76 @@ const videoSchema = new mongoose.Schema({
   watchTime: { type: Number, default: 0 },
   averageWatchTime: { type: Number, default: 0 },
   
-  // ✅ Música
-  music: {
-    id: { type: String, default: null },
-    title: { type: String, default: null },
-    artist: { type: String, default: null },   // ← añadir
-    audioUrl: { type: String, default: null }, // ← añadir
-    volume: { type: Number, default: 70 }
-  },
-  
-  // ✅ Comentarios (referencia al modelo comment)
+  // Comentarios
   comments: [{ type: mongoose.Types.ObjectId, ref: 'comment' }],
   
-  // ✅ Estado
+  // Estado
   pendiente: { type: Boolean, default: true, index: true },
   isActive: { type: Boolean, default: true },
   isFeatured: { type: Boolean, default: false },
+  isCommercial: { 
+    type: Boolean, 
+    default: false,
+    index: true,
+    description: 'Si es true, muestra campos comerciales en UI'
+  },
   
-  // ✅ Tags (opcional)
+  // Tags y SEO
   tags: { type: [String], default: [] },
-  
-  // ✅ SEO (opcional)
   seoTitle: { type: String, default: '' },
   seoDescription: { type: String, default: '' },
   
-  // ✅ Engagement
+  // Engagement
   engagementScore: { type: Number, default: 0 },
-  conversionRate: { type: Number, default: 0 }
+  conversionRate: { type: Number, default: 0 },
+  
+  // Productos relacionados
+  relatedProducts: [{ type: mongoose.Types.ObjectId, ref: 'Post' }],
+  
+  // Stock
+  stock: {
+    total: { type: Number, default: 0 },
+    available: { type: Number, default: 0 },
+    reserved: { type: Number, default: 0 }
+  }
   
 }, { timestamps: true });
 
-// Índices
-videoSchema.index({ title: 'text', description: 'text' });
-videoSchema.index({ user: 1, pendiente: 1 });
-videoSchema.index({ pendiente: 1, createdAt: -1 });
-videoSchema.index({ views: -1, createdAt: -1 });
-videoSchema.index({ engagementScore: -1 });
-videoSchema.index({ createdAt: -1 });
+// ==================== ÍNDICES GEOESPACIALES ====================
+videoSchema.index({ location: '2dsphere' });
+videoSchema.index({ wilaya: 1, commune: 1 });
+videoSchema.index({ category: 1, wholesale: 1 });
+videoSchema.index({ price: 1, createdAt: -1 });
+videoSchema.index({ isCommercial: 1, pendiente: 1 });
 
-// ========== MÉTODOS DE INSTANCIA ==========
+// ==================== MÉTODOS DE INSTANCIA ====================
 
+// Verificar si es video comercial
+videoSchema.methods.isCommercialVideo = function() {
+  return this.isCommercial === true;
+};
+
+// Obtener ubicación formateada
+videoSchema.methods.getFormattedLocation = function() {
+  return `${this.wilaya}, ${this.commune}`;
+};
+
+// Verificar si el teléfono debe mostrarse
+videoSchema.methods.canViewPhone = function(userId) {
+  if (!this.phoneHidden) return true;
+  // Aquí puedes añadir lógica: solo si el usuario ha interactuado
+  return false;
+};
+
+// Incrementar conversión (compra real)
+videoSchema.methods.incrementConversion = async function() {
+  const totalEngagement = (this.likes.length * 2) + (this.comments.length * 3) + (this.shares.length * 4);
+  const totalViews = this.views || 1;
+  this.conversionRate = Math.min((totalEngagement / totalViews) * 100, 100);
+  await this.save();
+};
+
+// Métodos existentes (incrementViews, updateWatchTime, toggleLike, share, updateEngagementScore)
 videoSchema.methods.incrementViews = async function(userId = null) {
   this.views = (this.views || 0) + 1;
   if (userId) {
@@ -126,8 +292,60 @@ videoSchema.methods.updateEngagementScore = function() {
   this.engagementScore = Math.min((totalEngagement / totalViews) * 100, 100);
 };
 
-// ========== MÉTODOS ESTÁTICOS ==========
+// ==================== MÉTODOS ESTÁTICOS ====================
 
+// Buscar por proximidad (vídeos cerca de una ubicación)
+videoSchema.statics.findNearby = async function(longitude, latitude, maxDistance = 5000, limit = 20) {
+  return this.aggregate([
+    {
+      $geoNear: {
+        near: { type: 'Point', coordinates: [longitude, latitude] },
+        distanceField: 'distance',
+        maxDistance: maxDistance,
+        spherical: true,
+        query: { isCommercial: true, pendiente: false, isActive: true }
+      }
+    },
+    { $limit: limit },
+    { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
+    { $unwind: '$user' },
+    { $project: { 'user.password': 0, 'user.email': 0 } }
+  ]);
+};
+
+// Filtrar vídeos comerciales por wilaya, categoría, etc.
+videoSchema.statics.filterCommercial = async function(filters = {}, page = 1, limit = 20) {
+  const query = { isCommercial: true, pendiente: false, isActive: true };
+  
+  if (filters.wilaya) query.wilaya = filters.wilaya;
+  if (filters.commune) query.commune = filters.commune;
+  if (filters.category) query.category = filters.category;
+  if (filters.wholesale !== undefined) query.wholesale = filters.wholesale;
+  if (filters.minPrice || filters.maxPrice) {
+    query.price = {};
+    if (filters.minPrice) query.price.$gte = filters.minPrice;
+    if (filters.maxPrice) query.price.$lte = filters.maxPrice;
+  }
+  
+  const skip = (page - 1) * limit;
+  
+  const [videos, total] = await Promise.all([
+    this.aggregate([
+      { $match: query },
+      { $sort: filters.sortBy === 'price' ? { price: filters.sortOrder || 1 } : { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit },
+      { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
+      { $unwind: '$user' },
+      { $project: { 'user.password': 0, 'user.email': 0 } }
+    ]),
+    this.countDocuments(query)
+  ]);
+  
+  return { videos, total, page, totalPages: Math.ceil(total / limit) };
+};
+
+// Métodos existentes (getFeaturedVideos, getPopularVideos, getTrendingVideos, getPendingVideos, getUserVideos)
 videoSchema.statics.getFeaturedVideos = async function(limit = 10) {
   return this.aggregate([
     { $match: { isFeatured: true, pendiente: false, isActive: true } },
@@ -239,11 +457,17 @@ videoSchema.statics.getUserVideos = async function(userId, isOwner = false, page
   return { videos, total };
 };
 
-// Pre-save hook
+// ==================== MIDDLEWARE ====================
 videoSchema.pre('save', function(next) {
   if (this.isModified('views') || this.isModified('likes') || this.isModified('comments') || this.isModified('shares')) {
     this.updateEngagementScore();
   }
+  
+  // Si es comercial y no tiene ubicación, marcar como pendiente
+  if (this.isCommercial && (!this.wilaya || !this.commune)) {
+    this.pendiente = true;
+  }
+  
   next();
 });
 

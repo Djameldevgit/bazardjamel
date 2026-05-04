@@ -6,10 +6,10 @@ const roleSchema = new mongoose.Schema({
     default: false,
     description: "Indica si es rol de usuario básico" 
   },
-  isSuperUser: { 
+  isuserpro: { 
     type: Boolean, 
     default: false,
-    description: "Indica si es rol de superusuario" 
+    description: "Indica si es rol de utilizateur pro" 
   },
   isModerator: { 
     type: Boolean, 
@@ -34,7 +34,7 @@ const roleSchema = new mongoose.Schema({
 // Método para obtener el nombre del rol basado en los booleanos
 roleSchema.methods.getRoleName = function() {
   if (this.isAdmin) return 'admin';
-  if (this.isSuperUser) return 'Super-utilisateur';
+  if (this.isuserpro) return 'userpro';
   if (this.isModerator) return 'Moderateur';
   if (this.isUser) return 'user';
   return 'none';

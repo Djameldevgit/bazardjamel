@@ -8,7 +8,7 @@ const StepMusicSelection = ({ wizardData, updateData }) => {
   const [loading, setLoading] = useState(false);
   const [playingTrackId, setPlayingTrackId] = useState(null);
   const [currentAudio, setCurrentAudio] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('pop');
+  const [searchTerm, setSearchTerm] = useState('arab');
   const [uploadingTrackId, setUploadingTrackId] = useState(null);
   const [audioError, setAudioError] = useState(null);
 

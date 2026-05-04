@@ -1,14 +1,14 @@
 // components/Video/VideoCard.jsx
 import React, { useState } from 'react';
 import { Card, Badge, Button } from 'react-bootstrap';
-import { PlayFill, Heart, HeartFill, Eye, Clock, Share, Bookmark, BookmarkFill } from 'react-bootstrap-icons';
+import { PlayFill, Heart, HeartFill, Eye, Clock, Share, Bookmark, BookmarkFill, InfoCircle } from 'react-bootstrap-icons';
 import { useHistory } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { likeVideo } from '../../redux/actions/videoAction';
 import moment from 'moment';
 import 'moment/locale/fr';
 
-// ✅ Data URL para placeholder (no requiere petición HTTP)
+// Data URL para placeholder (no requiere petición HTTP)
 const DEFAULT_THUMBNAIL = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="225" viewBox="0 0 400 225"%3E%3Crect width="400" height="225" fill="%23333333"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23ffffff" font-size="16"%3E🎬 Vidéo%3C/text%3E%3C/svg%3E';
 
 const VideoCard = ({ video, showActions = true, onVideoClick }) => {
@@ -23,33 +23,23 @@ const VideoCard = ({ video, showActions = true, onVideoClick }) => {
 
   moment.locale('fr');
 
-  // ✅ Determinar tipo de video y obtener thumbnail (sin petición HTTP fallida)
+  // Determinar tipo de video y obtener thumbnail
   const getThumbnail = () => {
-    // Si ya hubo error, usar placeholder
-    if (imgError) {
-      return DEFAULT_THUMBNAIL;
-    }
-    
-    // Si es YouTube, usar miniatura de YouTube
+    if (imgError) return DEFAULT_THUMBNAIL;
     if (video.videoType === 'youtube' && video.videoId) {
       return `https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`;
     }
-    
-    // Si tiene thumbnail personalizado
     if (video.thumbnail && video.thumbnail !== '' && video.thumbnail !== '/video-placeholder.jpg') {
       return video.thumbnail;
     }
-    
-    // Fallback a placeholder
     return DEFAULT_THUMBNAIL;
   };
 
-  // ✅ Manejar error de imagen (solo una vez)
   const handleImageError = (e) => {
     if (!imgError) {
       setImgError(true);
       e.target.src = DEFAULT_THUMBNAIL;
-      e.target.onerror = null; // ✅ Evitar bucle infinito
+      e.target.onerror = null;
     }
   };
 
@@ -92,13 +82,21 @@ const VideoCard = ({ video, showActions = true, onVideoClick }) => {
     }
   };
 
+  // ✅ NUEVA FUNCIÓN: Ver detalles del video comercial
+  const handleViewDetails = (e) => {
+    e.stopPropagation();
+    // Guardar posición para volver al feed después
+    sessionStorage.setItem('returnToFeed', 'true');
+    sessionStorage.setItem('feedScrollPosition', window.scrollY.toString());
+    history.push(`/video/${video._id}`);
+  };
+
   const copyToClipboard = (e) => {
     e.stopPropagation();
     navigator.clipboard.writeText(`${window.location.origin}/video/${video._id}`);
     setShowShare(false);
   };
 
-  // Formatear duración
   const formatDuration = (seconds) => {
     if (!seconds) return '';
     const mins = Math.floor(seconds / 60);
@@ -106,7 +104,6 @@ const VideoCard = ({ video, showActions = true, onVideoClick }) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Formatear números
   const formatNumber = (num) => {
     if (!num) return '0';
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -131,14 +128,12 @@ const VideoCard = ({ video, showActions = true, onVideoClick }) => {
           onError={handleImageError}
         />
         
-        {/* Overlay de play */}
         <div className="play-overlay d-flex align-items-center justify-content-center">
           <div className="play-button">
             <PlayFill size={48} className="text-white" />
           </div>
         </div>
         
-        {/* Duración */}
         {video.duration > 0 && (
           <Badge bg="dark" className="position-absolute bottom-0 end-0 m-2 opacity-75">
             <Clock size={12} className="me-1" />
@@ -146,7 +141,6 @@ const VideoCard = ({ video, showActions = true, onVideoClick }) => {
           </Badge>
         )}
         
-        {/* Badge de tipo */}
         <Badge bg="primary" className="position-absolute top-0 start-0 m-2">
           {video.videoType === 'youtube' ? 'YouTube' : video.videoType === 'vimeo' ? 'Vimeo' : 'Vidéo'}
         </Badge>
@@ -188,6 +182,17 @@ const VideoCard = ({ video, showActions = true, onVideoClick }) => {
           
           {showActions && (
             <div className="d-flex gap-2">
+              {/* ✅ NUEVO BOTÓN DE DETALLES */}
+              <Button 
+                variant="link" 
+                size="sm" 
+                className="p-0 text-muted" 
+                onClick={handleViewDetails}
+                title="Voir les détails"
+              >
+                <InfoCircle size={16} />
+              </Button>
+              
               <Button variant="link" size="sm" className="p-0 text-muted" onClick={handleSave}>
                 {saved ? <BookmarkFill size={16} /> : <Bookmark size={16} />}
               </Button>
@@ -199,7 +204,6 @@ const VideoCard = ({ video, showActions = true, onVideoClick }) => {
         </div>
       </Card.Body>
       
-      {/* Dropdown de compartir */}
       {showShare && (
         <div className="position-absolute bg-white border rounded shadow-sm p-2" style={{ bottom: '60px', right: '10px', zIndex: 10 }}>
           <div className="d-flex gap-2">

@@ -1,10 +1,11 @@
+// components/Feed/Feed.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import { Dropdown } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faHeart, faComment, faBookmark, faShare,
+  faHeart, faComment, faBookmark, faShare, faInfoCircle,
   faVolumeHigh, faVolumeXmark, faEye, faClock,
   faMusic, faXmark, faArrowLeft, faEllipsisVertical,
   faPen, faTrash, faFlag, faBan, faCheckCircle,
@@ -26,7 +27,6 @@ import moment from 'moment';
 import 'moment/locale/fr';
 import './Feed.css';
 
-// ✅ Función de fallback para mezclar audio en cliente (videos antiguos)
 const getVideoWithExternalAudio = (videoUrl, audioUrl) => {
   if (!audioUrl || !videoUrl) return videoUrl;
   const uploadIndex = videoUrl.indexOf('/upload/');
@@ -58,7 +58,7 @@ const Feed = ({
   const { auth, socket } = useSelector(state => state);
   const videoRef = useRef(null);
   const drawerRef = useRef(null);
-  let hlsRef = useRef(null); // para guardar la instancia de Hls
+  let hlsRef = useRef(null);
 
   const [liked, setLiked] = useState(video.liked || false);
   const [likesCount, setLikesCount] = useState(video.likes?.length || 0);
@@ -81,61 +81,43 @@ const Feed = ({
   const isOwner = auth.user?._id === video.user?._id;
   const isPending = video?.pendiente === true;
 
-  // 🔁 Determinar la URL final del video (nuevos vs antiguos)
   const getFinalVideoSrc = () => {
-    // Si el video ya tiene una URL transformada por el backend (contiene 'l_audio' o es .m3u8), la usamos directamente
     if (video.videoUrl && (video.videoUrl.includes('l_audio') || video.videoUrl.includes('.m3u8'))) {
       return video.videoUrl;
     }
-    // Si no, y tiene música, usamos el fallback
     if (video.music?.audioUrl) {
       return getVideoWithExternalAudio(video.videoUrl, video.music.audioUrl);
     }
-    // Sin música, la URL original
     return video.videoUrl;
   };
 
   const finalVideoSrc = getFinalVideoSrc();
 
-  // ─────────────────────────────────────────────────────────────────
-  // 1. Manejo de HLS (si la URL termina en .m3u8)
-  // ─────────────────────────────────────────────────────────────────
+  // Manejo de HLS
   useEffect(() => {
     const videoEl = videoRef.current;
     if (!videoEl) return;
-
     const src = finalVideoSrc;
     if (!src) return;
 
-    // Destruir cualquier instancia anterior de HLS
     if (hlsRef.current) {
       hlsRef.current.destroy();
       hlsRef.current = null;
     }
 
-    // Si es HLS
     if (src.endsWith('.m3u8')) {
       if (Hls.isSupported()) {
-        const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: true,
-          maxBufferLength: 30
-        });
+        const hls = new Hls({ enableWorker: true, lowLatencyMode: true, maxBufferLength: 30 });
         hls.loadSource(src);
         hls.attachMedia(videoEl);
         hlsRef.current = hls;
       } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-        // Safari nativo
         videoEl.src = src;
-      } else {
-        console.warn('HLS no soportado en este navegador');
       }
     } else {
-      // Vídeo normal (mp4, etc.)
       videoEl.src = src;
     }
 
-    // Limpieza al desmontar o cambiar de URL
     return () => {
       if (hlsRef.current) {
         hlsRef.current.destroy();
@@ -144,9 +126,7 @@ const Feed = ({
     };
   }, [finalVideoSrc]);
 
-  // ─────────────────────────────────────────────────────────────────
-  // 2. Reproducción automática cuando está activo
-  // ─────────────────────────────────────────────────────────────────
+  // Reproducción automática
   useEffect(() => {
     const videoEl = videoRef.current;
     if (!videoEl) return;
@@ -162,9 +142,7 @@ const Feed = ({
     }
   }, [isActive, showComments, onVisibilityChange]);
 
-  // ─────────────────────────────────────────────────────────────────
-  // 3. Barra de progreso
-  // ─────────────────────────────────────────────────────────────────
+  // Barra de progreso
   useEffect(() => {
     const videoEl = videoRef.current;
     if (!videoEl) return;
@@ -175,9 +153,7 @@ const Feed = ({
     return () => videoEl.removeEventListener('timeupdate', onTimeUpdate);
   }, []);
 
-  // ─────────────────────────────────────────────────────────────────
-  // 4. Socket para comentarios
-  // ─────────────────────────────────────────────────────────────────
+  // Socket para comentarios
   useEffect(() => {
     if (!socket || !video || isPending) return;
     socket.emit('join-video-room', video._id);
@@ -194,9 +170,7 @@ const Feed = ({
     };
   }, [socket, video, isPending]);
 
-  // ─────────────────────────────────────────────────────────────────
-  // 5. Drag para comments (móvil)
-  // ─────────────────────────────────────────────────────────────────
+  // Drag para comments
   const handleDragStart = e => {
     e.stopPropagation();
     setStartY(e.touches ? e.touches[0].clientY : e.clientY);
@@ -223,9 +197,29 @@ const Feed = ({
     }
   };
 
-  // ─────────────────────────────────────────────────────────────────
-  // 6. Acciones del usuario
-  // ─────────────────────────────────────────────────────────────────
+  // Navegación por teclado
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowUp' && hasPrev && onPreviousVideo) {
+        e.preventDefault();
+        onPreviousVideo();
+      } else if (e.key === 'ArrowDown' && hasNext && onNextVideo) {
+        e.preventDefault();
+        onNextVideo();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [hasPrev, hasNext, onPreviousVideo, onNextVideo]);
+
+  // Efecto responsive
+  useEffect(() => {
+    const handleResize = () => setIsLargeScreen(window.innerWidth > 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Acciones del usuario
   const guardPending = () => {
     if (!isPending) return false;
     dispatch({ type: GLOBALTYPES.ALERT, payload: { error: "Cette vidéo est en attente d'approbation" } });
@@ -315,7 +309,9 @@ const Feed = ({
   };
   const handleGoBack = () => history.goBack();
 
-  const handleViewDetails = () => {
+  // ✅ NUEVA FUNCIÓN: Ver detalles del video
+  const handleViewDetails = (e) => {
+    e?.stopPropagation();
     sessionStorage.setItem('returnToFeed', 'true');
     sessionStorage.setItem('feedScrollPosition', window.scrollY.toString());
     history.push(`/video/${video._id}`);
@@ -328,26 +324,7 @@ const Feed = ({
     history.push(`/video/userVideo/${video.user._id}`);
   };
 
-  // ─────────────────────────────────────────────────────────────────
-  // 7. Navegación por teclado
-  // ─────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'ArrowUp' && hasPrev && onPreviousVideo) {
-        e.preventDefault();
-        onPreviousVideo();
-      } else if (e.key === 'ArrowDown' && hasNext && onNextVideo) {
-        e.preventDefault();
-        onNextVideo();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hasPrev, hasNext, onPreviousVideo, onNextVideo]);
-
-  // ─────────────────────────────────────────────────────────────────
-  // 8. Menú desplegable
-  // ─────────────────────────────────────────────────────────────────
+  // Menú desplegable
   const menuAction = fn => () => { setShowMenu(false); fn(); };
   const handleEdit = menuAction(() => {
     sessionStorage.setItem('returnToFeed', 'true');
@@ -401,9 +378,6 @@ const Feed = ({
   const videoScale = !showComments ? 1 : 0.7 + 0.3 * Math.min(dragOffset / (window.innerHeight * 0.6), 1);
   const videoTranslateY = !showComments ? 0 : -15 * (1 - Math.min(dragOffset / (window.innerHeight * 0.6), 1));
 
-  // ─────────────────────────────────────────────────────────────────
-  // RENDER
-  // ─────────────────────────────────────────────────────────────────
   return (
     <div className="video-reel-container">
       {/* Header */}
@@ -414,7 +388,7 @@ const Feed = ({
         <div className="vr-header-right">
           {(isOwner || isAdmin) && !showComments && (
             <button className="vr-header-btn" onClick={handleViewDetails} title="Voir les détails">
-              <FontAwesomeIcon icon={faExternalLinkAlt} />
+              <FontAwesomeIcon icon={faInfoCircle} />
             </button>
           )}
           {!showComments && (
@@ -562,6 +536,14 @@ const Feed = ({
               <span className="vr-action-count">Partager</span>
             </div>
 
+            {/* ✅ NUEVO BOTÓN DE DETALLES EN SIDEBAR */}
+            <div className="vr-action-group">
+              <button className="vr-action-btn" onClick={handleViewDetails} title="Détails du produit">
+                <FontAwesomeIcon icon={faInfoCircle} className="vr-action-icon" />
+              </button>
+              <span className="vr-action-count">Détails</span>
+            </div>
+
             {isLargeScreen && (hasPrev || hasNext) && <div className="vr-nav-divider" />}
             {isLargeScreen && hasPrev && onPreviousVideo && (
               <div className="vr-nav-group">
@@ -621,38 +603,37 @@ const Feed = ({
       </div>
 
       {/* Comments drawer */}
-      {/* Comments drawer */}
-{showComments && (
-  <div className="vr-comments-drawer">
-    <div className="vr-comments-backdrop" onClick={handleCloseComments} />
-    <div
-      ref={drawerRef}
-      className="vr-comments-panel"
-      onTouchStart={handleDragStart}
-      onTouchMove={handleDragMove}
-      onTouchEnd={handleDragEnd}
-      onMouseDown={handleDragStart}
-      onMouseMove={handleDragMove}
-      onMouseUp={handleDragEnd}
-      onMouseLeave={handleDragEnd}
-    >
-      <div className="vr-comments-drag-handle">
-        <div className="vr-comments-drag-bar" />
-      </div>
-      <div className="vr-comments-header">
-        <h5 className="vr-comments-title">
-          {commentsCount} commentaire{commentsCount !== 1 ? 's' : ''}
-        </h5>
-        <button className="vr-comments-close" onClick={handleCloseComments}>
-          <FontAwesomeIcon icon={faXmark} />
-        </button>
-      </div>
-      <div className="vr-comments-content">
-        <VideoComments videoId={video._id} comments={video.comments || []} totalComments={commentsCount} />
-      </div>
-    </div>
-  </div>
-)}
+      {showComments && (
+        <div className="vr-comments-drawer">
+          <div className="vr-comments-backdrop" onClick={handleCloseComments} />
+          <div
+            ref={drawerRef}
+            className="vr-comments-panel"
+            onTouchStart={handleDragStart}
+            onTouchMove={handleDragMove}
+            onTouchEnd={handleDragEnd}
+            onMouseDown={handleDragStart}
+            onMouseMove={handleDragMove}
+            onMouseUp={handleDragEnd}
+            onMouseLeave={handleDragEnd}
+          >
+            <div className="vr-comments-drag-handle">
+              <div className="vr-comments-drag-bar" />
+            </div>
+            <div className="vr-comments-header">
+              <h5 className="vr-comments-title">
+                {commentsCount} commentaire{commentsCount !== 1 ? 's' : ''}
+              </h5>
+              <button className="vr-comments-close" onClick={handleCloseComments}>
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
+            </div>
+            <div className="vr-comments-content">
+              <VideoComments videoId={video._id} comments={video.comments || []} totalComments={commentsCount} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

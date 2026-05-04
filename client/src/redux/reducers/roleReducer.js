@@ -3,7 +3,7 @@ import { ROLES_TYPES } from '../actions/roleAction';
 const initialState = {
   isAdmin: false,
   isModerator: false,
-  isSuperUser: false,
+  isuserpro: false,
   lastUpdated: null
 };
 
@@ -14,7 +14,7 @@ export const roleReducer = (state = initialState, action) => {
         ...state, // 🔑 mantiene el resto del estado
         isAdmin: action.payload.newRole === 'admin',
         isModerator: action.payload.newRole === 'Moderateur',
-        isSuperUser: action.payload.newRole === 'Super-utilisateur',
+        isuserpro: action.payload.newRole === 'userpro',
         lastUpdated: Date.now()
       };
     default:

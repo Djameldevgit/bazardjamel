@@ -12,19 +12,25 @@ export const VIDEO_APPROVE_TYPES = {
 };
 
 // Obtener videos pendientes
-export const getVideosPendientes = (token, page = 1, limit = 10) => async (dispatch) => {
+export const getVideosPendientes = (token, page = 1, limit = 10, commercialOnly = false) => async (dispatch) => {
   try {
     dispatch({ type: VIDEO_APPROVE_TYPES.LOADING, payload: true });
     
-    const res = await getDataAPI(`admin/videos/pendientes?page=${page}&limit=${limit}`, token);
+    let url = `admin/videos/pendientes?page=${page}&limit=${limit}`;
+    if (commercialOnly) {
+      url += '&commercialOnly=true';
+    }
+    
+    const res = await getDataAPI(url, token);
     
     dispatch({
       type: VIDEO_APPROVE_TYPES.GET_VIDEOS_PENDIENTES,
       payload: {
-        videos: res.data.videos,
-        total: res.data.total,
-        page: res.data.page,
-        totalPages: res.data.totalPages
+        videos: res.data.videos || [],
+        total: res.data.total || 0,
+        page: res.data.page || page,
+        totalPages: res.data.totalPages || 1,
+        stats: res.data.stats || { commercial: 0, normal: 0, total: 0 }
       }
     });
     
@@ -36,7 +42,6 @@ export const getVideosPendientes = (token, page = 1, limit = 10) => async (dispa
     dispatch({ type: VIDEO_APPROVE_TYPES.LOADING, payload: false });
   }
 };
-
 // ✅ Aprobar video CON NOTIFICACIÓN
 // redux/actions/videoApproveAction.js - aprobarVideo CORREGIDO
 

@@ -21,15 +21,22 @@ const initialState = {
   videosByCategory: {},
   loadingByCategory: {},
   
-  // ✅ Trending videos
+  // Trending videos
   trendingVideos: [],
   trendingLoading: false,
   trendingHasMore: true,
   trendingPage: 1,
-  trendingTimeWindow: 'week'
-  // ❌ ELIMINADO: comments, commentsTotal, etc.
+  trendingTimeWindow: 'week',
+  
+  // 🆕 ESTADOS COMERCIALES
+  commercialVideos: [],
+  commercialStats: null,
+  commercialPagination: null,
+  nearbyVideos: [],
+  myCommercialVideos: [],
+  myCommercialStats: null,
+  myCommercialPagination: null
 };
-
 const videoReducer = (state = initialState, action) => {
   switch (action.type) {
     case VIDEO_TYPES.LOADING:
@@ -178,7 +185,103 @@ const videoReducer = (state = initialState, action) => {
         trendingPage: action.payload.page
       };
 
-    // ❌ ELIMINAR TODOS LOS CASOS DE COMENTARIOS
+      case VIDEO_TYPES.GET_COMMERCIAL_VIDEOS:
+        return {
+          ...state,
+          commercialVideos: action.payload.videos,
+          commercialStats: action.payload.stats,
+          commercialPagination: action.payload.pagination,
+          loading: false
+        };
+        
+      case VIDEO_TYPES.GET_NEARBY_VIDEOS:
+        return {
+          ...state,
+          nearbyVideos: action.payload,
+          loading: false
+        };
+        
+      case VIDEO_TYPES.GET_MY_COMMERCIAL_VIDEOS:
+        return {
+          ...state,
+          myCommercialVideos: action.payload.videos,
+          myCommercialStats: action.payload.stats,
+          myCommercialPagination: action.payload.pagination,
+          loading: false
+        };
+        
+      case VIDEO_TYPES.UPDATE_VIDEO_STOCK:
+        return {
+          ...state,
+          commercialVideos: state.commercialVideos.map(v =>
+            v._id === action.payload.id
+              ? { ...v, stock: action.payload.stock }
+              : v
+          ),
+          myCommercialVideos: state.myCommercialVideos.map(v =>
+            v._id === action.payload.id
+              ? { ...v, stock: action.payload.stock }
+              : v
+          ),
+          currentVideo: state.currentVideo?._id === action.payload.id
+            ? { ...state.currentVideo, stock: action.payload.stock }
+            : state.currentVideo
+        };
+        
+      case VIDEO_TYPES.UPDATE_VIDEO_WHOLESALE:
+        return {
+          ...state,
+          commercialVideos: state.commercialVideos.map(v =>
+            v._id === action.payload.id
+              ? { ...v, wholesale: action.payload.wholesale, minQuantity: action.payload.minQuantity }
+              : v
+          ),
+          myCommercialVideos: state.myCommercialVideos.map(v =>
+            v._id === action.payload.id
+              ? { ...v, wholesale: action.payload.wholesale, minQuantity: action.payload.minQuantity }
+              : v
+          ),
+          currentVideo: state.currentVideo?._id === action.payload.id
+            ? { ...state.currentVideo, wholesale: action.payload.wholesale, minQuantity: action.payload.minQuantity }
+            : state.currentVideo
+        };
+        
+      case VIDEO_TYPES.UPDATE_VIDEO_LOCATION:
+        return {
+          ...state,
+          commercialVideos: state.commercialVideos.map(v =>
+            v._id === action.payload.id
+              ? { ...v, wilaya: action.payload.location.wilaya, commune: action.payload.location.commune, location: action.payload.location }
+              : v
+          ),
+          myCommercialVideos: state.myCommercialVideos.map(v =>
+            v._id === action.payload.id
+              ? { ...v, wilaya: action.payload.location.wilaya, commune: action.payload.location.commune, location: action.payload.location }
+              : v
+          ),
+          currentVideo: state.currentVideo?._id === action.payload.id
+            ? { ...state.currentVideo, wilaya: action.payload.location.wilaya, commune: action.payload.location.commune, location: action.payload.location }
+            : state.currentVideo
+        };
+        
+      case VIDEO_TYPES.FEATURE_VIDEO:
+        return {
+          ...state,
+          commercialVideos: state.commercialVideos.map(v =>
+            v._id === action.payload.id
+              ? { ...v, isFeatured: action.payload.isFeatured }
+              : v
+          ),
+          myCommercialVideos: state.myCommercialVideos.map(v =>
+            v._id === action.payload.id
+              ? { ...v, isFeatured: action.payload.isFeatured }
+              : v
+          ),
+          featuredVideos: action.payload.isFeatured
+            ? [...state.featuredVideos, state.currentVideo]
+            : state.featuredVideos.filter(v => v?._id !== action.payload.id)
+        };
+        
 
     default:
       return state;

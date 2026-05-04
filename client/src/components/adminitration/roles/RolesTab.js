@@ -1,7 +1,7 @@
 // src/components/administration/Roles/RolesTab.jsx
 import { useSelector, useDispatch } from 'react-redux'; 
 import UserCard from '../../UserCard';
-import { roleuserautenticado, rolemoderador, rolesuperuser, roleadmin } from '../../../redux/actions/roleAction';
+import { roleuserautenticado, rolemoderador, userPro, roleadmin } from '../../../redux/actions/roleAction';
 import { useState, useEffect, useCallback } from 'react';
 import {
   Container,
@@ -184,8 +184,8 @@ const RolesTab = ({ filters = {}, token: propToken }) => {
         case 'user':
           await dispatch(roleuserautenticado(user, auth, socket)); // ✅ Añadir socket
           break;
-        case 'Super-utilisateur':
-          await dispatch(rolesuperuser(user, auth, socket)); // ✅ Añadir socket
+        case 'userpro':
+          await dispatch(userPro(user, auth, socket)); // ✅ Añadir socket
           break;
         case 'Moderateur':
           await dispatch(rolemoderador(user, auth, socket)); // ✅ Añadir socket
@@ -259,7 +259,7 @@ const RolesTab = ({ filters = {}, token: propToken }) => {
       <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
         <div className="text-center">
           <Spinner animation="border" variant="primary" style={{ width: "3rem", height: "3rem" }} />
-          <p className="mt-3 text-muted fw-semibold">Cargando usuarios...</p>
+          <p className="mt-3 text-muted fw-semibold">chargements utilizateurs...</p>
         </div>
       </div>
     );

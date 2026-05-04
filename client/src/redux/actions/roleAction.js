@@ -5,7 +5,7 @@ import { createNotify } from './notifyAction'; // ✅ Importar createNotify
 export const ROLES_TYPES = {
   LOADING: 'LOADING',
   USER_ROLE: 'USER_ROLE',
-  SUPERUSER_ROLE: 'SUPERUSER_ROLE',
+  USER_PRO: 'USER_PRO',
   MODERADOR_ROLE: 'MODERADOR_ROLE',
   ADMIN_ROLE: 'ADMIN_ROLE',
   UPDATE_ROLE: 'UPDATE_ROLE'
@@ -34,7 +34,7 @@ export const updateUserRole = (userId, newRole, token, auth, socket, userData) =
     if (userData && userData._id !== auth.user?._id) {
       const roleMessages = {
         'admin': '👑 Vous avez été promu Administrateur',
-        'Super-utilisateur': '⭐ Vous avez été promu Super Utilisateur',
+        'userpro': '⭐ Vous avez été promu Utilizateur Profesionelle',
         'Moderateur': '🛡️ Vous avez été promu Modérateur',
         'user': '👤 Votre rôle a été changé à Utilisateur'
       };
@@ -123,25 +123,25 @@ export const roleuserautenticado = (user, auth, socket) => async (dispatch) => {
 // ============================================
 // ✅ ROLE SUPERUSER CON NOTIFICACIÓN
 // ============================================
-export const rolesuperuser = (user, auth, socket) => async (dispatch) => {
+export const userPro = (user, auth, socket) => async (dispatch) => {
   try {
     dispatch({ type: ROLES_TYPES.LOADING, payload: true });
 
-    const res = await patchDataAPI(`user/${user._id}/rolesuperuser`, { role: 'Super-utilisateur' }, auth.token);
+    const res = await patchDataAPI(`user/${user._id}/roleuserpro`, { role: 'userpro' }, auth.token);
 
     dispatch({
-      type: ROLES_TYPES.SUPERUSER_ROLE,
-      payload: { user: { ...user, role: 'Super-utilisateur' } }
+      type: ROLES_TYPES.USER_PRO,
+      payload: { user: { ...user, role: 'userpro' } }
     });
 
     // ✅ Notificar al usuario cuyo rol cambió
     if (user._id !== auth.user?._id) {
       const msg = {
         id: auth.user._id,
-        text: '⭐ Vous avez été promu Super Utilisateur',
+        text: '⭐ Vous avez été promu utilizateur Pro',
         recipients: [user._id],
         url: `/profile/${user._id}`,
-        content: `Nouveau rôle: Super Utilisateur`,
+        content: `Nouveau rôle: utilizateur Pro`,
         image: user.avatar,
         type: 'role'
       };

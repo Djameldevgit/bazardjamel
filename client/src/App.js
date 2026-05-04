@@ -261,6 +261,9 @@ function App() {
           <Route exact path="/login" component={Login} />
           <Route exact path="/bloqueos404" component={Bloqueos404} />
           <Route exact path="/notify" component={NotifyPage} />
+          <Route exact path="/create-video-page" component={CreateVideoWizard} />
+          <Route path="/edit-video/:id" component={EditVideoWizard} />
+          <Route exact path="/video/:id" component={DetailVideoPage} />
           <Route exact path="/video/userVideo/:userId" component={UserVideoPage} />
           <Route exact path="/video/userFeed/:userId" component={UserFeed} />
           <Route exact path="/video/userVideo/:userId/info" component={InfoUserVideo} />
@@ -281,9 +284,7 @@ function App() {
           <Route exact path="/products-boutique-page/:boutiqueId" component={ProductsBoutiquePage} />
           <Route exact path="/boutique/:id" component={BoutiqueDetailPage} />
           <Route path="/payment-boutique/:boutiqueId" component={PaymentBoutique} />
-          <Route exact path="/create-video-page" component={CreateVideoWizard} />
-          <Route path="/edit-video/:id" component={EditVideoWizard} />
-          <Route exact path="/video/:id" component={DetailVideoPage} />
+   
           <Route exact path="/creer-annonce" component={CreateAnnoncePage} />
           <Route exact path="/edit-post/:id" component={CreateAnnoncePage} />
           <Route exact path="/post/:id" component={PostId} />

@@ -56,32 +56,13 @@ const getMusicLibrary = async (req, res) => {
 };
 
 // Proxy para audio de Jamendo (evitar CORS)
-const proxyMusic = async (req, res) => {
-  const { url } = req.query;
-  if (!url) return res.status(400).json({ error: 'URL requerida' });
-  
-  try {
-    const response = await axios({
-      method: 'get',
-      url: url,
-      responseType: 'stream',
-      timeout: 30000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'audio/mpeg,audio/*;q=0.9,*/*;q=0.8'
-      }
-    });
-    
-    res.setHeader('Content-Type', 'audio/mpeg');
-    response.data.pipe(res);
-  } catch (err) {
-    console.error('Error proxy audio:', err.message);
-    res.status(500).json({ error: 'Error fetching audio' });
-  }
-};
+ 
 
 // ============================================
 // 🎬 CREAR VIDEO (TAL CUAL FUNCIONABA)
+// ============================================
+// ============================================
+// 🎬 CREAR VIDEO CON CAMPOS COMERCIALES
 // ============================================
 const createVideo = async (req, res) => {
   try {
@@ -94,7 +75,25 @@ const createVideo = async (req, res) => {
       videoPublicId,
       thumbnail,
       duration,
-      music
+      music,
+      // NUEVOS CAMPOS COMERCIALES
+      isCommercial,
+      price,
+      wholesale,
+      minQuantity,
+      phone,
+      phoneHidden,
+      email,
+      website,
+      wilaya,
+      commune,
+      location,
+      delivery,
+      pickupOnly,
+      businessHours,
+      stock,
+      category,
+      tags
     } = req.body;
 
     const userId = req.user._id;
@@ -114,15 +113,37 @@ const createVideo = async (req, res) => {
       });
     }
 
+    // ✅ Validar campos comerciales si isCommercial = true
+    if (isCommercial) {
+      if (!wilaya || !commune) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Pour les vidéos commerciales, wilaya et commune sont obligatoires' 
+        });
+      }
+      
+      if (!phone && !email) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Au moins un moyen de contact (téléphone ou email) est requis' 
+        });
+      }
+      
+      if (wholesale && (!minQuantity || minQuantity < 1)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'La quantité minimale est requise pour la vente en gros' 
+        });
+      }
+    }
+
     let finalVideoUrl = videoUrl;
     let finalThumbnail = thumbnail;
     let musicData = null;
 
-    // ✅ MEZCLA DE AUDIO
+    // MEZCLA DE AUDIO
     if (music && music.audioPublicId && videoPublicId) {
       console.log("🎵 PROCESANDO MEZCLA DE AUDIO...");
-      console.log(`📁 Video Public ID: ${videoPublicId}`);
-      console.log(`🎵 Audio Public ID: ${music.audioPublicId}`);
       
       try {
         const formattedAudioId = music.audioPublicId.replace(/\//g, ':');
@@ -137,8 +158,6 @@ const createVideo = async (req, res) => {
         finalVideoUrl = `${base}${transformation}/${pathAndFile}`;
         finalThumbnail = finalVideoUrl.replace(/\.mp4$/, '.jpg');
         
-        console.log(`✅ URL mezclada generada: ${finalVideoUrl}`);
-        
         musicData = {
           id: music.id,
           title: music.title,
@@ -148,19 +167,35 @@ const createVideo = async (req, res) => {
           volume: music.volume || 70,
           processed: true
         };
-        
       } catch (err) {
         console.error('❌ Error en mezcla de audio:', err);
         musicData = { ...music, processed: false, error: err.message };
       }
     } else if (music && music.audioUrl) {
-      console.log("⚠️ Música sin public_id, guardando sin mezcla");
       musicData = { ...music, processed: false };
-    } else {
-      console.log("📹 Video sin música");
+    }
+
+    // ✅ Construir objeto de ubicación
+    let locationData = null;
+    if (location && location.coordinates && location.coordinates.length === 2) {
+      locationData = {
+        type: 'Point',
+        coordinates: location.coordinates,
+        address: location.address || '',
+        googleMapsUrl: location.googleMapsUrl || ''
+      };
+    } else if (wilaya && commune) {
+      // Si no hay coordenadas pero sí wilaya/commune, se podrían geocodificar después
+      locationData = {
+        type: 'Point',
+        coordinates: [0, 0], // Placeholder, se puede actualizar después
+        address: `${commune}, ${wilaya}`,
+        googleMapsUrl: ''
+      };
     }
 
     const newVideo = new Video({
+      // Campos básicos
       title: title.trim(),
       description: description || '',
       shortDescription: description ? description.substring(0, 300) : '',
@@ -170,6 +205,27 @@ const createVideo = async (req, res) => {
       duration: duration || 0,
       user: userId,
       music: musicData,
+      category: category || '',
+      tags: tags || [],
+      
+      // ✅ Campos comerciales
+      isCommercial: isCommercial || false,
+      price: price || 0,
+      wholesale: wholesale || false,
+      minQuantity: wholesale ? (minQuantity || 1) : 1,
+      phone: phone || '',
+      phoneHidden: phoneHidden || false,
+      email: email || '',
+      website: website || '',
+      wilaya: isCommercial ? wilaya : '',
+      commune: isCommercial ? commune : '',
+      location: locationData,
+      delivery: delivery || { available: false, cost: 0, estimatedDays: 0, zones: [] },
+      pickupOnly: pickupOnly || false,
+      businessHours: businessHours || {},
+      stock: stock || { total: 0, available: 0, reserved: 0 },
+      
+      // Estado
       pendiente: isAdmin ? false : true
     });
 
@@ -194,31 +250,149 @@ const createVideo = async (req, res) => {
     });
   }
 };
+const filterCommercialVideos = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 12,
+      category,
+      wilaya,
+      commune,
+      wholesale,
+      minPrice,
+      maxPrice,
+      searchTerm,
+      sortBy = 'recent'
+    } = req.query;
+    
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    // Construir query
+    const query = { 
+      isCommercial: true, 
+      pendiente: false, 
+      isActive: true 
+    };
+    
+    if (category && category !== 'all') query.category = category;
+    if (wilaya) query.wilaya = wilaya;
+    if (commune) query.commune = commune;
+    if (wholesale !== undefined && wholesale !== '') query.wholesale = wholesale === 'true';
+    
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) query.price.$gte = parseFloat(minPrice);
+      if (maxPrice) query.price.$lte = parseFloat(maxPrice);
+    }
+    
+    if (searchTerm && searchTerm.trim() !== '') {
+      query.$or = [
+        { title: { $regex: searchTerm, $options: 'i' } },
+        { description: { $regex: searchTerm, $options: 'i' } },
+        { wilaya: { $regex: searchTerm, $options: 'i' } },
+        { commune: { $regex: searchTerm, $options: 'i' } }
+      ];
+    }
+    
+    // Ordenamiento
+    let sort = {};
+    switch(sortBy) {
+      case 'price_asc': sort = { price: 1 }; break;
+      case 'price_desc': sort = { price: -1 }; break;
+      case 'popular': sort = { views: -1 }; break;
+      case 'recent': sort = { createdAt: -1 }; break;
+      default: sort = { createdAt: -1 };
+    }
+    
+    const [videos, total] = await Promise.all([
+      Video.find(query)
+        .sort(sort)
+        .skip(skip)
+        .limit(parseInt(limit))
+        .populate('user', 'username avatar isPro'),
+      Video.countDocuments(query)
+    ]);
+    
+    // Estadísticas de filtro
+    const stats = await Video.aggregate([
+      { $match: query },
+      { $group: {
+        _id: null,
+        avgPrice: { $avg: '$price' },
+        minPriceFound: { $min: '$price' },
+        maxPriceFound: { $max: '$price' },
+        totalCommercial: { $sum: 1 }
+      }}
+    ]);
+    
+    res.json({
+      success: true,
+      videos,
+      filters: { category, wilaya, commune, wholesale, minPrice, maxPrice, searchTerm },
+      stats: stats[0] || { avgPrice: 0, minPriceFound: 0, maxPriceFound: 0, totalCommercial: total },
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit)),
+        hasMore: skip + videos.length < total
+      }
+    });
+  } catch (error) {
+    console.error('Error filterCommercialVideos:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 // ============================================
-// ✏️ ACTUALIZAR VIDEO (SOLO ARREGLAMOS ESTO)
+// 📍 VIDEOS CERCA DE UNA UBICACIÓN
 // ============================================
-// ============================================
-// ✏️ ACTUALIZAR VIDEO (CORREGIDO DEFINITIVO)
-// ============================================
-// ============================================
-// ✏️ ACTUALIZAR VIDEO (CON EXTRACCIÓN DE PUBLIC_ID)
-// ============================================
-// ============================================
-// ✏️ ACTUALIZAR VIDEO (LIMPIEZA CORRECTA)
-// ============================================
-// ============================================
-// ✏️ ACTUALIZAR VIDEO (CON VALIDACIONES)
-// ============================================
+const getVideosNearby = async (req, res) => {
+  try {
+    const { longitude, latitude } = req.query;
+    const { maxDistance = 10000, limit = 20 } = req.query; // 10km por defecto
+    
+    if (!longitude || !latitude) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Longitude et latitude sont requises' 
+      });
+    }
+    
+    const videos = await Video.findNearby(
+      parseFloat(longitude), 
+      parseFloat(latitude), 
+      parseInt(maxDistance), 
+      parseInt(limit)
+    );
+    
+    res.json({
+      success: true,
+      videos,
+      center: { longitude: parseFloat(longitude), latitude: parseFloat(latitude) },
+      maxDistance: parseInt(maxDistance)
+    });
+  } catch (error) {
+    console.error('Error getVideosNearby:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+
 const updateVideo = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, music, videoUrl, videoPublicId, thumbnail, duration } = req.body;
+    const { 
+      title, description, music, videoUrl, videoPublicId, thumbnail, duration,
+      // NUEVOS CAMPOS COMERCIALES
+      isCommercial, price, wholesale, minQuantity, phone, phoneHidden, email,
+      website, wilaya, commune, location, delivery, pickupOnly, businessHours,
+      stock, category, tags
+    } = req.body;
     
     console.log("🔴 ========== UPDATE VIDEO ==========");
     console.log("🔴 ID:", id);
-    console.log("🔴 Música recibida:", music.title || "ninguna");
-    console.log("🔴 music.audioPublicId:", music.audioPublicId);
     
     const video = await Video.findById(id);
     if (!video) {
@@ -232,66 +406,100 @@ const updateVideo = async (req, res) => {
       return res.status(403).json({ success: false, message: 'No autorizado' });
     }
     
-    // ✅ FUNCIÓN PARA LIMPIAR URL DE TRANSFORMACIONES
+    // ✅ Validar campos comerciales si se está actualizando a comercial
+    const finalIsCommercial = isCommercial !== undefined ? isCommercial : video.isCommercial;
+    if (finalIsCommercial) {
+      const finalWilaya = wilaya !== undefined ? wilaya : video.wilaya;
+      const finalCommune = commune !== undefined ? commune : video.commune;
+      const finalPhone = phone !== undefined ? phone : video.phone;
+      const finalEmail = email !== undefined ? email : video.email;
+      
+      if (!finalWilaya || !finalCommune) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Pour les vidéos commerciales, wilaya et commune sont obligatoires' 
+        });
+      }
+      
+      if (!finalPhone && !finalEmail) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Au moins un moyen de contact (téléphone ou email) est requis' 
+        });
+      }
+    }
+    // ============================================
+// 🏪 FILTRAR VIDEOS COMERCIALES
+// ============================================
+ 
+
+
+
+    // Limpiar URL de transformaciones
     const cleanUrlFromTransformations = (url) => {
       if (!url) return url;
       let cleanUrl = url;
       cleanUrl = cleanUrl.replace(/\/l_audio:[^/]+,fl_layer_apply\//g, '/');
       cleanUrl = cleanUrl.replace(/\/upload\/l_audio:[^,]+,fl_layer_apply\//, '/upload/');
-      while (cleanUrl.includes('/l_audio:')) {
-        cleanUrl = cleanUrl.replace(/\/l_audio:[^/]+,fl_layer_apply\//g, '/');
-      }
-      return cleanUrl;
+      return cleanUrl.replace(/\/l_audio:[^/]+,fl_layer_apply\//g, '/');
     };
     
-    // ✅ FUNCIÓN PARA EXTRAER PUBLIC_ID
-    const extractPublicIdFromUrl = (url) => {
-      if (!url) return null;
-      const cleanUrl = cleanUrlFromTransformations(url);
-      const match = cleanUrl.match(/\/upload\/(?:v\d+\/)?(.+?)\.(mp4|mov|webm)/);
-      if (match) {
-        return match[1];
-      }
-      return null;
-    };
-    
-    // ✅ Si no tenemos videoPublicId, extraerlo de la URL actual
-    let finalVideoPublicId = videoPublicId || video.videoPublicId;
-    if (!finalVideoPublicId && video.videoUrl) {
-      finalVideoPublicId = extractPublicIdFromUrl(video.videoUrl);
-      if (finalVideoPublicId) {
-        video.videoPublicId = finalVideoPublicId;
-        console.log(`📁 Public_id extraído de URL: ${finalVideoPublicId}`);
-      }
-    }
-    
-    console.log("🔴 videoPublicId FINAL a usar:", finalVideoPublicId);
-    
-    // ✅ Actualizar campos básicos
+    // Actualizar campos básicos
     if (title) video.title = title;
     if (description !== undefined) video.description = description;
     if (thumbnail) video.thumbnail = thumbnail;
     if (duration) video.duration = duration;
     if (videoUrl) video.videoUrl = videoUrl;
+    if (category !== undefined) video.category = category;
+    if (tags) video.tags = tags;
     
-    // ✅ MANEJAR MÚSICA
+    // ✅ Actualizar campos comerciales
+    if (isCommercial !== undefined) video.isCommercial = isCommercial;
+    if (price !== undefined) video.price = price;
+    if (wholesale !== undefined) video.wholesale = wholesale;
+    if (minQuantity !== undefined) video.minQuantity = minQuantity;
+    if (phone !== undefined) video.phone = phone;
+    if (phoneHidden !== undefined) video.phoneHidden = phoneHidden;
+    if (email !== undefined) video.email = email;
+    if (website !== undefined) video.website = website;
+    if (wilaya !== undefined) video.wilaya = wilaya;
+    if (commune !== undefined) video.commune = commune;
+    if (delivery !== undefined) video.delivery = delivery;
+    if (pickupOnly !== undefined) video.pickupOnly = pickupOnly;
+    if (businessHours !== undefined) video.businessHours = businessHours;
+    if (stock !== undefined) video.stock = stock;
+    
+    // Actualizar ubicación
+    if (location) {
+      if (location.coordinates && location.coordinates.length === 2) {
+        video.location = {
+          type: 'Point',
+          coordinates: location.coordinates,
+          address: location.address || video.location.address || '',
+          googleMapsUrl: location.googleMapsUrl || video.location.googleMapsUrl || ''
+        };
+      } else if (wilaya && commune && !location.coordinates) {
+        video.location = {
+          type: 'Point',
+          coordinates: [0, 0],
+          address: `${commune}, ${wilaya}`,
+          googleMapsUrl: ''
+        };
+      }
+    }
+    
+    // Manejar música
     let finalVideoUrl = video.videoUrl;
     
-    // ✅ Verificar si music existe y no es null
     if (music !== undefined && music !== null) {
       if (music === null) {
-        // Eliminar música
         video.music = null;
-        console.log("🎵 Música eliminada");
       } 
       else if (music.audioPublicId) {
         console.log("🎵 Regenerando mezcla de audio...");
-        console.log(`🎵 Audio Public ID: ${music.audioPublicId}`);
         
         let baseVideoUrl = videoUrl || video.videoUrl;
         baseVideoUrl = cleanUrlFromTransformations(baseVideoUrl);
-        
-        console.log(`📁 URL base limpia: ${baseVideoUrl}`);
         
         try {
           const formattedAudioId = music.audioPublicId.replace(/\//g, ':');
@@ -307,8 +515,6 @@ const updateVideo = async (req, res) => {
             if (newThumbnail !== video.thumbnail && !thumbnail) {
               video.thumbnail = newThumbnail;
             }
-            
-            console.log(`✅ Nueva URL mezclada: ${finalVideoUrl}`);
             
             video.music = {
               id: music.id || null,
@@ -330,18 +536,15 @@ const updateVideo = async (req, res) => {
         }
       } 
       else if (music.audioUrl) {
-        console.log("⚠️ Música sin audioPublicId, guardando solo metadata");
         video.music = { ...music, processed: false };
       }
     }
-    // Si music es undefined o null, no hacemos nada con la música
     
-    // ✅ Actualizar URL si cambió
     if (finalVideoUrl !== video.videoUrl) {
       video.videoUrl = finalVideoUrl;
     }
     
-    // ✅ Admin aprueba automáticamente
+    // Admin aprueba automáticamente
     if (isAdmin && video.pendiente === true) {
       video.pendiente = false;
     }
@@ -350,8 +553,6 @@ const updateVideo = async (req, res) => {
     
     const updatedVideo = await Video.findById(video._id)
       .populate('user', 'username avatar isPro role');
-    
-    console.log(`✅ Video actualizado: ${updatedVideo.title}`);
     
     res.json({ 
       success: true, 
@@ -692,12 +893,10 @@ const shareVideo = async (req, res) => {
   }
 };
 
- 
-
-// ✅ Estadísticas del usuario
 const getUserVideoStats = async (req, res) => {
   try {
     const userId = req.user._id;
+    
     const stats = await Video.aggregate([
       { $match: { user: new mongoose.Types.ObjectId(userId), pendiente: false } },
       { $group: {
@@ -708,20 +907,44 @@ const getUserVideoStats = async (req, res) => {
         totalComments: { $sum: { $size: '$comments' } },
         totalShares: { $sum: { $size: { $ifNull: ['$shares', []] } } },
         avgEngagement: { $avg: '$engagementScore' },
-        totalWatchTime: { $sum: { $ifNull: ['$watchTime', 0] } }
+        totalWatchTime: { $sum: { $ifNull: ['$watchTime', 0] } },
+        // ✅ NUEVOS: Estadísticas comerciales
+        commercialVideos: { $sum: { $cond: ['$isCommercial', 1, 0] } },
+        totalSalesValue: { $sum: { $cond: ['$isCommercial', '$price', 0] } },
+        avgPrice: { $avg: { $cond: ['$isCommercial', '$price', null] } }
       }}
     ]);
     
     const videosByCategory = await Video.aggregate([
       { $match: { user: new mongoose.Types.ObjectId(userId), pendiente: false } },
-      { $group: { _id: '$category', count: { $sum: 1 }, totalViews: { $sum: '$views' } } },
+      { $group: { 
+        _id: '$category', 
+        count: { $sum: 1 }, 
+        totalViews: { $sum: '$views' } 
+      }},
+      { $sort: { count: -1 } }
+    ]);
+    
+    // ✅ NUEVO: Videos por wilaya
+    const videosByWilaya = await Video.aggregate([
+      { $match: { user: new mongoose.Types.ObjectId(userId), pendiente: false, isCommercial: true } },
+      { $group: { 
+        _id: '$wilaya', 
+        count: { $sum: 1 },
+        totalValue: { $sum: '$price' }
+      }},
       { $sort: { count: -1 } }
     ]);
     
     res.json({
       success: true,
-      stats: stats[0] || { totalVideos: 0, totalViews: 0, totalLikes: 0, totalComments: 0, totalShares: 0, avgEngagement: 0, totalWatchTime: 0 },
-      videosByCategory
+      stats: stats[0] || { 
+        totalVideos: 0, totalViews: 0, totalLikes: 0, totalComments: 0, 
+        totalShares: 0, avgEngagement: 0, totalWatchTime: 0,
+        commercialVideos: 0, totalSalesValue: 0, avgPrice: 0
+      },
+      videosByCategory,
+      videosByWilaya: videosByWilaya.filter(w => w._id) // Filtrar nulls
     });
   } catch (error) {
     console.error('Error getUserVideoStats:', error);
@@ -734,23 +957,46 @@ const getUserVideoStats = async (req, res) => {
 // ✅ Obtener videos pendientes (ADMIN)
 const getVideosPendientesAdmin = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, commercialOnly = false } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
     
-    const videos = await Video.find({ pendiente: true, isActive: true })
+    const match = { pendiente: true, isActive: true };
+    if (commercialOnly === 'true') {
+      match.isCommercial = true;
+    }
+    
+    const videos = await Video.find(match)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
-      .populate('user', 'username email avatar');
+      .populate('user', 'username email avatar isPro');
     
-    const total = await Video.countDocuments({ pendiente: true, isActive: true });
+    const total = await Video.countDocuments(match);
+    
+    // Estadísticas de videos pendientes comerciales vs normales
+    const stats = await Video.aggregate([
+      { $match: { pendiente: true, isActive: true } },
+      { $group: {
+        _id: '$isCommercial',
+        count: { $sum: 1 },
+        totalVideos: { $sum: 1 }
+      }}
+    ]);
     
     res.json({
       success: true,
       videos,
-      total,
-      page: parseInt(page),
-      totalPages: Math.ceil(total / parseInt(limit))
+      stats: {
+        commercial: stats.find(s => s._id === true).count || 0,
+        normal: stats.find(s => s._id === false).count || 0,
+        total
+      },
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
     });
   } catch (error) {
     console.error('Error getVideosPendientesAdmin:', error);
@@ -1370,16 +1616,367 @@ const getRelatedVideos = async (req, res) => {
 
 
 
+// ============================================
+// 🆕 OBTENER MIS VIDEOS COMERCIALES
+// ============================================
+const getMyCommercialVideos = async (req, res) => {
+  try {
+    const { page = 1, limit = 12 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const userId = req.user._id;
+    
+    const videos = await Video.find({ 
+      user: userId, 
+      isCommercial: true,
+      pendiente: false 
+    })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .populate('user', 'username avatar');
+    
+    const total = await Video.countDocuments({ 
+      user: userId, 
+      isCommercial: true 
+    });
+    
+    // Estadísticas de ventas comerciales
+    const salesStats = await Video.aggregate([
+      { $match: { user: new mongoose.Types.ObjectId(userId), isCommercial: true } },
+      { $group: {
+        _id: null,
+        totalProducts: { $sum: 1 },
+        averagePrice: { $avg: '$price' },
+        totalInventoryValue: { $sum: { $multiply: ['$price', '$stock.available'] } },
+        wholesaleCount: { $sum: { $cond: ['$wholesale', 1, 0] } }
+      }}
+    ]);
+    
+    res.json({
+      success: true,
+      videos,
+      stats: salesStats[0] || { totalProducts: 0, averagePrice: 0, totalInventoryValue: 0, wholesaleCount: 0 },
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Error getMyCommercialVideos:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
+// ============================================
+// 🆕 TOGGLE VENTA AL MAYOR
+// ============================================
+const toggleWholesale = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { wholesale, minQuantity } = req.body;
+    
+    const video = await Video.findById(id);
+    if (!video) {
+      return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    }
+    
+    const isOwner = video.user.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin';
+    
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'No autorizado' });
+    }
+    
+    if (!video.isCommercial) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Esta funcionalidad solo está disponible para videos comerciales' 
+      });
+    }
+    
+    if (wholesale !== undefined) video.wholesale = wholesale;
+    if (minQuantity !== undefined && video.wholesale) video.minQuantity = minQuantity;
+    
+    await video.save();
+    
+    res.json({
+      success: true,
+      message: video.wholesale ? 'Venta al mayor activada' : 'Venta al mayor desactivada',
+      video: {
+        wholesale: video.wholesale,
+        minQuantity: video.minQuantity
+      }
+    });
+  } catch (error) {
+    console.error('Error toggleWholesale:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
+// ============================================
+// 🆕 ACTUALIZAR STOCK
+// ============================================
+const updateStock = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { total, available, reserved, operation } = req.body;
+    
+    const video = await Video.findById(id);
+    if (!video) {
+      return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    }
+    
+    const isOwner = video.user.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin';
+    
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'No autorizado' });
+    }
+    
+    if (!video.isCommercial) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Esta funcionalidad solo está disponible para videos comerciales' 
+      });
+    }
+    
+    // Operaciones de stock
+    if (operation === 'add') {
+      video.stock.available += (total || 0);
+      video.stock.total += (total || 0);
+    } else if (operation === 'remove') {
+      const quantity = total || 0;
+      if (video.stock.available < quantity) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Stock insuficiente' 
+        });
+      }
+      video.stock.available -= quantity;
+      video.stock.total -= quantity;
+    } else {
+      if (total !== undefined) video.stock.total = total;
+      if (available !== undefined) video.stock.available = available;
+      if (reserved !== undefined) video.stock.reserved = reserved;
+    }
+    
+    await video.save();
+    
+    res.json({
+      success: true,
+      message: 'Stock actualizado correctamente',
+      stock: video.stock
+    });
+  } catch (error) {
+    console.error('Error updateStock:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
+// ============================================
+// 🆕 ACTUALIZAR UBICACIÓN DEL VIDEO
+// ============================================
+const updateVideoLocation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { wilaya, commune, longitude, latitude, address } = req.body;
+    
+    const video = await Video.findById(id);
+    if (!video) {
+      return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    }
+    
+    const isOwner = video.user.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin';
+    
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'No autorizado' });
+    }
+    
+    if (!video.isCommercial) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Esta funcionalidad solo está disponible para videos comerciales' 
+      });
+    }
+    
+    if (wilaya) video.wilaya = wilaya;
+    if (commune) video.commune = commune;
+    
+    if (longitude && latitude) {
+      video.location = {
+        type: 'Point',
+        coordinates: [parseFloat(longitude), parseFloat(latitude)],
+        address: address || `${commune || video.commune}, ${wilaya || video.wilaya}`,
+        googleMapsUrl: `https://www.google.com/maps?q=${latitude},${longitude}`
+      };
+    }
+    
+    await video.save();
+    
+    res.json({
+      success: true,
+      message: 'Ubicación actualizada correctamente',
+      location: {
+        wilaya: video.wilaya,
+        commune: video.commune,
+        coordinates: video.location.coordinates,
+        mapUrl: video.location.googleMapsUrl
+      }
+    });
+  } catch (error) {
+    console.error('Error updateVideoLocation:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
+// ============================================
+// 🆕 ESTADÍSTICAS COMERCIALES PARA ADMIN
+// ============================================
+const getCommercialStats = async (req, res) => {
+  try {
+    const stats = await Video.aggregate([
+      { $match: { isCommercial: true } },
+      { $group: {
+        _id: null,
+        totalCommercialVideos: { $sum: 1 },
+        averagePrice: { $avg: '$price' },
+        totalInventoryValue: { $sum: { $multiply: ['$price', '$stock.available'] } },
+        wholesaleCount: { $sum: { $cond: ['$wholesale', 1, 0] } },
+        pickupOnlyCount: { $sum: { $cond: ['$pickupOnly', 1, 0] } },
+        deliveryCount: { $sum: { $cond: ['$delivery.available', 1, 0] } }
+      }}
+    ]);
+    
+    const topWilayas = await Video.aggregate([
+      { $match: { isCommercial: true, wilaya: { $ne: null, $ne: '' } } },
+      { $group: {
+        _id: '$wilaya',
+        count: { $sum: 1 },
+        totalValue: { $sum: '$price' }
+      }},
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]);
+    
+    const topCategories = await Video.aggregate([
+      { $match: { isCommercial: true, category: { $ne: null, $ne: '' } } },
+      { $group: {
+        _id: '$category',
+        count: { $sum: 1 },
+        averagePrice: { $avg: '$price' }
+      }},
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]);
+    
+    res.json({
+      success: true,
+      stats: stats[0] || {
+        totalCommercialVideos: 0,
+        averagePrice: 0,
+        totalInventoryValue: 0,
+        wholesaleCount: 0,
+        pickupOnlyCount: 0,
+        deliveryCount: 0
+      },
+      topWilayas,
+      topCategories
+    });
+  } catch (error) {
+    console.error('Error getCommercialStats:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
+// ============================================
+// 🆕 DESTACAR VIDEO COMERCIAL (ADMIN)
+// ============================================
+const featureCommercialVideo = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isFeatured } = req.body;
+    
+    const video = await Video.findById(id);
+    if (!video) {
+      return res.status(404).json({ success: false, message: 'Video no encontrado' });
+    }
+    
+    if (!video.isCommercial) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Solo se pueden destacar videos comerciales' 
+      });
+    }
+    
+    video.isFeatured = isFeatured !== undefined ? isFeatured : !video.isFeatured;
+    await video.save();
+    
+    res.json({
+      success: true,
+      message: video.isFeatured ? 'Video destacado correctamente' : 'Video eliminado de destacados',
+      isFeatured: video.isFeatured
+    });
+  } catch (error) {
+    console.error('Error featureCommercialVideo:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
+// ============================================
+// 🆕 ESTADÍSTICAS GLOBALES PARA ADMIN
+// ============================================
+const getAdminVideoStats = async (req, res) => {
+  try {
+    const totalVideos = await Video.countDocuments();
+    const pendingVideos = await Video.countDocuments({ pendiente: true });
+    const commercialVideos = await Video.countDocuments({ isCommercial: true });
+    const activeVideos = await Video.countDocuments({ isActive: true });
+    
+    const viewsThisMonth = await Video.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
+        }
+      },
+      { $group: { _id: null, totalViews: { $sum: '$views' } } }
+    ]);
+    
+    const topVideos = await Video.find({ pendiente: false, isActive: true })
+      .sort({ views: -1 })
+      .limit(10)
+      .populate('user', 'username');
+    
+    res.json({
+      success: true,
+      stats: {
+        totalVideos,
+        pendingVideos,
+        commercialVideos,
+        activeVideos,
+        viewsThisMonth: viewsThisMonth[0].totalViews || 0,
+        pendingPercentage: totalVideos ? ((pendingVideos / totalVideos) * 100).toFixed(1) : 0,
+        commercialPercentage: totalVideos ? ((commercialVideos / totalVideos) * 100).toFixed(1) : 0
+      },
+      topVideos
+    });
+  } catch (error) {
+    console.error('Error getAdminVideoStats:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
+// ============================================
+// 🆕 PROXY PARA MÚSICA (si no existe)
+// ============================================
+ 
 module.exports = {
   // Públicas
   getVideoById,
+  getVideoByIdPublic,
+  getVideoByIdPrivate,
   getUserVideos,
   filterVideos,
   getVideosByCategory,
@@ -1387,6 +1984,11 @@ module.exports = {
   getPopularVideos,
   getRelatedVideos,
   getTrendingVideos,
+  
+  // Comerciales públicas
+  filterCommercialVideos,
+  getVideosNearby,
+  
   // Protegidas
   createVideo,
   updateVideo,
@@ -1394,23 +1996,32 @@ module.exports = {
   toggleLikeVideo,
   shareVideo,
   trackWatchTime,
-   
- 
   getUserVideoStats,
+  
+  // Comerciales protegidas
+  getMyCommercialVideos,
+  toggleWholesale,
+  updateStock,
+  updateVideoLocation,
+  
   // Música
   getMusicLibrary,
+  
+  
   // Admin
   getVideosPendientesAdmin,
   aprobarVideoAdmin,
   eliminarVideoAdmin,
-  getVideoByIdPrivate ,
-  getVideoByIdPublic,
+  getCommercialStats,
+  featureCommercialVideo,
+  getAdminVideoStats,
+  
+  // Perfil y social
   getUserProfileStats,
-  getUserProfileStats,
-  getUserVideos,
   getUserSavedVideos,
   getUserLikedVideos,
   toggleFollowUser,
   toggleSaveVideo
-
 };
+
+ 

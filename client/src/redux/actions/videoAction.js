@@ -4,6 +4,7 @@ import { GLOBALTYPES } from './globalTypes';
 import { createNotify } from './notifyAction'; // ✅ Importar createNotify
 // redux/actions/videoAction.js
 
+// redux/actions/videoAction.js - AGREGAR ESTOS TIPOS
 
 export const VIDEO_TYPES = {
   LOADING: 'VIDEO_LOADING',
@@ -28,16 +29,232 @@ export const VIDEO_TYPES = {
   MUSIC_LOADING: 'MUSIC_LOADING',
   GET_MUSIC_LIBRARY: 'GET_MUSIC_LIBRARY',
   MUSIC_ERROR: 'MUSIC_ERROR',
-  GET_PENDING_VIDEO: 'GET_PENDING_VIDEO'
-  // ❌ ELIMINAR TODAS LAS CONSTANTES DE COMENTARIOS
+  GET_PENDING_VIDEO: 'GET_PENDING_VIDEO',
+  
+  // 🆕 TIPOS COMERCIALES
+  GET_COMMERCIAL_VIDEOS: 'GET_COMMERCIAL_VIDEOS',
+  GET_NEARBY_VIDEOS: 'GET_NEARBY_VIDEOS',
+  UPDATE_VIDEO_STOCK: 'UPDATE_VIDEO_STOCK',
+  UPDATE_VIDEO_WHOLESALE: 'UPDATE_VIDEO_WHOLESALE',
+  UPDATE_VIDEO_LOCATION: 'UPDATE_VIDEO_LOCATION',
+  GET_MY_COMMERCIAL_VIDEOS: 'GET_MY_COMMERCIAL_VIDEOS',
+  FEATURE_VIDEO: 'FEATURE_VIDEO'
 };
 
-// ✅ También exporta como default si es necesario
- 
+// ============================================
+// 🏪 ACCIONES COMERCIALES
+// ============================================
 
-// ============================================
-// ACCIONES DE VIDEOS CON NOTIFICACIONES
-// ============================================
+// Filtrar videos comerciales
+export const filterCommercialVideos = (filters, page = 1, limit = 12) => async (dispatch) => {
+  try {
+    dispatch({ type: VIDEO_TYPES.LOADING, payload: true });
+    
+    const params = new URLSearchParams();
+    params.append('page', page);
+    params.append('limit', limit);
+    if (filters.category && filters.category !== 'all') params.append('category', filters.category);
+    if (filters.wilaya) params.append('wilaya', filters.wilaya);
+    if (filters.commune) params.append('commune', filters.commune);
+    if (filters.wholesale !== undefined && filters.wholesale !== '') params.append('wholesale', filters.wholesale);
+    if (filters.minPrice) params.append('minPrice', filters.minPrice);
+    if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
+    if (filters.sortBy) params.append('sortBy', filters.sortBy);
+    if (filters.searchTerm) params.append('searchTerm', filters.searchTerm);
+    
+    const res = await getDataAPI(`videos/commercial/filter?${params.toString()}`);
+    
+    dispatch({
+      type: VIDEO_TYPES.GET_COMMERCIAL_VIDEOS,
+      payload: {
+        videos: res.data.videos,
+        pagination: res.data.pagination,
+        stats: res.data.stats
+      }
+    });
+    
+    return res.data;
+  } catch (err) {
+    console.error('Error filterCommercialVideos:', err);
+    return null;
+  } finally {
+    dispatch({ type: VIDEO_TYPES.LOADING, payload: false });
+  }
+};
+
+// Videos cerca de ubicación
+export const getNearbyVideos = (longitude, latitude, maxDistance = 10000, limit = 20) => async (dispatch) => {
+  try {
+    dispatch({ type: VIDEO_TYPES.LOADING, payload: true });
+    
+    const res = await getDataAPI(`videos/commercial/nearby?longitude=${longitude}&latitude=${latitude}&maxDistance=${maxDistance}&limit=${limit}`);
+    
+    dispatch({
+      type: VIDEO_TYPES.GET_NEARBY_VIDEOS,
+      payload: res.data.videos
+    });
+    
+    return res.data;
+  } catch (err) {
+    console.error('Error getNearbyVideos:', err);
+    return null;
+  } finally {
+    dispatch({ type: VIDEO_TYPES.LOADING, payload: false });
+  }
+};
+
+// Obtener mis videos comerciales
+export const getMyCommercialVideos = (token, page = 1) => async (dispatch) => {
+  try {
+    dispatch({ type: VIDEO_TYPES.LOADING, payload: true });
+    
+    const res = await getDataAPI(`videos/commercial/my-videos?page=${page}&limit=12`, token);
+    
+    dispatch({
+      type: VIDEO_TYPES.GET_MY_COMMERCIAL_VIDEOS,
+      payload: {
+        videos: res.data.videos,
+        stats: res.data.stats,
+        pagination: res.data.pagination
+      }
+    });
+    
+    return res.data;
+  } catch (err) {
+    console.error('Error getMyCommercialVideos:', err);
+    return null;
+  } finally {
+    dispatch({ type: VIDEO_TYPES.LOADING, payload: false });
+  }
+};
+
+// Actualizar stock
+export const updateVideoStock = (id, stockData, token) => async (dispatch) => {
+  try {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+    
+    const res = await patchDataAPI(`videos/commercial/update-stock/${id}`, stockData, token);
+    
+    if (res.data.success) {
+      dispatch({
+        type: VIDEO_TYPES.UPDATE_VIDEO_STOCK,
+        payload: { id, stock: res.data.stock }
+      });
+      
+      dispatch({
+        type: GLOBALTYPES.ALERT,
+        payload: { success: 'Stock actualizado correctamente' }
+      });
+    }
+    
+    return res.data;
+  } catch (err) {
+    console.error('Error updateVideoStock:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || 'Error al actualizar stock' }
+    });
+    return null;
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
+  }
+};
+
+// Toggle venta al mayor
+export const toggleWholesale = (id, wholesaleData, token) => async (dispatch) => {
+  try {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+    
+    const res = await patchDataAPI(`videos/commercial/toggle-wholesale/${id}`, wholesaleData, token);
+    
+    if (res.data.success) {
+      dispatch({
+        type: VIDEO_TYPES.UPDATE_VIDEO_WHOLESALE,
+        payload: { id, wholesale: res.data.video.wholesale, minQuantity: res.data.video.minQuantity }
+      });
+      
+      dispatch({
+        type: GLOBALTYPES.ALERT,
+        payload: { success: res.data.message }
+      });
+    }
+    
+    return res.data;
+  } catch (err) {
+    console.error('Error toggleWholesale:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || 'Error al actualizar' }
+    });
+    return null;
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
+  }
+};
+
+// Actualizar ubicación
+export const updateVideoLocation = (id, locationData, token) => async (dispatch) => {
+  try {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+    
+    const res = await patchDataAPI(`videos/commercial/update-location/${id}`, locationData, token);
+    
+    if (res.data.success) {
+      dispatch({
+        type: VIDEO_TYPES.UPDATE_VIDEO_LOCATION,
+        payload: { id, location: res.data.location }
+      });
+      
+      dispatch({
+        type: GLOBALTYPES.ALERT,
+        payload: { success: 'Ubicación actualizada correctamente' }
+      });
+    }
+    
+    return res.data;
+  } catch (err) {
+    console.error('Error updateVideoLocation:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || 'Error al actualizar ubicación' }
+    });
+    return null;
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
+  }
+};
+
+// Destacar video comercial (admin)
+export const featureCommercialVideo = (id, token, isFeatured) => async (dispatch) => {
+  try {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: true } });
+    
+    const res = await patchDataAPI(`admin/videos/commercial/${id}/feature`, { isFeatured }, token);
+    
+    if (res.data.success) {
+      dispatch({
+        type: VIDEO_TYPES.FEATURE_VIDEO,
+        payload: { id, isFeatured: res.data.isFeatured }
+      });
+      
+      dispatch({
+        type: GLOBALTYPES.ALERT,
+        payload: { success: res.data.message }
+      });
+    }
+    
+    return res.data;
+  } catch (err) {
+    console.error('Error featureCommercialVideo:', err);
+    dispatch({
+      type: GLOBALTYPES.ALERT,
+      payload: { error: err.response?.data?.message || 'Error al destacar video' }
+    });
+    return null;
+  } finally {
+    dispatch({ type: GLOBALTYPES.ALERT, payload: { loading: false } });
+  }
+};
 export const incrementView = (videoId, token) => async (dispatch) => {
   try {
     const res = await patchDataAPI(`videos/${videoId}/view`, {}, token);

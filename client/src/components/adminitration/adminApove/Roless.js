@@ -1,18 +1,12 @@
-// 📂 pages/Roless.js - VERSIÓN CORREGIDA
-
+// src/components/administration/Roles/RolesTab.jsx
 import { useSelector, useDispatch } from 'react-redux'; 
-import { useTranslation } from 'react-i18next';
 import UserCard from '../../UserCard';
-import { roleuserautenticado, rolemoderador, rolesuperuser, roleadmin } from '../../../redux/actions/roleAction';
+import { roleuserautenticado, rolemoderador, userPro, roleadmin } from '../../../redux/actions/roleAction';
 import { useState, useEffect, useCallback } from 'react';
-import { 
-FaFolder
-} from 'react-icons/fa';
 import {
   Container,
   Table,
   Form,
-   
   Card,
   Badge,
   Spinner,
@@ -22,27 +16,25 @@ import {
   Button,
   InputGroup
 } from 'react-bootstrap';
-import { Shield, Search, XCircle, Folder, Gear, Check } from 'react-bootstrap-icons';
+import { Shield, Search, XCircle } from 'react-bootstrap-icons';
+
 import { getDataAPI } from '../../../utils/fetchData';
 import { USER_TYPES } from '../../../redux/actions/userAction';
 import LoadMoreBtn from "../../LoadMoreBtn";
 import { debounce } from 'lodash';
-import CategoryDrawerRole from './CategoryDrawerRole';
- 
- 
-const Roless = () => {
-  const { homeUsers, auth, alert, languageReducer } = useSelector(state => state);
+
+// Recibimos props del AdminDashboard
+const Roless = ({ filters = {}, token: propToken }) => {
+  const { homeUsers, auth, alert, languageReducer, socket } = useSelector(state => state);
   const dispatch = useDispatch();
-  const { t } = useTranslation('roles');
-  const lang = languageReducer.language || 'es';
+  
+  // Token prioritario: el que viene por props o el de Redux
+  const authToken = propToken || auth?.token;
+  
+  const lang = languageReducer?.language || 'es';
 
   const [selectedRoles, setSelectedRoles] = useState({});
   const [loading, setLoading] = useState(false);
-  
-  // ✅ Estados para el DRAWER de asignación de categorías
-  const [showDrawer, setShowDrawer] = useState(false);
-  const [selectedUserForCategories, setSelectedUserForCategories] = useState(null);
-  const [refreshUsers, setRefreshUsers] = useState(false);
 
   // Estados para paginación y búsqueda
   const [load, setLoad] = useState(false);
@@ -53,69 +45,48 @@ const Roless = () => {
   const [searchPage, setSearchPage] = useState(1);
   const [hasMoreSearch, setHasMoreSearch] = useState(false);
 
+  // Efecto para aplicar filtros desde el Drawer
+  useEffect(() => {
+    if (filters && Object.keys(filters).length > 0) {
+      console.log('Filtros aplicados en Roles:', filters);
+      // Aquí puedes aplicar filtros específicos para roles si es necesario
+    }
+  }, [filters]);
+
   // 🛡️ FUNCIÓN PARA VERIFICAR SI EL USUARIO ES PROTEGIDO
   const isProtectedUser = (user) => {
+    // El usuario admin autenticado NUNCA puede ser modificado
     if (user._id === auth.user?._id && auth.user?.role === 'admin') {
       return true;
     }
+    
+    // También puedes agregar más usuarios protegidos aquí si lo necesitas
+    // Ejemplo: if (user._id === 'usuario_protegido_id') return true;
+    
     return false;
-  };
-
-  // ✅ Función para mostrar las categorías asignadas de forma legible
-  const getAssignedCategoriesDisplay = (user) => {
-    const assignedCats = user.assignedCategories || [];
-    
-    if (assignedCats.length === 0) {
-      return <span className="text-muted small">Aucune catégorie</span>;
-    }
-    
-    // Mostrar máximo 2 categorías
-    const displayCats = assignedCats.slice(0, 2);
-    const remainingCount = assignedCats.length - 2;
-    
-    return (
-      <div className="d-flex flex-wrap gap-1 mt-2">
-        {displayCats.map(cat => (
-          <Badge 
-            key={cat.categoryId} 
-            bg="info" 
-            className="me-1"
-            style={{ fontSize: '0.65rem', cursor: 'pointer' }}
-            title={cat.canApproveAll ? 'Toutes les sous-catégories' : `${cat.subCategories?.length || 0} sous-catégorie(s)`}
-          >
-            {cat.categoryName}
-            {cat.canApproveAll && <Check size={8} className="ms-1" />}
-            {cat.subCategories?.length > 0 && !cat.canApproveAll && (
-              <span className="ms-1">({cat.subCategories.length})</span>
-            )}
-          </Badge>
-        ))}
-        {remainingCount > 0 && (
-          <Badge bg="secondary" style={{ fontSize: '0.65rem' }}>
-            +{remainingCount}
-          </Badge>
-        )}
-      </div>
-    );
   };
 
   // Función para buscar usuarios en el servidor
   const searchUsers = useCallback(
     debounce(async (searchTerm, page = 1) => {
-      if (!auth.token) return;
+      if (!authToken) return;
       
       try {
         setIsSearching(true);
+        
+        // ✅ NORMALIZACIÓN - Case insensitive
         const normalizedSearchTerm = searchTerm.trim().toLowerCase();
         
+        // ✅ Validar que el término no esté vacío
         if (normalizedSearchTerm.length === 0) {
           setSearchResults([]);
           setHasMoreSearch(false);
           return;
         }
         
+        // ✅ Búsqueda con término normalizado
         const query = `users/search?username=${encodeURIComponent(normalizedSearchTerm)}&page=${page}&limit=9`;
-        const res = await getDataAPI(query, auth.token);
+        const res = await getDataAPI(query, authToken);
         
         if (page === 1) {
           setSearchResults(res.data.users || []);
@@ -131,7 +102,7 @@ const Roless = () => {
         setIsSearching(false);
       }
     }, 500),
-    [auth.token]
+    [authToken]
   );
 
   // Efecto para realizar búsqueda cuando el término cambia
@@ -146,7 +117,7 @@ const Roless = () => {
 
   // Handler para cargar más resultados de búsqueda
   const handleLoadMoreSearch = async () => {
-    if (!auth.token || search.trim() === "") return;
+    if (!authToken || search.trim() === "") return;
     
     try {
       setLoad(true);
@@ -158,35 +129,12 @@ const Roless = () => {
     }
   };
 
-  // Refrescar usuarios después de asignar categorías
-  useEffect(() => {
-    if (refreshUsers) {
-      const refreshUsersList = async () => {
-        try {
-          const res = await getDataAPI(`users?limit=9`, auth.token);
-          dispatch({
-            type: USER_TYPES.GET_USERS,
-            payload: { ...res.data, page: 1 },
-          });
-          if (search.trim() !== "") {
-            await searchUsers(search, 1);
-          }
-        } catch (err) {
-          console.error("Error refreshing users:", err);
-        } finally {
-          setRefreshUsers(false);
-        }
-      };
-      refreshUsersList();
-    }
-  }, [refreshUsers, auth.token, dispatch, search, searchUsers]);
-
   // Fetch inicial de usuarios con paginación
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoad(true);
-        const res = await getDataAPI(`users?limit=9`, auth.token);
+        const res = await getDataAPI(`users?limit=9`, authToken);
         dispatch({
           type: USER_TYPES.GET_USERS,
           payload: { ...res.data, page: 1 },
@@ -199,18 +147,18 @@ const Roless = () => {
       }
     };
 
-    if (initialLoad && auth.token) {
+    if (initialLoad && authToken) {
       fetchUsers();
     }
-  }, [auth.token, dispatch, initialLoad]);
+  }, [authToken, dispatch, initialLoad]);
 
-  // Handler para cargar más usuarios
+  // Handler para cargar más usuarios (cuando no hay búsqueda)
   const handleLoadMore = async () => {
     setLoad(true);
     try {
       const res = await getDataAPI(
         `users?limit=9&page=${homeUsers.page + 1}`,
-        auth.token
+        authToken
       );
       dispatch({
         type: USER_TYPES.GET_USERS,
@@ -224,8 +172,9 @@ const Roless = () => {
   };
 
   const handleChangeRole = async (user, selectedRole) => {
+    // 🛡️ VERIFICAR SI EL USUARIO ESTÁ PROTEGIDO
     if (isProtectedUser(user)) {
-      alert(t('protectedUserError', 'Ne peut pas être modifié'));
+      alert("Este usuario no puede ser modificado");
       return;
     }
 
@@ -233,21 +182,22 @@ const Roless = () => {
     try {
       switch (selectedRole) {
         case 'user':
-          await dispatch(roleuserautenticado(user, auth));
+          await dispatch(roleuserautenticado(user, auth, socket)); // ✅ Añadir socket
           break;
-        case 'Super-utilisateur':
-          await dispatch(rolesuperuser(user, auth));
+        case 'userpro':
+          await dispatch(userPro(user, auth, socket)); // ✅ Añadir socket
           break;
         case 'Moderateur':
-          await dispatch(rolemoderador(user, auth));
+          await dispatch(rolemoderador(user, auth, socket)); // ✅ Añadir socket
           break;
         case 'admin':
-          await dispatch(roleadmin(user, auth));
+          await dispatch(roleadmin(user, auth, socket)); // ✅ Añadir socket
           break;
         default:
           break;
       }
       
+      // Actualizar resultados de búsqueda si estamos en modo búsqueda
       if (search.trim() !== "") {
         setSearchResults(prev => 
           prev.map(u => u._id === user._id ? {...u, role: selectedRole} : u)
@@ -261,14 +211,16 @@ const Roless = () => {
   };
 
   const handleRoleChange = async (user, selectedRole) => {
+    // 🛡️ VERIFICAR SI EL USUARIO ESTÁ PROTEGIDO ANTES DE CAMBIAR
     if (isProtectedUser(user)) {
-      alert(t('protectedUserError', 'Utilisateur protégé'));
+      alert("Usuario protegido, no puede ser modificado");
       return;
     }
 
     setSelectedRoles(prev => ({ ...prev, [user._id]: selectedRole }));
     await handleChangeRole(user, selectedRole);
 
+    // Si el usuario editado es el autenticado => actualiza Redux auth
     if (auth.user && auth.user._id === user._id) {
       dispatch({
         type: "AUTH_UPDATE_ROLE",
@@ -279,13 +231,13 @@ const Roless = () => {
 
   const getRoleBadge = (role) => {
     const variants = {
-      'admin': { bg: 'danger', icon: '👑' },
-      'Moderateur': { bg: 'warning', icon: '🛡️' },
-      'Super-utilisateur': { bg: 'info', icon: '⭐' },
-      'user': { bg: 'secondary', icon: '👤' }
+      'admin': { bg: 'danger', icon: '👑', text: 'Administrador' },
+      'Moderateur': { bg: 'warning', icon: '🛡️', text: 'Moderador' },
+      'userpro': { bg: 'info', icon: '⭐', text: 'userpro' },
+      'user': { bg: 'secondary', icon: '👤', text: 'Usuario' }
     };
 
-    const config = variants[role] || { bg: 'light', icon: '👤' };
+    const config = variants[role] || { bg: 'light', icon: '👤', text: 'Usuario' };
 
     return (
       <Badge 
@@ -293,7 +245,7 @@ const Roless = () => {
         className="text-capitalize px-3 py-2"
         style={{ fontSize: '0.9rem' }}
       >
-        {config.icon} {t(`roles.${role}`, { lng: lang })}
+        {config.icon} {config.text}
       </Badge>
     );
   };
@@ -307,7 +259,7 @@ const Roless = () => {
       <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
         <div className="text-center">
           <Spinner animation="border" variant="primary" style={{ width: "3rem", height: "3rem" }} />
-          <p className="mt-3 text-muted fw-semibold">Chargement des utilisateurs...</p>
+          <p className="mt-3 text-muted fw-semibold">Cargando usuarios...</p>
         </div>
       </div>
     );
@@ -315,7 +267,7 @@ const Roless = () => {
 
   return (
     <Container fluid className="py-4">
-      {/* Header */}
+      {/* Header con título y buscador */}
       <Row className="mb-4">
         <Col>
           <Card className="border-0 shadow-sm" style={{ 
@@ -324,7 +276,7 @@ const Roless = () => {
             <Card.Body className="py-4">
               <h2 className="text-white mb-3 fw-bold">
                 <Shield size={32} className="me-2" />
-                {t('headers.title')}
+                Gestión de Roles y Permisos
               </h2>
               <Row className="align-items-center g-3">
                 <Col lg={8} md={7}>
@@ -334,7 +286,7 @@ const Roless = () => {
                     </InputGroup.Text>
                     <Form.Control
                       type="text"
-                      placeholder={t("searchUsers")}
+                      placeholder="Buscar usuarios por nombre o email..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       className="border-0 shadow-sm"
@@ -355,8 +307,8 @@ const Roless = () => {
                   <Badge bg="light" text="dark" className="py-2 px-3 fs-6">
                     <Shield className="me-2" />
                     {search.trim() !== "" 
-                      ? `${searchResults.length} ${t('resultsCount')}`
-                      : `${homeUsers.users.length} ${t('usersCount')}`
+                      ? `${searchResults.length} resultados`
+                      : `${homeUsers.users.length} usuarios`
                     }
                   </Badge>
                 </Col>
@@ -367,7 +319,7 @@ const Roless = () => {
       </Row>
 
       {/* Alertas */}
-      {alert.error && (
+      {alert?.error && (
         <Row className="mb-3">
           <Col>
             <Alert variant="danger" dismissible className="shadow-sm">
@@ -385,7 +337,7 @@ const Roless = () => {
             <Card className="border-0 shadow-sm">
               <Card.Body className="text-center py-4">
                 <Spinner animation="border" variant="primary" className="mb-2" />
-                <p className="mb-0 text-muted">{t('searching')}</p>
+                <p className="mb-0 text-muted">Buscando usuarios...</p>
               </Card.Body>
             </Card>
           </Col>
@@ -401,121 +353,80 @@ const Roless = () => {
                 background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
               }}>
                 <tr>
-                  <th className="text-white border-0 py-3" style={{ width: '30%' }}>
-                    {t('tableHeadersss.user')}
+                  <th className="text-white border-0 py-3" style={{ width: '40%' }}>
+                    Usuario
                   </th>
-                  <th className="text-white border-0 py-3 text-center" style={{ width: '15%' }}>
-                    {t('tableHeadersss.currentRole')}
+                  <th className="text-white border-0 py-3 text-center" style={{ width: '25%' }}>
+                    Rol Actual
                   </th>
-                  <th className="text-white border-0 py-3" style={{ width: '25%' }}>
-                    {t('tableHeadersss.changeRole')}
-                  </th>
-                  <th className="text-white border-0 py-3 text-center" style={{ width: '30%' }}>
-                    Catégories / Permissions
+                  <th className="text-white border-0 py-3" style={{ width: '35%' }}>
+                    Cambiar Rol
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {usersToShow.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="text-center py-5">
+                    <td colSpan="3" className="text-center py-5">
                       <Shield size={48} className="text-muted mb-3" style={{ opacity: 0.3 }} />
                       <p className="mb-0 text-muted fs-5">
-                        {search ? t('noUsersFoundSearch') : t('noUsersAvailable')}
+                        {search ? "No se encontraron usuarios" : "No hay usuarios disponibles"}
                       </p>
                     </td>
                   </tr>
                 ) : (
-                  usersToShow.map((user, index) => {
-                    // ✅ Normalizar la comparación del rol
-                    const isModerator = user.role === 'Moderateur' || user.role === 'moderator';
-                    const isAdmin = user.role === 'admin';
-                    
-                    return (
-                      <tr key={user._id || index} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                        <td className="py-3">
-                          <div className="d-flex align-items-center">
-                            <UserCard user={user} />
-                            {isProtectedUser(user) && (
-                              <Badge bg="warning" text="dark" className="ms-2">
-                                <Shield size={12} className="me-1" />
-                                {t('protectedUser', 'Protégé')}
-                              </Badge>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 text-center">
-                          {getRoleBadge(selectedRoles[user._id] || user.role)}
-                        </td>
-                        <td className="py-3">
-                          <div className="d-flex align-items-center gap-2">
-                            {loading && selectedRoles[user._id] ? (
-                              <Spinner animation="border" size="sm" />
-                            ) : (
-                              <Gear className="text-primary" size={16} />
-                            )}
-                            <Form.Select
-                              size="sm"
-                              onChange={(e) => handleRoleChange(user, e.target.value)}
-                              value={selectedRoles[user._id] || user.role}
-                              disabled={loading || isProtectedUser(user)}
-                              style={{
-                                maxWidth: '180px',
-                                borderRadius: '10px',
-                                border: '2px solid #e0e0e0',
-                                fontWeight: '500',
-                                backgroundColor: isProtectedUser(user) ? '#f8f9fa' : 'white',
-                                cursor: isProtectedUser(user) ? 'not-allowed' : 'pointer'
-                              }}
-                            >
-                              <option value="user">👤 {t('roles.user')}</option>
-                              <option value="Super-utilisateur">⭐ {t('roles.Super-utilisateur')}</option>
-                              <option value="Moderateur">🛡️ {t('roles.Moderateur')}</option>
-                              <option value="admin">👑 {t('roles.admin')}</option>
-                            </Form.Select>
-                          </div>
-                        </td>
-                        <td className="py-3">
-                          {/* ✅ Botón para MODERADORES */}
-                          {isModerator && (
-                            <div className="d-flex flex-column align-items-center">
-                            <Button
-  size="sm"
-  variant={user.assignedCategories?.length > 0 ? "success" : "outline-primary"}
-  onClick={() => {
-    setSelectedUserForCategories(user);
-    setShowDrawer(true);
-  }}
-  className="px-3 w-100"
->
-  <FaFolder size={14} className="me-1" />
-  {user.assignedCategories?.length || 0} catégorie(s)
-</Button>
-
- 
-                          {/* Mostrar categorías asignadas */}
-                              {getAssignedCategoriesDisplay(user)}
-                            </div>
+                  usersToShow.map((user, index) => (
+                    <tr key={user._id || index} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                      <td className="py-3">
+                        <UserCard user={user} />
+                        {/* 🛡️ INDICADOR DE USUARIO PROTEGIDO */}
+                        {isProtectedUser(user) && (
+                          <Badge bg="warning" text="dark" className="ms-2">
+                            <i className="fas fa-shield-alt me-1"></i>
+                            Protegido
+                          </Badge>
+                        )}
+                       </td>
+                      <td className="py-3 text-center">
+                        {getRoleBadge(selectedRoles[user._id] || user.role)}
+                      </td>
+                      <td className="py-3">
+                        <div className="d-flex align-items-center gap-2">
+                          {loading && selectedRoles[user._id] ? (
+                            <Spinner animation="border" size="sm" />
+                          ) : (
+                            <i className="fas fa-user-cog text-primary"></i>
                           )}
-                          
-                          {/* ✅ Admin: Acceso total */}
-                          {isAdmin && (
-                            <div>
-                              <Badge bg="success" className="px-3 py-2 w-100">
-                                👑 Accès total
-                              </Badge>
-                              <small className="text-muted d-block mt-1">Toutes les catégories</small>
-                            </div>
-                          )}
-                          
-                          {/* ✅ Otros roles */}
-                          {!isModerator && !isAdmin && (
-                            <small className="text-muted">—</small>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
+                          <Form.Select
+                            size="sm"
+                            onChange={(e) => handleRoleChange(user, e.target.value)}
+                            value={selectedRoles[user._id] || user.role}
+                            disabled={loading || isProtectedUser(user)} // 🛡️ DESHABILITAR SI ESTÁ PROTEGIDO
+                            style={{
+                              maxWidth: '250px',
+                              borderRadius: '10px',
+                              border: '2px solid #e0e0e0',
+                              fontWeight: '500',
+                              backgroundColor: isProtectedUser(user) ? '#f8f9fa' : 'white',
+                              cursor: isProtectedUser(user) ? 'not-allowed' : 'pointer'
+                            }}
+                          >
+                            <option value="user">👤 Usuario</option>
+                            <option value="userpro">⭐ Utilizateur Pro</option>
+                            <option value="Moderateur">🛡️ Moderador</option>
+                            <option value="admin">👑 Administrador</option>
+                          </Form.Select>
+                        </div>
+                        {/* 🛡️ MENSAJE DE PROTECCIÓN */}
+                        {isProtectedUser(user) && (
+                          <small className="text-muted d-block mt-1">
+                            <i className="fas fa-info-circle me-1"></i>
+                            Este usuario no puede ser modificado
+                          </small>
+                        )}
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </Table>
@@ -530,7 +441,7 @@ const Roless = () => {
             <Card className="border-0 shadow-sm">
               <Card.Body className="text-center py-3">
                 <Spinner animation="border" variant="primary" size="sm" className="me-2" />
-                <span className="text-muted">Chargement de plus d'utilisateurs...</span>
+                <span className="text-muted">Cargando más usuarios...</span>
               </Card.Body>
             </Card>
           </Col>
@@ -550,19 +461,6 @@ const Roless = () => {
           </Col>
         </Row>
       )}
-
-      {/* ✅ DRAWER para asignar categorías */}
-      <CategoryDrawerRole
-        show={showDrawer}
-        onHide={() => {
-          setShowDrawer(false);
-          setSelectedUserForCategories(null);
-        }}
-        user={selectedUserForCategories}
-        onSuccess={() => {
-          setRefreshUsers(true);
-        }}
-      />
     </Container>
   );
 };

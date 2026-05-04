@@ -6,7 +6,8 @@ const initialState = {
   loading: false,
   total: 0,
   page: 1,
-  totalPages: 1
+  totalPages: 1,
+  stats: { commercial: 0, normal: 0, total: 0 } // 🆕 AÑADIR STATS
 };
 
 const videoApproveReducer = (state = initialState, action) => {
@@ -40,7 +41,17 @@ const videoApproveReducer = (state = initialState, action) => {
       
     case VIDEO_APPROVE_TYPES.UPDATE_PAGINATION:
       return { ...state, page: action.payload };
-      
+      case VIDEO_APPROVE_TYPES.GET_VIDEOS_PENDIENTES:
+        return {
+          ...state,
+          videos: action.payload.videos,
+          total: action.payload.total,
+          page: action.payload.page,
+          totalPages: action.payload.totalPages,
+          stats: action.payload.stats || state.stats,
+          loading: false
+        };
+    
     default:
       return state;
   }

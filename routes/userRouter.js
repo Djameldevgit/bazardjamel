@@ -5,6 +5,7 @@ const userCtrl = require('../controllers/userCtrl')
 // ============================================
 // 1️⃣ RUTAS ESTÁTICAS (sin parámetros dinámicos)
 // ============================================
+//router.get('/users', auth, userCtrl.getUsers)
 router.get('/users', auth, userCtrl.getUsersAction)
 router.get('/users/admins', auth, userCtrl.getAdmins)
 router.get('/users/search', auth, userCtrl.searchUser)
